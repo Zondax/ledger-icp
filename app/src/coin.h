@@ -36,6 +36,7 @@ extern "C" {
 #define HDPATH_1_TESTNET     (0x80000000u | 0x1u)
 
 #define SECP256K1_PK_LEN            65u
+#define DFINITY_ADDR_LEN            29u
 
 typedef enum {
     addr_secp256k1 = 0,

@@ -60,6 +60,21 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     return zxerr_ok;
 }
 
+zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+    ///Fixme: add exact DER encoding
+    uint8_t DER[76];
+    MEMZERO(DER, sizeof(DER));
+
+    MEMCPY(DER + 11, pubKey, SECP256K1_PK_LEN);
+
+    cx_sha256_t ctx;
+    cx_sha224_init(&ctx);
+    cx_hash(&ctx.header, CX_LAST, DER, 76, address, CX_SHA224_SIZE);
+
+    address[DFINITY_ADDR_LEN-1] = 0x02;
+}
+
+
 typedef struct {
     uint8_t r[32];
     uint8_t s[32];
@@ -143,7 +158,11 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     return zxerr_ok;
 }
 
-__Z_INLINE int blake_hash(const unsigned char *in, unsigned int inLen,
+zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+    return zxerr_ok;
+}
+
+        __Z_INLINE int blake_hash(const unsigned char *in, unsigned int inLen,
                           unsigned char *out, unsigned int outLen) {
     blake2b_state s;
     blake2b_init(&s, outLen);
@@ -224,9 +243,9 @@ uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) 
 typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
 
-    // payload [prot][hashed(pk)]       // 1 + 20
+    // payload PK || 0x02    // 28 + 1
     uint8_t addrBytesLen;
-    uint8_t addrBytes[21];
+    uint8_t addrBytes[DFINITY_ADDR_LEN];
 
     uint8_t addrStrLen;
     uint8_t addrStr[41];  // 41 = because (20+1+4)*8/5 (32 base encoded size)
@@ -245,14 +264,12 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
 
     answer_t *const answer = (answer_t *) buffer;
 
-    zxerr_t err = crypto_extractPublicKey(hdPath, answer->publicKey, sizeof_field(answer_t, publicKey));
-    if ( err != zxerr_ok ) {
-        return err;
-    }
+    CHECK_ZXERR(crypto_extractPublicKey(hdPath, answer->publicKey, sizeof_field(answer_t, publicKey)));
 
-    // addr bytes
-    // TODO: Complete here
+    CHECK_ZXERR(crypto_computeAddress(answer->publicKey, answer->addrBytes));
 
-    *addrLen = sizeof(answer_t) - sizeof_field(answer_t, padding);
+    answer-> addrBytesLen = DFINITY_ADDR_LEN;
+
+    *addrLen = SECP256K1_PK_LEN + DFINITY_ADDR_LEN;
     return zxerr_ok;
 }
