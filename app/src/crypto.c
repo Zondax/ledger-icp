@@ -66,12 +66,11 @@ zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
     MEMZERO(DER, sizeof(DER));
 
     MEMCPY(DER + 11, pubKey, SECP256K1_PK_LEN);
-
-    cx_sha256_t ctx;
-    cx_sha224_init(&ctx);
-    cx_hash(&ctx.header, CX_LAST, DER, 76, address, CX_SHA224_SIZE);
-
-    address[DFINITY_ADDR_LEN-1] = 0x02;
+    uint8_t buf[32];
+    cx_hash_sha256(DER,  76, buf, CX_SHA256_SIZE);
+    buf[DFINITY_ADDR_LEN-1] = 0x02;
+    MEMCPY(address, buf, DFINITY_ADDR_LEN);
+    return zxerr_ok;
 }
 
 
@@ -242,15 +241,7 @@ uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) 
 
 typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
-
-    // payload PK || 0x02    // 28 + 1
-    uint8_t addrBytesLen;
     uint8_t addrBytes[DFINITY_ADDR_LEN];
-
-    uint8_t addrStrLen;
-    uint8_t addrStr[41];  // 41 = because (20+1+4)*8/5 (32 base encoded size)
-
-    uint8_t padding[4];
 
 } __attribute__((packed)) answer_t;
 
@@ -267,8 +258,6 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
     CHECK_ZXERR(crypto_extractPublicKey(hdPath, answer->publicKey, sizeof_field(answer_t, publicKey)));
 
     CHECK_ZXERR(crypto_computeAddress(answer->publicKey, answer->addrBytes));
-
-    answer-> addrBytesLen = DFINITY_ADDR_LEN;
 
     *addrLen = SECP256K1_PK_LEN + DFINITY_ADDR_LEN;
     return zxerr_ok;
