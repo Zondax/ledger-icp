@@ -59,7 +59,7 @@ ifeq ($(COIN),DFN)
 # Main app configuration
 DEFINES += APP_STANDARD
 APPNAME = "Dfinity"
-APPPATH = "44'/232'"
+APPPATH = "44'/223'"
 
 else ifeq ($(COIN),DFN_INVALID)
 else
