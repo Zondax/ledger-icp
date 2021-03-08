@@ -17,6 +17,7 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
+#include "base32.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
@@ -66,10 +67,42 @@ zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
     MEMZERO(DER, sizeof(DER));
 
     MEMCPY(DER + 11, pubKey, SECP256K1_PK_LEN);
-    uint8_t buf[32];
+    uint8_t buf[CX_SHA256_SIZE];
     cx_hash_sha256(DER,  76, buf, CX_SHA256_SIZE);
     buf[DFINITY_ADDR_LEN-1] = 0x02;
     MEMCPY(address, buf, DFINITY_ADDR_LEN);
+    return zxerr_ok;
+}
+
+uint32_t crc32_for_byte(uint8_t rbyte) {
+    uint32_t r = (uint32_t)(rbyte) & (uint32_t)0x000000FF;
+    for(int j = 0; j < 8; ++j)
+        r = (r & 1? 0: (uint32_t)0xEDB88320L) ^ r >> 1;
+    return r ^ (uint32_t)0xFF000000L;
+}
+
+void crc32_small(const void *data, uint8_t n_bytes, uint32_t* crc) {
+    for(uint8_t i = 0; i < n_bytes; ++i) {
+        uint8_t index = ((uint8_t) * crc ^ ((uint8_t *) data)[i]);
+        uint32_t crcbyte = crc32_for_byte(index);
+        *crc = crcbyte ^ *crc >> 8;
+    }
+}
+
+zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen){
+    uint8_t input[33];
+    uint32_t crc = 0;
+    crc32_small(address, addressLen,&crc);
+    input[0] = (uint8_t)((crc & 0xFF000000) >> 24);
+    input[1] = (uint8_t)((crc & 0x00FF0000) >> 16);
+    input[2] = (uint8_t)((crc & 0x0000FF00) >> 8);
+    input[3] = (uint8_t)((crc & 0x000000FF) >> 0);
+    MEMCPY(input + 4, address, addressLen);
+    int enc_len = base32_encode(input, 4 + addressLen, textual, 100);
+    if (enc_len == 0){
+        return zxerr_unknown;
+    }
+    *outLen = enc_len;
     return zxerr_ok;
 }
 
@@ -242,6 +275,7 @@ uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) 
 typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t addrBytes[DFINITY_ADDR_LEN];
+    unsigned char addrText[100];
 
 } __attribute__((packed)) answer_t;
 
@@ -259,6 +293,10 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
 
     CHECK_ZXERR(crypto_computeAddress(answer->publicKey, answer->addrBytes));
 
-    *addrLen = SECP256K1_PK_LEN + DFINITY_ADDR_LEN;
+    uint16_t outLen = 0;
+
+    CHECK_ZXERR(crypto_addrToTextual(answer->addrBytes, DFINITY_ADDR_LEN, answer->addrText, &outLen));
+
+    *addrLen = SECP256K1_PK_LEN + DFINITY_ADDR_LEN + outLen;
     return zxerr_ok;
 }
