@@ -47,7 +47,7 @@ function processGetAddrResponse(response: Buffer) {
 
     partialResponse = partialResponse.slice(ADDRLEN);
 
-    const addressText = Buffer.from(partialResponse.slice(0, -2)).toString();
+    const addressText = Buffer.from(partialResponse.slice(0, -2)).toString().replace(/(.{5})/g,"$1-");
 
     return {
         publicKey,

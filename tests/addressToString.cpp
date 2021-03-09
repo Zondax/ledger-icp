@@ -49,4 +49,5 @@ namespace {
         crc32_small(inBuffer, 29, &crc);
         EXPECT_EQ(crc, 768128161);
     }
+
 }

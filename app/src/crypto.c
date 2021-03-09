@@ -61,14 +61,30 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     return zxerr_ok;
 }
 
+//DER encoding:
+//3056 // SEQUENCE
+//  3010 // SEQUENCE
+//    06072a8648ce3d0201 // OID ECDSA
+//    06052b8104000a // OID secp256k1
+//  0342 // BIT STRING
+//    00 // no padding
+//    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
+
+uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
+                              0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x0a, 0x03, 0x42, 0x00};
+
+#define DER_PREFIX_SIZE 23u
+#define DER_INPUT_SIZE  DER_PREFIX_SIZE + SECP256K1_PK_LEN
+
 zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
     ///Fixme: add exact DER encoding
-    uint8_t DER[76];
+    uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
+    MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
 
-    MEMCPY(DER + 11, pubKey, SECP256K1_PK_LEN);
+    MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
     uint8_t buf[CX_SHA256_SIZE];
-    cx_hash_sha256(DER,  76, buf, CX_SHA256_SIZE);
+    cx_hash_sha256(DER,  DER_INPUT_SIZE, buf, CX_SHA256_SIZE);
     buf[DFINITY_ADDR_LEN-1] = 0x02;
     MEMCPY(address, buf, DFINITY_ADDR_LEN);
     return zxerr_ok;
@@ -191,6 +207,10 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
 }
 
 zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+    return zxerr_ok;
+}
+
+zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen){
     return zxerr_ok;
 }
 
