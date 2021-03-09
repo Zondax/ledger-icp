@@ -47,6 +47,7 @@ typedef enum {
 #define COIN_AMOUNT_DECIMAL_PLACES          0                              // FIXME: Adjust this
 
 #define VIEW_ADDRESS_OFFSET_SECP256K1       (SECP256K1_PK_LEN )
+#define VIEW_ADDRESS_OFFSET_TEXT            (SECP256K1_PK_LEN + DFINITY_ADDR_LEN )
 #define COIN_SUPPORTED_TX_VERSION           0
 
 #define MENU_MAIN_APP_LINE1                 "Dfinity"
