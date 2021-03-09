@@ -57,7 +57,7 @@ __Z_INLINE zxerr_t app_fill_address() {
         THROW(APDU_CODE_EXECUTION_ERROR);
     }
 
-    return action_addrResponseLen;
+    return zxerr_ok;
 }
 
 __Z_INLINE void app_reply_address() {

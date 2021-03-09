@@ -20,12 +20,31 @@
 #include "zxmacros.h"
 #include "app_mode.h"
 #include "crypto.h"
+#include "actions.h"
 
 zxerr_t addr_getNumItems(uint8_t *num_items) {
     zemu_log_stack("addr_getNumItems");
     *num_items = 1;
     if (app_mode_expert()) {
         *num_items = 2;
+    }
+    return zxerr_ok;
+}
+
+zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen){
+    MEMZERO(s, max);
+    uint16_t offset = 0;
+    for(uint16_t index = 0; index < textLen; index += 5){
+        if (offset + 6 > max){
+            return zxerr_unknown;
+        }
+        uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
+        MEMCPY(s + offset, text + index, maxLen);
+        offset += 5;
+        if(index + 5 < textLen) {
+            s[offset] = '-';
+            offset += 1;
+        }
     }
     return zxerr_ok;
 }
@@ -40,7 +59,8 @@ zxerr_t addr_getItem(int8_t displayIdx,
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Address");
-            pageString(outVal, outValLen, (char *) (G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_SECP256K1), pageIdx, pageCount);
+            CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, action_addrResponseLen - VIEW_ADDRESS_OFFSET_TEXT));
+            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return zxerr_ok;
         case 1: {
             if (!app_mode_expert()) {

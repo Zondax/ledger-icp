@@ -27,15 +27,16 @@ extern "C" {
 #define HDPATH_LEN_DEFAULT   5
 
 #define HDPATH_0_DEFAULT     (0x80000000u | 0x2cu)
-#define HDPATH_1_DEFAULT     (0x80000000u | 0x0e8)
+#define HDPATH_1_DEFAULT     (0x80000000u | 0xdfu)
 #define HDPATH_2_DEFAULT     (0x80000000u | 0u)
 #define HDPATH_3_DEFAULT     (0u)
 #define HDPATH_4_DEFAULT     (0u)
 
 #define HDPATH_0_TESTNET     (0x80000000u | 0x2cu)
-#define HDPATH_1_TESTNET     (0x80000000u | 0x1u)
+#define HDPATH_1_TESTNET     (0x80000000u | 0xdfu)
 
 #define SECP256K1_PK_LEN            65u
+#define DFINITY_ADDR_LEN            29u
 
 typedef enum {
     addr_secp256k1 = 0,
@@ -46,6 +47,7 @@ typedef enum {
 #define COIN_AMOUNT_DECIMAL_PLACES          0                              // FIXME: Adjust this
 
 #define VIEW_ADDRESS_OFFSET_SECP256K1       (SECP256K1_PK_LEN )
+#define VIEW_ADDRESS_OFFSET_TEXT            (SECP256K1_PK_LEN + DFINITY_ADDR_LEN )
 #define COIN_SUPPORTED_TX_VERSION           0
 
 #define MENU_MAIN_APP_LINE1                 "Dfinity"

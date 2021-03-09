@@ -17,6 +17,8 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
+#include "base32.h"
+#include "picohash.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
@@ -24,6 +26,12 @@ bool isTestnet() {
     return hdPath[0] == HDPATH_0_TESTNET &&
            hdPath[1] == HDPATH_1_TESTNET;
 }
+
+uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
+                              0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x0a, 0x03, 0x42, 0x00};
+
+#define DER_PREFIX_SIZE 23u
+#define DER_INPUT_SIZE  DER_PREFIX_SIZE + SECP256K1_PK_LEN
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
@@ -57,6 +65,37 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     END_TRY;
 
     memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
+    return zxerr_ok;
+}
+
+//DER encoding:
+//3056 // SEQUENCE
+//  3010 // SEQUENCE
+//    06072a8648ce3d0201 // OID ECDSA
+//    06052b8104000a // OID secp256k1
+//  0342 // BIT STRING
+//    00 // no padding
+//    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
+
+zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+    uint8_t DER[DER_INPUT_SIZE];
+    MEMZERO(DER, sizeof(DER));
+    MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
+
+    MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
+    uint8_t buf[CX_SHA256_SIZE];
+//    cx_sha256_t ctx;
+//    cx_sha224_init(&ctx);
+//    cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
+
+    picohash_ctx_t ctx;
+
+    picohash_init_sha224(&ctx);
+    picohash_update(&ctx, DER, DER_INPUT_SIZE);
+    picohash_final(&ctx, buf);
+
+    buf[DFINITY_ADDR_LEN-1] = 0x02;
+    MEMCPY(address, buf, DFINITY_ADDR_LEN);
     return zxerr_ok;
 }
 
@@ -135,7 +174,6 @@ zxerr_t crypto_sign(uint8_t *signature,
 #else
 
 #include <hexutils.h>
-#include "blake2.h"
 
 char *crypto_testPubKey;
 
@@ -143,55 +181,67 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     return zxerr_ok;
 }
 
-__Z_INLINE int blake_hash(const unsigned char *in, unsigned int inLen,
-                          unsigned char *out, unsigned int outLen) {
-    blake2b_state s;
-    blake2b_init(&s, outLen);
-    blake2b_update(&s, in, inLen);
-    blake2b_final(&s, out, outLen);
-    return 0;
+zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+    uint8_t DER[DER_INPUT_SIZE];
+    MEMZERO(DER, sizeof(DER));
+    MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
+
+    MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
+    uint8_t buf[32];
+
+    picohash_ctx_t ctx;
+
+    picohash_init_sha224(&ctx);
+    picohash_update(&ctx, DER, DER_INPUT_SIZE);
+    picohash_final(&ctx, buf);
+
+    buf[DFINITY_ADDR_LEN-1] = 0x02;
+    MEMCPY(address, buf, DFINITY_ADDR_LEN);
+    return zxerr_ok;
 }
 
-__Z_INLINE int blake_hash_cid(const unsigned char *in, unsigned int inLen,
-                              unsigned char *out, unsigned int outLen) {
-
-    uint8_t prefix[] = PREFIX;
-
-    blake2b_state s;
-    blake2b_init(&s, outLen);
-    blake2b_update(&s, prefix, sizeof(prefix));
-    blake2b_update(&s, in, inLen);
-    blake2b_final(&s, out, outLen);
-
-    return 0;
-}
-
-int prepareDigestToSign(const unsigned char *in, unsigned int inLen,
-                        unsigned char *out, unsigned int outLen) {
-
-    uint8_t tmp[BLAKE2B_256_SIZE];
-
-    blake_hash(in, inLen, tmp, BLAKE2B_256_SIZE);
-    blake_hash_cid(tmp, BLAKE2B_256_SIZE, out, outLen);
-
-    return 0;
-}
-
-uint16_t crypto_sign(uint8_t *signature,
-                     uint16_t signatureMaxlen,
-                     const uint8_t *message,
-                     uint16_t messageLen) {
-    // Empty version for non-Ledger devices
-    uint8_t tmp[BLAKE2B_256_SIZE];
-    uint8_t message_digest[BLAKE2B_256_SIZE];
-
-    blake_hash(message, messageLen, tmp, BLAKE2B_256_SIZE);
-    blake_hash_cid(tmp, BLAKE2B_256_SIZE, message_digest, BLAKE2B_256_SIZE);
-
-    return 0;
+zxerr_t crypto_sign(uint8_t *signature,
+                    uint16_t signatureMaxlen,
+                    const uint8_t *message,
+                    uint16_t messageLen,
+                    uint16_t *sigSize){
+    return zxerr_ok;
 }
 
 #endif
+
+
+uint32_t crc32_for_byte(uint8_t rbyte) {
+    uint32_t r = (uint32_t)(rbyte) & (uint32_t)0x000000FF;
+    for(int j = 0; j < 8; ++j)
+        r = (r & 1? 0: (uint32_t)0xEDB88320L) ^ r >> 1;
+    return r ^ (uint32_t)0xFF000000L;
+}
+
+void crc32_small(const void *data, uint8_t n_bytes, uint32_t* crc) {
+    for(uint8_t i = 0; i < n_bytes; ++i) {
+        uint8_t index = ((uint8_t) * crc ^ ((uint8_t *) data)[i]);
+        uint32_t crcbyte = crc32_for_byte(index);
+        *crc = crcbyte ^ *crc >> 8;
+    }
+}
+
+zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen){
+    uint8_t input[33];
+    uint32_t crc = 0;
+    crc32_small(address, addressLen,&crc);
+    input[0] = (uint8_t)((crc & 0xFF000000) >> 24);
+    input[1] = (uint8_t)((crc & 0x00FF0000) >> 16);
+    input[2] = (uint8_t)((crc & 0x0000FF00) >> 8);
+    input[3] = (uint8_t)((crc & 0x000000FF) >> 0);
+    MEMCPY(input + 4, address, addressLen);
+    int enc_len = base32_encode(input, 4 + addressLen, textual, 100);
+    if (enc_len == 0){
+        return zxerr_unknown;
+    }
+    *outLen = enc_len;
+    return zxerr_ok;
+}
 
 uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) {
     unsigned int i = 0;
@@ -223,15 +273,8 @@ uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) 
 
 typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
-
-    // payload [prot][hashed(pk)]       // 1 + 20
-    uint8_t addrBytesLen;
-    uint8_t addrBytes[21];
-
-    uint8_t addrStrLen;
-    uint8_t addrStr[41];  // 41 = because (20+1+4)*8/5 (32 base encoded size)
-
-    uint8_t padding[4];
+    uint8_t addrBytes[DFINITY_ADDR_LEN];
+    unsigned char addrText[100];
 
 } __attribute__((packed)) answer_t;
 
@@ -245,14 +288,14 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
 
     answer_t *const answer = (answer_t *) buffer;
 
-    zxerr_t err = crypto_extractPublicKey(hdPath, answer->publicKey, sizeof_field(answer_t, publicKey));
-    if ( err != zxerr_ok ) {
-        return err;
-    }
+    CHECK_ZXERR(crypto_extractPublicKey(hdPath, answer->publicKey, sizeof_field(answer_t, publicKey)));
 
-    // addr bytes
-    // TODO: Complete here
+    CHECK_ZXERR(crypto_computeAddress(answer->publicKey, answer->addrBytes));
 
-    *addrLen = sizeof(answer_t) - sizeof_field(answer_t, padding);
+    uint16_t outLen = 0;
+
+    CHECK_ZXERR(crypto_addrToTextual(answer->addrBytes, DFINITY_ADDR_LEN, answer->addrText, &outLen));
+
+    *addrLen = SECP256K1_PK_LEN + DFINITY_ADDR_LEN + outLen;
     return zxerr_ok;
 }

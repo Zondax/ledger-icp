@@ -21,7 +21,8 @@ export const P1_VALUES = {
     SHOW_ADDRESS_IN_DEVICE: 0x01,
 };
 
-export const PKLEN = 33;
+export const PKLEN = 65;
+export const ADDRLEN = 29;
 
 export enum LedgerError {
     U2FUnknown = 1,

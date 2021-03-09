@@ -17,6 +17,7 @@
 import Transport from '@ledgerhq/hw-transport';
 import {ResponseAddress, ResponseAppInfo, ResponseSign, ResponseVersion} from './types';
 import {
+    ADDRLEN,
     CHUNK_SIZE,
     CLA,
     errorCodeToString,
@@ -39,14 +40,19 @@ function processGetAddrResponse(response: Buffer) {
     const errorCodeData = partialResponse.slice(-2);
     const returnCode = (errorCodeData[0] * 256 + errorCodeData[1]);
 
-    const publicKey = Buffer.from(partialResponse.slice(0, PKLEN));
+    const publicKey = Buffer.from(partialResponse.slice(0, PKLEN)).toString('hex');
     partialResponse = partialResponse.slice(PKLEN);
 
-    const address = Buffer.from(partialResponse.slice(0, -2)).toString();
+    const address = Buffer.from(partialResponse.slice(0, ADDRLEN)).toString('hex');
+
+    partialResponse = partialResponse.slice(ADDRLEN);
+
+    const addressText = Buffer.from(partialResponse.slice(0, -2)).toString().replace(/(.{5})/g,"$1-");
 
     return {
         publicKey,
         address,
+        addressText,
         returnCode,
         errorMessage: errorCodeToString(returnCode),
     };
