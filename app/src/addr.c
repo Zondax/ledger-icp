@@ -35,7 +35,7 @@ zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLe
     MEMZERO(s, max);
     uint16_t offset = 0;
     for(uint16_t index = 0; index < textLen; index += 5){
-        if (offset > max){
+        if (offset + 6 > max){
             return zxerr_unknown;
         }
         uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
