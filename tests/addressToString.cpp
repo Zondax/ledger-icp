@@ -36,25 +36,25 @@ namespace {
         EXPECT_EQ(crc, 768128161);
     }
 
-TEST(AddressToStringTests, AddrToText) {
-    uint8_t inBuffer[100];
-    const char *tmp = "047060f720298ffa0f48d9606abdb013bc82f4ff269f9adc3e7226391af3fad8b30fd6a30deb81d5b4f9e142971085d0ae15b8e222d85af1e17438e630d09b7ef4";
-    auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+    TEST(AddressToStringTests, AddrToText) {
+        uint8_t inBuffer[100];
+        const char *tmp = "047060f720298ffa0f48d9606abdb013bc82f4ff269f9adc3e7226391af3fad8b30fd6a30deb81d5b4f9e142971085d0ae15b8e222d85af1e17438e630d09b7ef4";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
 
-    uint8_t addr[29];
+        uint8_t addr[29];
 
-    crypto_computeAddress(inBuffer, addr);
+        crypto_computeAddress(inBuffer, addr);
 
-    const char *tmp2 = "b93ea0acd43afb38c85f3d9998cc8aa118a3916339e51401b460234402";
-    parseHexString(inBuffer, sizeof(inBuffer), tmp2);
-    for(int i = 0; i < 29; i++){
-        EXPECT_EQ(inBuffer[i], addr[i]);
+        const char *tmp2 = "b93ea0acd43afb38c85f3d9998cc8aa118a3916339e51401b460234402";
+        parseHexString(inBuffer, sizeof(inBuffer), tmp2);
+        for(int i = 0; i < 29; i++){
+            EXPECT_EQ(inBuffer[i], addr[i]);
+        }
+
+        MEMZERO(inBuffer,100);
+        uint16_t len = 0;
+        crypto_addrToTextual(addr, sizeof(addr), inBuffer, &len);
+        EXPECT_STREQ((const char *)inBuffer, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
     }
-
-    MEMZERO(inBuffer,100);
-    uint16_t len = 0;
-    crypto_addrToTextual(addr, sizeof(addr), inBuffer, &len);
-    EXPECT_STREQ((const char *)inBuffer, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
-}
 
 }
