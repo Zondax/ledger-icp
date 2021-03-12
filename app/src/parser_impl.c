@@ -136,6 +136,27 @@ parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
 
+    cbor_value_advance(&it);
+
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
+
+    CborValue contents;
+    CborValue value;
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
+
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &value));
+
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&value), parser_unexpected_type);
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&value, &contents));
+
+    size_t mapLen = 0;
+    CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
+
+    PARSER_ASSERT_OR_ERROR(mapLen == 7, parser_context_unexpected_size);
+
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "canister_id", &contents));
+    _cbor_value_copy_string(&contents, v->canister_id.ptr, &v->canister_id.len, NULL);
+
 //    // It is an array
 //    PARSER_ASSERT_OR_ERROR(cbor_value_is_array(&it), parser_unexpected_type)
 //    size_t arraySize;

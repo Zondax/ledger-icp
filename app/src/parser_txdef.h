@@ -26,8 +26,8 @@ extern "C" {
 #include <stddef.h>
 
 typedef struct {
-    int8_t *ptr;
-    int32_t len;
+    uint8_t *ptr;
+    size_t len;
 } parser_u8Array_t;
 
 typedef struct {
@@ -36,8 +36,8 @@ typedef struct {
 
     uint64_t ingress_expiry;
 
-    int8_t *ptr_canister_id;            // 10 bytes? TODO: Confirm
-    int8_t *ptr_sender_id;              // 29 bytes? TODO: Confirm
+    parser_u8Array_t canister_id;            // 10 bytes? TODO: Confirm
+    uint8_t *ptr_sender_id;              // 29 bytes? TODO: Confirm
 
     parser_u8Array_t method_name;
     parser_u8Array_t arg;
