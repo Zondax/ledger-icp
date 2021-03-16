@@ -21,7 +21,6 @@
 #include "coin.h"
 #include "parser_txdef.h"
 #include "crypto.h"
-#include "addr.h"
 
 #if defined(TARGET_NANOX)
 // For some reason NanoX requires this function
@@ -74,7 +73,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    unsigned char buffer[50];
+    unsigned char buffer[100];
     MEMZERO(buffer, sizeof(buffer));
 
     if (displayIdx < 0 || displayIdx >= numItems) {
@@ -83,42 +82,56 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "request_type");
+        snprintf(outVal, outValLen, "%s", parser_tx_obj.request_type.data);
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "nonce");
+        //MEMCPY(buffer, (uint8_t *)parser_tx_obj.nonce.data, parser_tx_obj.nonce.len);
+        //pageString(outVal, outValLen, (char *)buffer, pageIdx, pageCount);
+        //snprintf(outVal, outValLen, "%s", (char *)parser_tx_obj.nonce.data);
         return parser_ok;
     }
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "ingress_expiry");
+        fpuint64_to_str(buffer, sizeof(buffer), parser_tx_obj.ingress_expiry, 0);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
 
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "sender");
+        uint16_t outLen = 0;
+        uint8_t tmpbuffer[100];
+        crypto_addrToTextual((uint8_t *)parser_tx_obj.sender.data, parser_tx_obj.sender.len, tmpbuffer, &outLen);
+        addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
 
     if (displayIdx == 4) {
         snprintf(outKey, outKeyLen, "canister_id");
         uint16_t outLen = 0;
-        uint8_t tmpbuffer[50];
+        uint8_t tmpbuffer[100];
         crypto_addrToTextual((uint8_t *)parser_tx_obj.canister_id.data, parser_tx_obj.canister_id.len, tmpbuffer, &outLen);
         addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
-        snprintf(outVal, outValLen, "%s", (char *)buffer);
-
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
 
     if (displayIdx == 5) {
         snprintf(outKey, outKeyLen, "method_name");
+        snprintf(outVal, outValLen, "%s", parser_tx_obj.method_name.data);
         return parser_ok;
     }
 
     if (displayIdx == 6) {
-        snprintf(outKey, outKeyLen, "arg");
+        snprintf(outKey, outKeyLen, "arg (length)");
+        fpuint64_to_str(buffer, sizeof(buffer), *(uint64_t *)&parser_tx_obj.arg.len, 0);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+
         return parser_ok;
     }
 //
