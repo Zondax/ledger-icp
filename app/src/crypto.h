@@ -51,6 +51,8 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrLe
 zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen);
 void crc32_small(const void *data, uint8_t n_bytes, uint32_t* crc);
 
+zxerr_t compressLEB128 (const uint64_t input, uint16_t maxSize, uint8_t *output, uint16_t *outLen);
+
 zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
                     const uint8_t *message,
