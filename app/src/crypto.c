@@ -243,6 +243,24 @@ zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char
     return zxerr_ok;
 }
 
+zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen){
+    MEMZERO(s, max);
+    uint16_t offset = 0;
+    for(uint16_t index = 0; index < textLen; index += 5){
+        if (offset + 6 > max){
+            return zxerr_unknown;
+        }
+        uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
+        MEMCPY(s + offset, text + index, maxLen);
+        offset += 5;
+        if(index + 5 < textLen) {
+            s[offset] = '-';
+            offset += 1;
+        }
+    }
+    return zxerr_ok;
+}
+
 uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) {
     unsigned int i = 0;
 
