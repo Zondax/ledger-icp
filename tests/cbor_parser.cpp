@@ -21,6 +21,7 @@
 #include <zxmacros.h>
 #include <openssl/sha.h>
 #include <algorithm>
+#include "parser_impl.h"
 
 
     // Basic CBOR test cases generated with http://cbor.me/
@@ -73,7 +74,16 @@ namespace {
         EXPECT_EQ(err, CborNoError);
 
         type = cbor_value_get_type(&contents);
-        EXPECT_EQ(type, CborMapType);
+        EXPECT_EQ(type, CborByteStringType);
+
+        size_t val = 0;
+        char buffer[100];
+
+        err =  cbor_value_get_string_length(&contents, &val);
+        EXPECT_EQ(err, CborNoError);
+        EXPECT_EQ(val, 10);
+        err = _cbor_value_copy_string(&contents, buffer, &val, nullptr);
+        EXPECT_EQ(err, CborNoError);
 
     }
 

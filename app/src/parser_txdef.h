@@ -26,6 +26,11 @@ extern "C" {
 #include <stddef.h>
 
 typedef struct {
+    uint8_t data[29];
+    size_t len;
+} principal;
+
+typedef struct {
     uint8_t *ptr;
     size_t len;
 } parser_u8Array_t;
@@ -36,7 +41,7 @@ typedef struct {
 
     uint64_t ingress_expiry;
 
-    parser_u8Array_t canister_id;            // 10 bytes? TODO: Confirm
+    principal canister_id;            // 10 bytes? TODO: Confirm
     uint8_t *ptr_sender_id;              // 29 bytes? TODO: Confirm
 
     parser_u8Array_t method_name;

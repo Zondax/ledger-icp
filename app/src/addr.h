@@ -29,6 +29,8 @@ zxerr_t addr_getItem(int8_t displayIdx,
                      char *outValue, uint16_t outValueLen,
                      uint8_t pageIdx, uint8_t *pageCount);
 
+zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen);
+
 #ifdef __cplusplus
 }
 #endif

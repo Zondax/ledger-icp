@@ -19,6 +19,9 @@
 #include "parser_impl.h"
 #include "parser.h"
 #include "coin.h"
+#include "parser_txdef.h"
+#include "crypto.h"
+#include "addr.h"
 
 #if defined(TARGET_NANOX)
 // For some reason NanoX requires this function
@@ -71,54 +74,53 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
+    unsigned char buffer[50];
+    MEMZERO(buffer, sizeof(buffer));
+
     if (displayIdx < 0 || displayIdx >= numItems) {
         return parser_no_data;
     }
 
-//    if (displayIdx == 0) {
-//        snprintf(outKey, outKeyLen, "To");
-//        return parser_printAddress(&parser_tx_obj.to,
-//                                   outVal, outValLen, pageIdx, pageCount);
-//    }
-//
-//    if (displayIdx == 1) {
-//        snprintf(outKey, outKeyLen, "From");
-//        return parser_printAddress(&parser_tx_obj.from,
-//                                   outVal, outValLen, pageIdx, pageCount);
-//    }
-//
-//    if (displayIdx == 2) {
-//        snprintf(outKey, outKeyLen, "Nonce");
-//        if (uint64_to_str(outVal, outValLen, parser_tx_obj.nonce) != NULL) {
-//            return parser_unexepected_error;
-//        }
-//        *pageCount = 1;
-//        return parser_ok;
-//    }
-//
-//    if (displayIdx == 3) {
-//        snprintf(outKey, outKeyLen, "Value");
-//        return parser_printBigIntFixedPoint(&parser_tx_obj.value, outVal, outValLen, pageIdx, pageCount);
-//    }
-//
-//    if (displayIdx == 4) {
-//        snprintf(outKey, outKeyLen, "Gas Limit");
-//        if (int64_to_str(outVal, outValLen, parser_tx_obj.gaslimit) != NULL) {
-//            return parser_unexepected_error;
-//        }
-//        *pageCount = 1;
-//        return parser_ok;
-//    }
-//
-//    if (displayIdx == 5) {
-//        snprintf(outKey, outKeyLen, "Gas Premium");
-//        return parser_printBigIntFixedPoint(&parser_tx_obj.gaspremium, outVal, outValLen, pageIdx, pageCount);
-//    }
-//
-//    if (displayIdx == 6) {
-//        snprintf(outKey, outKeyLen, "Gas Fee Cap");
-//        return parser_printBigIntFixedPoint(&parser_tx_obj.gasfeecap, outVal, outValLen, pageIdx, pageCount);
-//    }
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "request_type");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "nonce");
+        return parser_ok;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "ingress_expiry");
+        return parser_ok;
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "sender");
+        return parser_ok;
+    }
+
+    if (displayIdx == 4) {
+        snprintf(outKey, outKeyLen, "canister_id");
+        uint16_t outLen = 0;
+        uint8_t tmpbuffer[50];
+        crypto_addrToTextual((uint8_t *)parser_tx_obj.canister_id.data, parser_tx_obj.canister_id.len, tmpbuffer, &outLen);
+        addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
+        snprintf(outVal, outValLen, "%s", (char *)buffer);
+
+        return parser_ok;
+    }
+
+    if (displayIdx == 5) {
+        snprintf(outKey, outKeyLen, "method_name");
+        return parser_ok;
+    }
+
+    if (displayIdx == 6) {
+        snprintf(outKey, outKeyLen, "arg");
+        return parser_ok;
+    }
 //
 //    if (displayIdx == 7) {
 //        snprintf(outKey, outKeyLen, "Method");

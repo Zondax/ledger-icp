@@ -135,11 +135,9 @@ parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
-
     cbor_value_advance(&it);
 
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
-
     CborValue contents;
     CborValue value;
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
@@ -154,8 +152,14 @@ parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
 
     PARSER_ASSERT_OR_ERROR(mapLen == 7, parser_context_unexpected_size);
 
+
+    MEMZERO(&v->canister_id.data, sizeof(v->canister_id.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "canister_id", &contents));
-    _cbor_value_copy_string(&contents, v->canister_id.ptr, &v->canister_id.len, NULL);
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->canister_id.data, &v->canister_id.len, NULL));
+    PARSER_ASSERT_OR_ERROR(v->canister_id.len == 10, parser_unexpected_type);
+
+    return parser_ok;
+
 
 //    // It is an array
 //    PARSER_ASSERT_OR_ERROR(cbor_value_is_array(&it), parser_unexpected_type)
@@ -229,7 +233,7 @@ parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
 //    // End of buffer does not match end of parsed data
 //    PARSER_ASSERT_OR_ERROR(it.ptr == c->buffer + c->bufferLen, parser_cbor_unexpected_EOF)
 
-    return parser_no_data;
+    return parser_ok;
 }
 
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
@@ -240,7 +244,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
-    uint8_t itemCount = 9;
+    uint8_t itemCount = 6;
 
     return itemCount;
 }
