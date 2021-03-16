@@ -80,7 +80,7 @@ namespace {
 
         err =  cbor_value_get_string_length(&contents, &val);
         EXPECT_EQ(err, CborNoError);
-        EXPECT_EQ(val, 10);
+        EXPECT_EQ(val, 71);
         err = _cbor_value_copy_string(&contents, buffer, &val, nullptr);
         EXPECT_EQ(err, CborNoError);
 
