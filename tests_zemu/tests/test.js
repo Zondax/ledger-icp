@@ -17,6 +17,8 @@
 import jest, {expect} from "jest";
 import Zemu from "@zondax/zemu";
 import DfinityApp from "@zondax/ledger-dfinity";
+import * as secp256k1 from "secp256k1";
+var SHA256 = require("crypto-js/sha256");
 
 const Resolve = require("path").resolve;
 const APP_PATH_S = Resolve("../app/output/app_s.elf");
@@ -140,6 +142,15 @@ describe('Standard', function () {
             await sim.start({model, ...simOptions});
             const app = new DfinityApp(sim.getTransport());
 
+            const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
+            console.log(respAddr)
+
+            expect(respAddr.returnCode).toEqual(0x9000);
+            expect(respAddr.errorMessage).toEqual("No errors");
+
+            const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+            expect(respAddr.publicKey).toEqual(expected_pk);
+
             let txBlobStr = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550e063ee93160f37ee2216b6a2a28119a46e696e67726573735f6578706972791b166b1ab6ec9c35086673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b6026b63616e69737465725f69644a000000000000000a01016b6d6574686f645f6e616d656473656e646361726758474449444c026c04fbca0171c6fcb60201ba89e5c2047cd8a38ca80d016c01b1dfb793047c01001b72776c67742d69696161612d61616161612d61616161612d636169880100e8076d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f736967584084dc1f2e7338eac3eae5967ddf6074a8f6c2d98e598f481a807569c9219b94d4175bed43e8d25bde1b411c4f50b9fe23e1c521ec53f3c2f80fa4621b27292208";
             const txBlob = Buffer.from(txBlobStr, "hex");
 
@@ -148,13 +159,23 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, 12);
+            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, 8);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
 
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
+
+            const expected_preHash = "0a69632d72657175657374bf5bae8c2b6be8103a070e6d2240c18788c10a94ba68990f8c7e7acecb8b8c34";
+            expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
+
+            // const pk = Uint8Array.from(Buffer.from(respAddr.publicKey, 'hex'))
+            // const digest = Uint8Array.from(Buffer.from(SHA256( signatureResponse.preSignHash).toString(), 'hex'));
+            // const signature = Uint8Array.from(signatureResponse.signatureRS);
+            // const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk);
+            // expect(signatureOk).toEqual(true);
+
         } finally {
             await sim.close();
         }
