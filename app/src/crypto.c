@@ -88,15 +88,9 @@ zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
 
     MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
     uint8_t buf[CX_SHA256_SIZE];
-//    cx_sha256_t ctx;
-//    cx_sha224_init(&ctx);
-//    cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
-
-    picohash_ctx_t ctx;
-
-    picohash_init_sha224(&ctx);
-    picohash_update(&ctx, DER, DER_INPUT_SIZE);
-    picohash_final(&ctx, buf);
+    cx_sha256_t ctx;
+    cx_sha224_init(&ctx);
+    cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
 
     buf[DFINITY_ADDR_LEN-1] = 0x02;
     MEMCPY(address, buf, DFINITY_ADDR_LEN);

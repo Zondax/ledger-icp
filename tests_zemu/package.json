@@ -17,7 +17,7 @@
   ],
   "dependencies": {
     "@zondax/ledger-dfinity": "link:../js",
-    "@zondax/zemu": "^0.11.7"
+    "@zondax/zemu": "^0.11.8"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.5",
