@@ -217,12 +217,12 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
         TRY
         {
             // Generate keys
-            os_perso_derive_node_bip32(CX_CURVE_256K1,
+            os_perso_derive_node_bip32(CX_CURVE_SECP256K1,
                                                       hdPath,
                                                       HDPATH_LEN_DEFAULT,
                                                       privateKeyData, NULL);
 
-            cx_ecfp_init_private_key(CX_CURVE_256K1, privateKeyData, 32, &cx_privateKey);
+            cx_ecfp_init_private_key(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey);
 
             // Sign
             signatureLength = cx_ecdsa_sign(&cx_privateKey,
@@ -241,15 +241,12 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     }
     END_TRY;
 
-
-
     err_convert_e err = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
     if (err != no_error) {
         // Error while converting so return length 0
         return zxerr_unknown;
     }
-
-    *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s);
+    *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
 
     return zxerr_ok;
 }

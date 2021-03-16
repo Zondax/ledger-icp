@@ -18,7 +18,7 @@ import jest, {expect} from "jest";
 import Zemu from "@zondax/zemu";
 import DfinityApp from "@zondax/ledger-dfinity";
 import * as secp256k1 from "secp256k1";
-var SHA256 = require("crypto-js/sha256");
+var sha256 = require('js-sha256');
 
 const Resolve = require("path").resolve;
 const APP_PATH_S = Resolve("../app/output/app_s.elf");
@@ -170,11 +170,19 @@ describe('Standard', function () {
             const expected_preHash = "0a69632d72657175657374bf5bae8c2b6be8103a070e6d2240c18788c10a94ba68990f8c7e7acecb8b8c34";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            // const pk = Uint8Array.from(Buffer.from(respAddr.publicKey, 'hex'))
-            // const digest = Uint8Array.from(Buffer.from(SHA256( signatureResponse.preSignHash).toString(), 'hex'));
-            // const signature = Uint8Array.from(signatureResponse.signatureRS);
-            // const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk);
-            // expect(signatureOk).toEqual(true);
+            const expected_hash = "084544f8f1852065408e18c5bc595e07c49e44085728833a822b24487eb4e191";
+            let hash = sha256.hex(signatureResponse.preSignHash);
+            expect(hash).toEqual(expected_hash);
+
+            const pk = Uint8Array.from(Buffer.from(respAddr.publicKey.toString(), 'hex'))
+            expect(pk.byteLength).toEqual(65);
+            const digest = Uint8Array.from(Buffer.from(hash, 'hex'));
+            const signature = Uint8Array.from(signatureResponse.signatureRS);
+            //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
+            expect(signature.byteLength).toEqual(64);
+
+            const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk);
+            expect(signatureOk).toEqual(true);
 
         } finally {
             await sim.close();

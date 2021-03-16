@@ -28,7 +28,7 @@ import {
     PAYLOAD_TYPE,
     PKLEN, PREHASHLEN,
     processErrorResponse,
-    serializePath,
+    serializePath, SIGRSLEN,
 } from './common';
 
 export {LedgerError};
@@ -186,6 +186,7 @@ export default class DfinityApp {
 
                 let preSignHash = Buffer.alloc(0);
                 let signatureRS = Buffer.alloc(0);
+                let signatureDER = Buffer.alloc(0);
 
                 if (returnCode === LedgerError.BadKeyHandle ||
                     returnCode === LedgerError.DataIsInvalid ||
@@ -197,18 +198,18 @@ export default class DfinityApp {
 
                 if (returnCode === LedgerError.NoErrors && response.length > 2) {
                     preSignHash = response.slice(0, PREHASHLEN);
-                    signatureRS = response.slice(PREHASHLEN, response.length - 2);
+                    signatureRS = response.slice(PREHASHLEN, PREHASHLEN + SIGRSLEN);
+                    signatureDER = response.slice(PREHASHLEN + SIGRSLEN + 1, response.length - 2);
                     return {
                         preSignHash,
                         signatureRS,
+                        signatureDER,
                         returnCode: returnCode,
                         errorMessage: errorMessage,
                     };
                 }
 
                 return {
-                    preSignHash,
-                    signatureRS,
                     returnCode: returnCode,
                     errorMessage: errorMessage,
                 };
@@ -224,6 +225,7 @@ export default class DfinityApp {
                     errorMessage: response.errorMessage,
                     preSignHash: null as null | Buffer,
                     signatureRS: null as null | Buffer,
+                    signatureDER: null as null | Buffer,
                 };
                 for (let i = 1; i < chunks.length; i += 1) {
                     // eslint-disable-next-line no-await-in-loop
