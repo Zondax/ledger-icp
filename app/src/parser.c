@@ -88,9 +88,9 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "nonce");
-        //MEMCPY(buffer, (uint8_t *)parser_tx_obj.nonce.data, parser_tx_obj.nonce.len);
-        //pageString(outVal, outValLen, (char *)buffer, pageIdx, pageCount);
-        //snprintf(outVal, outValLen, "%s", (char *)parser_tx_obj.nonce.data);
+//        MEMCPY((uint8_t *)buffer, parser_tx_obj.nonce.data, parser_tx_obj.nonce.len);
+//        pageString(outVal, outValLen, (char *)buffer, pageIdx, pageCount);
+//        //snprintf(outVal, outValLen, "%s", (char *)parser_tx_obj.nonce.data);
         return parser_ok;
     }
 
@@ -129,8 +129,8 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 
     if (displayIdx == 6) {
         snprintf(outKey, outKeyLen, "arg (length)");
-        fpuint64_to_str(buffer, sizeof(buffer), *(uint64_t *)&parser_tx_obj.arg.len, 0);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+//        fpuint64_to_str(buffer, sizeof(buffer), *(uint64_t *)&parser_tx_obj.arg.len, 0);
+//        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
 
         return parser_ok;
     }
