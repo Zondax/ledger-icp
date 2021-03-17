@@ -18,7 +18,7 @@
 #include "coin.h"
 #include "zxmacros.h"
 #include "base32.h"
-#include "picohash.h"
+#include "parser_impl.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
@@ -32,6 +32,9 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 
 #define DER_PREFIX_SIZE 23u
 #define DER_INPUT_SIZE  DER_PREFIX_SIZE + SECP256K1_PK_LEN
+
+#define SIGN_PREFIX_SIZE 11u
+#define SIGN_PREHASH_SIZE SIGN_PREFIX_SIZE + CX_SHA256_SIZE
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
@@ -84,15 +87,9 @@ zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
 
     MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
     uint8_t buf[CX_SHA256_SIZE];
-//    cx_sha256_t ctx;
-//    cx_sha224_init(&ctx);
-//    cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
-
-    picohash_ctx_t ctx;
-
-    picohash_init_sha224(&ctx);
-    picohash_update(&ctx, DER, DER_INPUT_SIZE);
-    picohash_final(&ctx, buf);
+    cx_sha256_t ctx;
+    cx_sha224_init(&ctx);
+    cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
 
     buf[DFINITY_ADDR_LEN-1] = 0x02;
     MEMCPY(address, buf, DFINITY_ADDR_LEN);
@@ -104,69 +101,146 @@ typedef struct {
     uint8_t s[32];
     uint8_t v;
 
-    // DER signature max size should be 73
-    // https://bitcoin.stackexchange.com/questions/77191/what-is-the-maximum-size-of-a-der-encoded-ecdsa-signature#77192
+//    // DER signature max size should be 73
+//    // https://bitcoin.stackexchange.com/questions/77191/what-is-the-maximum-size-of-a-der-encoded-ecdsa-signature#77192
     uint8_t der_signature[73];
 
 } __attribute__((packed)) signature_t;
 
+//Ordering by hashes of field names:
+//sender
+//0a367b92cf0b037dfd89960ee832d56f7fc151681bb41e53690e776f5786998a
+//canister_id
+//0a3eb2ba16702a387e6321066dd952db7a31f9b5cc92981e0a92dd56802d3df9
+//ingress_expiry
+//26cec6b6a9248a96ab24305b61b9d27e203af14a580a5b1ff2f67575cab4a868
+//method_name
+//293536232cf9231c86002f4ee293176a0179c002daa9fc24be9bb51acdd642b6
+//request_type
+//769e6f87bdda39c859642b74ce9763cdd37cb1cd672733e8c54efaa33ab78af9
+//nonce
+//78377b525757b494427f89014f97d79928f3938d14eb51e20fb5dec9834eb304
+//arg
+//b25f03dedd69be07f356a06fe35c1b0ddc0de77dcd9066c4be0c6bbde14b23ff
 
-zxerr_t crypto_sign(uint8_t *signature,
+zxerr_t crypto_getDigest(uint8_t *digest){
+    cx_sha256_t ctx;
+    cx_sha256_init(&ctx);
+
+    uint8_t tmpdigest[CX_SHA256_SIZE];
+    MEMZERO(tmpdigest,sizeof(tmpdigest));
+
+    cx_hash_sha256((uint8_t *)"sender", 6, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.sender.data, parser_tx_obj.sender.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"canister_id", 11, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.canister_id.data, parser_tx_obj.canister_id.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"ingress_expiry", 14, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    uint8_t ingressbuf[10];
+    uint16_t enc_size = 0;
+    CHECK_ZXERR(compressLEB128(parser_tx_obj.ingress_expiry, sizeof(ingressbuf), ingressbuf, &enc_size));
+
+    cx_hash_sha256((uint8_t *)ingressbuf, enc_size, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"method_name", 11, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.method_name.data, parser_tx_obj.method_name.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"request_type", 12, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.request_type.data, parser_tx_obj.request_type.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"nonce", 5, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.nonce.data, parser_tx_obj.nonce.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"arg", 3, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.arg.data, parser_tx_obj.arg.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, CX_LAST, tmpdigest, CX_SHA256_SIZE, digest, CX_SHA256_SIZE);
+
+    return zxerr_ok;
+}
+
+zxerr_t crypto_sign(uint8_t *signatureBuffer,
                     uint16_t signatureMaxlen,
                     const uint8_t *message,
                     uint16_t messageLen,
                     uint16_t *sigSize) {
 
-//    uint8_t tmp[BLAKE2B_256_SIZE];
-//    uint8_t message_digest[BLAKE2B_256_SIZE];
-//
-//    blake_hash(message, messageLen, tmp, BLAKE2B_256_SIZE);
-//    blake_hash_cid(tmp, BLAKE2B_256_SIZE, message_digest, BLAKE2B_256_SIZE);
-//
-//    cx_ecfp_private_key_t cx_privateKey;
-//    uint8_t privateKeyData[32];
-//    int signatureLength;
-//    unsigned int info = 0;
-//
-//    signature_t *const signature = (signature_t *) buffer;
-//
-//    BEGIN_TRY
-//    {
-//        TRY
-//        {
-//            // Generate keys
-//            os_perso_derive_node_bip32(CX_CURVE_256K1,
-//                                                      hdPath,
-//                                                      HDPATH_LEN_DEFAULT,
-//                                                      privateKeyData, NULL);
-//
-//            cx_ecfp_init_private_key(CX_CURVE_256K1, privateKeyData, 32, &cx_privateKey);
-//
-//            // Sign
-//            signatureLength = cx_ecdsa_sign(&cx_privateKey,
-//                                            CX_RND_RFC6979 | CX_LAST,
-//                                            CX_SHA256,
-//                                            message_digest,
-//                                            BLAKE2B_256_SIZE,
-//                                            signature->der_signature,
-//                                            sizeof_field(signature_t, der_signature),
-//                                            &info);
-//        }
-//        FINALLY {
-//            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-//            MEMZERO(privateKeyData, 32);
-//        }
-//    }
-//    END_TRY;
-//
-//    err_convert_e err = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
-//    if (err != no_error) {
-//        // Error while converting so return length 0
-//        return 0;
-//    }
-//
-//    // return actual size using value from signatureLength
-//    return sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
+    if (signatureMaxlen < SIGN_PREHASH_SIZE + sizeof(signature_t)){
+        return zxerr_buffer_too_small;
+    }
+
+    uint8_t message_digest[CX_SHA256_SIZE];
+    MEMZERO(message_digest,sizeof(message_digest));
+
+    signatureBuffer[0] = 0x0a;
+    MEMCPY(&signatureBuffer[1], (uint8_t *)"ic-request",SIGN_PREFIX_SIZE - 1);
+
+    CHECK_ZXERR(crypto_getDigest(signatureBuffer + SIGN_PREFIX_SIZE));
+
+    cx_hash_sha256(signatureBuffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
+
+    cx_ecfp_private_key_t cx_privateKey;
+    uint8_t privateKeyData[32];
+    unsigned int info = 0;
+    int signatureLength = 0;
+
+    signature_t *const signature = (signature_t *) (signatureBuffer + SIGN_PREHASH_SIZE);
+
+    BEGIN_TRY
+    {
+        TRY
+        {
+            // Generate keys
+            os_perso_derive_node_bip32(CX_CURVE_SECP256K1,
+                                                      hdPath,
+                                                      HDPATH_LEN_DEFAULT,
+                                                      privateKeyData, NULL);
+
+            cx_ecfp_init_private_key(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey);
+
+            // Sign
+            signatureLength = cx_ecdsa_sign(&cx_privateKey,
+                                            CX_RND_RFC6979 | CX_LAST,
+                                            CX_SHA256,
+                                            message_digest,
+                                            CX_SHA256_SIZE,
+                                            signature->der_signature,
+                                            sizeof_field(signature_t, der_signature),
+                                            &info);
+        }
+        FINALLY {
+            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+            MEMZERO(privateKeyData, 32);
+        }
+    }
+    END_TRY;
+
+    err_convert_e err = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
+    if (err != no_error) {
+        // Error while converting so return length 0
+        return zxerr_unknown;
+    }
+    *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
 
     return zxerr_ok;
 }
@@ -174,6 +248,7 @@ zxerr_t crypto_sign(uint8_t *signature,
 #else
 
 #include <hexutils.h>
+#include "picohash.h"
 
 char *crypto_testPubKey;
 
@@ -240,6 +315,39 @@ zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char
         return zxerr_unknown;
     }
     *outLen = enc_len;
+    return zxerr_ok;
+}
+
+zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen){
+    MEMZERO(s, max);
+    uint16_t offset = 0;
+    for(uint16_t index = 0; index < textLen; index += 5){
+        if (offset + 6 > max){
+            return zxerr_unknown;
+        }
+        uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
+        MEMCPY(s + offset, text + index, maxLen);
+        offset += 5;
+        if(index + 5 < textLen) {
+            s[offset] = '-';
+            offset += 1;
+        }
+    }
+    return zxerr_ok;
+}
+
+zxerr_t compressLEB128 (const uint64_t input, uint16_t maxSize, uint8_t *output, uint16_t *outLen){
+    uint64_t num = input;
+    size_t bytes = 0;
+    while (num){
+        if (bytes >= maxSize) {
+            return zxerr_buffer_too_small;
+        }
+        output[bytes] = num & 0x7fU;
+        if (num >>= 7) output[bytes] |= 0x80U;
+        ++bytes;
+    }
+    *outLen = bytes;
     return zxerr_ok;
 }
 

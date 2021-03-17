@@ -30,6 +30,7 @@ __Z_INLINE void app_sign() {
     const uint16_t messageLength = tx_get_buffer_length();
     uint16_t replyLen = 0;
 
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, message, messageLength, &replyLen);
 
     if (err != zxerr_ok || replyLen == 0) {

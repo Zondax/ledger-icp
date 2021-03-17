@@ -26,9 +26,9 @@ import {
     LedgerError,
     P1_VALUES,
     PAYLOAD_TYPE,
-    PKLEN,
+    PKLEN, PREHASHLEN,
     processErrorResponse,
-    serializePath,
+    serializePath, SIGRSLEN,
 } from './common';
 
 export {LedgerError};
@@ -184,9 +184,8 @@ export default class DfinityApp {
                 let errorMessage = errorCodeToString(returnCode);
                 let errorDescription = ""
 
-                let postSignHash = Buffer.alloc(0);
-                let signatureCompact = Buffer.alloc(0);
-                let signatureVRS = Buffer.alloc(0);
+                let preSignHash = Buffer.alloc(0);
+                let signatureRS = Buffer.alloc(0);
                 let signatureDER = Buffer.alloc(0);
 
                 if (returnCode === LedgerError.BadKeyHandle ||
@@ -198,16 +197,12 @@ export default class DfinityApp {
                 }
 
                 if (returnCode === LedgerError.NoErrors && response.length > 2) {
-                    postSignHash = response.slice(0, 32);
-                    signatureCompact = response.slice(32, 97);
-                    signatureVRS = Buffer.alloc(65);
-                    signatureVRS[0] = signatureCompact[signatureCompact.length - 1];
-                    Buffer.from(signatureCompact).copy(signatureVRS, 1, 0, 64);
-                    signatureDER = response.slice(97, response.length - 2);
+                    preSignHash = response.slice(0, PREHASHLEN);
+                    signatureRS = response.slice(PREHASHLEN, PREHASHLEN + SIGRSLEN);
+                    signatureDER = response.slice(PREHASHLEN + SIGRSLEN + 1, response.length - 2);
                     return {
-                        postSignHash,
-                        signatureCompact,
-                        signatureVRS,
+                        preSignHash,
+                        signatureRS,
                         signatureDER,
                         returnCode: returnCode,
                         errorMessage: errorMessage,
@@ -228,8 +223,8 @@ export default class DfinityApp {
                 let result = {
                     returnCode: response.returnCode,
                     errorMessage: response.errorMessage,
-                    postSignHash: null as null | Buffer,
-                    signatureCompact: null as null | Buffer,
+                    preSignHash: null as null | Buffer,
+                    signatureRS: null as null | Buffer,
                     signatureDER: null as null | Buffer,
                 };
                 for (let i = 1; i < chunks.length; i += 1) {

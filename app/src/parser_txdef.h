@@ -26,21 +26,48 @@ extern "C" {
 #include <stddef.h>
 
 typedef struct {
-    int8_t *ptr;
-    int32_t len;
-} parser_u8Array_t;
+    uint8_t data[29];
+    size_t len;
+} sender_t;
 
 typedef struct {
-    parser_u8Array_t request_type;
-    parser_u8Array_t nonce;
+    uint8_t data[10];
+    size_t len;
+} canister_t;
+
+typedef struct {
+    char data[10];
+    size_t len;
+} request_t;
+
+typedef struct {
+    char data[20];
+    size_t len;
+} method_t;
+
+typedef struct {
+    uint8_t data[32];
+    size_t len;
+} nonce_t;
+
+typedef struct {
+    uint8_t data[100];
+    size_t len;
+} arg_t;
+
+
+typedef struct {
+    request_t request_type;
+    nonce_t nonce;
 
     uint64_t ingress_expiry;
 
-    int8_t *ptr_canister_id;            // 10 bytes? TODO: Confirm
-    int8_t *ptr_sender_id;              // 29 bytes? TODO: Confirm
+    canister_t canister_id;
+    sender_t sender;
 
-    parser_u8Array_t method_name;
-    parser_u8Array_t arg;
+    method_t method_name;
+    arg_t arg;
+
 } parser_tx_t;
 
 #ifdef __cplusplus

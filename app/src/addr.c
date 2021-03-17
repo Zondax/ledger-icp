@@ -31,24 +31,6 @@ zxerr_t addr_getNumItems(uint8_t *num_items) {
     return zxerr_ok;
 }
 
-zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen){
-    MEMZERO(s, max);
-    uint16_t offset = 0;
-    for(uint16_t index = 0; index < textLen; index += 5){
-        if (offset + 6 > max){
-            return zxerr_unknown;
-        }
-        uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
-        MEMCPY(s + offset, text + index, maxLen);
-        offset += 5;
-        if(index + 5 < textLen) {
-            s[offset] = '-';
-            offset += 1;
-        }
-    }
-    return zxerr_ok;
-}
-
 zxerr_t addr_getItem(int8_t displayIdx,
                      char *outKey, uint16_t outKeyLen,
                      char *outVal, uint16_t outValLen,

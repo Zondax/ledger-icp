@@ -135,6 +135,61 @@ parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
+    cbor_value_advance(&it);
+
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
+    CborValue contents;
+    CborValue value;
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
+
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &value));
+
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&value), parser_unexpected_type);
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&value, &contents));
+
+    size_t mapLen = 0;
+    CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
+
+    PARSER_ASSERT_OR_ERROR(mapLen == 7, parser_context_unexpected_size);
+
+
+    MEMZERO(&v->canister_id.data, sizeof(v->canister_id.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "canister_id", &contents));
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->canister_id.data, &v->canister_id.len, NULL));
+
+    MEMZERO(&v->sender.data, sizeof(v->sender.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
+
+    MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
+
+    MEMZERO(&v->nonce.data, sizeof(v->nonce.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "nonce", &contents));
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->nonce.data, &v->nonce.len, NULL));
+
+    MEMZERO(&v->method_name.data, sizeof(v->method_name.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "method_name", &contents));
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->method_name.data, &v->method_name.len, NULL));
+
+    MEMZERO(&v->arg.data, sizeof(v->arg.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "arg", &contents));
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->arg.data, &v->arg.len, NULL));
+
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
+    v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);
+
+    //"request_type": "call",
+    // "nonce": h'E063EE93160F37EE2216B6A2A28119A4',
+    // "ingress_expiry": 1615414264298485000, => uint64_t!!
+    // "sender": h'45717A3A0E68FCEEF546AC77BAC551754B48DBB1FCCFA180673030B602',
+    // "canister_id": h'000000000000000A0101',
+    // "method_name": "send",
+    // "arg": h'4449444C026C04FBCA0171C6FCB60201BA89E5C2047CD8A38CA80D016C01B1DFB793047C01001B72776C67742D69696161612D61616161612D61616161612D636169880100E807'},
+
+    return parser_ok;
+
 
 //    // It is an array
 //    PARSER_ASSERT_OR_ERROR(cbor_value_is_array(&it), parser_unexpected_type)
@@ -208,7 +263,7 @@ parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
 //    // End of buffer does not match end of parsed data
 //    PARSER_ASSERT_OR_ERROR(it.ptr == c->buffer + c->bufferLen, parser_cbor_unexpected_EOF)
 
-    return parser_no_data;
+    return parser_ok;
 }
 
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
@@ -219,7 +274,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
-    uint8_t itemCount = 9;
+    uint8_t itemCount = 7;
 
     return itemCount;
 }
