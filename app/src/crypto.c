@@ -18,7 +18,6 @@
 #include "coin.h"
 #include "zxmacros.h"
 #include "base32.h"
-#include "picohash.h"
 #include "parser_impl.h"
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
@@ -128,9 +127,6 @@ zxerr_t crypto_getDigest(uint8_t *digest){
     cx_sha256_t ctx;
     cx_sha256_init(&ctx);
 
-//    uint8_t digest[CX_SHA256_SIZE];
-//    MEMZERO(digest,sizeof(digest));
-
     uint8_t tmpdigest[CX_SHA256_SIZE];
     MEMZERO(tmpdigest,sizeof(tmpdigest));
 
@@ -188,6 +184,10 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
                     const uint8_t *message,
                     uint16_t messageLen,
                     uint16_t *sigSize) {
+
+    if (signatureMaxlen < SIGN_PREHASH_SIZE + sizeof(signature_t)){
+        return zxerr_buffer_too_small;
+    }
 
     uint8_t message_digest[CX_SHA256_SIZE];
     MEMZERO(message_digest,sizeof(message_digest));
@@ -248,6 +248,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
 #else
 
 #include <hexutils.h>
+#include "picohash.h"
 
 char *crypto_testPubKey;
 
