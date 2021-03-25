@@ -30,9 +30,17 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
 #endif
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
-    CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
-    parser_error_t err =  _read(ctx, &parser_tx_obj);
-    return err;
+    CHECK_PARSER_ERR(parser_init(ctx, data + 1, dataLen - 1))
+    parser_tx_obj.txtype = data[0];
+    switch (parser_tx_obj.txtype){
+        case 0x00: {
+            parser_error_t err =  _readTokenTransfer(ctx, &parser_tx_obj);
+            return err;
+        }
+        default: {
+            return parser_unexepected_error;
+        }
+    }
 }
 
 parser_error_t parser_validate(const parser_context_t *ctx) {
@@ -58,7 +66,7 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;
 }
 
-parser_error_t parser_getItem(const parser_context_t *ctx,
+parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
                               uint8_t displayIdx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
@@ -175,4 +183,19 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 //    }
 
     return parser_ok;
+}
+
+parser_error_t parser_getItem(const parser_context_t *ctx,
+                              uint8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen,
+                              char *outVal, uint16_t outValLen,
+                              uint8_t pageIdx, uint8_t *pageCount){
+    switch (parser_tx_obj.txtype){
+        case 0x00: {
+            return parser_getItemTokenTransfer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+        default : {
+            return parser_unexepected_error;
+        }
+    }
 }

@@ -131,7 +131,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
     }
 }
 
-parser_error_t _read(const parser_context_t *c, parser_tx_t *v) {
+parser_error_t _readTokenTransfer(const parser_context_t *c, parser_tx_t *v) {
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
@@ -274,7 +274,16 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
-    uint8_t itemCount = 7;
+    uint8_t itemCount = 0;
+    switch (v->txtype){
+        case 0x00 : {
+            itemCount = 7;
+            break;
+        }
+        default : {
+            break;
+        }
+    }
 
     return itemCount;
 }

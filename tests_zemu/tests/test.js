@@ -40,6 +40,10 @@ let models = [
 
 jest.setTimeout(60000)
 
+const SIGN_TYPE = {
+    TOKEN_TRANSFER: 0x00,
+};
+
 describe('Standard', function () {
     test.each(models)('can start and stop container (%s)', async function (_, {model, prefix, path}) {
         const sim = new Zemu(path);
@@ -154,7 +158,7 @@ describe('Standard', function () {
             let txBlobStr = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550e063ee93160f37ee2216b6a2a28119a46e696e67726573735f6578706972791b166b1ab6ec9c35086673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b6026b63616e69737465725f69644a000000000000000a01016b6d6574686f645f6e616d656473656e646361726758474449444c026c04fbca0171c6fcb60201ba89e5c2047cd8a38ca80d016c01b1dfb793047c01001b72776c67742d69696161612d61616161612d61616161612d636169880100e8076d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f736967584084dc1f2e7338eac3eae5967ddf6074a8f6c2d98e598f481a807569c9219b94d4175bed43e8d25bde1b411c4f50b9fe23e1c521ec53f3c2f80fa4621b27292208";
             const txBlob = Buffer.from(txBlobStr, "hex");
 
-            const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob);
+            const respRequest = app.sign("m/44'/223'/0'/0/0", SIGN_TYPE.TOKENTRANSFER, txBlob);
 
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());

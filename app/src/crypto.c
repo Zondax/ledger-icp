@@ -123,7 +123,7 @@ typedef struct {
 //arg
 //b25f03dedd69be07f356a06fe35c1b0ddc0de77dcd9066c4be0c6bbde14b23ff
 
-zxerr_t crypto_getDigest(uint8_t *digest){
+zxerr_t crypto_getDigestTokenTransfer(uint8_t *digest){
     cx_sha256_t ctx;
     cx_sha256_init(&ctx);
 
@@ -195,7 +195,15 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     signatureBuffer[0] = 0x0a;
     MEMCPY(&signatureBuffer[1], (uint8_t *)"ic-request",SIGN_PREFIX_SIZE - 1);
 
-    CHECK_ZXERR(crypto_getDigest(signatureBuffer + SIGN_PREFIX_SIZE));
+    switch(parser_tx_obj.txtype){
+        case 0x00: {
+            CHECK_ZXERR(crypto_getDigestTokenTransfer(signatureBuffer + SIGN_PREFIX_SIZE));
+            break;
+        }
+        default : {
+            return zxerr_unknown;
+        }
+    }
 
     cx_hash_sha256(signatureBuffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
 

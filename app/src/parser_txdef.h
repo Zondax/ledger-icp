@@ -68,6 +68,8 @@ typedef struct {
     method_t method_name;
     arg_t arg;
 
+    uint8_t txtype;
+
 } parser_tx_t;
 
 #ifdef __cplusplus
