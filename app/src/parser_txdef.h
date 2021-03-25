@@ -55,6 +55,16 @@ typedef struct {
     size_t len;
 } arg_t;
 
+typedef struct {
+    uint8_t data[32];
+    size_t len;
+} path_t;
+
+typedef struct {
+    path_t paths[5];
+    size_t arrayLen;
+} pathArray_t;
+
 
 typedef struct {
     request_t request_type;
@@ -67,6 +77,8 @@ typedef struct {
 
     method_t method_name;
     arg_t arg;
+
+    pathArray_t paths;
 
     uint8_t txtype;
 

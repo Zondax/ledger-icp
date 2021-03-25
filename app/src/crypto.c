@@ -122,6 +122,8 @@ typedef struct {
 //78377b525757b494427f89014f97d79928f3938d14eb51e20fb5dec9834eb304
 //arg
 //b25f03dedd69be07f356a06fe35c1b0ddc0de77dcd9066c4be0c6bbde14b23ff
+//paths
+//504dbd7ea99e812ff1ef64c6a162e32890b928a3df1f9e3450aadb7037889be5
 
 zxerr_t crypto_getDigestTokenTransfer(uint8_t *digest){
     cx_sha256_t ctx;
