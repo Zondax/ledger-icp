@@ -151,7 +151,7 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     size_t mapLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
 
-    PARSER_ASSERT_OR_ERROR(mapLen == 7, parser_context_unexpected_size);
+    PARSER_ASSERT_OR_ERROR(mapLen == 4, parser_context_unexpected_size);
 
     MEMZERO(&v->sender.data, sizeof(v->sender.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
@@ -163,6 +163,29 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
 
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
     v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);
+
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "paths", &contents));
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&contents), parser_unexpected_type);
+
+    CborValue subvalue;
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&contents, &subvalue))
+
+    size_t arrayLen = 0;
+    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue,&arrayLen));
+
+    if (arrayLen <= 0 || arrayLen > 5){
+        return parser_value_out_of_range;
+    }
+    v->paths.arrayLen = arrayLen;
+
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&subvalue, &contents));
+
+    uint8_t index = 0;
+    do {
+        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
+        index++;
+    }while(index < arrayLen);
 
     return parser_ok;
 }
@@ -231,6 +254,10 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype){
         case 0x00 : {
             itemCount = 7;
+            break;
+        }
+        case 0x01 :{
+            itemCount = 3 + v->paths.arrayLen;
             break;
         }
         default : {
