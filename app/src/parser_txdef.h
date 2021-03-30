@@ -25,43 +25,56 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
+#define NUM_MAP_TYPE0 7
+#define NUM_MAP_TYPE1 4
+
+
+#define SENDER_MAX_LEN 29
+#define CANISTER_MAX_LEN 10
+#define REQUEST_MAX_LEN 10
+#define METHOD_MAX_LEN 20
+#define NONCE_MAX_LEN 32
+#define ARG_MAX_LEN 100
+#define PATH_MAX_LEN 32
+#define PATH_MAX_ARRAY 5
+
 typedef struct {
-    uint8_t data[29];
+    uint8_t data[SENDER_MAX_LEN];
     size_t len;
 } sender_t;
 
 typedef struct {
-    uint8_t data[10];
+    uint8_t data[CANISTER_MAX_LEN];
     size_t len;
 } canister_t;
 
 typedef struct {
-    char data[10];
+    char data[REQUEST_MAX_LEN];
     size_t len;
 } request_t;
 
 typedef struct {
-    char data[20];
+    char data[METHOD_MAX_LEN];
     size_t len;
 } method_t;
 
 typedef struct {
-    uint8_t data[32];
+    uint8_t data[NONCE_MAX_LEN];
     size_t len;
 } nonce_t;
 
 typedef struct {
-    uint8_t data[100];
+    uint8_t data[ARG_MAX_LEN];
     size_t len;
 } arg_t;
 
 typedef struct {
-    uint8_t data[32];
+    uint8_t data[PATH_MAX_LEN];
     size_t len;
 } path_t;
 
 typedef struct {
-    path_t paths[5];
+    path_t paths[PATH_MAX_ARRAY];
     size_t arrayLen;
 } pathArray_t;
 

@@ -151,7 +151,7 @@ zxerr_t crypto_getDigestStateTransactionRead(uint8_t *digest){
     cx_hash_sha256((uint8_t *)"paths", 5, tmpdigest, CX_SHA256_SIZE);
     cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
 
-    uint8_t arrayBuffer[5 * CX_SHA256_SIZE];
+    uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
     for (uint8_t index = 0; index < parser_tx_obj.paths.arrayLen ; index++){
             cx_hash_sha256((uint8_t *)parser_tx_obj.paths.paths[index].data, parser_tx_obj.paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
     }

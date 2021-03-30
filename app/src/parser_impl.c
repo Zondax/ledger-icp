@@ -151,14 +151,18 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     size_t mapLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
 
-    PARSER_ASSERT_OR_ERROR(mapLen == 4, parser_context_unexpected_size);
+    PARSER_ASSERT_OR_ERROR(mapLen == NUM_MAP_TYPE1, parser_context_unexpected_size);
     uint16_t stringLen = 0;
     MEMZERO(&v->sender.data, sizeof(v->sender.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= SENDER_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
 
     MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= REQUEST_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
 
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
@@ -173,7 +177,7 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     size_t arrayLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue,&arrayLen));
 
-    if (arrayLen <= 0 || arrayLen > 5){
+    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY){
         return parser_value_out_of_range;
     }
     v->paths.arrayLen = arrayLen;
@@ -182,8 +186,8 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
 
     uint8_t index = 0;
     do {
-        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen));
-        PARSER_ASSERT_OR_ERROR(stringLen <= 32, parser_context_unexpected_size);
+        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+        PARSER_ASSERT_OR_ERROR(stringLen <= PATH_MAX_LEN, parser_context_unexpected_size)
         CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
         index++;
@@ -211,31 +215,43 @@ parser_error_t _readTokenTransfer(const parser_context_t *c, parser_tx_t *v) {
     size_t mapLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
 
-    PARSER_ASSERT_OR_ERROR(mapLen == 7, parser_context_unexpected_size);
+    PARSER_ASSERT_OR_ERROR(mapLen == NUM_MAP_TYPE0, parser_context_unexpected_size);
 
-
+    uint16_t stringLen = 0;
     MEMZERO(&v->canister_id.data, sizeof(v->canister_id.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "canister_id", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= CANISTER_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->canister_id.data, &v->canister_id.len, NULL));
 
     MEMZERO(&v->sender.data, sizeof(v->sender.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= SENDER_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
 
     MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= REQUEST_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
 
     MEMZERO(&v->nonce.data, sizeof(v->nonce.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "nonce", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= NONCE_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->nonce.data, &v->nonce.len, NULL));
 
     MEMZERO(&v->method_name.data, sizeof(v->method_name.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "method_name", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= METHOD_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->method_name.data, &v->method_name.len, NULL));
 
     MEMZERO(&v->arg.data, sizeof(v->arg.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "arg", &contents));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+    PARSER_ASSERT_OR_ERROR(stringLen <= ARG_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->arg.data, &v->arg.len, NULL));
 
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
