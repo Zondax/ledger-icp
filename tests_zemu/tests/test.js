@@ -225,10 +225,10 @@ describe('Standard', function () {
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
 
-            const expected_preHash = "0a69632d72657175657374a55e16ab563079ec47d53d637dfa56c4dde052ffdef580ce82b74a4546c44589";
+            const expected_preHash = "0a69632d72657175657374e9db309ae391d86190768bb57d6d5ab1e29e876a4f8dbc94bd71c198bc4d341b";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            const expected_hash = "e22f69ac4738699cbbe57705615ac83c589dbe78e8802f8d563731803a9fbf86";
+            const expected_hash = "fecdc50874f60b65411228d2fca72fde56b847571800a0f0e4245ef4af13d84d";
             let hash = sha256.hex(signatureResponse.preSignHash);
             expect(hash).toEqual(expected_hash);
 
