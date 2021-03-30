@@ -152,7 +152,7 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
 
     PARSER_ASSERT_OR_ERROR(mapLen == 4, parser_context_unexpected_size);
-
+    uint16_t stringLen = 0;
     MEMZERO(&v->sender.data, sizeof(v->sender.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
@@ -182,6 +182,8 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
 
     uint8_t index = 0;
     do {
+        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen));
+        PARSER_ASSERT_OR_ERROR(stringLen <= 32, parser_context_unexpected_size);
         CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
         index++;
