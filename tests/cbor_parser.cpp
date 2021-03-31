@@ -94,38 +94,6 @@ namespace {
 
         _cbor_value_copy_string(&contents, buffer, &stringLen, NULL);
         EXPECT_EQ(stringLen,32);
-
-
-//        err = cbor_value_get_int64(&contents, &val);
-//        EXPECT_EQ(err, CborNoError);
-//        EXPECT_EQ(val, 1);
-//        err = cbor_value_advance_fixed(&contents);
-//        EXPECT_EQ(err, CborNoError);
-
-//
-//        EXPECT_EQ(type, CborArrayType);
-//
-//        err = cbor_value_enter_container(&it, &contents);
-
-//        err = cbor_value_enter_container(&contents, &subvalue);
-//        EXPECT_EQ(err, CborNoError);
-//        CborValue array;
-//        type = cbor_value_get_type(&contents);
-//        EXPECT_EQ(type, CborArrayType);
-//
-//        err = cbor_value_get_map_length(&contents, &mapLen);
-//        EXPECT_EQ(err, CborNoError);
-//
-//        EXPECT_EQ(mapLen, 6);
-
-//        size_t val = 0;
-//        char buffer[100];
-//
-//        err =  cbor_value_get_string_length(&contents, &val);
-//        EXPECT_EQ(err, CborNoError);
-//        EXPECT_EQ(val, 71);
-//        err = _cbor_value_copy_string(&contents, buffer, &val, nullptr);
-//        EXPECT_EQ(err, CborNoError);
     }
 
     TEST(CBORParserTest, TokenTransfer) {
