@@ -122,8 +122,53 @@ typedef struct {
 //78377b525757b494427f89014f97d79928f3938d14eb51e20fb5dec9834eb304
 //arg
 //b25f03dedd69be07f356a06fe35c1b0ddc0de77dcd9066c4be0c6bbde14b23ff
+//paths
+//504dbd7ea99e812ff1ef64c6a162e32890b928a3df1f9e3450aadb7037889be5
 
-zxerr_t crypto_getDigest(uint8_t *digest){
+zxerr_t crypto_getDigestStateTransactionRead(uint8_t *digest){
+    cx_sha256_t ctx;
+    cx_sha256_init(&ctx);
+
+    uint8_t tmpdigest[CX_SHA256_SIZE];
+    MEMZERO(tmpdigest,sizeof(tmpdigest));
+
+    cx_hash_sha256((uint8_t *)"sender", 6, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.sender.data, parser_tx_obj.sender.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"ingress_expiry", 14, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    uint8_t ingressbuf[10];
+    uint16_t enc_size = 0;
+    CHECK_ZXERR(compressLEB128(parser_tx_obj.ingress_expiry, sizeof(ingressbuf), ingressbuf, &enc_size));
+
+    cx_hash_sha256((uint8_t *)ingressbuf, enc_size, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"paths", 5, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
+    for (uint8_t index = 0; index < parser_tx_obj.paths.arrayLen ; index++){
+            cx_hash_sha256((uint8_t *)parser_tx_obj.paths.paths[index].data, parser_tx_obj.paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
+    }
+    cx_hash_sha256(arrayBuffer, parser_tx_obj.paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
+    cx_hash_sha256(tmpdigest, CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)"request_type", 12, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+
+    cx_hash_sha256((uint8_t *)parser_tx_obj.request_type.data, parser_tx_obj.request_type.len, tmpdigest, CX_SHA256_SIZE);
+    cx_hash(&ctx.header, CX_LAST, tmpdigest, CX_SHA256_SIZE, digest, CX_SHA256_SIZE);
+    CHECK_APP_CANARY()
+    return zxerr_ok;
+}
+
+zxerr_t crypto_getDigestTokenTransfer(uint8_t *digest){
     cx_sha256_t ctx;
     cx_sha256_init(&ctx);
 
@@ -195,8 +240,20 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     signatureBuffer[0] = 0x0a;
     MEMCPY(&signatureBuffer[1], (uint8_t *)"ic-request",SIGN_PREFIX_SIZE - 1);
 
-    CHECK_ZXERR(crypto_getDigest(signatureBuffer + SIGN_PREFIX_SIZE));
-
+    switch(parser_tx_obj.txtype){
+        case 0x00: {
+            CHECK_ZXERR(crypto_getDigestTokenTransfer(signatureBuffer + SIGN_PREFIX_SIZE));
+            break;
+        }
+        case 0x01 :{
+            CHECK_ZXERR(crypto_getDigestStateTransactionRead(signatureBuffer + SIGN_PREFIX_SIZE));
+            break;
+        }
+        default : {
+            return zxerr_unknown;
+        }
+    }
+    CHECK_APP_CANARY()
     cx_hash_sha256(signatureBuffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
 
     cx_ecfp_private_key_t cx_privateKey;

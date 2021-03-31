@@ -26,7 +26,77 @@
     // Basic CBOR test cases generated with http://cbor.me/
 
 namespace {
-    TEST(CBORParserTest, Df2) {
+    TEST(CBORParserTest, TransactionStateRead) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "d9d9f7a367636f6e74656e74a46c726571756573745f747970656a726561645f73746174656e696e67726573735f6578706972791b166f4469eeb674586673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b60265706174687381824e726571756573745f737461747573582062af1451c511bc05819de49a5e271ad77d4cd9624da4a3bdf2e45d0ae35e72826d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f73696758401a48a2202c5d968a693b310c71207577c7c9f43d6596f4e828e47587170e60faf4171982e3fcad7109ccada265ffd3d2132b0d8a26e8013478b0ded5861d1d03";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        CborParser parser;
+        CborValue it;
+        CborError err;
+
+        CborTag tag, tag2;
+
+        err = cbor_parser_init(inBuffer, inBufferLen, 0, &parser, &it);
+        EXPECT_EQ(err, CborNoError);
+
+        CborType type = cbor_value_get_type(&it);
+        EXPECT_EQ(type, CborTagType);
+        err = cbor_value_advance(&it);         // easier than advance_fixed, performance hit is small
+        EXPECT_EQ(err, CborNoError);
+
+        type = cbor_value_get_type(&it);
+        EXPECT_EQ(type, CborMapType);
+
+        EXPECT_TRUE(cbor_value_is_container(&it));
+        size_t mapLen;
+        err = cbor_value_get_map_length(&it, &mapLen);
+        EXPECT_EQ(err, CborNoError);
+        EXPECT_EQ(mapLen, 3);
+
+        /// Enter container and iterate along items
+        CborValue contents;
+        CborValue value;
+        CborValue subvalue;
+        err = cbor_value_enter_container(&it, &contents);
+        EXPECT_EQ(err, CborNoError);
+
+        err = cbor_value_map_find_value(&it, "content", &value);
+        EXPECT_EQ(err, CborNoError);
+
+        EXPECT_TRUE(cbor_value_is_container(&value));
+        err = cbor_value_enter_container(&value, &contents);
+        err = cbor_value_get_map_length(&value, &mapLen);
+
+        EXPECT_EQ(mapLen, 4);
+
+        err = cbor_value_map_find_value(&value, "paths", &contents);
+        type = cbor_value_get_type(&contents);
+        EXPECT_EQ(type, CborArrayType);
+        err = cbor_value_enter_container(&contents, &subvalue);
+
+        cbor_value_get_array_length(&subvalue,&mapLen);
+        EXPECT_EQ(mapLen, 2);
+
+        err = cbor_value_enter_container(&subvalue, &contents);
+        EXPECT_EQ(err, CborNoError);
+
+        // item = 1
+        type = cbor_value_get_type(&contents);
+        EXPECT_EQ(type, CborByteStringType);
+        uint8_t buffer[1000];
+        size_t stringLen;
+        _cbor_value_copy_string(&contents, buffer, &stringLen, NULL);
+
+        EXPECT_EQ(stringLen,14);
+        err = cbor_value_advance(&contents);
+        EXPECT_EQ(err, CborNoError);
+
+        _cbor_value_copy_string(&contents, buffer, &stringLen, NULL);
+        EXPECT_EQ(stringLen,32);
+    }
+
+    TEST(CBORParserTest, TokenTransfer) {
         uint8_t inBuffer[1000];
         const char *tmp = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550e063ee93160f37ee2216b6a2a28119a46e696e67726573735f6578706972791b166b1ab6ec9c35086673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b6026b63616e69737465725f69644a000000000000000a01016b6d6574686f645f6e616d656473656e646361726758474449444c026c04fbca0171c6fcb60201ba89e5c2047cd8a38ca80d016c01b1dfb793047c01001b72776c67742d69696161612d61616161612d61616161612d636169880100e8076d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f736967584084dc1f2e7338eac3eae5967ddf6074a8f6c2d98e598f481a807569c9219b94d4175bed43e8d25bde1b411c4f50b9fe23e1c521ec53f3c2f80fa4621b27292208";
         auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
@@ -83,7 +153,6 @@ namespace {
         EXPECT_EQ(val, 71);
         err = _cbor_value_copy_string(&contents, buffer, &val, nullptr);
         EXPECT_EQ(err, CborNoError);
-
     }
 
     TEST(CBORParserTest, CBORDfinityTest){

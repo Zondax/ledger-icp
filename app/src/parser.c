@@ -30,9 +30,19 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
 #endif
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
-    CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
-    parser_error_t err =  _read(ctx, &parser_tx_obj);
-    return err;
+    CHECK_PARSER_ERR(parser_init(ctx, data + 1, dataLen - 1))
+    parser_tx_obj.txtype = data[0];
+    switch (parser_tx_obj.txtype){
+        case 0x00: {
+            return _readTokenTransfer(ctx, &parser_tx_obj);
+        }
+        case 0x01: {
+            return _readTransactionStateRead(ctx, &parser_tx_obj);
+        }
+        default: {
+            return parser_unexepected_error;
+        }
+    }
 }
 
 parser_error_t parser_validate(const parser_context_t *ctx) {
@@ -58,7 +68,62 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;
 }
 
-parser_error_t parser_getItem(const parser_context_t *ctx,
+parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
+                                           uint8_t displayIdx,
+                                           char *outKey, uint16_t outKeyLen,
+                                           char *outVal, uint16_t outValLen,
+                                           uint8_t pageIdx, uint8_t *pageCount) {
+    MEMZERO(outKey, outKeyLen);
+    MEMZERO(outVal, outValLen);
+    snprintf(outKey, outKeyLen, "?");
+    snprintf(outVal, outValLen, "?");
+    *pageCount = 1;
+
+    uint8_t numItems = 0;
+    CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
+    CHECK_APP_CANARY()
+
+    unsigned char buffer[100];
+    MEMZERO(buffer, sizeof(buffer));
+
+    if (displayIdx < 0 || displayIdx >= numItems) {
+        return parser_no_data;
+    }
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "request_type");
+        snprintf(outVal, outValLen, "%s", parser_tx_obj.request_type.data);
+        return parser_ok;
+    }
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "ingress_expiry");
+        fpuint64_to_str(buffer, sizeof(buffer), parser_tx_obj.ingress_expiry, 0);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "sender");
+        uint16_t outLen = 0;
+        uint8_t tmpbuffer[100];
+        crypto_addrToTextual((uint8_t *)parser_tx_obj.sender.data, parser_tx_obj.sender.len, tmpbuffer, &outLen);
+        addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    displayIdx -= 3;
+    if (displayIdx < 0 || displayIdx >= parser_tx_obj.paths.arrayLen) {
+        return parser_no_data;
+    }
+    snprintf(outKey, outKeyLen, "Path %d", displayIdx + 1);
+    //pageString(outVal, outValLen, (char *)parser_tx_obj.paths.paths[displayIdx].data, pageIdx, pageCount);
+    return parser_ok;
+
+
+}
+
+    parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
                               uint8_t displayIdx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
@@ -134,45 +199,24 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 
         return parser_ok;
     }
-//
-//    if (displayIdx == 7) {
-//        snprintf(outKey, outKeyLen, "Method");
-//        *pageCount = 1;
-//        switch(parser_tx_obj.method) {
-//            case method0:
-//                snprintf(outVal, outValLen, "Transfer");
-//                return parser_ok;
-//            case method1:
-//                snprintf(outVal, outValLen, "Method1");
-//                return parser_ok;
-//            case method2:
-//                snprintf(outVal, outValLen, "Method2");
-//                return parser_ok;
-//            case method3:
-//                snprintf(outVal, outValLen, "Method3");
-//                return parser_ok;
-//            case method4:
-//                snprintf(outVal, outValLen, "Method4");
-//                return parser_ok;
-//            case method5:
-//                snprintf(outVal, outValLen, "Method5");
-//                return parser_ok;
-//            case method6:
-//                snprintf(outVal, outValLen, "Method6");
-//                return parser_ok;
-//            case method7:
-//                snprintf(outVal, outValLen, "Method7");
-//                return parser_ok;
-//        }
-//        return parser_unexpected_method;
-//    }
-//
-//    if (displayIdx == 8) {
-//        *pageCount = 1;
-//        snprintf(outKey, outKeyLen, "Params");
-//        snprintf(outVal, outValLen, "Not Available");
-//        return parser_ok;
-//    }
-
     return parser_ok;
+}
+
+parser_error_t parser_getItem(const parser_context_t *ctx,
+                              uint8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen,
+                              char *outVal, uint16_t outValLen,
+                              uint8_t pageIdx, uint8_t *pageCount){
+    switch (parser_tx_obj.txtype){
+        case 0x00: {
+            return parser_getItemTokenTransfer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+        case 0x01: {
+            return parser_getItemTransactionStateRead(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+
+        }
+        default : {
+            return parser_unexepected_error;
+        }
+    }
 }

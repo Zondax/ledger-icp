@@ -217,8 +217,11 @@ export default class DfinityApp {
             }, processErrorResponse);
     }
 
-    async sign(path: string, message: Buffer) {
-        return this.signGetChunks(path, message).then(chunks => {
+    async sign(path: string, txtype: number, message: Buffer) {
+        let msg_to_send = Buffer.alloc(1 + message.byteLength);
+        msg_to_send[0] = txtype;
+        message.copy(msg_to_send,1);
+        return this.signGetChunks(path, msg_to_send).then(chunks => {
             return this.signSendChunk(1, chunks.length, chunks[0]).then(async response => {
                 let result = {
                     returnCode: response.returnCode,
