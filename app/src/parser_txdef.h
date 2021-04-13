@@ -35,7 +35,7 @@ extern "C" {
 #define METHOD_MAX_LEN 20
 #define NONCE_MAX_LEN 32
 #define ARG_MAX_LEN 100
-#define PATH_MAX_LEN 32
+#define PATH_MAX_LEN 40
 #define PATH_MAX_ARRAY 5
 
 typedef struct {
