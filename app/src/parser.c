@@ -115,7 +115,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         uint16_t outLen = 0;
         uint8_t tmpbuffer[100];
         crypto_addrToTextual((uint8_t *)parser_tx_obj.sender.data, parser_tx_obj.sender.len, tmpbuffer, &outLen);
-        addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
+        addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
@@ -179,7 +179,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         uint16_t outLen = 0;
         uint8_t tmpbuffer[100];
         crypto_addrToTextual((uint8_t *)parser_tx_obj.sender.data, parser_tx_obj.sender.len, tmpbuffer, &outLen);
-        addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
+        addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
@@ -189,7 +189,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         uint16_t outLen = 0;
         uint8_t tmpbuffer[100];
         crypto_addrToTextual((uint8_t *)parser_tx_obj.canister_id.data, parser_tx_obj.canister_id.len, tmpbuffer, &outLen);
-        addr_to_textual(buffer, sizeof(buffer), tmpbuffer, outLen);
+        addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
