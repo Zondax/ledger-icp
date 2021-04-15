@@ -7,3 +7,6 @@
 [submodule "deps/picohash"]
 	path = deps/picohash
 	url = https://github.com/kazuho/picohash
+[submodule "deps/nanopb"]
+	path = deps/nanopb
+	url = https://github.com/nanopb/nanopb
