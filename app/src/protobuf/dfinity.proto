@@ -1,8 +1,10 @@
+syntax = "proto3";
+
 message Memo {
-   required uint64 memo = 1;
+   uint64 memo = 1;
 }
 message ICPTs {
-   required uint64 doms = 1;
+   uint64 doms = 1;
 }
 message Payment {
    oneof payment_type {
@@ -10,19 +12,19 @@ message Payment {
    }
 }
 message Subaccount {
-   required bytes sub_account = 1;    // always 32 bytes
+   bytes sub_account = 1;    // always 32 bytes
 }
 message AccountIdentifier {
-   required bytes hash = 1;    // always 32 bytes, starts with CRC32
+   bytes hash = 1;    // always 32 bytes, starts with CRC32
 }
 message BlockHeight {
-   required uint64 height = 1;
+   uint64 height = 1;
 }
 message SendRequest {
-   required Memo memo = 1;     // required
-   required Payment payment = 2;     // required
-   required ICPTs max_fee = 3;     // required
-   optional Subaccount from_subaccount = 4;   // optional
-   required AccountIdentifier to = 5;   // required
-   optional BlockHeight created_at = 6;   // optional
+   Memo memo = 1;     // required
+   Payment payment = 2;     // required
+   ICPTs max_fee = 3;     // required
+   Subaccount from_subaccount = 4;   // optional
+   AccountIdentifier to = 5;   // required
+   BlockHeight created_at = 6;   // optional
 }

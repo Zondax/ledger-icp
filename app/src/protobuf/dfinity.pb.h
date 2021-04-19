@@ -3,7 +3,7 @@
 
 #ifndef PB_APP_SRC_PROTOBUF_DFINITY_PB_H_INCLUDED
 #define PB_APP_SRC_PROTOBUF_DFINITY_PB_H_INCLUDED
-#include "pb.h"
+#include <pb.h>
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
@@ -38,11 +38,15 @@ typedef struct _Payment {
 } Payment;
 
 typedef struct _SendRequest { 
+    bool has_memo;
     Memo memo; /* required */
+    bool has_payment;
     Payment payment; /* required */
+    bool has_max_fee;
     ICPTs max_fee; /* required */
     bool has_from_subaccount;
     Subaccount from_subaccount; /* optional */
+    bool has_to;
     AccountIdentifier to; /* required */
     bool has_created_at;
     BlockHeight created_at; /* optional */
@@ -60,14 +64,14 @@ extern "C" {
 #define Subaccount_init_default                  {{{NULL}, NULL}}
 #define AccountIdentifier_init_default           {{{NULL}, NULL}}
 #define BlockHeight_init_default                 {0}
-#define SendRequest_init_default                 {Memo_init_default, Payment_init_default, ICPTs_init_default, false, Subaccount_init_default, AccountIdentifier_init_default, false, BlockHeight_init_default}
+#define SendRequest_init_default                 {false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default}
 #define Memo_init_zero                           {0}
 #define ICPTs_init_zero                          {0}
 #define Payment_init_zero                        {0, {ICPTs_init_zero}}
 #define Subaccount_init_zero                     {{{NULL}, NULL}}
 #define AccountIdentifier_init_zero              {{{NULL}, NULL}}
 #define BlockHeight_init_zero                    {0}
-#define SendRequest_init_zero                    {Memo_init_zero, Payment_init_zero, ICPTs_init_zero, false, Subaccount_init_zero, AccountIdentifier_init_zero, false, BlockHeight_init_zero}
+#define SendRequest_init_zero                    {false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define AccountIdentifier_hash_tag               1
@@ -85,12 +89,12 @@ extern "C" {
 
 /* Struct field encoding specification for nanopb */
 #define Memo_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, UINT64,   memo,              1)
+X(a, STATIC,   SINGULAR, UINT64,   memo,              1)
 #define Memo_CALLBACK NULL
 #define Memo_DEFAULT NULL
 
 #define ICPTs_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, UINT64,   doms,              1)
+X(a, STATIC,   SINGULAR, UINT64,   doms,              1)
 #define ICPTs_CALLBACK NULL
 #define ICPTs_DEFAULT NULL
 
@@ -101,26 +105,26 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payment_type,reciever_gets,payment_type.reci
 #define Payment_payment_type_reciever_gets_MSGTYPE ICPTs
 
 #define Subaccount_FIELDLIST(X, a) \
-X(a, CALLBACK, REQUIRED, BYTES,    sub_account,       1)
+X(a, CALLBACK, SINGULAR, BYTES,    sub_account,       1)
 #define Subaccount_CALLBACK pb_default_field_callback
 #define Subaccount_DEFAULT NULL
 
 #define AccountIdentifier_FIELDLIST(X, a) \
-X(a, CALLBACK, REQUIRED, BYTES,    hash,              1)
+X(a, CALLBACK, SINGULAR, BYTES,    hash,              1)
 #define AccountIdentifier_CALLBACK pb_default_field_callback
 #define AccountIdentifier_DEFAULT NULL
 
 #define BlockHeight_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, UINT64,   height,            1)
+X(a, STATIC,   SINGULAR, UINT64,   height,            1)
 #define BlockHeight_CALLBACK NULL
 #define BlockHeight_DEFAULT NULL
 
 #define SendRequest_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, MESSAGE,  memo,              1) \
-X(a, STATIC,   REQUIRED, MESSAGE,  payment,           2) \
-X(a, STATIC,   REQUIRED, MESSAGE,  max_fee,           3) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  memo,              1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  payment,           2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  max_fee,           3) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  from_subaccount,   4) \
-X(a, STATIC,   REQUIRED, MESSAGE,  to,                5) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  to,                5) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  created_at,        6)
 #define SendRequest_CALLBACK NULL
 #define SendRequest_DEFAULT NULL
