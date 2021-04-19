@@ -19,7 +19,7 @@
 #include "parser_txdef.h"
 #include "cbor.h"
 #include "app_mode.h"
-#include "protobuf/pb_decode.h"
+#include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
 
 parser_tx_t parser_tx_obj;
@@ -198,26 +198,26 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     return parser_ok;
 }
 
-parser_error_t read_protobuf(uint8_t *buffer, size_t bufferLen){
-    bool status;
-
-    /* Allocate space for the decoded message. */
-    SendRequest request = SendRequest_init_zero;
-
-    /* Create a stream that reads from the buffer. */
-    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
-
-    /* Now we are ready to decode the message. */
-    status = pb_decode(&stream, SendRequest_fields, &request);
-
-    /* Check for errors... */
-    if (!status)
-    {
-        return parser_unexepected_error;
-    }
-
-    return parser_ok;
-}
+//parser_error_t read_protobuf(uint8_t *buffer, size_t bufferLen){
+//    bool status;
+//
+//    /* Allocate space for the decoded message. */
+//    SendRequest request = SendRequest_init_zero;
+//
+//    /* Create a stream that reads from the buffer. */
+//    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
+//
+//    /* Now we are ready to decode the message. */
+//    status = pb_decode(&stream, SendRequest_fields, &request);
+//
+//    /* Check for errors... */
+//    if (!status)
+//    {
+//        return parser_unexepected_error;
+//    }
+//
+//    return parser_ok;
+//}
 
 parser_error_t _readTokenTransfer(const parser_context_t *c, parser_tx_t *v) {
     CborValue it;
@@ -277,7 +277,7 @@ parser_error_t _readTokenTransfer(const parser_context_t *c, parser_tx_t *v) {
     PARSER_ASSERT_OR_ERROR(stringLen <= ARG_MAX_LEN, parser_context_unexpected_size)
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->arg.data, &v->arg.len, NULL));
 
-    CHECK_PARSER_ERR(read_protobuf(v->arg.data, v->arg.len));
+    //CHECK_PARSER_ERR(read_protobuf(v->arg.data, v->arg.len));
 
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
     v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);

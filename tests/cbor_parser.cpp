@@ -22,10 +22,31 @@
 #include <openssl/sha.h>
 #include <algorithm>
 
+#include "pb_decode.h"
+#include "protobuf/dfinity.pb.h"
 
     // Basic CBOR test cases generated with http://cbor.me/
 
 namespace {
+    TEST(NANOPBTEST, test) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "0A0012050A0308E8071A0308890122220A2001010101010101010101010101010101010101010101010101010101010101012A220A2035548EC29E9D85305850E87A2D2642FE7214FF4BB36334070DEAFC3345C3B127";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        SendRequest request = SendRequest_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, 86);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, SendRequest_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+    }
+
     TEST(CBORParserTest, TransactionStateRead) {
         uint8_t inBuffer[1000];
         const char *tmp = "d9d9f7a367636f6e74656e74a46c726571756573745f747970656a726561645f73746174656e696e67726573735f6578706972791b166f4469eeb674586673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b60265706174687381824e726571756573745f737461747573582062af1451c511bc05819de49a5e271ad77d4cd9624da4a3bdf2e45d0ae35e72826d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f73696758401a48a2202c5d968a693b310c71207577c7c9f43d6596f4e828e47587170e60faf4171982e3fcad7109ccada265ffd3d2132b0d8a26e8013478b0ded5861d1d03";
