@@ -11,12 +11,8 @@
 
 /* Struct definitions */
 typedef struct _AccountIdentifier { 
-    pb_callback_t hash; /* always 32 bytes, starts with CRC32 */
+    pb_byte_t hash[32]; /* always 32 bytes, starts with CRC32 */
 } AccountIdentifier;
-
-typedef struct _Subaccount { 
-    pb_callback_t sub_account; /* always 32 bytes */
-} Subaccount;
 
 typedef struct _BlockHeight { 
     uint64_t height; 
@@ -29,6 +25,10 @@ typedef struct _ICPTs {
 typedef struct _Memo { 
     uint64_t memo; 
 } Memo;
+
+typedef struct _Subaccount { 
+    pb_byte_t sub_account[32]; /* always 32 bytes */
+} Subaccount;
 
 typedef struct _Payment { 
     pb_size_t which_payment_type;
@@ -61,24 +61,24 @@ extern "C" {
 #define Memo_init_default                        {0}
 #define ICPTs_init_default                       {0}
 #define Payment_init_default                     {0, {ICPTs_init_default}}
-#define Subaccount_init_default                  {{{NULL}, NULL}}
-#define AccountIdentifier_init_default           {{{NULL}, NULL}}
+#define Subaccount_init_default                  {{0}}
+#define AccountIdentifier_init_default           {{0}}
 #define BlockHeight_init_default                 {0}
 #define SendRequest_init_default                 {false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default}
 #define Memo_init_zero                           {0}
 #define ICPTs_init_zero                          {0}
 #define Payment_init_zero                        {0, {ICPTs_init_zero}}
-#define Subaccount_init_zero                     {{{NULL}, NULL}}
-#define AccountIdentifier_init_zero              {{{NULL}, NULL}}
+#define Subaccount_init_zero                     {{0}}
+#define AccountIdentifier_init_zero              {{0}}
 #define BlockHeight_init_zero                    {0}
 #define SendRequest_init_zero                    {false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define AccountIdentifier_hash_tag               1
-#define Subaccount_sub_account_tag               1
 #define BlockHeight_height_tag                   1
 #define ICPTs_doms_tag                           1
 #define Memo_memo_tag                            1
+#define Subaccount_sub_account_tag               1
 #define Payment_reciever_gets_tag                1
 #define SendRequest_memo_tag                     1
 #define SendRequest_payment_tag                  2
@@ -105,13 +105,13 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payment_type,reciever_gets,payment_type.reci
 #define Payment_payment_type_reciever_gets_MSGTYPE ICPTs
 
 #define Subaccount_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    sub_account,       1)
-#define Subaccount_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, sub_account,       1)
+#define Subaccount_CALLBACK NULL
 #define Subaccount_DEFAULT NULL
 
 #define AccountIdentifier_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    hash,              1)
-#define AccountIdentifier_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, hash,              1)
+#define AccountIdentifier_CALLBACK NULL
 #define AccountIdentifier_DEFAULT NULL
 
 #define BlockHeight_FIELDLIST(X, a) \
@@ -153,13 +153,13 @@ extern const pb_msgdesc_t SendRequest_msg;
 #define SendRequest_fields &SendRequest_msg
 
 /* Maximum encoded size of messages (where known) */
-/* Subaccount_size depends on runtime parameters */
-/* AccountIdentifier_size depends on runtime parameters */
-/* SendRequest_size depends on runtime parameters */
+#define AccountIdentifier_size                   34
 #define BlockHeight_size                         11
 #define ICPTs_size                               11
 #define Memo_size                                11
 #define Payment_size                             13
+#define SendRequest_size                         126
+#define Subaccount_size                          34
 
 #ifdef __cplusplus
 } /* extern "C" */

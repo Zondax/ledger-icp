@@ -201,15 +201,24 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
 parser_error_t read_protobuf(uint8_t *buffer, size_t bufferLen){
     bool status;
 
+    zemu_log_stack("protobuf");
+    CHECK_APP_CANARY()
     /* Allocate space for the decoded message. */
     SendRequest request = SendRequest_init_zero;
+    CHECK_APP_CANARY()
+    zemu_log_stack("protobuf before stream");
 
     /* Create a stream that reads from the buffer. */
     pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
+    CHECK_APP_CANARY()
+    zemu_log_stack("protobuf before decode");
 
     /* Now we are ready to decode the message. */
     status = pb_decode(&stream, SendRequest_fields, &request);
 
+    zemu_log_stack("protobuf after decode");
+
+    CHECK_APP_CANARY()
     /* Check for errors... */
     if (!status)
     {

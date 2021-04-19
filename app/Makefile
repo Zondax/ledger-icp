@@ -187,7 +187,6 @@ APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/include
 APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/app/common
 APP_SOURCE_PATH += $(MY_DIR)/../deps/picohash/
-APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 SDK_SOURCE_PATH += lib_stusb lib_stusb_impl
 SDK_SOURCE_PATH  += lib_ux
@@ -196,7 +195,8 @@ SDK_SOURCE_PATH  += lib_ux
 CFLAGS += -I$(MY_DIR)/../deps/tinycbor/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/tinycbor-ledger
 
-CFLAGS += -I$(MY_DIR)/../deps/nanopb_tiny/
+CFLAGS += -I$(MY_DIR)/../deps/nanopb/
+APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 .PHONY: rust
 rust:
