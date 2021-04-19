@@ -88,6 +88,31 @@ jobs:
             make
       - run: /home/zondax/go/bin/ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete $(/home/zondax/project/app/pkg/installer_s.sh version) /home/zondax/project/app/pkg/installer_s.sh
 
+  publish_npm_package:
+    docker:
+      - image: zondax/circleci:latest
+    steps:
+      - checkout
+      - run: git submodule update --init --recursive
+      - run:
+          name: Build
+          command: |
+            cd ./js
+            yarn install
+      - run:
+          name: Prepare authentication config
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > /home/circleci/project/.npmrc
+     -  run:
+          name: Prepara tag
+          command: echo $CIRCLE_TAG | cut -c5 > version.cfg
+      - run:
+          name: Update tag
+          command: |
+            newVersion=`cat version.cfg`
+            npm --no-git-tag-version version "$newVersion"
+      - run:
+          name: Publish package
+          command: npm publish
 
 workflows:
   version: 2
@@ -106,3 +131,16 @@ workflows:
             branches:
               only:
                 - master
+              tags:
+                only: /^(v[0-9]+(\.[0-9]+){0,2})$/
+      - publish_npm_package:
+          requires:
+            - build
+            - build_ledger
+            - test_zemu
+          filters:
+            branches:
+              only:
+                - master
+              tags:
+                only: /^(npm_v[0-9]+(\.[0-9]+){0,2})$/
