@@ -60,7 +60,12 @@
     "> 1%",
     "last 2 versions"
   ],
+  "files": [
+    "dist/*",
+    "LICENSE",
+    "yarn.lock"
+  ],
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com/"
   }
 }
