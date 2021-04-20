@@ -91,6 +91,8 @@ jobs:
   publish_npm_package:
     docker:
       - image: zondax/circleci:latest
+    environment:
+      BASH_ENV: "/opt/circleci/.nvm/nvm.sh"
     steps:
       - checkout
       - run: git submodule update --init --recursive
