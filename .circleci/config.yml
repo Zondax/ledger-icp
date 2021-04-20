@@ -90,65 +90,76 @@ jobs:
 
   publish_npm_package:
     docker:
-      - image: zondax/circleci:latest
-    environment:
-      BASH_ENV: "/opt/circleci/.nvm/nvm.sh"
+      - image: circleci/node:lts
     steps:
       - checkout
-      - run: git submodule update --init --recursive
       - run:
-          name: Install node + yarn
+          name: Build package
           command: |
-            nvm install 14.4.0
-            nvm use 14.4.0
-            npm install -g yarn
-      - run:
-          name: Build
-          command: |
-            cd ./js
+            cd js 
             yarn install
+            yarn build
       - run:
           name: Prepare authentication config
-          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > /home/circleci/project/.npmrc
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > /home/circleci/.npmrc
       - run:
-          name: Prepara tag
-          command: echo $CIRCLE_TAG | cut -c5 > version.cfg
-      - run:
-          name: Update tag
+          name: Set package version
           command: |
-            newVersion=`cat version.cfg`
-            npm --no-git-tag-version version "$newVersion"
+            cd js
+            export NPM_VERSION=$(echo $CIRCLE_TAG | cut -c5-)
+            echo Publishing as "$NPM_VERSION"
+            npm --no-git-tag-version version "$NPM_VERSION"
       - run:
           name: Publish package
-          command: npm publish
+          command: cd js && npm publish
+
+no-tags: &no-tags
+  filters:
+    tags:
+      ignore: /.*/
+
+only-release-tags: &only-release-tags
+  filters:
+    tags:
+      only: /^v[0-9]+(\.[0-9]+)*/
+    branches:
+      ignore: /.*/
+
+only-npm-tags: &only-npm-tags
+  filters:
+    tags:
+      only: /^npm_v[0-9]+(\.[0-9]+)*/
+    branches:
+      ignore: /.*/
 
 workflows:
   version: 2
 
   default:
     jobs:
-      - build
-      - build_ledger
-      - test_zemu
+      - build:
+          <<: *no-tags
+      - build_ledger:
+          <<: *no-tags
+      - test_zemu:
+          <<: *no-tags
+
+  release:
+    jobs:
+      - build:
+          <<: *only-release-tags
+      - build_ledger:
+          <<: *only-release-tags
+      - test_zemu:
+          <<: *only-release-tags
       - build_package:
+          <<: *only-release-tags
           requires:
             - build
             - build_ledger
             - test_zemu
-          filters:
-            branches:
-              only:
-                - master
-            tags:
-              only: /^(v[0-9]+(\\.[0-9]+){0,2})$/
+
+  release_npm:
+    jobs:
       - publish_npm_package:
-          requires:
-            - build
-            - build_ledger
-            - test_zemu
-          filters:
-            branches:
-              only:
-                - master
-            tags:
-              only: /^(npm_v[0-9]+(\\.[0-9]+){0,2})$/
+          <<: *only-npm-tags

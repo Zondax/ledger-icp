@@ -86,3 +86,5 @@ cmake-build-fuzz/
 !\deps/tinycbor-ledger
 \fuzz-*.log
 \fuzz/corpora/*
+
+node_modules/.yarn-integrity
