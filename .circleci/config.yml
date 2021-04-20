@@ -132,7 +132,7 @@ workflows:
               only:
                 - master
               tags:
-                only: /^(v[0-9]+(\.[0-9]+){0,2})$/
+                only: /^(v[0-9]+(\\.[0-9]+){0,2})$/
       - publish_npm_package:
           requires:
             - build
@@ -143,4 +143,4 @@ workflows:
               only:
                 - master
               tags:
-                only: /^(npm_v[0-9]+(\.[0-9]+){0,2})$/
+                only: /^(npm_v[0-9]+(\\.[0-9]+){0,2})$/
