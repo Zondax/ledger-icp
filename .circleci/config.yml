@@ -102,7 +102,7 @@ jobs:
       - run:
           name: Prepare authentication config
           command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > /home/circleci/project/.npmrc
-     -  run:
+      - run:
           name: Prepara tag
           command: echo $CIRCLE_TAG | cut -c5 > version.cfg
       - run:
