@@ -1,18 +1,18 @@
 [
-    {
-        "index": 1,
-        "name": "DummyTransaction",
-        "blob": "000000000000000000",
-        "valid" : false,
-        "testnet": false,
-        "output": [
-            "0 | Key1 : Value1",
-            "1 | Key2 : Value2"
-        ],
-        "output_expert": [
-            "0 | Key1 : Value1",
-            "1 | Key2 : Value2",
-            "2 | Key3 : Value3"
-        ]
-    }
+  {
+    "index": 1,
+    "name": "DummyTransaction",
+    "blob": "000000000000000000",
+    "valid": false,
+    "testnet": false,
+    "output": [
+      "0 | Key1 : Value1",
+      "1 | Key2 : Value2"
+    ],
+    "output_expert": [
+      "0 | Key1 : Value1",
+      "1 | Key2 : Value2",
+      "2 | Key3 : Value3"
+    ]
+  }
 ]

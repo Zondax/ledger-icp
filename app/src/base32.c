@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-int base32_decode(const uint8_t *encoded, unsigned int encodedSize,  uint8_t *result, unsigned int bufSize) {
+int base32_decode(const uint8_t *encoded, unsigned int encodedSize, uint8_t *result, unsigned int bufSize) {
     if (encoded == NULL) {
         return 0;
     }

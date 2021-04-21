@@ -35,7 +35,12 @@ if(ENABLE_FUZZING)
     SET(ENABLE_SANITIZERS ON CACHE BOOL "Sanitizer automatically enabled" FORCE)
     SET(CMAKE_BUILD_TYPE Debug)
 
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,bugprone-*,cert-*,clang-analyzer-*,-cert-err58-cpp,misc-*)
+    if (DEFINED ENV{FUZZ_LOGGING})
+        add_definitions(-DFUZZING_LOGGING)
+        message(FATAL_ERROR "Fuzz logging enabled")
+    endif()
+
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,bugprone-*,cert-*,clang-analyzer-*,-cert-err58-cpp,misc-*,-bugprone-suspicious-include)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         # require at least clang 3.2
@@ -71,8 +76,6 @@ add_subdirectory(cmake/gtest)
 
 string(APPEND CMAKE_CXX_FLAGS " -fsanitize=address -fno-omit-frame-pointer")
 string(APPEND CMAKE_LINKER_FLAGS " -fsanitize=address -fno-omit-frame-pointer")
-
-add_definitions(-DAPP_STANDARD)
 
 ##############################################################
 ##############################################################

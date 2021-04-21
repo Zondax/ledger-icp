@@ -131,131 +131,188 @@ const char *parser_getErrorDescription(parser_error_t err) {
     }
 }
 
+// envelope (TAG 55799)
+//    content [map]
+//        request_type [text]
+//        read_state / query [blob]
+//        nonce [blob]
+//        ingress_expiry [nat]
+//        sender [principal]
+//        canister_id [principal]
+//        method_name [text]
+//        arg [blob]
+//    sender_pubkey [blob]
+//    sender_sig [blob]
 
-parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t *v) {
-    CborValue it;
-    INIT_CBOR_PARSER(c, it)
-    PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
-    cbor_value_advance(&it);
+#define READ_INT64(MAP, FIELDNAME, V_OUTPUT) {                                             \
+    CborValue it;                                                                          \
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                    \
+    (V_OUTPUT) = _cbor_value_decode_int64_internal(&it);                                     \
+}
 
-    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
-    CborValue contents;
-    CborValue value;
-    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
+#define READ_STRING(MAP, FIELDNAME, V_OUTPUT) {                                             \
+    size_t stringLen = 0;                                                                   \
+    CborValue it;                                                                           \
+    MEMZERO(&(V_OUTPUT).data, sizeof((V_OUTPUT).data));                                     \
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen));                      \
+    PARSER_ASSERT_OR_ERROR(stringLen < sizeof((V_OUTPUT).data), parser_context_unexpected_size)   \
+    (V_OUTPUT).len = stringLen; \
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
+}
 
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &value));
+parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
+    CborValue content_it;
 
-    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&value), parser_unexpected_type);
-    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&value, &contents));
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(content_map), parser_unexpected_type)
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(content_map, &content_it))
 
-    size_t mapLen = 0;
-    CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
+    // Check request type
+    READ_STRING(content_map, "request_type", v->request_type)
 
-    PARSER_ASSERT_OR_ERROR(mapLen == NUM_MAP_TYPE1, parser_context_unexpected_size);
-    size_t stringLen = 0;
-    MEMZERO(&v->sender.data, sizeof(v->sender.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= SENDER_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
+    if (strcmp(v->request_type.data, PIC("call")) == 0) {
+        // Check Size ?
+        // TODO:
 
-    MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= REQUEST_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
+        // READ CALL
+        READ_STRING(content_map, "sender", v->sender)
+        READ_STRING(content_map, "canister_id", v->canister_id)
+        READ_STRING(content_map, "nonce", v->nonce)
+        READ_STRING(content_map, "method_name", v->method_name)
+        READ_STRING(content_map, "arg", v->arg)
+        READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
 
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
-    v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);
+    } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
+        READ_STRING(content_map, "sender", v->sender)
+        READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
+        // FIXME: Complete paths
 
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "paths", &contents));
-    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&contents), parser_unexpected_type);
-
-    CborValue subvalue;
-    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&contents, &subvalue))
-
-    size_t arrayLen = 0;
-    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue,&arrayLen));
-
-    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY){
-        return parser_value_out_of_range;
+        return parser_unexpected_value;
+    } else if (strcmp(v->request_type.data, PIC("query")) == 0) {
+        return parser_unexpected_value;
+    } else {
+        return parser_unexpected_value;
     }
-    v->paths.arrayLen = arrayLen;
 
-    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&subvalue, &contents));
+    // Skip fields until the end
+    while (!cbor_value_at_end(&content_it)) {
+        cbor_value_advance(&content_it);
+    }
 
-    uint8_t index = 0;
-    do {
-        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-        PARSER_ASSERT_OR_ERROR(stringLen <= PATH_MAX_LEN, parser_context_unexpected_size)
-        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
-        CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
-        index++;
-    }while(index < arrayLen);
+    // Exit envelope
+    CHECK_CBOR_MAP_ERR(cbor_value_leave_container(content_map, &content_it))
 
     return parser_ok;
 }
 
-parser_error_t _readTokenTransfer(const parser_context_t *c, parser_tx_t *v) {
+parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
+
+    // Verify tag
+    CHECK_CBOR_TYPE(cbor_value_get_type(&it), CborTagType)
+    CborTag tag;
+    CHECK_CBOR_MAP_ERR(cbor_value_get_tag(&it, &tag))
+    if (tag != 55799) {
+        return parser_unexpected_value;
+    }
     cbor_value_advance(&it);
 
-    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
-    CborValue contents;
-    CborValue value;
-    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
+    {
+        // Enter envelope
+        PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
+        PARSER_ASSERT_OR_ERROR(cbor_value_is_map(&it), parser_unexpected_type)
 
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &value));
+        // check envelope size
+        size_t mapLen = 0;
+        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&it, &mapLen))
+        if (mapLen != 3) {
+            return parser_unexpected_value;
+        }
+        CborValue envelope;
+        CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &envelope))
 
-    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&value), parser_unexpected_type);
-    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&value, &contents));
+        {
+            // Enter content
+            CborValue content_item;
+            CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &content_item))
+            PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&content_item), parser_unexpected_type)
+            CHECK_PARSER_ERR(readContent(&content_item, v))
+        }
 
-    size_t mapLen = 0;
-    CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
+        // Skip fields until the end
+        while (!cbor_value_at_end(&envelope)) {
+            cbor_value_advance(&envelope);
+        }
 
-    PARSER_ASSERT_OR_ERROR(mapLen == NUM_MAP_TYPE0, parser_context_unexpected_size);
+        // Exit envelope
+        CHECK_CBOR_MAP_ERR(cbor_value_leave_container(&it, &envelope))
+        // End of buffer does not match end of parsed data
+        PARSER_ASSERT_OR_ERROR(it.ptr == c->buffer + c->bufferLen, parser_cbor_unexpected_EOF)
+    }
 
-    size_t stringLen = 0;
-    MEMZERO(&v->canister_id.data, sizeof(v->canister_id.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "canister_id", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= CANISTER_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->canister_id.data, &v->canister_id.len, NULL));
+    return parser_ok;
+}
 
-    MEMZERO(&v->sender.data, sizeof(v->sender.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= SENDER_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
-
-    MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= REQUEST_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
-
-    MEMZERO(&v->nonce.data, sizeof(v->nonce.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "nonce", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= NONCE_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->nonce.data, &v->nonce.len, NULL));
-
-    MEMZERO(&v->method_name.data, sizeof(v->method_name.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "method_name", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= METHOD_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->method_name.data, &v->method_name.len, NULL));
-
-    MEMZERO(&v->arg.data, sizeof(v->arg.data));
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "arg", &contents));
-    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-    PARSER_ASSERT_OR_ERROR(stringLen <= ARG_MAX_LEN, parser_context_unexpected_size)
-    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->arg.data, &v->arg.len, NULL));
-
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
-    v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);
+parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t *v) {
+//
+//    CborValue contents;
+//    CborValue value;
+//    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
+//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
+//
+//    PARSER_ASSERT_OR_ERROR(cbor_value_is_map(&contents), parser_unexpected_type)
+//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &value));
+//
+//    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&value), parser_unexpected_type);
+//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&value, &contents));
+//
+//    size_t mapLen = 0;
+//    CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
+//
+//    PARSER_ASSERT_OR_ERROR(mapLen == NUM_MAP_TYPE1, parser_context_unexpected_size);
+//    size_t stringLen = 0;
+//    MEMZERO(&v->sender.data, sizeof(v->sender.data));
+//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
+//    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+//    PARSER_ASSERT_OR_ERROR(stringLen <= SENDER_MAX_LEN, parser_context_unexpected_size)
+//    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
+//
+//    MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
+//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
+//    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+//    PARSER_ASSERT_OR_ERROR(stringLen <= REQUEST_MAX_LEN, parser_context_unexpected_size)
+//    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
+//
+//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
+//    v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);
+//
+//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "paths", &contents));
+//    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&contents), parser_unexpected_type);
+//
+//    CborValue subvalue;
+//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&contents, &subvalue))
+//
+//    size_t arrayLen = 0;
+//    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue, &arrayLen));
+//
+//    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
+//        return parser_value_out_of_range;
+//    }
+//    v->paths.arrayLen = arrayLen;
+//
+//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&subvalue, &contents));
+//
+//    uint8_t index = 0;
+//    do {
+//        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
+//        PARSER_ASSERT_OR_ERROR(stringLen <= PATH_MAX_LEN, parser_context_unexpected_size)
+//        CHECK_CBOR_MAP_ERR(
+//                _cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
+//        CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
+//        index++;
+//    } while (index < arrayLen);
 
     return parser_ok;
 }
@@ -269,12 +326,12 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     uint8_t itemCount = 0;
-    switch (v->txtype){
+    switch (v->txtype) {
         case 0x00 : {
             itemCount = 7;
             break;
         }
-        case 0x01 :{
+        case 0x01 : {
             itemCount = 3 + v->paths.arrayLen;
             break;
         }

@@ -39,42 +39,42 @@ extern "C" {
 #define PATH_MAX_ARRAY 5
 
 typedef struct {
-    uint8_t data[SENDER_MAX_LEN];
+    uint8_t data[SENDER_MAX_LEN + 1];
     size_t len;
 } sender_t;
 
 typedef struct {
-    uint8_t data[CANISTER_MAX_LEN];
+    uint8_t data[CANISTER_MAX_LEN + 1];
     size_t len;
 } canister_t;
 
 typedef struct {
-    char data[REQUEST_MAX_LEN];
+    char data[REQUEST_MAX_LEN + 1];
     size_t len;
 } request_t;
 
 typedef struct {
-    char data[METHOD_MAX_LEN];
+    char data[METHOD_MAX_LEN + 1];
     size_t len;
 } method_t;
 
 typedef struct {
-    uint8_t data[NONCE_MAX_LEN];
+    uint8_t data[NONCE_MAX_LEN + 1];
     size_t len;
 } nonce_t;
 
 typedef struct {
-    uint8_t data[ARG_MAX_LEN];
+    uint8_t data[ARG_MAX_LEN + 1];
     size_t len;
 } arg_t;
 
 typedef struct {
-    uint8_t data[PATH_MAX_LEN];
+    uint8_t data[PATH_MAX_LEN + 1];
     size_t len;
 } path_t;
 
 typedef struct {
-    path_t paths[PATH_MAX_ARRAY];
+    path_t paths[PATH_MAX_ARRAY + 1];
     size_t arrayLen;
 } pathArray_t;
 
