@@ -229,9 +229,6 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
                     const uint8_t *message,
                     uint16_t messageLen,
                     uint16_t *sigSize) {
-    MEMZERO(signatureBuffer, signatureMaxlen);
-    *sigSize = 108;
-    return zxerr_ok;
     if (signatureMaxlen < SIGN_PREHASH_SIZE + sizeof(signature_t)){
         return zxerr_buffer_too_small;
     }

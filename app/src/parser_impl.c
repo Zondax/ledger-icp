@@ -157,7 +157,6 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CborValue it;                                                                           \
     MEMZERO(&(V_OUTPUT).data, sizeof((V_OUTPUT).data));                                     \
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
-    CHECK_CBOR_TYPE(cbor_value_get_type(&it), CborByteStringType)                                  \
     CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen));                      \
     PARSER_ASSERT_OR_ERROR(stringLen < sizeof((V_OUTPUT).data), parser_context_unexpected_size)   \
     (V_OUTPUT).len = stringLen; \
@@ -197,7 +196,6 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 
     // Check request type
     READ_STRING(content_map, "request_type", v->request_type)
-
     if (strcmp(v->request_type.data, PIC("call")) == 0) {
         // Check Size ?
         // TODO:
@@ -209,7 +207,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "method_name", v->method_name)
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
         READ_STRING(content_map, "arg", v->arg)
-        CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
+        //CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
 
     } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
         READ_STRING(content_map, "sender", v->sender)
@@ -222,7 +220,6 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     } else {
         return parser_unexpected_value;
     }
-    return parser_ok;
     // Skip fields until the end
     while (!cbor_value_at_end(&content_it)) {
         cbor_value_advance(&content_it);
