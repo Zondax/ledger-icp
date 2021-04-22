@@ -131,7 +131,8 @@ extern "C" {
 #define PB_PROGMEM_READU32(x)  pgm_read_dword(&x)
 #else
 #define PB_PROGMEM
-#define PB_PROGMEM_READU32(x)  (x)
+#define PB_PROGMEM_READU32(x, y)  *((uint32_t *)PIC(x)+(y))
+#define PB_PROGMEM_READTYPE(TYPE, VALUE, OFFSET)  *((TYPE *)PIC(VALUE)+(OFFSET))
 #endif
 #endif
 

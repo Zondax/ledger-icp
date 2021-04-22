@@ -13,6 +13,7 @@
 #define checkreturn __attribute__((warn_unused_result))
 #endif
 
+#include <zxmacros.h>
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_common.h"
@@ -854,10 +855,13 @@ static bool pb_field_set_to_default(pb_field_iter_t *field) {
         }
 
         if (init_data) {
-            if (PB_LTYPE_IS_SUBMSG(field->type) &&
-                (field->submsg_desc->default_value != NULL ||
-                 field->submsg_desc->field_callback != NULL ||
-                 field->submsg_desc->submsg_info[0] != NULL)) {
+            const bool isSubmsg = PB_LTYPE_IS_SUBMSG(field->type);
+            const pb_msgdesc_t *tmp = (const pb_msgdesc_t *) PIC(field->submsg_desc);
+            const bool validDefaultValue = tmp != NULL && tmp->default_value != NULL;
+            const bool validFieldCallback = tmp != NULL && tmp->field_callback != NULL;
+            const bool validSubmsgInfo = tmp != NULL && tmp->submsg_info != NULL;
+
+            if (isSubmsg && (validDefaultValue || validFieldCallback || validSubmsgInfo)) {
                 /* Initialize submessage to defaults.
                  * Only needed if it has default values
                  * or callback/submessage fields. */
@@ -893,8 +897,12 @@ static bool pb_message_set_to_defaults(pb_field_iter_t *iter) {
     pb_wire_type_t wire_type = PB_WT_VARINT;
     bool eof;
 
-    if (iter->descriptor->default_value) {
-        defstream = pb_istream_from_buffer(iter->descriptor->default_value, (size_t) -1);
+    const pb_msgdesc_t *descriptor = (const pb_msgdesc_t *) PIC(iter->descriptor);
+
+    if (descriptor->default_value) {
+        defstream = pb_istream_from_buffer(PB_PROGMEM_READTYPE(const pb_byte_t *, descriptor->default_value, 0),
+                                           (size_t) -1);
+
         if (!pb_decode_tag(&defstream, &wire_type, &tag, &eof))
             return false;
     }
