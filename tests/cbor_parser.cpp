@@ -438,6 +438,7 @@ namespace {
         EXPECT_EQ(err, CborNoError);
 
         err = _cbor_value_copy_string(&contents, buffer, &key_len, nullptr);
+        EXPECT_EQ(err, CborNoError);
 
         SHA256_Init(&sha256);
         SHA256_Update(&sha256, buffer, key_len);
@@ -446,7 +447,6 @@ namespace {
         std::vector<uint8_t> dest6(hash1, hash1+64);
 
         answer.push_back(dest6);
-
 
         err = cbor_value_advance(&contents);         // easier than advance_fixed, performance hit is small
         EXPECT_EQ(err, CborNoError);
