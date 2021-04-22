@@ -222,7 +222,7 @@ parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
     status = pb_decode(&stream, SendRequest_fields, &request);
 
     zemu_log(stream.errmsg);
-
+    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.sendrequest, &request, sizeof(SendRequest));
     CHECK_APP_CANARY()
     /* Check for errors... */
     if (!status) {
@@ -343,7 +343,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     uint8_t itemCount = 0;
     switch (v->txtype) {
         case 0x00 : {
-            itemCount = 7;
+            itemCount = 6 + 5; //cbor contents + token transfer protobuf data
             break;
         }
         case 0x01 : {

@@ -89,6 +89,10 @@ typedef struct {
 
     method_t method_name;
     arg_t arg;
+
+    union {
+        SendRequest sendrequest;
+    } pb_fields;
 } call_t;
 
 typedef struct {

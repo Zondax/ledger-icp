@@ -141,7 +141,7 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign basic normal (%s)', async function (_, {model, prefix, path}) {
+    test.each(models)('sign basic normal -- token transfer (%s)', async function (_, {model, prefix, path}) {
         const sim = new Zemu(path);
         try {
             await sim.start({model, ...simOptions});
@@ -165,7 +165,7 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, model === "nanos" ? 13 : 12);
+            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, model === "nanos" ? 14 : 15);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);

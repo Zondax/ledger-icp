@@ -200,12 +200,45 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 6) {
-        snprintf(outKey, outKeyLen, "arg (bytes)");
-        array_to_hexstr(buffer, sizeof(buffer),fields->arg.data, fields->arg.len);
+        snprintf(outKey, outKeyLen, "Memo");
+        fpuint64_to_str(buffer, sizeof(buffer), fields->pb_fields.sendrequest.memo.memo, 0);
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
         return parser_ok;
     }
+
+    if (displayIdx == 7) {
+        snprintf(outKey, outKeyLen, "Payment");
+        fpuint64_to_str(buffer, sizeof(buffer), fields->pb_fields.sendrequest.payment.payment_type.reciever_gets.doms, 0);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 8) {
+        snprintf(outKey, outKeyLen, "ICPTs max_fee");
+        fpuint64_to_str(buffer, sizeof(buffer), fields->pb_fields.sendrequest.max_fee.doms, 0);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 9) {
+        snprintf(outKey, outKeyLen, "Subaccount");
+        if(fields->pb_fields.sendrequest.has_from_subaccount){
+            array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
+            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        }else{
+            snprintf(outVal, outValLen, "Not set");
+        }
+        return parser_ok;
+    }
+
+    if (displayIdx == 10) {
+        snprintf(outKey, outKeyLen, "To account");
+        array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.to.hash, 32);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+
     return parser_ok;
 }
 
