@@ -168,9 +168,6 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    char buffer[300];
-    MEMZERO(buffer, sizeof(buffer));
-
     call_t *fields = &parser_tx_obj.tx_fields.call;
 
     if (displayIdx < 0 || displayIdx >= numItems) {
@@ -215,6 +212,8 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 9) {
+        char buffer[100];
+        MEMZERO(buffer, sizeof(buffer));
         snprintf(outKey, outKeyLen, "Subaccount");
         if(fields->pb_fields.sendrequest.has_from_subaccount){
             array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
@@ -226,6 +225,8 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 10) {
+        char buffer[100];
+        MEMZERO(buffer, sizeof(buffer));
         snprintf(outKey, outKeyLen, "To account");
         array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.to.hash, 32);
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);

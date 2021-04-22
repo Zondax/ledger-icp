@@ -197,7 +197,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             return zxerr_ok;
         }
         case state_transaction_read: {
-            state_read_t *fields = &parser_tx_obj.tx_fields.call;
+            state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
             HASH_BYTES_INTERMEDIATE("sender", fields->sender, tmpdigest);
             HASH_U64("ingress_expiry",fields->ingress_expiry, tmpdigest);
 
