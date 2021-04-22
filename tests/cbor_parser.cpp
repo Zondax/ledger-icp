@@ -48,7 +48,7 @@ namespace {
 
         EXPECT_EQ(status, true);
 
-        EXPECT_EQ(request.to.hash[0],0x35);
+        EXPECT_EQ(request.to.hash[0], 0x35);
     }
 
     TEST(CBORParserTest, MinimalListTest) {

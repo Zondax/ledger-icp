@@ -167,7 +167,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
 }
 
-parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v){
+parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v) {
     CborValue it;                                                                           \
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(content_map, "paths", &it));
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type);
@@ -176,9 +176,9 @@ parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v){
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &content_paths))
 
     size_t arrayLen = 0;
-    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&content_paths,&arrayLen));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&content_paths, &arrayLen));
 
-    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY){
+    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
         return parser_value_out_of_range;
     }
     v->paths.arrayLen = arrayLen;
@@ -187,10 +187,11 @@ parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v){
 
     size_t stringLen = 0;
 
-    for(uint8_t index = 0; index < arrayLen; index++){
+    for (size_t index = 0; index < arrayLen; index++) {
         PARSER_ASSERT_OR_ERROR(cbor_value_is_byte_string(&it), parser_context_mismatch)
         CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen))
         PARSER_ASSERT_OR_ERROR(stringLen < sizeof(v->paths.paths[index].data), parser_context_unexpected_size)
+        v->paths.paths[index].len = sizeof(v->paths.paths[index].data);
         CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, v->paths.paths[index].data, &v->paths.paths[index].len, NULL))
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
