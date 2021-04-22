@@ -45,7 +45,7 @@ int prepareDigestToSign(const unsigned char *in, unsigned int inLen,
 
 zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen);
 
-zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address);
+zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address);
 zxerr_t crypto_principalToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen);
 zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrLen);
 

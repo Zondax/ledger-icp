@@ -105,7 +105,7 @@ zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, 
 //    00 // no padding
 //    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
 
-zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
@@ -297,7 +297,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     return zxerr_ok;
 }
 
-zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
+zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
@@ -311,8 +311,8 @@ zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
     picohash_update(&ctx, DER, DER_INPUT_SIZE);
     picohash_final(&ctx, buf);
 
-    buf[DFINITY_ADDR_LEN - 1] = 0x02;
-    MEMCPY(address, buf, DFINITY_ADDR_LEN);
+    buf[DFINITY_PRINCIPAL_LEN - 1] = 0x02;
+    MEMCPY(address, buf, DFINITY_PRINCIPAL_LEN);
     return zxerr_ok;
 }
 
@@ -468,7 +468,7 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
 
     CHECK_ZXERR(crypto_extractPublicKey(hdPath, answer->publicKey, sizeof_field(answer_t, publicKey)));
 
-    CHECK_ZXERR(crypto_computeAddress(answer->publicKey, answer->principalBytes));
+    CHECK_ZXERR(crypto_computePrincipal(answer->publicKey, answer->principalBytes));
 
     //For now only defeault subaccount, maybe later grab 32 bytes from the apdu buffer.
     uint8_t zero_subaccount[DFINITY_SUBACCOUNT_LEN];
