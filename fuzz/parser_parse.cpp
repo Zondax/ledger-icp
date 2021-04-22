@@ -41,8 +41,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         assert(false);
     }
 
-//    fprintf(stderr, "----------------------------------------------\n");
-
     for (uint8_t i = 0; i < num_items; i += 1) {
         uint8_t page_idx = 0;
         uint8_t page_count = 1;
@@ -51,8 +49,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
                                 PARSER_KEY, sizeof(PARSER_KEY),
                                 PARSER_VALUE, sizeof(PARSER_VALUE),
                                 page_idx, &page_count);
-
-//            fprintf(stderr, "%s = %s\n", PARSER_KEY, PARSER_VALUE);
 
             if (rc != parser_ok) {
                 fprintf(stderr,

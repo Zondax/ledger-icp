@@ -25,10 +25,32 @@
 #include <parser_impl.h>
 #include <parser.h>
 
+#include "pb_decode.h"
+#include "protobuf/dfinity.pb.h"
 
 // Basic CBOR test cases generated with http://cbor.me/
 
 namespace {
+    TEST(NANOPBTEST, test) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "0A0012050A0308E8071A0308890122220A2001010101010101010101010101010101010101010101010101010101010101012A220A2035548EC29E9D85305850E87A2D2642FE7214FF4BB36334070DEAFC3345C3B127";
+        parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        SendRequest request = SendRequest_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, 86);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, SendRequest_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.to.hash[0],0x35);
+
+    }
     TEST(CBORParserTest, MinimalListTest) {
         // [1,2,3]
         uint8_t inBuffer[100];

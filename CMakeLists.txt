@@ -30,7 +30,7 @@ string(APPEND CMAKE_LINKER_FLAGS " -fno-omit-frame-pointer -g")
 
 add_definitions(-DAPP_STANDARD)
 
-if(ENABLE_FUZZING)
+if (ENABLE_FUZZING)
     add_definitions(-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1)
     SET(ENABLE_SANITIZERS ON CACHE BOOL "Sanitizer automatically enabled" FORCE)
     SET(CMAKE_BUILD_TYPE Debug)
@@ -46,30 +46,30 @@ if(ENABLE_FUZZING)
         # require at least clang 3.2
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0)
             message(FATAL_ERROR "Clang version must be at least 10.0!")
-        endif()
-    else()
+        endif ()
+    else ()
         message(FATAL_ERROR
                 "You are using an unsupported compiler! Fuzzing only works with Clang 10.\n"
                 "1. Install clang-10 \n"
                 "2. Pass -DCMAKE_C_COMPILER=clang-10 -DCMAKE_CXX_COMPILER=clang++-10")
-    endif()
+    endif ()
 
     string(APPEND CMAKE_C_FLAGS " -fsanitize=fuzzer-no-link")
     string(APPEND CMAKE_CXX_FLAGS " -fsanitize=fuzzer-no-link")
     string(APPEND CMAKE_LINKER_FLAGS " -fsanitize=fuzzer-no-link")
-endif()
+endif ()
 
-if(ENABLE_COVERAGE)
+if (ENABLE_COVERAGE)
     string(APPEND CMAKE_C_FLAGS " -fprofile-instr-generate -fcoverage-mapping")
     string(APPEND CMAKE_CXX_FLAGS " -fprofile-instr-generate -fcoverage-mapping")
     string(APPEND CMAKE_LINKER_FLAGS " -fprofile-instr-generate -fcoverage-mapping")
-endif()
+endif ()
 
-if(ENABLE_SANITIZERS)
+if (ENABLE_SANITIZERS)
     string(APPEND CMAKE_C_FLAGS " -fsanitize=address,undefined -fsanitize-recover=address,undefined")
     string(APPEND CMAKE_CXX_FLAGS " -fsanitize=address,undefined -fsanitize-recover=address,undefined")
     string(APPEND CMAKE_LINKER_FLAGS " -fsanitize=address,undefined -fsanitize-recover=address,undefined")
-endif()
+endif ()
 
 include(cmake/conan/CMakeLists.txt)
 add_subdirectory(cmake/gtest)
@@ -85,6 +85,13 @@ file(GLOB_RECURSE TINYCBOR_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/tinycbor/src/cborvalidation.c
         )
 
+#  static libs
+file(GLOB_RECURSE TINYPB_SRC
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/nanopb_tiny/pb_common.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/nanopb_tiny/pb_decode.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/nanopb_tiny/pb_encode.c
+        )
+
 file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/hexutils.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/app_mode.c
@@ -97,11 +104,13 @@ file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/base32.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/protobuf/dfinity.pb.c
         )
 
 add_library(app_lib STATIC
         ${LIB_SRC}
         ${TINYCBOR_SRC}
+        ${TINYPB_SRC}
         )
 
 target_include_directories(app_lib PUBLIC
@@ -109,6 +118,7 @@ target_include_directories(app_lib PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/include
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/tinycbor/src
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/picohash/
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/nanopb_tiny/
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/common
@@ -130,6 +140,7 @@ target_include_directories(unittests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/tinycbor/src
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/picohash/
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/nanopb_tiny/
         )
 
 
@@ -149,14 +160,15 @@ set_tests_properties(unittests PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOUR
 ##############################################################
 ##############################################################
 #  Fuzz Targets
-if(ENABLE_FUZZING)
+if (ENABLE_FUZZING)
     set(FUZZ_TARGETS
-        parser_parse
-        )
+            parser_parse
+            parser_protobuf
+            )
 
-    foreach(target ${FUZZ_TARGETS})
+    foreach (target ${FUZZ_TARGETS})
         add_executable(fuzz-${target} ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/${target}.cpp)
         target_link_libraries(fuzz-${target} PRIVATE app_lib)
         target_link_options(fuzz-${target} PRIVATE "-fsanitize=fuzzer")
-    endforeach()
-endif()
+    endforeach ()
+endif ()

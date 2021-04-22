@@ -19,6 +19,8 @@
 #include "parser_txdef.h"
 #include "cbor.h"
 #include "app_mode.h"
+#include "pb_decode.h"
+#include "protobuf/dfinity.pb.h"
 
 parser_tx_t parser_tx_obj;
 
@@ -161,6 +163,30 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
 }
 
+parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
+    bool status;
+
+    CHECK_APP_CANARY()
+    /* Allocate space for the decoded message. */
+    SendRequest request = SendRequest_init_zero;
+    CHECK_APP_CANARY()
+
+    /* Create a stream that reads from the buffer. */
+    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
+    CHECK_APP_CANARY()
+
+    /* Now we are ready to decode the message. */
+    status = pb_decode(&stream, SendRequest_fields, &request);
+
+    CHECK_APP_CANARY()
+    /* Check for errors... */
+    if (!status) {
+        return parser_unexepected_error;
+    }
+
+    return parser_ok;
+}
+
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     CborValue content_it;
 
@@ -179,8 +205,9 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "canister_id", v->canister_id)
         READ_STRING(content_map, "nonce", v->nonce)
         READ_STRING(content_map, "method_name", v->method_name)
-        READ_STRING(content_map, "arg", v->arg)
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
+        READ_STRING(content_map, "arg", v->arg)
+        CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
 
     } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
         READ_STRING(content_map, "sender", v->sender)
@@ -251,68 +278,6 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
         // End of buffer does not match end of parsed data
         PARSER_ASSERT_OR_ERROR(it.ptr == c->buffer + c->bufferLen, parser_cbor_unexpected_EOF)
     }
-
-    return parser_ok;
-}
-
-parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t *v) {
-//
-//    CborValue contents;
-//    CborValue value;
-//    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type)
-//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &contents));
-//
-//    PARSER_ASSERT_OR_ERROR(cbor_value_is_map(&contents), parser_unexpected_type)
-//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&it, "content", &value));
-//
-//    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&value), parser_unexpected_type);
-//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&value, &contents));
-//
-//    size_t mapLen = 0;
-//    CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&value, &mapLen));
-//
-//    PARSER_ASSERT_OR_ERROR(mapLen == NUM_MAP_TYPE1, parser_context_unexpected_size);
-//    size_t stringLen = 0;
-//    MEMZERO(&v->sender.data, sizeof(v->sender.data));
-//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "sender", &contents));
-//    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-//    PARSER_ASSERT_OR_ERROR(stringLen <= SENDER_MAX_LEN, parser_context_unexpected_size)
-//    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->sender.data, &v->sender.len, NULL));
-//
-//    MEMZERO(&v->request_type.data, sizeof(v->request_type.data));
-//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "request_type", &contents));
-//    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-//    PARSER_ASSERT_OR_ERROR(stringLen <= REQUEST_MAX_LEN, parser_context_unexpected_size)
-//    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->request_type.data, &v->request_type.len, NULL));
-//
-//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "ingress_expiry", &contents));
-//    v->ingress_expiry = _cbor_value_decode_int64_internal(&contents);
-//
-//    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(&value, "paths", &contents));
-//    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&contents), parser_unexpected_type);
-//
-//    CborValue subvalue;
-//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&contents, &subvalue))
-//
-//    size_t arrayLen = 0;
-//    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue, &arrayLen));
-//
-//    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
-//        return parser_value_out_of_range;
-//    }
-//    v->paths.arrayLen = arrayLen;
-//
-//    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&subvalue, &contents));
-//
-//    uint8_t index = 0;
-//    do {
-//        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
-//        PARSER_ASSERT_OR_ERROR(stringLen <= PATH_MAX_LEN, parser_context_unexpected_size)
-//        CHECK_CBOR_MAP_ERR(
-//                _cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
-//        CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
-//        index++;
-//    } while (index < arrayLen);
 
     return parser_ok;
 }
