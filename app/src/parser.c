@@ -69,6 +69,42 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;
 }
 
+#define DISPLAY_U64(KEYNAME, VALUE) { \
+    char buffer[100];                                           \
+    MEMZERO(buffer, sizeof(buffer));                                  \
+    snprintf(outKey, outKeyLen, KEYNAME);  \
+    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 0); \
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
+    return parser_ok;                                          \
+}
+
+#define DISPLAY_SHORTSTRING(KEYNAME, VALUE) { \
+    snprintf(outKey, outKeyLen, KEYNAME);                       \
+    snprintf(outVal, outValLen, "%s", VALUE); \
+    return parser_ok;                                              \
+}
+
+#define DISPLAY_BYTES(KEYNAME, VALUE) { \
+    char buffer[100];                                           \
+    MEMZERO(buffer, sizeof(buffer));                              \
+    snprintf(outKey, outKeyLen, KEYNAME);                       \
+    array_to_hexstr(buffer, sizeof(buffer), (VALUE).data, (VALUE).len); \
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
+    return parser_ok;                            \
+}
+
+#define DISPLAY_TEXTUAL(KEYNAME, VALUE) { \
+    char buffer[100];                                           \
+    MEMZERO(buffer, sizeof(buffer));                                      \
+    snprintf(outKey, outKeyLen, KEYNAME); \
+    uint16_t outLen = 0;          \
+    uint8_t tmpbuffer[100];        \
+    crypto_principalToTextual((uint8_t *)(VALUE).data, (VALUE).len, tmpbuffer, &outLen);  \
+    addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);   \
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
+    return parser_ok;                            \
+}
+
 parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
                                                   uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
@@ -84,9 +120,6 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    char buffer[100];
-    MEMZERO(buffer, sizeof(buffer));
-
     state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
 
@@ -95,31 +128,22 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
     }
 
     if (displayIdx == 0) {
-        snprintf(outKey, outKeyLen, "request_type");
-        snprintf(outVal, outValLen, "%s", parser_tx_obj.request_type.data);
-        return parser_ok;
+        DISPLAY_SHORTSTRING("request_type",parser_tx_obj.request_type.data)
     }
     if (displayIdx == 1) {
-        snprintf(outKey, outKeyLen, "ingress_expiry");
-        fpuint64_to_str(buffer, sizeof(buffer), fields->ingress_expiry, 0);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_U64("ingress_expiry", fields->ingress_expiry)
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "sender");
-        uint16_t outLen = 0;
-        uint8_t tmpbuffer[100];
-        crypto_principalToTextual((uint8_t *)fields->sender.data, fields->sender.len, tmpbuffer, &outLen);
-        addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_TEXTUAL("sender",fields->sender)
     }
 
     displayIdx -= 3;
     if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
         return parser_no_data;
     }
+    char buffer[100];
+    MEMZERO(buffer, sizeof(buffer));
     snprintf(outKey, outKeyLen, "Path %d", displayIdx + 1);
     array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx].data,
                     fields->paths.paths[displayIdx].len);
@@ -154,70 +178,40 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 0) {
-        snprintf(outKey, outKeyLen, "request_type");
-        snprintf(outVal, outValLen, "%s", parser_tx_obj.request_type.data);
-        return parser_ok;
+        DISPLAY_SHORTSTRING("request_type",parser_tx_obj.request_type.data)
     }
 
     if (displayIdx == 1) {
-        snprintf(outKey, outKeyLen, "nonce");
-        array_to_hexstr(buffer, sizeof(buffer), fields->nonce.data, fields->nonce.len);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_BYTES("nonce",fields->nonce)
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "ingress_expiry");
-        fpuint64_to_str(buffer, sizeof(buffer), fields->ingress_expiry, 0);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_U64("ingress_expiry", fields->ingress_expiry)
     }
 
     if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "sender");
-        uint16_t outLen = 0;
-        uint8_t tmpbuffer[100];
-        crypto_principalToTextual((uint8_t *)fields->sender.data, fields->sender.len, tmpbuffer, &outLen);
-        addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_TEXTUAL("sender",fields->sender)
     }
 
     if (displayIdx == 4) {
-        snprintf(outKey, outKeyLen, "canister_id");
-        uint16_t outLen = 0;
-        uint8_t tmpbuffer[100];
-        crypto_principalToTextual((uint8_t *)fields->canister_id.data, fields->canister_id.len, tmpbuffer, &outLen);
-        addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_TEXTUAL("canister_id",fields->canister_id)
     }
 
     if (displayIdx == 5) {
-        snprintf(outKey, outKeyLen, "method_name");
-        snprintf(outVal, outValLen, "%s",fields->method_name.data);
-        return parser_ok;
+        DISPLAY_SHORTSTRING("method_name",fields->method_name.data)
     }
 
     if (displayIdx == 6) {
-        snprintf(outKey, outKeyLen, "Memo");
-        fpuint64_to_str(buffer, sizeof(buffer), fields->pb_fields.sendrequest.memo.memo, 0);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
     }
 
     if (displayIdx == 7) {
-        snprintf(outKey, outKeyLen, "Payment");
-        fpuint64_to_str(buffer, sizeof(buffer), fields->pb_fields.sendrequest.payment.payment_type.reciever_gets.doms, 0);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_U64("Payment", fields->pb_fields.sendrequest.payment.payment_type.reciever_gets.doms)
+
     }
 
     if (displayIdx == 8) {
-        snprintf(outKey, outKeyLen, "ICPTs max_fee");
-        fpuint64_to_str(buffer, sizeof(buffer), fields->pb_fields.sendrequest.max_fee.doms, 0);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        DISPLAY_U64("ICPTs max_fee", fields->pb_fields.sendrequest.max_fee.doms)
     }
 
     if (displayIdx == 9) {
@@ -237,7 +231,6 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
-
 
     return parser_ok;
 }
