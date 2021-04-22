@@ -68,6 +68,9 @@ __Z_INLINE parser_error_t parser_mapCborError(CborError err) {
             return parser_cbor_not_canonical;
         case CborNoError:
             return parser_ok;
+        case CborErrorOutOfMemory: {
+            return parser_value_out_of_range;
+        }
         default:
             return parser_cbor_unexpected;
     }
@@ -157,10 +160,47 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CborValue it;                                                                           \
     MEMZERO(&(V_OUTPUT).data, sizeof((V_OUTPUT).data));                                     \
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_byte_string(&it) || cbor_value_is_text_string(&it), parser_context_mismatch); \
     CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen));                      \
     PARSER_ASSERT_OR_ERROR(stringLen < sizeof((V_OUTPUT).data), parser_context_unexpected_size)   \
     (V_OUTPUT).len = stringLen; \
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
+}
+
+parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v){
+    CborValue it;                                                                           \
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(content_map, "paths", &it));
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type);
+
+    CborValue content_paths;
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &content_paths))
+
+    size_t arrayLen = 0;
+    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&content_paths,&arrayLen));
+
+    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY){
+        return parser_value_out_of_range;
+    }
+    v->paths.arrayLen = arrayLen;
+
+    CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&content_paths, &it));
+
+    size_t stringLen = 0;
+
+    for(uint8_t index = 0; index < arrayLen; index++){
+        PARSER_ASSERT_OR_ERROR(cbor_value_is_byte_string(&it), parser_context_mismatch)
+        CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen))
+        PARSER_ASSERT_OR_ERROR(stringLen < sizeof(v->paths.paths[index].data), parser_context_unexpected_size)
+        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, v->paths.paths[index].data, &v->paths.paths[index].len, NULL))
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
+    }
+
+    while (!cbor_value_at_end(&it)) {
+        cbor_value_advance(&it);
+    }
+    CHECK_CBOR_MAP_ERR(cbor_value_leave_container(&content_paths, &it))
+
+    return parser_ok;
 }
 
 parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
@@ -210,11 +250,11 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         //CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
 
     } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
+        v->txtype = 0x01;
         READ_STRING(content_map, "sender", v->sender)
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
-        // FIXME: Complete paths
+        CHECK_PARSER_ERR(parsePaths(content_map, v))
 
-        return parser_unexpected_value;
     } else if (strcmp(v->request_type.data, PIC("query")) == 0) {
         return parser_unexpected_value;
     } else {
