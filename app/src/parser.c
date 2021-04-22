@@ -41,16 +41,9 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
         return parser_no_data;
     }
 
-    CHECK_PARSER_ERR(parser_init(ctx, data + 1, dataLen - 1))
+    CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
     CHECK_PARSER_ERR(zeroize_parser_tx(&parser_tx_obj));
-    parser_tx_obj.txtype = data[0];
-
-    // FIXME: Remove the first byte
-    if (parser_tx_obj.txtype == 0 || parser_tx_obj.txtype == 1) {
-        return _readEnvelope(ctx, &parser_tx_obj);
-    }
-
-    return parser_unexepected_error;
+    return _readEnvelope(ctx, &parser_tx_obj);
 }
 
 parser_error_t parser_validate(const parser_context_t *ctx) {

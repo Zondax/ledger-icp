@@ -201,7 +201,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     if (strcmp(v->request_type.data, PIC("call")) == 0) {
         // Check Size ?
         // TODO:
-
+        v->txtype = 0x00;
         // READ CALL
         READ_STRING(content_map, "sender", v->sender)
         READ_STRING(content_map, "canister_id", v->canister_id)
@@ -222,7 +222,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     } else {
         return parser_unexpected_value;
     }
-
+    return parser_ok;
     // Skip fields until the end
     while (!cbor_value_at_end(&content_it)) {
         cbor_value_advance(&content_it);
