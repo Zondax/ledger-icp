@@ -385,6 +385,8 @@ bool checkreturn pb_close_string_substream(pb_istream_t *stream, pb_istream_t *s
  *************************/
 
 static bool checkreturn decode_basic_field(pb_istream_t *stream, pb_wire_type_t wire_type, pb_field_iter_t *field) {
+    ZEMU_TRACE()
+
     switch (PB_LTYPE(field->type)) {
         case PB_LTYPE_BOOL:
             if (wire_type != PB_WT_VARINT && wire_type != PB_WT_PACKED)
@@ -454,6 +456,8 @@ static bool checkreturn decode_basic_field(pb_istream_t *stream, pb_wire_type_t 
 }
 
 static bool checkreturn decode_static_field(pb_istream_t *stream, pb_wire_type_t wire_type, pb_field_iter_t *field) {
+    ZEMU_TRACE()
+
     switch (PB_HTYPE(field->type)) {
         case PB_HTYPE_REQUIRED:
             return decode_basic_field(stream, wire_type, field);
@@ -466,6 +470,8 @@ static bool checkreturn decode_static_field(pb_istream_t *stream, pb_wire_type_t
         case PB_HTYPE_REPEATED:
             if (wire_type == PB_WT_STRING
                 && PB_LTYPE(field->type) <= PB_LTYPE_LAST_PACKABLE) {
+                ZEMU_TRACE()
+
                 /* Packed array */
                 bool status = true;
                 pb_istream_t substream;
@@ -511,12 +517,16 @@ static bool checkreturn decode_static_field(pb_istream_t *stream, pb_wire_type_t
                  * option submsg_callback to have a separate callback function
                  * that can set the fields before submessage is decoded.
                  * pb_dec_submessage() will set any default values. */
+                ZEMU_TRACE()
                 memset(field->pData, 0, (size_t) field->data_size);
 
+                const pb_msgdesc_t *tmp = (const pb_msgdesc_t *) PIC(field->submsg_desc);
+                const bool validDefaultValue = tmp != NULL && tmp->default_value != NULL;
+                const bool validFieldCallback = tmp != NULL && tmp->field_callback != NULL;
+                const bool validSubmsgInfo = tmp != NULL && tmp->submsg_info != NULL;
+
                 /* Set default values for the submessage fields. */
-                if (field->submsg_desc->default_value != NULL ||
-                    field->submsg_desc->field_callback != NULL ||
-                    field->submsg_desc->submsg_info[0] != NULL) {
+                if (validDefaultValue || validFieldCallback || validSubmsgInfo) {
                     pb_field_iter_t submsg_iter;
                     if (pb_field_iter_begin(&submsg_iter, field->submsg_desc, field->pData)) {
                         if (!pb_message_set_to_defaults(&submsg_iter))
@@ -601,6 +611,8 @@ static void initialize_pointer_field(void *pItem, pb_field_iter_t *field)
 #endif
 
 static bool checkreturn decode_pointer_field(pb_istream_t *stream, pb_wire_type_t wire_type, pb_field_iter_t *field) {
+    ZEMU_TRACE()
+
 #ifndef PB_ENABLE_MALLOC
     PB_UNUSED(wire_type);
     PB_UNUSED(field);
@@ -722,6 +734,8 @@ static bool checkreturn decode_pointer_field(pb_istream_t *stream, pb_wire_type_
 }
 
 static bool checkreturn decode_callback_field(pb_istream_t *stream, pb_wire_type_t wire_type, pb_field_iter_t *field) {
+    ZEMU_TRACE()
+
     if (!field->descriptor->field_callback)
         return pb_skip_field(stream, wire_type);
 
@@ -935,6 +949,8 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
     uint32_t extension_range_start = 0;
     pb_extension_t *extensions = NULL;
 
+    ZEMU_TRACE()
+
     /* 'fixed_count_field' and 'fixed_count_size' track position of a repeated fixed
      * count field. This can only handle _one_ repeated fixed count field that
      * is unpacked and unordered among other (non repeated fixed count) fields.
@@ -947,6 +963,8 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
     const uint32_t allbits = ~(uint32_t) 0;
     pb_field_iter_t iter;
 
+    ZEMU_TRACE()
+
     if (pb_field_iter_begin(&iter, fields, dest_struct)) {
         if ((flags & PB_DECODE_NOINIT) == 0) {
             if (!pb_message_set_to_defaults(&iter))
@@ -955,6 +973,8 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
     }
 
     while (stream->bytes_left) {
+        ZEMU_TRACE()
+
         uint32_t tag;
         pb_wire_type_t wire_type;
         bool eof;
@@ -973,6 +993,8 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
                 PB_RETURN_ERROR(stream, "zero tag");
             }
         }
+
+        ZEMU_TRACE()
 
         if (!pb_field_iter_find(&iter, tag) || PB_LTYPE(iter.type) == PB_LTYPE_EXTENSION) {
             /* No match found, check if it matches an extension. */
@@ -1005,6 +1027,8 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
             continue;
         }
 
+        ZEMU_TRACE()
+
         /* If a repeated fixed count field was found, get size from
          * 'fixed_count_field' as there is no counter contained in the struct.
          */
@@ -1027,15 +1051,21 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
             iter.pSize = &fixed_count_size;
         }
 
+        ZEMU_TRACE()
+
         if (PB_HTYPE(iter.type) == PB_HTYPE_REQUIRED
             && iter.required_field_index < PB_MAX_REQUIRED_FIELDS) {
             uint32_t tmp = ((uint32_t) 1 << (iter.required_field_index & 31));
             fields_seen.bitfield[iter.required_field_index >> 5] |= tmp;
         }
 
+        ZEMU_TRACE()
+
         if (!decode_field(stream, wire_type, &iter))
             return false;
     }
+
+    ZEMU_TRACE()
 
     /* Check that all elements of the last decoded fixed count field were present. */
     if (fixed_count_field != PB_SIZE_MAX &&
@@ -1043,21 +1073,34 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
         PB_RETURN_ERROR(stream, "wrong size for fixed count field");
     }
 
+    ZEMU_TRACE()
+
     /* Check that all required fields were present. */
     {
-        pb_size_t req_field_count = iter.descriptor->required_field_count;
+        ZEMU_TRACE()
+
+        const pb_msgdesc_t *descriptor = (const pb_msgdesc_t *) PIC(iter.descriptor);
+        pb_size_t req_field_count = descriptor->required_field_count;
+
+        ZEMU_TRACE()
 
         if (req_field_count > 0) {
             pb_size_t i;
 
+            ZEMU_TRACE()
+
             if (req_field_count > PB_MAX_REQUIRED_FIELDS)
                 req_field_count = PB_MAX_REQUIRED_FIELDS;
+
+            ZEMU_TRACE()
 
             /* Check the whole words */
             for (i = 0; i < (req_field_count >> 5); i++) {
                 if (fields_seen.bitfield[i] != allbits)
                     PB_RETURN_ERROR(stream, "missing required field");
             }
+
+            ZEMU_TRACE()
 
             /* Check the remaining bits (if any) */
             if ((req_field_count & 31) != 0) {
@@ -1068,6 +1111,8 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
             }
         }
     }
+
+    ZEMU_TRACE()
 
     return true;
 }

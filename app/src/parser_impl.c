@@ -216,8 +216,12 @@ parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
     pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
     CHECK_APP_CANARY()
 
+    ZEMU_TRACE()
+
     /* Now we are ready to decode the message. */
     status = pb_decode(&stream, SendRequest_fields, &request);
+
+    zemu_log(stream.errmsg);
 
     CHECK_APP_CANARY()
     /* Check for errors... */
@@ -238,7 +242,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     // Check request type
     READ_STRING(content_map, "request_type", v->request_type)
     size_t mapsize = 0;
-    if (strcmp(v->request_type.data, PIC("call")) == 0) {
+    if (strcmp(v->request_type.data, "call") == 0) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
         PARSER_ASSERT_OR_ERROR(mapsize == 7, parser_context_unexpected_size)
         v->txtype = token_transfer;
@@ -249,9 +253,9 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "method_name", v->method_name)
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
         READ_STRING(content_map, "arg", v->arg)
-        //CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
+        CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
 
-    } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
+    } else if (strcmp(v->request_type.data, "read_state") == 0) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
         PARSER_ASSERT_OR_ERROR(mapsize == 4, parser_context_unexpected_size)
         v->txtype = state_transaction_read;
@@ -259,7 +263,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
         CHECK_PARSER_ERR(parsePaths(content_map, v))
 
-    } else if (strcmp(v->request_type.data, PIC("query")) == 0) {
+    } else if (strcmp(v->request_type.data, "query") == 0) {
         return parser_unexpected_value;
     } else {
         return parser_unexpected_value;
