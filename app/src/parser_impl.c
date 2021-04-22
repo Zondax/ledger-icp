@@ -237,9 +237,10 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 
     // Check request type
     READ_STRING(content_map, "request_type", v->request_type)
+    size_t mapsize = 0;
     if (strcmp(v->request_type.data, PIC("call")) == 0) {
-        // Check Size ?
-        // TODO:
+        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
+        PARSER_ASSERT_OR_ERROR(mapsize == 7, parser_context_unexpected_size)
         v->txtype = 0x00;
         // READ CALL
         READ_STRING(content_map, "sender", v->sender)
@@ -251,6 +252,8 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         //CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
 
     } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
+        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
+        PARSER_ASSERT_OR_ERROR(mapsize == 4, parser_context_unexpected_size)
         v->txtype = 0x01;
         READ_STRING(content_map, "sender", v->sender)
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
