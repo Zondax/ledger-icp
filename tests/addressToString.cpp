@@ -24,6 +24,29 @@
 #include <stdint.h>
 
 namespace {
+    TEST(SubaccountTests, AddressesTest) {
+        uint8_t inBuffer[1000];
+        uint8_t principal[29];
+        const char *tmp = "C2D8180272D6EA9B84B3E4FA72CDF714058912BFF8E6365EF55638A102";
+        parseHexString(principal, sizeof(principal), tmp);
+
+        uint8_t subaccount[32];
+        MEMZERO(subaccount,sizeof(subaccount));
+
+        uint8_t address[32];
+        MEMZERO(address,sizeof(address));
+
+        zxerr_t err = crypto_principalToSubaccount(principal, sizeof(principal), subaccount, sizeof(subaccount), address, sizeof(address));
+
+        EXPECT_EQ(err, zxerr_ok);
+
+        const char *tmp2 = "53d20dbdcf47908822c97fc36875eca3f4df19d55cb7693f78d3392a0835d9c1";
+        parseHexString(inBuffer, sizeof(inBuffer), tmp2);
+        for (int i = 0; i < 32; i++) {
+            EXPECT_EQ(inBuffer[i], address[i]);
+        }
+    }
+
     TEST(AddressToStringTests, CRC32) {
         uint8_t inBuffer[100];
         const char *tmp = "a275407a1070096ee5d8bd00d711a4c7904ca28fbbe592dc68d77d4d02";
@@ -51,7 +74,7 @@ namespace {
 
         MEMZERO(inBuffer, 100);
         uint16_t len = 0;
-        crypto_addrToTextual(addr, sizeof(addr), inBuffer, &len);
+        crypto_principalToTextual(addr, sizeof(addr), inBuffer, &len);
         EXPECT_STREQ((const char *) inBuffer, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
     }
 

@@ -81,7 +81,7 @@ zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, 
     uint8_t hashinput[SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN];
     MEMZERO(hashinput, sizeof(hashinput));
     hashinput[0] = 0x0a;
-    MEMCPY(&hashinput[1], (uint8_t *)"Account-id",SUBACCOUNT_PREFIX_SIZE - 1);
+    MEMCPY(&hashinput[1], (uint8_t *)"account-id",SUBACCOUNT_PREFIX_SIZE - 1);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, subAccount, DFINITY_SUBACCOUNT_LEN);
     cx_sha256_t ctx;
@@ -331,7 +331,7 @@ zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, 
     uint8_t hashinput[SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN];
     MEMZERO(hashinput, sizeof(hashinput));
     hashinput[0] = 0x0a;
-    MEMCPY(&hashinput[1], (uint8_t *)"Account-id",SUBACCOUNT_PREFIX_SIZE - 1);
+    MEMCPY(&hashinput[1], (uint8_t *)"account-id",SUBACCOUNT_PREFIX_SIZE - 1);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, subAccount, DFINITY_SUBACCOUNT_LEN);
     uint8_t buf[32];
