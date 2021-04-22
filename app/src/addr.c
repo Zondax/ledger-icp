@@ -41,7 +41,8 @@ zxerr_t addr_getItem(int8_t displayIdx,
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Address");
-            CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, action_addrResponseLen - VIEW_ADDRESS_OFFSET_TEXT));
+            CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT,
+                                        action_addrResponseLen - VIEW_ADDRESS_OFFSET_TEXT));
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return zxerr_ok;
         case 1: {

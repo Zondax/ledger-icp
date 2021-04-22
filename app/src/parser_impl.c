@@ -177,9 +177,9 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&contents, &subvalue))
 
     size_t arrayLen = 0;
-    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue,&arrayLen));
+    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&subvalue, &arrayLen));
 
-    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY){
+    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
         return parser_value_out_of_range;
     }
     v->paths.arrayLen = arrayLen;
@@ -190,15 +190,16 @@ parser_error_t _readTransactionStateRead(const parser_context_t *c, parser_tx_t 
     do {
         CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&contents, &stringLen))
         PARSER_ASSERT_OR_ERROR(stringLen <= PATH_MAX_LEN, parser_context_unexpected_size)
-        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
+        CHECK_CBOR_MAP_ERR(
+                _cbor_value_copy_string(&contents, v->paths.paths[index].data, &v->paths.paths[index].len, NULL));
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&contents));
         index++;
-    }while(index < arrayLen);
+    } while (index < arrayLen);
 
     return parser_ok;
 }
 
-parser_error_t read_protobuf(uint8_t *buffer, size_t bufferLen){
+parser_error_t read_protobuf(uint8_t *buffer, size_t bufferLen) {
     bool status;
 
     zemu_log_stack("protobuf");
@@ -220,8 +221,7 @@ parser_error_t read_protobuf(uint8_t *buffer, size_t bufferLen){
 
     CHECK_APP_CANARY()
     /* Check for errors... */
-    if (!status)
-    {
+    if (!status) {
         return parser_unexepected_error;
     }
 
@@ -303,12 +303,12 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     uint8_t itemCount = 0;
-    switch (v->txtype){
+    switch (v->txtype) {
         case 0x00 : {
             itemCount = 7;
             break;
         }
-        case 0x01 :{
+        case 0x01 : {
             itemCount = 3 + v->paths.arrayLen;
             break;
         }

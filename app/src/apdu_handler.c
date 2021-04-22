@@ -37,7 +37,7 @@ __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, u
     uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
 
     zxerr_t zxerr = app_fill_address();
-    if(zxerr != zxerr_ok){
+    if (zxerr != zxerr_ok) {
         *tx = 0;
         THROW(APDU_CODE_DATA_INVALID);
     }
@@ -96,7 +96,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_GET_ADDR: {
-                    if( os_global_pin_is_validated() != BOLOS_UX_OK ) {
+                    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
                         THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
                     }
                     handleGetAddr(flags, tx, rx);
@@ -104,7 +104,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_SIGN: {
-                    if( os_global_pin_is_validated() != BOLOS_UX_OK ) {
+                    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
                         THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
                     }
                     handleSign(flags, tx, rx);

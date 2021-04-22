@@ -3,6 +3,7 @@
 
 #ifndef PB_APP_SRC_PROTOBUF_DFINITY_PB_H_INCLUDED
 #define PB_APP_SRC_PROTOBUF_DFINITY_PB_H_INCLUDED
+
 #include <pb.h>
 
 #if PB_PROTO_HEADER_VERSION != 40
@@ -10,34 +11,34 @@
 #endif
 
 /* Struct definitions */
-typedef struct _AccountIdentifier { 
+typedef struct _AccountIdentifier {
     pb_byte_t hash[32]; /* always 32 bytes, starts with CRC32 */
 } AccountIdentifier;
 
-typedef struct _BlockHeight { 
-    uint64_t height; 
+typedef struct _BlockHeight {
+    uint64_t height;
 } BlockHeight;
 
-typedef struct _ICPTs { 
-    uint64_t doms; 
+typedef struct _ICPTs {
+    uint64_t doms;
 } ICPTs;
 
-typedef struct _Memo { 
-    uint64_t memo; 
+typedef struct _Memo {
+    uint64_t memo;
 } Memo;
 
-typedef struct _Subaccount { 
+typedef struct _Subaccount {
     pb_byte_t sub_account[32]; /* always 32 bytes */
 } Subaccount;
 
-typedef struct _Payment { 
+typedef struct _Payment {
     pb_size_t which_payment_type;
     union {
         ICPTs reciever_gets;
-    } payment_type; 
+    } payment_type;
 } Payment;
 
-typedef struct _SendRequest { 
+typedef struct _SendRequest {
     bool has_memo;
     Memo memo; /* required */
     bool has_payment;

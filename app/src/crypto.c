@@ -327,7 +327,7 @@ zxerr_t crypto_computeAddress(uint8_t *pubKey, uint8_t *address) {
     picohash_update(&ctx, DER, DER_INPUT_SIZE);
     picohash_final(&ctx, buf);
 
-    buf[DFINITY_ADDR_LEN-1] = 0x02;
+    buf[DFINITY_ADDR_LEN - 1] = 0x02;
     MEMCPY(address, buf, DFINITY_ADDR_LEN);
     return zxerr_ok;
 }
@@ -336,7 +336,7 @@ zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
                     const uint8_t *message,
                     uint16_t messageLen,
-                    uint16_t *sigSize){
+                    uint16_t *sigSize) {
     return zxerr_ok;
 }
 
@@ -344,48 +344,48 @@ zxerr_t crypto_sign(uint8_t *signature,
 
 
 uint32_t crc32_for_byte(uint8_t rbyte) {
-    uint32_t r = (uint32_t)(rbyte) & (uint32_t)0x000000FF;
-    for(int j = 0; j < 8; ++j)
-        r = (r & 1? 0: (uint32_t)0xEDB88320L) ^ r >> 1;
-    return r ^ (uint32_t)0xFF000000L;
+    uint32_t r = (uint32_t) (rbyte) & (uint32_t) 0x000000FF;
+    for (int j = 0; j < 8; ++j)
+        r = (r & 1 ? 0 : (uint32_t) 0xEDB88320L) ^ r >> 1;
+    return r ^ (uint32_t) 0xFF000000L;
 }
 
-void crc32_small(const void *data, uint8_t n_bytes, uint32_t* crc) {
-    for(uint8_t i = 0; i < n_bytes; ++i) {
-        uint8_t index = ((uint8_t) * crc ^ ((uint8_t *) data)[i]);
+void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc) {
+    for (uint8_t i = 0; i < n_bytes; ++i) {
+        uint8_t index = ((uint8_t) *crc ^ ((uint8_t *) data)[i]);
         uint32_t crcbyte = crc32_for_byte(index);
         *crc = crcbyte ^ *crc >> 8;
     }
 }
 
-zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen){
+zxerr_t crypto_addrToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen) {
     uint8_t input[33];
     uint32_t crc = 0;
-    crc32_small(address, addressLen,&crc);
-    input[0] = (uint8_t)((crc & 0xFF000000) >> 24);
-    input[1] = (uint8_t)((crc & 0x00FF0000) >> 16);
-    input[2] = (uint8_t)((crc & 0x0000FF00) >> 8);
-    input[3] = (uint8_t)((crc & 0x000000FF) >> 0);
+    crc32_small(address, addressLen, &crc);
+    input[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
+    input[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
+    input[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
+    input[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
     MEMCPY(input + 4, address, addressLen);
     int enc_len = base32_encode(input, 4 + addressLen, textual, 100);
-    if (enc_len == 0){
+    if (enc_len == 0) {
         return zxerr_unknown;
     }
     *outLen = enc_len;
     return zxerr_ok;
 }
 
-zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen){
+zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen) {
     MEMZERO(s, max);
     uint16_t offset = 0;
-    for(uint16_t index = 0; index < textLen; index += 5){
-        if (offset + 6 > max){
+    for (uint16_t index = 0; index < textLen; index += 5) {
+        if (offset + 6 > max) {
             return zxerr_unknown;
         }
         uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
         MEMCPY(s + offset, text + index, maxLen);
         offset += 5;
-        if(index + 5 < textLen) {
+        if (index + 5 < textLen) {
             s[offset] = '-';
             offset += 1;
         }
@@ -393,10 +393,10 @@ zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLe
     return zxerr_ok;
 }
 
-zxerr_t compressLEB128 (const uint64_t input, uint16_t maxSize, uint8_t *output, uint16_t *outLen){
+zxerr_t compressLEB128(const uint64_t input, uint16_t maxSize, uint8_t *output, uint16_t *outLen) {
     uint64_t num = input;
     size_t bytes = 0;
-    while (num){
+    while (num) {
         if (bytes >= maxSize) {
             return zxerr_buffer_too_small;
         }

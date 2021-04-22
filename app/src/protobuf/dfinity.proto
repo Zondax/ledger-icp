@@ -2,30 +2,30 @@ syntax = "proto3";
 import "nanopb.proto";
 
 message Memo {
-   uint64 memo = 1;
+  uint64 memo = 1;
 }
 message ICPTs {
-   uint64 doms = 1;
+  uint64 doms = 1;
 }
 message Payment {
-   oneof payment_type {
-     ICPTs reciever_gets = 1;
-   }
+  oneof payment_type {
+    ICPTs reciever_gets = 1;
+  }
 }
 message Subaccount {
-   bytes sub_account = 1 [(nanopb).max_size = 32, (nanopb).fixed_length = true];    // always 32 bytes
+  bytes sub_account = 1 [(nanopb).max_size = 32, (nanopb).fixed_length = true];    // always 32 bytes
 }
 message AccountIdentifier {
-   bytes hash = 1 [(nanopb).max_size = 32, (nanopb).fixed_length = true];    // always 32 bytes, starts with CRC32
+  bytes hash = 1 [(nanopb).max_size = 32, (nanopb).fixed_length = true];    // always 32 bytes, starts with CRC32
 }
 message BlockHeight {
-   uint64 height = 1;
+  uint64 height = 1;
 }
 message SendRequest {
-   Memo memo = 1;     // required
-   Payment payment = 2;     // required
-   ICPTs max_fee = 3;     // required
-   Subaccount from_subaccount = 4;   // optional
-   AccountIdentifier to = 5;   // required
-   BlockHeight created_at = 6;   // optional
+  Memo memo = 1;     // required
+  Payment payment = 2;     // required
+  ICPTs max_fee = 3;     // required
+  Subaccount from_subaccount = 4;   // optional
+  AccountIdentifier to = 5;   // required
+  BlockHeight created_at = 6;   // optional
 }
