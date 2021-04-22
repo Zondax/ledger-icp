@@ -22,6 +22,7 @@ bool pb_field_iter_begin_extension(pb_field_iter_t *iter, pb_extension_t *extens
  * Note that the pointers in pb_field_iter_t will be non-const but shouldn't
  * be written to when using these functions. */
 bool pb_field_iter_begin_const(pb_field_iter_t *iter, const pb_msgdesc_t *desc, const void *message);
+
 bool pb_field_iter_begin_extension_const(pb_field_iter_t *iter, const pb_extension_t *extension);
 
 /* Advance the iterator to the next field.

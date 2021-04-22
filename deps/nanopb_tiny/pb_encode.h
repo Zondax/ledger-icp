@@ -24,8 +24,7 @@ extern "C" {
  * 4) Substreams will modify max_size and bytes_written. Don't use them
  *    to calculate any pointers.
  */
-struct pb_ostream_s
-{
+struct pb_ostream_s {
 #ifdef PB_BUFFER_ONLY
     /* Callback pointer is not used in buffer-only configuration.
      * Having an int pointer here allows binary compatibility but
@@ -35,12 +34,14 @@ struct pb_ostream_s
      */
     int *callback;
 #else
+
     bool (*callback)(pb_ostream_t *stream, const pb_byte_t *buf, size_t count);
+
 #endif
     void *state;          /* Free field for use by callback implementation. */
     size_t max_size;      /* Limit number of output bytes written (or use SIZE_MAX). */
     size_t bytes_written; /* Number of bytes written so far. */
-    
+
 #ifndef PB_NO_ERRMSG
     const char *errmsg;
 #endif
@@ -80,11 +81,12 @@ bool pb_encode(pb_ostream_t *stream, const pb_msgdesc_t *fields, const void *src
  */
 #define PB_ENCODE_DELIMITED       0x02U
 #define PB_ENCODE_NULLTERMINATED  0x04U
+
 bool pb_encode_ex(pb_ostream_t *stream, const pb_msgdesc_t *fields, const void *src_struct, unsigned int flags);
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define pb_encode_delimited(s,f,d) pb_encode_ex(s,f,d, PB_ENCODE_DELIMITED)
-#define pb_encode_nullterminated(s,f,d) pb_encode_ex(s,f,d, PB_ENCODE_NULLTERMINATED)
+#define pb_encode_delimited(s, f, d) pb_encode_ex(s,f,d, PB_ENCODE_DELIMITED)
+#define pb_encode_nullterminated(s, f, d) pb_encode_ex(s,f,d, PB_ENCODE_NULLTERMINATED)
 
 /* Encode the message to get the size of the encoded data, but do not store
  * the data. */
@@ -105,7 +107,7 @@ pb_ostream_t pb_ostream_from_buffer(pb_byte_t *buf, size_t bufsize);
 
 /* Pseudo-stream for measuring the size of a message without actually storing
  * the encoded data.
- * 
+ *
  * Example usage:
  *    MyMessage msg = {};
  *    pb_ostream_t stream = PB_OSTREAM_SIZING;
@@ -139,7 +141,9 @@ bool pb_encode_tag(pb_ostream_t *stream, pb_wire_type_t wiretype, uint32_t field
 /* Encode an integer in the varint format.
  * This works for bool, enum, int32, int64, uint32 and uint64 field types. */
 #ifndef PB_WITHOUT_64BIT
+
 bool pb_encode_varint(pb_ostream_t *stream, uint64_t value);
+
 #else
 bool pb_encode_varint(pb_ostream_t *stream, uint32_t value);
 #endif
@@ -147,7 +151,9 @@ bool pb_encode_varint(pb_ostream_t *stream, uint32_t value);
 /* Encode an integer in the zig-zagged svarint format.
  * This works for sint32 and sint64. */
 #ifndef PB_WITHOUT_64BIT
+
 bool pb_encode_svarint(pb_ostream_t *stream, int64_t value);
+
 #else
 bool pb_encode_svarint(pb_ostream_t *stream, int32_t value);
 #endif
@@ -163,6 +169,7 @@ bool pb_encode_fixed32(pb_ostream_t *stream, const void *value);
 /* Encode a fixed64, sfixed64 or double value.
  * You need to pass a pointer to a 8-byte wide C variable. */
 bool pb_encode_fixed64(pb_ostream_t *stream, const void *value);
+
 #endif
 
 #ifdef PB_CONVERT_DOUBLE_FLOAT

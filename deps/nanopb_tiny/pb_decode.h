@@ -15,7 +15,7 @@ extern "C" {
 /* Structure for defining custom input streams. You will need to provide
  * a callback function to read the bytes from your storage, which can be
  * for example a file or a network socket.
- * 
+ *
  * The callback must conform to these rules:
  *
  * 1) Return false on IO errors. This will cause decoding to abort.
@@ -25,8 +25,7 @@ extern "C" {
  *    is different than from the main stream. Don't use bytes_left to compute
  *    any pointers.
  */
-struct pb_istream_s
-{
+struct pb_istream_s {
 #ifdef PB_BUFFER_ONLY
     /* Callback pointer is not used in buffer-only configuration.
      * Having an int pointer here allows binary compatibility but
@@ -34,12 +33,14 @@ struct pb_istream_s
      */
     int *callback;
 #else
+
     bool (*callback)(pb_istream_t *stream, pb_byte_t *buf, size_t count);
+
 #endif
 
     void *state; /* Free field for use by callback implementation */
     size_t bytes_left;
-    
+
 #ifndef PB_NO_ERRMSG
     const char *errmsg;
 #endif
@@ -54,7 +55,7 @@ struct pb_istream_s
 /***************************
  * Main decoding functions *
  ***************************/
- 
+
 /* Decode a single protocol buffers message from input stream into a C structure.
  * Returns true on success, false on any failure.
  * The actual struct pointed to by dest must match the description in fields.
@@ -65,7 +66,7 @@ struct pb_istream_s
  *    MyMessage msg = {};
  *    uint8_t buffer[64];
  *    pb_istream_t stream;
- *    
+ *
  *    // ... read some data into buffer ...
  *
  *    stream = pb_istream_from_buffer(buffer, count);
@@ -99,13 +100,14 @@ bool pb_decode(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_stru
 #define PB_DECODE_NOINIT          0x01U
 #define PB_DECODE_DELIMITED       0x02U
 #define PB_DECODE_NULLTERMINATED  0x04U
+
 bool pb_decode_ex(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_struct, unsigned int flags);
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define pb_decode_noinit(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_NOINIT)
-#define pb_decode_delimited(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_DELIMITED)
-#define pb_decode_delimited_noinit(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_DELIMITED | PB_DECODE_NOINIT)
-#define pb_decode_nullterminated(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_NULLTERMINATED)
+#define pb_decode_noinit(s, f, d) pb_decode_ex(s,f,d, PB_DECODE_NOINIT)
+#define pb_decode_delimited(s, f, d) pb_decode_ex(s,f,d, PB_DECODE_DELIMITED)
+#define pb_decode_delimited_noinit(s, f, d) pb_decode_ex(s,f,d, PB_DECODE_DELIMITED | PB_DECODE_NOINIT)
+#define pb_decode_nullterminated(s, f, d) pb_decode_ex(s,f,d, PB_DECODE_NULLTERMINATED)
 
 #ifdef PB_ENABLE_MALLOC
 /* Release any allocated pointer fields. If you use dynamic allocation, you should
@@ -153,7 +155,9 @@ bool pb_skip_field(pb_istream_t *stream, pb_wire_type_t wire_type);
 /* Decode an integer in the varint format. This works for enum, int32,
  * int64, uint32 and uint64 field types. */
 #ifndef PB_WITHOUT_64BIT
+
 bool pb_decode_varint(pb_istream_t *stream, uint64_t *dest);
+
 #else
 #define pb_decode_varint pb_decode_varint32
 #endif
@@ -168,7 +172,9 @@ bool pb_decode_bool(pb_istream_t *stream, bool *dest);
 /* Decode an integer in the zig-zagged svarint format. This works for sint32
  * and sint64. */
 #ifndef PB_WITHOUT_64BIT
+
 bool pb_decode_svarint(pb_istream_t *stream, int64_t *dest);
+
 #else
 bool pb_decode_svarint(pb_istream_t *stream, int32_t *dest);
 #endif
@@ -181,6 +187,7 @@ bool pb_decode_fixed32(pb_istream_t *stream, void *dest);
 /* Decode a fixed64, sfixed64 or double value. You need to pass a pointer to
  * a 8-byte wide C variable. */
 bool pb_decode_fixed64(pb_istream_t *stream, void *dest);
+
 #endif
 
 #ifdef PB_CONVERT_DOUBLE_FLOAT
@@ -190,6 +197,7 @@ bool pb_decode_double_as_float(pb_istream_t *stream, float *dest);
 
 /* Make a limited-length substream for reading a PB_WT_STRING field. */
 bool pb_make_string_substream(pb_istream_t *stream, pb_istream_t *substream);
+
 bool pb_close_string_substream(pb_istream_t *stream, pb_istream_t *substream);
 
 #ifdef __cplusplus
