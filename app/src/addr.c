@@ -24,9 +24,9 @@
 
 zxerr_t addr_getNumItems(uint8_t *num_items) {
     zemu_log_stack("addr_getNumItems");
-    *num_items = 1;
+    *num_items = 2;
     if (app_mode_expert()) {
-        *num_items = 2;
+        *num_items = 3;
     }
     return zxerr_ok;
 }
@@ -40,12 +40,19 @@ zxerr_t addr_getItem(int8_t displayIdx,
     zemu_log_stack(buffer);
     switch (displayIdx) {
         case 0:
-            snprintf(outKey, outKeyLen, "Address");
-            CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT,
-                                        action_addrResponseLen - VIEW_ADDRESS_OFFSET_TEXT));
+            snprintf(outKey, outKeyLen, "Principal");
+            CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT, action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT));
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return zxerr_ok;
-        case 1: {
+
+        case 1:
+            snprintf(outKey, outKeyLen, "Default address");
+            MEMZERO(buffer, sizeof(buffer));
+            array_to_hexstr(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, DFINITY_SUBACCOUNT_LEN);
+            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            return zxerr_ok;
+
+        case 2: {
             if (!app_mode_expert()) {
                 return zxerr_no_data;
             }
