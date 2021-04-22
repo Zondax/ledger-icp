@@ -98,10 +98,10 @@ describe('Standard', function () {
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
             const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
-            expect(resp.principal).toEqual(expected_principal);
+            expect(resp.principal.toString('hex')).toEqual(expected_principal);
             expect(resp.principalText).toEqual(expected_principalTextual);
-            expect(resp.publicKey).toEqual(expected_pk);
-            expect(resp.address).toEqual(expected_address);
+            expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
+            expect(resp.address.toString('hex')).toEqual(expected_address);
 
         } finally {
             await sim.close();
@@ -132,10 +132,10 @@ describe('Standard', function () {
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
             const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
-            expect(resp.principal).toEqual(expected_principal);
+            expect(resp.principal.toString('hex')).toEqual(expected_principal);
             expect(resp.principalText).toEqual(expected_principalTextual);
-            expect(resp.publicKey).toEqual(expected_pk);
-            expect(resp.address).toEqual(expected_address);
+            expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
+            expect(resp.address.toString('hex')).toEqual(expected_address);
         } finally {
             await sim.close();
         }

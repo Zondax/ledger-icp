@@ -40,14 +40,14 @@ function processGetAddrResponse(response: Buffer) {
     const errorCodeData = partialResponse.slice(-2);
     const returnCode = (errorCodeData[0] * 256 + errorCodeData[1]);
 
-    const publicKey = Buffer.from(partialResponse.slice(0, PKLEN)).toString('hex');
+    const publicKey = Buffer.from(partialResponse.slice(0, PKLEN));
     partialResponse = partialResponse.slice(PKLEN);
 
-    const principal = Buffer.from(partialResponse.slice(0, PRINCIPALLEN)).toString('hex');
+    const principal = Buffer.from(partialResponse.slice(0, PRINCIPALLEN));
 
     partialResponse = partialResponse.slice(PRINCIPALLEN);
 
-    const address = Buffer.from(partialResponse.slice(0, ADDRLEN)).toString('hex');
+    const address = Buffer.from(partialResponse.slice(0, ADDRLEN));
 
     partialResponse = partialResponse.slice(ADDRLEN);
 
