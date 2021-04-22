@@ -157,6 +157,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CborValue it;                                                                           \
     MEMZERO(&(V_OUTPUT).data, sizeof((V_OUTPUT).data));                                     \
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
+    CHECK_CBOR_TYPE(cbor_value_get_type(&it), CborByteStringType)                                  \
     CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen));                      \
     PARSER_ASSERT_OR_ERROR(stringLen < sizeof((V_OUTPUT).data), parser_context_unexpected_size)   \
     (V_OUTPUT).len = stringLen; \
@@ -192,6 +193,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(content_map), parser_unexpected_type)
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(content_map, &content_it))
+    CHECK_CBOR_TYPE(cbor_value_get_type(content_map), CborMapType)
 
     // Check request type
     READ_STRING(content_map, "request_type", v->request_type)
