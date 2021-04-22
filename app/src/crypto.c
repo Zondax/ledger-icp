@@ -186,27 +186,29 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
 
     switch(txtype){
         case token_transfer: {
-            HASH_BYTES_INTERMEDIATE("sender", parser_tx_obj.sender, tmpdigest);
-            HASH_BYTES_INTERMEDIATE("canister_id", parser_tx_obj.canister_id, tmpdigest);
-            HASH_U64("ingress_expiry",parser_tx_obj.ingress_expiry, tmpdigest);
-            HASH_BYTES_INTERMEDIATE("method_name", parser_tx_obj.method_name, tmpdigest);
+            call_t *fields = &parser_tx_obj.tx_fields.call;
+            HASH_BYTES_INTERMEDIATE("sender", fields->sender, tmpdigest);
+            HASH_BYTES_INTERMEDIATE("canister_id", fields->canister_id, tmpdigest);
+            HASH_U64("ingress_expiry",fields->ingress_expiry, tmpdigest);
+            HASH_BYTES_INTERMEDIATE("method_name", fields->method_name, tmpdigest);
             HASH_BYTES_INTERMEDIATE("request_type", parser_tx_obj.request_type, tmpdigest);
-            HASH_BYTES_INTERMEDIATE("nonce", parser_tx_obj.nonce, tmpdigest);
-            HASH_BYTES_END("arg", parser_tx_obj.arg, tmpdigest, digest);
+            HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
+            HASH_BYTES_END("arg", fields->arg, tmpdigest, digest);
             return zxerr_ok;
         }
         case state_transaction_read: {
-            HASH_BYTES_INTERMEDIATE("sender", parser_tx_obj.sender, tmpdigest);
-            HASH_U64("ingress_expiry",parser_tx_obj.ingress_expiry, tmpdigest);
+            state_read_t *fields = &parser_tx_obj.tx_fields.call;
+            HASH_BYTES_INTERMEDIATE("sender", fields->sender, tmpdigest);
+            HASH_U64("ingress_expiry",fields->ingress_expiry, tmpdigest);
 
             cx_hash_sha256((uint8_t *)"paths", 5, tmpdigest, CX_SHA256_SIZE);
             cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
 
             uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
-            for (uint8_t index = 0; index < parser_tx_obj.paths.arrayLen ; index++){
-                    cx_hash_sha256((uint8_t *)parser_tx_obj.paths.paths[index].data, parser_tx_obj.paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
+            for (uint8_t index = 0; index < fields->paths.arrayLen ; index++){
+                    cx_hash_sha256((uint8_t *)fields->paths.paths[index].data, fields->paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
             }
-            cx_hash_sha256(arrayBuffer, parser_tx_obj.paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
+            cx_hash_sha256(arrayBuffer, fields->paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
             cx_hash_sha256(tmpdigest, CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
             cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
 

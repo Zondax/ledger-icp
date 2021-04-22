@@ -167,7 +167,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
 }
 
-parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v) {
+parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     CborValue it;                                                                           \
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(content_map, "paths", &it));
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type);
@@ -181,7 +181,7 @@ parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v) {
     if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
         return parser_value_out_of_range;
     }
-    v->paths.arrayLen = arrayLen;
+    stateRead->paths.arrayLen = arrayLen;
 
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&content_paths, &it));
 
@@ -190,9 +190,9 @@ parser_error_t parsePaths(CborValue *content_map, parser_tx_t *v) {
     for (size_t index = 0; index < arrayLen; index++) {
         PARSER_ASSERT_OR_ERROR(cbor_value_is_byte_string(&it), parser_context_mismatch)
         CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen))
-        PARSER_ASSERT_OR_ERROR(stringLen < sizeof(v->paths.paths[index].data), parser_context_unexpected_size)
-        v->paths.paths[index].len = sizeof(v->paths.paths[index].data);
-        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, v->paths.paths[index].data, &v->paths.paths[index].len, NULL))
+        PARSER_ASSERT_OR_ERROR(stringLen < sizeof(stateRead->paths.paths[index].data), parser_context_unexpected_size)
+        stateRead->paths.paths[index].len = sizeof(stateRead->paths.paths[index].data);
+        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, stateRead->paths.paths[index].data, &stateRead->paths.paths[index].len, NULL))
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
@@ -247,21 +247,24 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         PARSER_ASSERT_OR_ERROR(mapsize == 7, parser_context_unexpected_size)
         v->txtype = token_transfer;
         // READ CALL
-        READ_STRING(content_map, "sender", v->sender)
-        READ_STRING(content_map, "canister_id", v->canister_id)
-        READ_STRING(content_map, "nonce", v->nonce)
-        READ_STRING(content_map, "method_name", v->method_name)
-        READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
-        READ_STRING(content_map, "arg", v->arg)
-        CHECK_PARSER_ERR(readProtobuf(v->arg.data, v->arg.len));
+        call_t *fields = &v->tx_fields.call;
+        READ_STRING(content_map, "sender", fields->sender)
+        READ_STRING(content_map, "canister_id", fields->canister_id)
+        READ_STRING(content_map, "nonce", fields->nonce)
+        READ_STRING(content_map, "method_name", fields->method_name)
+        READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
+        READ_STRING(content_map, "arg", fields->arg)
+        CHECK_PARSER_ERR(readProtobuf(fields->arg.data, fields->arg.len));
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
+        state_read_t *fields = &v->tx_fields.stateRead;
+
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
         PARSER_ASSERT_OR_ERROR(mapsize == 4, parser_context_unexpected_size)
         v->txtype = state_transaction_read;
-        READ_STRING(content_map, "sender", v->sender)
-        READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
-        CHECK_PARSER_ERR(parsePaths(content_map, v))
+        READ_STRING(content_map, "sender", fields->sender)
+        READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
+        CHECK_PARSER_ERR(parsePaths(content_map, fields))
 
     } else if (strcmp(v->request_type.data, "query") == 0) {
         return parser_unexpected_value;
@@ -344,7 +347,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             break;
         }
         case 0x01 : {
-            itemCount = 3 + v->paths.arrayLen;
+            itemCount = 3 + v->tx_fields.stateRead.paths.arrayLen;
             break;
         }
         default : {

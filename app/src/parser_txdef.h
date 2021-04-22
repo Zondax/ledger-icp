@@ -17,6 +17,7 @@
 
 #include <coin.h>
 #include <zxtypes.h>
+#include "protobuf/dfinity.pb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,9 +79,7 @@ typedef struct {
     size_t arrayLen;
 } pathArray_t;
 
-
 typedef struct {
-    request_t request_type;
     nonce_t nonce;
 
     uint64_t ingress_expiry;
@@ -90,11 +89,23 @@ typedef struct {
 
     method_t method_name;
     arg_t arg;
+} call_t;
+
+typedef struct {
+    uint64_t ingress_expiry;
+
+    sender_t sender;
 
     pathArray_t paths;
+} state_read_t;
 
+typedef struct {
+    request_t request_type;
     txtype_e txtype;
-
+    union {
+        call_t call;
+        state_read_t stateRead;
+    } tx_fields;
 } parser_tx_t;
 
 #ifdef __cplusplus
