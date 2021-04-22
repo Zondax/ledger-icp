@@ -480,6 +480,6 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
 
     CHECK_ZXERR(crypto_principalToTextual(answer->principalBytes, DFINITY_PRINCIPAL_LEN, answer->addrText, &outLen));
 
-    *addrLen = SECP256K1_PK_LEN + DFINITY_PRINCIPAL_LEN + outLen;
+    *addrLen = SECP256K1_PK_LEN + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN + outLen;
     return zxerr_ok;
 }

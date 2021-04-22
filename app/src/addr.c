@@ -46,7 +46,7 @@ zxerr_t addr_getItem(int8_t displayIdx,
             return zxerr_ok;
 
         case 1:
-            snprintf(outKey, outKeyLen, "Default address");
+            snprintf(outKey, outKeyLen, "Address");
             MEMZERO(buffer, sizeof(buffer));
             array_to_hexstr(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, DFINITY_SUBACCOUNT_LEN);
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);

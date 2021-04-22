@@ -26,7 +26,7 @@ import {
     LedgerError,
     P1_VALUES,
     PAYLOAD_TYPE,
-    PKLEN, PREHASHLEN,
+    PKLEN, PREHASHLEN, PRINCIPALLEN,
     processErrorResponse,
     serializePath, SIGRSLEN,
 } from './common';
@@ -43,16 +43,21 @@ function processGetAddrResponse(response: Buffer) {
     const publicKey = Buffer.from(partialResponse.slice(0, PKLEN)).toString('hex');
     partialResponse = partialResponse.slice(PKLEN);
 
+    const principal = Buffer.from(partialResponse.slice(0, PRINCIPALLEN)).toString('hex');
+
+    partialResponse = partialResponse.slice(PRINCIPALLEN);
+
     const address = Buffer.from(partialResponse.slice(0, ADDRLEN)).toString('hex');
 
     partialResponse = partialResponse.slice(ADDRLEN);
 
-    const addressText = Buffer.from(partialResponse.slice(0, -2)).toString().replace(/(.{5})/g,"$1-");
+    const principalText = Buffer.from(partialResponse.slice(0, -2)).toString().replace(/(.{5})/g,"$1-");
 
     return {
         publicKey,
+        principal,
         address,
-        addressText,
+        principalText,
         returnCode,
         errorMessage: errorCodeToString(returnCode),
     };

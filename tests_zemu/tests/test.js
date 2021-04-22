@@ -93,13 +93,16 @@ describe('Standard', function () {
             expect(resp.returnCode).toEqual(0x9000);
             expect(resp.errorMessage).toEqual("No errors");
 
-            const expected_addressTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
-            const expected_address = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+            const expected_principalTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+            const expected_principal = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+            const expected_address = "9a4be31edc241f4e6ea990cf4197c7bec465a93d46ce6387ee78b90eaec31cba"
 
-            expect(resp.addressText).toEqual(expected_addressTextual);
-            expect(resp.address).toEqual(expected_address);
+            expect(resp.principal).toEqual(expected_principal);
+            expect(resp.principalText).toEqual(expected_principalTextual);
             expect(resp.publicKey).toEqual(expected_pk);
+            expect(resp.address).toEqual(expected_address);
+
         } finally {
             await sim.close();
         }
@@ -115,7 +118,7 @@ describe('Standard', function () {
 
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-show_address`, model === "nanos" ? 2 : 3);
+            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-show_address`, model === "nanos" ? 4 : 5);
 
             const resp = await respRequest;
 
@@ -124,13 +127,15 @@ describe('Standard', function () {
             expect(resp.returnCode).toEqual(0x9000);
             expect(resp.errorMessage).toEqual("No errors");
 
-            const expected_addressTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
-            const expected_address = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+            const expected_principalTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+            const expected_principal = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+            const expected_address = "9a4be31edc241f4e6ea990cf4197c7bec465a93d46ce6387ee78b90eaec31cba"
 
-            expect(resp.addressText).toEqual(expected_addressTextual);
-            expect(resp.address).toEqual(expected_address);
+            expect(resp.principal).toEqual(expected_principal);
+            expect(resp.principalText).toEqual(expected_principalTextual);
             expect(resp.publicKey).toEqual(expected_pk);
+            expect(resp.address).toEqual(expected_address);
         } finally {
             await sim.close();
         }
