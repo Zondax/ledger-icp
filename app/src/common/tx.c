@@ -79,12 +79,12 @@ const char *tx_parse() {
         return parser_getErrorDescription(err);
     }
 
-//    err = parser_validate(&ctx_parsed_tx);
-//    CHECK_APP_CANARY()
-//
-//    if (err != parser_ok) {
-//        return parser_getErrorDescription(err);
-//    }
+    err = parser_validate(&ctx_parsed_tx);
+    CHECK_APP_CANARY()
+
+    if (err != parser_ok) {
+        return parser_getErrorDescription(err);
+    }
 
     return NULL;
 }
