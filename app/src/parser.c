@@ -211,11 +211,11 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount) {
     switch (parser_tx_obj.txtype) {
-        case 0x00: {
+        case token_transfer: {
             return parser_getItemTokenTransfer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx,
                                                pageCount);
         }
-        case 0x01: {
+        case state_transaction_read: {
             return parser_getItemTransactionStateRead(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx,
                                                       pageCount);
 

@@ -241,7 +241,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     if (strcmp(v->request_type.data, PIC("call")) == 0) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
         PARSER_ASSERT_OR_ERROR(mapsize == 7, parser_context_unexpected_size)
-        v->txtype = 0x00;
+        v->txtype = token_transfer;
         // READ CALL
         READ_STRING(content_map, "sender", v->sender)
         READ_STRING(content_map, "canister_id", v->canister_id)
@@ -254,7 +254,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     } else if (strcmp(v->request_type.data, PIC("read_state")) == 0) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
         PARSER_ASSERT_OR_ERROR(mapsize == 4, parser_context_unexpected_size)
-        v->txtype = 0x01;
+        v->txtype = state_transaction_read;
         READ_STRING(content_map, "sender", v->sender)
         READ_INT64(content_map, "ingress_expiry", v->ingress_expiry)
         CHECK_PARSER_ERR(parsePaths(content_map, v))

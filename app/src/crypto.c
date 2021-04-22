@@ -152,48 +152,47 @@ typedef struct {
     cx_hash(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE);        \
 }
 
-zxerr_t crypto_getDigestTokenTransfer(uint8_t *digest){
+zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
     cx_sha256_t ctx;
     cx_sha256_init(&ctx);
 
     uint8_t tmpdigest[CX_SHA256_SIZE];
     MEMZERO(tmpdigest,sizeof(tmpdigest));
 
-    HASH_BYTES_INTERMEDIATE("sender", parser_tx_obj.sender, tmpdigest);
-    HASH_BYTES_INTERMEDIATE("canister_id", parser_tx_obj.canister_id, tmpdigest);
-    HASH_U64("ingress_expiry",parser_tx_obj.ingress_expiry, tmpdigest);
-    HASH_BYTES_INTERMEDIATE("method_name", parser_tx_obj.method_name, tmpdigest);
-    HASH_BYTES_INTERMEDIATE("request_type", parser_tx_obj.request_type, tmpdigest);
-    HASH_BYTES_INTERMEDIATE("nonce", parser_tx_obj.nonce, tmpdigest);
-    HASH_BYTES_END("arg", parser_tx_obj.arg, tmpdigest, digest);
+    switch(txtype){
+        case token_transfer: {
+            HASH_BYTES_INTERMEDIATE("sender", parser_tx_obj.sender, tmpdigest);
+            HASH_BYTES_INTERMEDIATE("canister_id", parser_tx_obj.canister_id, tmpdigest);
+            HASH_U64("ingress_expiry",parser_tx_obj.ingress_expiry, tmpdigest);
+            HASH_BYTES_INTERMEDIATE("method_name", parser_tx_obj.method_name, tmpdigest);
+            HASH_BYTES_INTERMEDIATE("request_type", parser_tx_obj.request_type, tmpdigest);
+            HASH_BYTES_INTERMEDIATE("nonce", parser_tx_obj.nonce, tmpdigest);
+            HASH_BYTES_END("arg", parser_tx_obj.arg, tmpdigest, digest);
+            return zxerr_ok;
+        }
+        case state_transaction_read: {
+            HASH_BYTES_INTERMEDIATE("sender", parser_tx_obj.sender, tmpdigest);
+            HASH_U64("ingress_expiry",parser_tx_obj.ingress_expiry, tmpdigest);
 
-    return zxerr_ok;
-}
+            cx_hash_sha256((uint8_t *)"paths", 5, tmpdigest, CX_SHA256_SIZE);
+            cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
 
-zxerr_t crypto_getDigestStateTransactionRead(uint8_t *digest){
-    cx_sha256_t ctx;
-    cx_sha256_init(&ctx);
+            uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
+            for (uint8_t index = 0; index < parser_tx_obj.paths.arrayLen ; index++){
+                    cx_hash_sha256((uint8_t *)parser_tx_obj.paths.paths[index].data, parser_tx_obj.paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
+            }
+            cx_hash_sha256(arrayBuffer, parser_tx_obj.paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
+            cx_hash_sha256(tmpdigest, CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
+            cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
 
-    uint8_t tmpdigest[CX_SHA256_SIZE];
-    MEMZERO(tmpdigest,sizeof(tmpdigest));
+            HASH_BYTES_END("request_type", parser_tx_obj.request_type, tmpdigest, digest);
+            return zxerr_ok;
+        }
 
-    HASH_BYTES_INTERMEDIATE("sender", parser_tx_obj.sender, tmpdigest);
-    HASH_U64("ingress_expiry",parser_tx_obj.ingress_expiry, tmpdigest);
-
-    cx_hash_sha256((uint8_t *)"paths", 5, tmpdigest, CX_SHA256_SIZE);
-    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
-
-    uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
-    for (uint8_t index = 0; index < parser_tx_obj.paths.arrayLen ; index++){
-            cx_hash_sha256((uint8_t *)parser_tx_obj.paths.paths[index].data, parser_tx_obj.paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
+        default : {
+            return zxerr_unknown;
+        }
     }
-    cx_hash_sha256(arrayBuffer, parser_tx_obj.paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
-    cx_hash_sha256(tmpdigest, CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
-    cx_hash(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
-
-    HASH_BYTES_END("request_type", parser_tx_obj.request_type, tmpdigest, digest);
-
-    return zxerr_ok;
 }
 
 zxerr_t crypto_sign(uint8_t *signatureBuffer,
@@ -211,20 +210,9 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     signatureBuffer[0] = 0x0a;
     MEMCPY(&signatureBuffer[1], (uint8_t *)"ic-request",SIGN_PREFIX_SIZE - 1);
 
-    switch(parser_tx_obj.txtype){
-        case 0x00: {
-            CHECK_ZXERR(crypto_getDigestTokenTransfer(signatureBuffer + SIGN_PREFIX_SIZE));
-            break;
-        }
-        case 0x01 :{
-            CHECK_ZXERR(crypto_getDigestStateTransactionRead(signatureBuffer + SIGN_PREFIX_SIZE));
-            break;
-        }
-        default : {
-            return zxerr_unknown;
-        }
-    }
+    CHECK_ZXERR(crypto_getDigest(signatureBuffer + SIGN_PREFIX_SIZE, parser_tx_obj.txtype))
     CHECK_APP_CANARY()
+
     cx_hash_sha256(signatureBuffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
 
     cx_ecfp_private_key_t cx_privateKey;

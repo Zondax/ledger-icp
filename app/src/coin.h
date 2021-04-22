@@ -56,6 +56,11 @@ typedef enum {
 #define APPVERSION_LINE1                    "Version"
 #define APPVERSION_LINE2                    "v" APPVERSION
 
+typedef enum {
+    token_transfer = 0x00,
+    state_transaction_read = 0x01,
+} txtype_e;
+
 #ifdef __cplusplus
 }
 #endif

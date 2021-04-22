@@ -93,7 +93,7 @@ typedef struct {
 
     pathArray_t paths;
 
-    uint8_t txtype;
+    txtype_e txtype;
 
 } parser_tx_t;
 
