@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
@@ -133,7 +133,7 @@ only-npm-tags: &only-npm-tags
       ignore: /.*/
 
 workflows:
-  version: 2.1
+  version: 2
 
   default:
     jobs:
