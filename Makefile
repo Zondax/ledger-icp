@@ -23,6 +23,10 @@ TESTS_JS_DIR = $(CURDIR)/js
 
 ifeq ($(BOLOS_SDK),)
 include $(CURDIR)/deps/ledger-zxlib/dockerized_build.mk
+
+proto:
+	cd $(CURDIR)/app/src/protobuf && $(CURDIR)/deps/nanopb/generator/protoc ./dfinity.proto --nanopb_out=.
+
 else
 default:
 	$(MAKE) -C app

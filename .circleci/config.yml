@@ -142,6 +142,10 @@ workflows:
             - build
             - build_ledger
             - test_zemu
+          filters:
+            branches:
+              only:
+                - master
 
   release_npm:
     when:
