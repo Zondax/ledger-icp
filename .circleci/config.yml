@@ -133,7 +133,7 @@ only-npm-tags: &only-npm-tags
       ignore: /.*/
 
 workflows:
-  version: 2
+  version: 2.1
 
   default:
     jobs:
