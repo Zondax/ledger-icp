@@ -19,7 +19,6 @@
 #include <cbor.h>
 #include <hexutils.h>
 #include <zxmacros.h>
-#include <openssl/sha.h>
 #include <algorithm>
 #include <parser_common.h>
 #include <parser_impl.h>

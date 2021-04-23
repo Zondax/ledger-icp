@@ -144,14 +144,11 @@ target_include_directories(unittests PRIVATE
         )
 
 
-find_package(OpenSSL REQUIRED)
-
 target_link_libraries(unittests PRIVATE
         gtest_main
         app_lib
         CONAN_PKG::fmt
-        CONAN_PKG::jsoncpp
-        OpenSSL::Crypto)
+        CONAN_PKG::jsoncpp)
 
 add_compile_definitions(TESTVECTORS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 add_test(unittests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/unittests)

@@ -43,7 +43,7 @@ jobs:
           name: Install rust
           command: |
             sudo apt-get update
-            sudo apt-get install -y cmake binutils-dev libcurl4-openssl-dev libiberty-dev libelf-dev libdw-dev
+            sudo apt-get install -y cmake binutils-dev libiberty-dev libelf-dev libdw-dev
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --no-modify-path --default-toolchain none -y;
           no_output_timeout: 1800s
       - run:
@@ -96,7 +96,7 @@ jobs:
       - run:
           name: Build package
           command: |
-            cd js 
+            cd js
             yarn install
             yarn build
       - run:
