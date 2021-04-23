@@ -118,13 +118,6 @@ no-tags: &no-tags
     tags:
       ignore: /.*/
 
-only-release-tags: &only-release-tags
-  filters:
-    tags:
-      only: /^v[0-9]+(\.[0-9]+)*/
-    branches:
-      ignore: /.*/
-
 only-npm-tags: &only-npm-tags
   filters:
     tags:
@@ -143,20 +136,8 @@ workflows:
           <<: *no-tags
       - test_zemu:
           <<: *no-tags
-
-  release:
-    when:
-      or:
-        - equal: [ master, << pipeline.git.branch >> ]
-    jobs:
-      - build:
-          <<: *only-release-tags
-      - build_ledger:
-          <<: *only-release-tags
-      - test_zemu:
-          <<: *only-release-tags
       - build_package:
-          <<: *only-release-tags
+          <<: *no-tags
           requires:
             - build
             - build_ledger
