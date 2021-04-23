@@ -192,7 +192,9 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen))
         PARSER_ASSERT_OR_ERROR(stringLen < sizeof(stateRead->paths.paths[index].data), parser_context_unexpected_size)
         stateRead->paths.paths[index].len = sizeof(stateRead->paths.paths[index].data);
-        CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, stateRead->paths.paths[index].data, &stateRead->paths.paths[index].len, NULL))
+        CHECK_CBOR_MAP_ERR(
+                _cbor_value_copy_string(&it, stateRead->paths.paths[index].data, &stateRead->paths.paths[index].len,
+                                        NULL))
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
@@ -304,7 +306,7 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
         // check envelope size
         size_t mapLen = 0;
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(&it, &mapLen))
-        if (mapLen != 3) {
+        if (mapLen != 3 && mapLen != 1) {
             return parser_unexpected_value;
         }
         CborValue envelope;

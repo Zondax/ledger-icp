@@ -855,6 +855,7 @@ struct pb_extension_s {
 } /* extern "C" */
 #endif
 
+#ifndef ZX_NO_CPP
 #ifdef __cplusplus
 #if __cplusplus >= 201103L
 #define PB_CONSTEXPR constexpr
@@ -876,4 +877,4 @@ namespace nanopb {
 #endif  /* __cplusplus */
 
 #endif
-
+#endif

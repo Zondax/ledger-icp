@@ -17,6 +17,8 @@
 
 #include <coin.h>
 #include <zxtypes.h>
+
+#define ZX_NO_CPP
 #include "protobuf/dfinity.pb.h"
 
 #ifdef __cplusplus
