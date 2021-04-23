@@ -146,7 +146,8 @@ workflows:
 
   release:
     when:
-      equal: [ master, << pipeline.git.branch >> ]
+      or:
+        - equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - build:
           <<: *only-release-tags
@@ -163,7 +164,8 @@ workflows:
 
   release_npm:
     when:
-      equal: [ master, << pipeline.git.branch >> ]
+      or:
+        - equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - publish_npm_package:
           <<: *only-npm-tags
