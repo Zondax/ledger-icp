@@ -203,12 +203,12 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 7) {
-        DISPLAY_U64("Payment", fields->pb_fields.sendrequest.payment.payment_type.reciever_gets.doms)
+        DISPLAY_U64("Payment", fields->pb_fields.sendrequest.payment.receiver_gets.e8s)
 
     }
 
     if (displayIdx == 8) {
-        DISPLAY_U64("ICPTs max_fee", fields->pb_fields.sendrequest.max_fee.doms)
+        DISPLAY_U64("ICPTs max_fee", fields->pb_fields.sendrequest.max_fee.e8s)
     }
 
     if (displayIdx == 9) {
@@ -228,7 +228,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         char buffer[100];
         MEMZERO(buffer, sizeof(buffer));
         snprintf(outKey, outKeyLen, "To account");
-        array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.to.hash, 32);
+        array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
