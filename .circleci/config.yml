@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
@@ -145,6 +145,9 @@ workflows:
           <<: *no-tags
 
   release:
+    when:
+      or:
+        - equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - build:
           <<: *only-release-tags
@@ -160,6 +163,9 @@ workflows:
             - test_zemu
 
   release_npm:
+    when:
+      or:
+        - equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - publish_npm_package:
           <<: *only-npm-tags
