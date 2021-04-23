@@ -40,11 +40,6 @@ let models = [
 
 jest.setTimeout(60000)
 
-const SIGN_TYPE = {
-    TOKEN_TRANSFER: 0x00,
-    STATE_TRANSACTION_READ: 0x01,
-};
-
 describe('Standard', function () {
     test.each(models)('can start and stop container (%s)', async function (_, {model, prefix, path}) {
         const sim = new Zemu(path);
@@ -98,13 +93,16 @@ describe('Standard', function () {
             expect(resp.returnCode).toEqual(0x9000);
             expect(resp.errorMessage).toEqual("No errors");
 
-            const expected_addressTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
-            const expected_address = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+            const expected_principalTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+            const expected_principal = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+            const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
-            expect(resp.addressText).toEqual(expected_addressTextual);
-            expect(resp.address).toEqual(expected_address);
-            expect(resp.publicKey).toEqual(expected_pk);
+            expect(resp.principal.toString('hex')).toEqual(expected_principal);
+            expect(resp.principalText).toEqual(expected_principalTextual);
+            expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
+            expect(resp.address.toString('hex')).toEqual(expected_address);
+
         } finally {
             await sim.close();
         }
@@ -120,7 +118,7 @@ describe('Standard', function () {
 
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-show_address`, model === "nanos" ? 2 : 3);
+            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-show_address`, model === "nanos" ? 4 : 5);
 
             const resp = await respRequest;
 
@@ -129,19 +127,21 @@ describe('Standard', function () {
             expect(resp.returnCode).toEqual(0x9000);
             expect(resp.errorMessage).toEqual("No errors");
 
-            const expected_addressTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
-            const expected_address = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+            const expected_principalTextual = "5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-obhal-yb5xj-ue32x-ktkql-rqe";
+            const expected_principal = "19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+            const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
-            expect(resp.addressText).toEqual(expected_addressTextual);
-            expect(resp.address).toEqual(expected_address);
-            expect(resp.publicKey).toEqual(expected_pk);
+            expect(resp.principal.toString('hex')).toEqual(expected_principal);
+            expect(resp.principalText).toEqual(expected_principalTextual);
+            expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
+            expect(resp.address.toString('hex')).toEqual(expected_address);
         } finally {
             await sim.close();
         }
     });
 
-    test.each(models)('sign basic normal (%s)', async function (_, {model, prefix, path}) {
+    test.each(models)('sign basic normal -- token transfer (%s)', async function (_, {model, prefix, path}) {
         const sim = new Zemu(path);
         try {
             await sim.start({model, ...simOptions});
@@ -154,17 +154,18 @@ describe('Standard', function () {
             expect(respAddr.errorMessage).toEqual("No errors");
 
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
-            expect(respAddr.publicKey).toEqual(expected_pk);
+            expect(respAddr.publicKey.toString('hex')).toEqual(expected_pk);
 
-            let txBlobStr = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550e063ee93160f37ee2216b6a2a28119a46e696e67726573735f6578706972791b166b1ab6ec9c35086673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b6026b63616e69737465725f69644a000000000000000a01016b6d6574686f645f6e616d656473656e646361726758474449444c026c04fbca0171c6fcb60201ba89e5c2047cd8a38ca80d016c01b1dfb793047c01001b72776c67742d69696161612d61616161612d61616161612d636169880100e8076d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f736967584084dc1f2e7338eac3eae5967ddf6074a8f6c2d98e598f481a807569c9219b94d4175bed43e8d25bde1b411c4f50b9fe23e1c521ec53f3c2f80fa4621b27292208";
+            let txBlobStr = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550f5390d960c6e52f489155a4309da03da6e696e67726573735f6578706972791b1674c5e29ec9c2106673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad026b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656473656e646361726758560a0012050a0308e8071a0308890122220a2001010101010101010101010101010101010101010101010101010101010101012a220a2035548ec29e9d85305850e87a2d2642fe7214ff4bb36334070deafc3345c3b1276d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840de5bccbb0a0173c432cd58ea4495d4d1e122d6ce04e31dcf63217f3d3a9b73130dc9bbf3b10e61c8db8bf8800bb4649e27786e5bc9418838c95864be28487a6a";
+
             const txBlob = Buffer.from(txBlobStr, "hex");
 
-            const respRequest = app.sign("m/44'/223'/0'/0/0", SIGN_TYPE.TOKENTRANSFER, txBlob);
+            const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob);
 
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, model === "nanos" ? 12 : 11);
+            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, model === "nanos" ? 14 : 15);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
@@ -172,14 +173,14 @@ describe('Standard', function () {
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
 
-            const expected_preHash = "0a69632d72657175657374bf5bae8c2b6be8103a070e6d2240c18788c10a94ba68990f8c7e7acecb8b8c34";
+            const expected_preHash = "0a69632d726571756573747058c3bd4323237852f94f4dfa923e3f26080679619140014356f3d6c48e674b";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            const expected_hash = "084544f8f1852065408e18c5bc595e07c49e44085728833a822b24487eb4e191";
+            const expected_hash = "e5447f8722832acaaa07ee554d1807886db485043529f505adad17e32050a1fc";
             let hash = sha256.hex(signatureResponse.preSignHash);
             expect(hash).toEqual(expected_hash);
 
-            const pk = Uint8Array.from(Buffer.from(respAddr.publicKey.toString(), 'hex'))
+            const pk = Uint8Array.from(respAddr.publicKey)
             expect(pk.byteLength).toEqual(65);
             const digest = Uint8Array.from(Buffer.from(hash, 'hex'));
             const signature = Uint8Array.from(signatureResponse.signatureRS);
@@ -207,12 +208,12 @@ describe('Standard', function () {
             expect(respAddr.errorMessage).toEqual("No errors");
 
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
-            expect(respAddr.publicKey).toEqual(expected_pk);
+            expect(respAddr.publicKey.toString('hex')).toEqual(expected_pk);
 
-            let txBlobStr = "d9d9f7a367636f6e74656e74a46c726571756573745f747970656a726561645f73746174656e696e67726573735f6578706972791b166f4469eeb674586673656e646572581d45717a3a0e68fceef546ac77bac551754b48dbb1fccfa180673030b60265706174687381824e726571756573745f737461747573582062af1451c511bc05819de49a5e271ad77d4cd9624da4a3bdf2e45d0ae35e72826d73656e6465725f7075626b6579582c302a300506032b6570032100e29472cb531fdb17386dae5f5a6481b661eb3ac4b4982c638c91f7716c2c96e76a73656e6465725f73696758401a48a2202c5d968a693b310c71207577c7c9f43d6596f4e828e47587170e60faf4171982e3fcad7109ccada265ffd3d2132b0d8a26e8013478b0ded5861d1d03";
+            let txBlobStr = "d9d9f7a367636f6e74656e74a46c726571756573745f747970656a726561645f73746174656e696e67726573735f6578706972791b1674c5e2b4d947b06673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad0265706174687381824e726571756573745f73746174757358207058c3bd4323237852f94f4dfa923e3f26080679619140014356f3d6c48e674b6d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f73696758403c850f1f7d6ae07777ca077dbb7fe2a21d9e5c38494dc17d2e1736ed760d1db222688979769d978153ee4e0420af5c5052f0de5acba20e6a0865414f048ffa61";
             const txBlob = Buffer.from(txBlobStr, "hex");
 
-            const respRequest = app.sign("m/44'/223'/0'/0/0", SIGN_TYPE.STATE_TRANSACTION_READ, txBlob);
+            const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob);
 
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
@@ -225,14 +226,14 @@ describe('Standard', function () {
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
 
-            const expected_preHash = "0a69632d72657175657374e9db309ae391d86190768bb57d6d5ab1e29e876a4f8dbc94bd71c198bc4d341b";
+            const expected_preHash = "0a69632d7265717565737494a6b4c7dd97a1d04f7428b26ecca2b55c049fa473c23f0792bf5267bc45033f";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            const expected_hash = "fecdc50874f60b65411228d2fca72fde56b847571800a0f0e4245ef4af13d84d";
+            const expected_hash = "f8e8810b6b826d5335b02d3a597abc8abececa7bbe01c094c5959c1f74832274";
             let hash = sha256.hex(signatureResponse.preSignHash);
             expect(hash).toEqual(expected_hash);
 
-            const pk = Uint8Array.from(Buffer.from(respAddr.publicKey.toString(), 'hex'))
+            const pk = Uint8Array.from(respAddr.publicKey)
             expect(pk.byteLength).toEqual(65);
             const digest = Uint8Array.from(Buffer.from(hash, 'hex'));
             const signature = Uint8Array.from(signatureResponse.signatureRS);

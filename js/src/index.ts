@@ -26,7 +26,7 @@ import {
     LedgerError,
     P1_VALUES,
     PAYLOAD_TYPE,
-    PKLEN, PREHASHLEN,
+    PKLEN, PREHASHLEN, PRINCIPALLEN,
     processErrorResponse,
     serializePath, SIGRSLEN,
 } from './common';
@@ -40,19 +40,24 @@ function processGetAddrResponse(response: Buffer) {
     const errorCodeData = partialResponse.slice(-2);
     const returnCode = (errorCodeData[0] * 256 + errorCodeData[1]);
 
-    const publicKey = Buffer.from(partialResponse.slice(0, PKLEN)).toString('hex');
+    const publicKey = Buffer.from(partialResponse.slice(0, PKLEN));
     partialResponse = partialResponse.slice(PKLEN);
 
-    const address = Buffer.from(partialResponse.slice(0, ADDRLEN)).toString('hex');
+    const principal = Buffer.from(partialResponse.slice(0, PRINCIPALLEN));
+
+    partialResponse = partialResponse.slice(PRINCIPALLEN);
+
+    const address = Buffer.from(partialResponse.slice(0, ADDRLEN));
 
     partialResponse = partialResponse.slice(ADDRLEN);
 
-    const addressText = Buffer.from(partialResponse.slice(0, -2)).toString().replace(/(.{5})/g,"$1-");
+    const principalText = Buffer.from(partialResponse.slice(0, -2)).toString().replace(/(.{5})/g,"$1-");
 
     return {
         publicKey,
+        principal,
         address,
-        addressText,
+        principalText,
         returnCode,
         errorMessage: errorCodeToString(returnCode),
     };
@@ -217,11 +222,8 @@ export default class DfinityApp {
             }, processErrorResponse);
     }
 
-    async sign(path: string, txtype: number, message: Buffer) {
-        let msg_to_send = Buffer.alloc(1 + message.byteLength);
-        msg_to_send[0] = txtype;
-        message.copy(msg_to_send,1);
-        return this.signGetChunks(path, msg_to_send).then(chunks => {
+    async sign(path: string, message: Buffer) {
+        return this.signGetChunks(path, message).then(chunks => {
             return this.signSendChunk(1, chunks.length, chunks[0]).then(async response => {
                 let result = {
                     returnCode: response.returnCode,

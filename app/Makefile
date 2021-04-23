@@ -51,8 +51,8 @@ COIN=DFN
 endif
 
 APPVERSION_M=0
-APPVERSION_N=0
-APPVERSION_P=2
+APPVERSION_N=1
+APPVERSION_P=0
 
 $(info COIN  = [$(COIN)])
 ifeq ($(COIN),DFN)
@@ -195,6 +195,8 @@ SDK_SOURCE_PATH  += lib_ux
 CFLAGS += -I$(MY_DIR)/../deps/tinycbor/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/tinycbor-ledger
 
+CFLAGS += -I$(MY_DIR)/../deps/nanopb/
+APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 .PHONY: rust
 rust:

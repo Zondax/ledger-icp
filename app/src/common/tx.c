@@ -25,7 +25,7 @@
 #define RAM_BUFFER_SIZE 8192
 #define FLASH_BUFFER_SIZE 16384
 #elif defined(TARGET_NANOS)
- #define RAM_BUFFER_SIZE 384
+#define RAM_BUFFER_SIZE 384
 #define FLASH_BUFFER_SIZE 8192
 #endif
 
@@ -71,20 +71,20 @@ uint8_t *tx_get_buffer() {
 
 const char *tx_parse() {
     uint8_t err = parser_parse(
-        &ctx_parsed_tx,
-        tx_get_buffer(),
-        tx_get_buffer_length());
+            &ctx_parsed_tx,
+            tx_get_buffer(),
+            tx_get_buffer_length());
 
     if (err != parser_ok) {
         return parser_getErrorDescription(err);
     }
 
-//    err = parser_validate(&ctx_parsed_tx);
-//    CHECK_APP_CANARY()
-//
-//    if (err != parser_ok) {
-//        return parser_getErrorDescription(err);
-//    }
+    err = parser_validate(&ctx_parsed_tx);
+    CHECK_APP_CANARY()
+
+    if (err != parser_ok) {
+        return parser_getErrorDescription(err);
+    }
 
     return NULL;
 }
