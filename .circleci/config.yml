@@ -145,6 +145,8 @@ workflows:
           <<: *no-tags
 
   release:
+    when:
+      equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - build:
           <<: *only-release-tags
@@ -160,6 +162,8 @@ workflows:
             - test_zemu
 
   release_npm:
+    when:
+      equal: [ master, << pipeline.git.branch >> ]
     jobs:
       - publish_npm_package:
           <<: *only-npm-tags
