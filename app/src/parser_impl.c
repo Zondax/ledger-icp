@@ -349,6 +349,9 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             break;
         }
         case 0x01 : {
+            if (!app_mode_expert()) {
+                return 1;
+            }
             itemCount = 3 + v->tx_fields.stateRead.paths.arrayLen;
             break;
         }

@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <zxmacros.h>
+#include <app_mode.h>
 #include "parser_impl.h"
 #include "parser.h"
 #include "coin.h"
@@ -120,34 +121,39 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
-
-
     if (displayIdx < 0 || displayIdx >= numItems) {
         return parser_no_data;
     }
 
-    if (displayIdx == 0) {
-        DISPLAY_SHORTSTRING("request_type",parser_tx_obj.request_type.data)
-    }
-    if (displayIdx == 1) {
-        DISPLAY_U64("ingress_expiry", fields->ingress_expiry)
+    if (app_mode_expert()) {
+        snprintf(outKey, outKeyLen, "request_type");
+        snprintf(outVal, outValLen, "state read");
+    } else {
+        state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
+
+        if (displayIdx == 0) {
+            DISPLAY_SHORTSTRING("request_type", parser_tx_obj.request_type.data)
+        }
+        if (displayIdx == 1) {
+            DISPLAY_U64("ingress_expiry", fields->ingress_expiry)
+        }
+
+        if (displayIdx == 2) {
+            DISPLAY_TEXTUAL("sender", fields->sender)
+        }
+
+        displayIdx -= 3;
+        if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
+            return parser_no_data;
+        }
+        char buffer[100];
+        MEMZERO(buffer, sizeof(buffer));
+        snprintf(outKey, outKeyLen, "Path %d", displayIdx + 1);
+        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx].data,
+                        fields->paths.paths[displayIdx].len);
+        pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     }
 
-    if (displayIdx == 2) {
-        DISPLAY_TEXTUAL("sender",fields->sender)
-    }
-
-    displayIdx -= 3;
-    if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
-        return parser_no_data;
-    }
-    char buffer[100];
-    MEMZERO(buffer, sizeof(buffer));
-    snprintf(outKey, outKeyLen, "Path %d", displayIdx + 1);
-    array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx].data,
-                    fields->paths.paths[displayIdx].len);
-    pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     return parser_ok;
 
 
@@ -175,11 +181,11 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 0) {
-        DISPLAY_SHORTSTRING("request_type",parser_tx_obj.request_type.data)
+        DISPLAY_SHORTSTRING("request_type", parser_tx_obj.request_type.data)
     }
 
     if (displayIdx == 1) {
-        DISPLAY_BYTES("nonce",fields->nonce)
+        DISPLAY_BYTES("nonce", fields->nonce)
     }
 
     if (displayIdx == 2) {
@@ -187,15 +193,15 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 3) {
-        DISPLAY_TEXTUAL("sender",fields->sender)
+        DISPLAY_TEXTUAL("sender", fields->sender)
     }
 
     if (displayIdx == 4) {
-        DISPLAY_TEXTUAL("canister_id",fields->canister_id)
+        DISPLAY_TEXTUAL("canister_id", fields->canister_id)
     }
 
     if (displayIdx == 5) {
-        DISPLAY_SHORTSTRING("method_name",fields->method_name.data)
+        DISPLAY_SHORTSTRING("method_name", fields->method_name.data)
     }
 
     if (displayIdx == 6) {
@@ -215,10 +221,10 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         char buffer[100];
         MEMZERO(buffer, sizeof(buffer));
         snprintf(outKey, outKeyLen, "Subaccount");
-        if(fields->pb_fields.sendrequest.has_from_subaccount){
+        if (fields->pb_fields.sendrequest.has_from_subaccount) {
             array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        }else{
+        } else {
             snprintf(outVal, outValLen, "Not set");
         }
         return parser_ok;
