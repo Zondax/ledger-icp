@@ -14,8 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import jest, {expect} from "jest";
-import Zemu from "@zondax/zemu";
+import Zemu, {DEFAULT_START_OPTIONS, DeviceModel} from "@zondax/zemu";
 import DfinityApp from "@zondax/ledger-dfinity";
 import * as secp256k1 from "secp256k1";
 var sha256 = require('js-sha256');
@@ -26,44 +25,44 @@ const APP_PATH_X = Resolve("../app/output/app_x.elf");
 
 const APP_SEED = "equip will roof matter pink blind book anxiety banner elbow sun young"
 
-var simOptions = {
+const defaultOptions = {
+    ...DEFAULT_START_OPTIONS,
     logging: true,
-    start_delay: 3000,
     custom: `-s "${APP_SEED}"`,
-    X11: false
+    X11: false,
 };
-
-let models = [
-    ['S', {model: 'nanos', prefix: 'S', path: APP_PATH_S}],
-    ['X', {model: 'nanox', prefix: 'X', path: APP_PATH_X}]
-]
 
 jest.setTimeout(60000)
 
+export const models: DeviceModel[] = [
+    {name: 'nanos', prefix: 'S', path: APP_PATH_S},
+    {name: 'nanox', prefix: 'X', path: APP_PATH_X}
+]
+
 describe('Standard', function () {
-    test.each(models)('can start and stop container (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('can start and stop container', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
         } finally {
             await sim.close();
         }
     });
 
-    test.each(models)('main menu (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('main menu', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-mainmenu`, 3);
+            await sim.start({...defaultOptions, model: m.name,});
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-mainmenu`, 3);
         } finally {
             await sim.close();
         }
     });
 
-    test.each(models)('get app version (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('get app version', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
             const resp = await app.getVersion();
 
@@ -80,10 +79,10 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('get address (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('get address', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
@@ -99,7 +98,7 @@ describe('Standard', function () {
             const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
             expect(resp.principal.toString('hex')).toEqual(expected_principal);
-            expect(resp.principalText).toEqual(expected_principalTextual);
+            expect(resp.principal_textual).toEqual(expected_principalTextual);
             expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
             expect(resp.address.toString('hex')).toEqual(expected_address);
 
@@ -108,17 +107,17 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('show address (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('show address', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0");
 
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-show_address`, model === "nanos" ? 4 : 5);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-show_address`, m.name === "nanos" ? 4 : 5);
 
             const resp = await respRequest;
 
@@ -133,7 +132,7 @@ describe('Standard', function () {
             const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
             expect(resp.principal.toString('hex')).toEqual(expected_principal);
-            expect(resp.principalText).toEqual(expected_principalTextual);
+            expect(resp.principal_textual).toEqual(expected_principalTextual);
             expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
             expect(resp.address.toString('hex')).toEqual(expected_address);
         } finally {
@@ -141,10 +140,10 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign basic normal -- token transfer (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('sign basic normal -- token transfer', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
@@ -165,7 +164,7 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, model === "nanos" ? 14 : 15);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_basic_normal`, m.name === "nanos" ? 14 : 15);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
@@ -195,10 +194,10 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign state transaction read (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('sign state transaction read', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
@@ -218,7 +217,7 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_stateread_normal`, model === "nanos" ? 7 : 8);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_stateread_normal`, m.name === "nanos" ? 7 : 8);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
