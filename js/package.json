@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "version": "0.1.0",
   "description": "Node API for Dfinity App (Ledger Nano S/X)",
-  "main": "./dist/index.ts",
+  "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "types": "./dist/index.d.ts",
   "homepage": "https://github.com/zondax/ledger-dfinity",
