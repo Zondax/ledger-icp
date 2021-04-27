@@ -19,6 +19,7 @@
 #include <zxtypes.h>
 
 #define ZX_NO_CPP
+
 #include "protobuf/dfinity.pb.h"
 
 #ifdef __cplusplus
@@ -28,10 +29,6 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
-#define NUM_MAP_TYPE0 7
-#define NUM_MAP_TYPE1 4
-
-
 #define SENDER_MAX_LEN 29
 #define CANISTER_MAX_LEN 10
 #define REQUEST_MAX_LEN 10
@@ -40,6 +37,12 @@ extern "C" {
 #define ARG_MAX_LEN 100
 #define PATH_MAX_LEN 40
 #define PATH_MAX_ARRAY 5
+
+typedef enum {
+    unknown = 0x00,                 // default is not accepted
+    token_transfer = 0x01,
+    state_transaction_read = 0x02,
+} txtype_e;
 
 typedef struct {
     uint8_t data[SENDER_MAX_LEN + 1];
@@ -106,8 +109,9 @@ typedef struct {
 } state_read_t;
 
 typedef struct {
+    txtype_e txtype;            // union selector
+    ///
     request_t request_type;
-    txtype_e txtype;
     union {
         call_t call;
         state_read_t stateRead;

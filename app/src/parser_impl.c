@@ -338,21 +338,48 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     // Note: This is place holder for transaction level checks that the project may require before accepting
     // the parsed values. the parser already validates input
     // This function is called by parser_validate, where additional checks are made (formatting, UI/UX, etc.(
+
+    switch (v->txtype) {
+        case token_transfer:
+            if (strcmp(v->request_type.data, "call") != 0) {
+                return parser_unexpected_value;
+            }
+
+            const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
+            // FIXME: Check canisterId
+
+            if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
+                return parser_unexpected_value;
+            }
+
+            // FIX: matches current principal
+
+            break;
+        case state_transaction_read:
+            break;
+        default:
+            return parser_unexpected_method;
+    }
+
     return parser_ok;
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     uint8_t itemCount = 0;
     switch (v->txtype) {
-        case 0x00 : {
-            itemCount = 6 + 5; //cbor contents + token transfer protobuf data
+        case token_transfer: {
+            if (!app_mode_expert()) {
+                return 6;
+            }
+            itemCount = 6 + 5;          //cbor contents + token transfer protobuf data
             break;
         }
-        case 0x01 : {
+        case state_transaction_read : {
+            // based on https://github.com/Zondax/ledger-dfinity/issues/48
             if (!app_mode_expert()) {
-                return 1;
+                return 1;               // only check status
             }
-            itemCount = 3 + v->tx_fields.stateRead.paths.arrayLen;
+            itemCount = 2 + v->tx_fields.stateRead.paths.arrayLen;
             break;
         }
         default : {

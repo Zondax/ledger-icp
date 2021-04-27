@@ -1,18 +1,48 @@
 [
   {
     "index": 1,
-    "name": "DummyTransaction",
-    "blob": "000000000000000000",
-    "valid": false,
-    "testnet": false,
+    "name": "SendTx1",
+    "blob": "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550f5390d960c6e52f489155a4309da03da6e696e67726573735f6578706972791b1674c5e29ec9c2106673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad026b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656473656e646361726758560a0012050a0308e8071a0308890122220a2001010101010101010101010101010101010101010101010101010101010101012a220a2035548ec29e9d85305850e87a2d2642fe7214ff4bb36334070deafc3345c3b1276d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840de5bccbb0a0173c432cd58ea4495d4d1e122d6ce04e31dcf63217f3d3a9b73130dc9bbf3b10e61c8db8bf8800bb4649e27786e5bc9418838c95864be28487a6a",
+    "valid": true,
     "output": [
-      "0 | Key1 : Value1",
-      "1 | Key2 : Value2"
+      "0 | Transaction type : Send ICP",
+      "1 | From account [1/2] : a08a55daa0a650e04c94e291ab788ca5",
+      "1 | From account [2/2] : 11ad18721c9263b4960f90510ee41bcc",
+      "2 | To account [1/2] : 35548ec29e9d85305850e87a2d2642fe",
+      "2 | To account [2/2] : 7214ff4bb36334070deafc3345c3b127",
+      "3 | Payment (ICP) : 0.00001",
+      "4 | Maximum fee (ICP) : 0.00000137",
+      "5 | Memo : 0"
     ],
     "output_expert": [
-      "0 | Key1 : Value1",
-      "1 | Key2 : Value2",
-      "2 | Key3 : Value3"
+      "0 | Transaction type : Send ICP",
+      "1 | Sender [1/2] : hw5je-hd33v-7xl3v : g7t2y-aapa3-635og",
+      "1 | Sender [2/2] : fz5dz-mhma6-dthmt : kzqlk-wqe",
+      "2 | Subaccount [1/2] : 01010101010101010101010101010101",
+      "2 | Subaccount [2/2] : 01010101010101010101010101010101",
+      "3 | From account [1/2] : a08a55daa0a650e04c94e291ab788ca5",
+      "3 | From account [2/2] : 11ad18721c9263b4960f90510ee41bcc",
+      "4 | To account [1/2] : 35548ec29e9d85305850e87a2d2642fe",
+      "4 | To account [2/2] : 7214ff4bb36334070deafc3345c3b127",
+      "5 | Payment (ICP) : 0.00001",
+      "6 | Maximum fee (ICP) : 0.00000137",
+      "7 | Memo : 0"
+    ]
+  },
+  {
+    "index": 2,
+    "name": "SendReadStateTx1",
+    "blob": "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581dbd28a51aa219af2443896127d178f9b2de34215c948f3e265a0e083d02",
+    "valid": true,
+    "output": [
+      "0 | Transaction type : Check status"
+    ],
+    "output_expert": [
+      "0 | Transaction type : Check status",
+      "1 | Sender [1/2] : my44l-4f5fc-srviq : zv4se-hclbe-7ixr6",
+      "1 | Sender [2/2] : ns3y2-ccxeu-r47cm : wqoba-6qe",
+      "2 | Request ID [1/2] : a740262068c4b22efed0cc67095fc9ce",
+      "2 | Request ID [2/2] : 46c883182c09aa045b4c0396060105d2"
     ]
   }
 ]
