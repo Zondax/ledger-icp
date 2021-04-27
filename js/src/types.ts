@@ -1,13 +1,15 @@
+import {LedgerError} from "./common";
+
 export interface ResponseBase {
-  errorMessage: string;
-  returnCode: number;
+  errorMessage?: string;
+  returnCode: LedgerError;
 }
 
 export interface ResponseAddress extends ResponseBase {
   publicKey: Buffer;
   principal: Buffer;
   address: Buffer;
-  principal_textual: string;
+  principalText: string;
 }
 
 export interface ResponseVersion extends ResponseBase {
