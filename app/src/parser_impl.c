@@ -371,7 +371,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             if (!app_mode_expert()) {
                 return 6;
             }
-            itemCount = 6 + 5;          //cbor contents + token transfer protobuf data
+            itemCount = 8;          //cbor contents + token transfer protobuf data
             break;
         }
         case state_transaction_read : {

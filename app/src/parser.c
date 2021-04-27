@@ -31,7 +31,7 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
 #endif
 
 parser_error_t zeroize_parser_tx(parser_tx_t *v) {
-    MEMZERO(v, sizeof(v));
+    MEMZERO(v, sizeof(parser_tx_t));
     return parser_ok;
 }
 
@@ -215,19 +215,15 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
             DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
         }
     } else {
-        if (displayIdx == 3) {
-            DISPLAY_TEXTUAL("sender", fields->sender)
+        if (displayIdx == 0) {
+            DISPLAY_SHORTSTRING("Transaction type", "Send ICP")
         }
 
-        if (displayIdx == 4) {
-            DISPLAY_TEXTUAL("canister_id", fields->canister_id)
+        if (displayIdx == 1) {
+            DISPLAY_TEXTUAL("Sender", fields->sender)
         }
 
-        if (displayIdx == 5) {
-            DISPLAY_SHORTSTRING("method_name", fields->method_name.data)
-        }
-
-        if (displayIdx == 9) {
+        if (displayIdx == 2) {
             char buffer[100];
             MEMZERO(buffer, sizeof(buffer));
             snprintf(outKey, outKeyLen, "Subaccount");
@@ -238,6 +234,31 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
                 snprintf(outVal, outValLen, "Not set");
             }
             return parser_ok;
+        }
+
+        if (displayIdx == 3) {
+            DISPLAY_TEXTUAL("From account", fields->sender)             // FIXME:
+        }
+
+        if (displayIdx == 4) {
+            char buffer[100];
+            MEMZERO(buffer, sizeof(buffer));
+            snprintf(outKey, outKeyLen, "To account");
+            array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            return parser_ok;
+        }
+
+        if (displayIdx == 5) {
+            DISPLAY_ICP("Payment (ICP)", fields->pb_fields.sendrequest.payment.receiver_gets.e8s)
+        }
+
+        if (displayIdx == 6) {
+            DISPLAY_ICP("Maximum Fee (ICP)", fields->pb_fields.sendrequest.max_fee.e8s)
+        }
+
+        if (displayIdx == 7) {
+            DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
         }
     }
 
