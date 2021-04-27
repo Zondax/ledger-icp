@@ -140,7 +140,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
 //    content [map]
 //        request_type [text]
 //        read_state / query [blob]
-//        nonce [blob]
+//        nonce [blob] (optional)
 //        ingress_expiry [nat]
 //        sender [principal]
 //        canister_id [principal]
@@ -252,7 +252,10 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         call_t *fields = &v->tx_fields.call;
         READ_STRING(content_map, "sender", fields->sender)
         READ_STRING(content_map, "canister_id", fields->canister_id)
+
+        // FIXME: https://github.com/Zondax/ledger-dfinity/issues/45
         READ_STRING(content_map, "nonce", fields->nonce)
+
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
         READ_STRING(content_map, "arg", fields->arg)

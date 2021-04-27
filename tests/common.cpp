@@ -16,6 +16,7 @@
 #include <parser.h>
 #include <sstream>
 #include <string>
+#include <fmt/core.h>
 #include "common.h"
 
 std::vector<std::string> dumpUI(parser_context_t *ctx,
@@ -44,14 +45,15 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
                                  valueBuffer, maxValueLen,
                                  pageIdx, &pageCount);
 
-            ss << idx << " | " << keyBuffer;
+            ss << fmt::format("{} | {}", idx, keyBuffer);
             if (pageCount > 1) {
-                ss << " [" << (int) pageIdx + 1 << "/" << (int) pageCount << "]";
+                ss << fmt::format(" [{}/{}]", pageIdx + 1, pageCount);
             }
             ss << " : ";
 
             if (err == parser_ok) {
-                ss << valueBuffer;
+                // Model multiple lines
+                ss << fmt::format("{}", valueBuffer);
             } else {
                 ss << parser_getErrorDescription(err);
             }

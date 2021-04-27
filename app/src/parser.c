@@ -72,19 +72,28 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     char buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                  \
     snprintf(outKey, outKeyLen, KEYNAME);  \
-    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 0); \
+    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 0, NULL); \
     pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
     return parser_ok;                                          \
 }
 
-#define DISPLAY_ICP(KEYNAME, VALUE) { \
+parser_error_t parser_displayICP(const char *key,
+                                 uint64_t value,
+                                 char *outKey, uint16_t outKeyLen,
+                                 char *outVal, uint16_t outValLen,
+                                 uint8_t pageIdx, uint8_t *pageCount) {
+    // FIXME: https://github.com/Zondax/ledger-dfinity/issues/46
+// - thousand separator comma: ,
+// - fractional at least 2 digits
     char buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                  \
-    snprintf(outKey, outKeyLen, KEYNAME);  \
-    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 8);          \
+    snprintf(outKey, outKeyLen, "%s", key);  \
+    fpuint64_to_str(buffer, sizeof(buffer), value, 8, NULL);          \
     number_inplace_trimming(buffer);                           \
     pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
     return parser_ok;                                          \
+
+    return parser_ok;
 }
 
 #define DISPLAY_SHORTSTRING(KEYNAME, VALUE) { \
@@ -93,23 +102,17 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;                                              \
 }
 
-#define DISPLAY_BYTES(KEYNAME, VALUE) { \
-    char buffer[100];                                           \
-    MEMZERO(buffer, sizeof(buffer));                              \
-    snprintf(outKey, outKeyLen, KEYNAME);                       \
-    array_to_hexstr(buffer, sizeof(buffer), (VALUE).data, (VALUE).len); \
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
-    return parser_ok;                            \
-}
-
+// FIXME: 3 groups of 5 and split
 #define DISPLAY_TEXTUAL(KEYNAME, VALUE) { \
-    char buffer[100];                                           \
+    uint8_t buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                      \
     snprintf(outKey, outKeyLen, KEYNAME); \
     uint16_t outLen = 0;          \
-    uint8_t tmpbuffer[100];        \
-    crypto_principalToTextual((uint8_t *)(VALUE).data, (VALUE).len, tmpbuffer, &outLen);  \
+    char tmpbuffer[100];        \
+    crypto_principalToTextual((char *)(VALUE).data, (VALUE).len, (char *) tmpbuffer, &outLen);  \
     addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);   \
+    if (outValLen < 37) { return parser_unexpected_buffer_end; } \
+    outValLen = 37; \
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
     return parser_ok;                            \
 }
@@ -148,6 +151,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         }
 
         displayIdx -= 2;
+        // FIXME: path filtering
         if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
             return parser_no_data;
         }
@@ -191,24 +195,39 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
+            // FIXME: 4 lines of 16 chars each
             DISPLAY_TEXTUAL("From account", fields->sender)             // FIXME:
         }
 
         if (displayIdx == 2) {
+            // FIXME: 4 lines of 16 char each
             char buffer[100];
             MEMZERO(buffer, sizeof(buffer));
             snprintf(outKey, outKeyLen, "To account");
             array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            if (outValLen < 33) {
+                return parser_unexpected_buffer_end;
+            }
+
+            outValLen = 33;
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return parser_ok;
         }
 
         if (displayIdx == 3) {
-            DISPLAY_ICP("Payment (ICP)", fields->pb_fields.sendrequest.payment.receiver_gets.e8s)
+            return parser_displayICP("Payment (ICP)",
+                                     fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
         }
 
         if (displayIdx == 4) {
-            DISPLAY_ICP("Maximum Fee (ICP)", fields->pb_fields.sendrequest.max_fee.e8s)
+            return parser_displayICP("Maximum fee (ICP)",
+                                     fields->pb_fields.sendrequest.max_fee.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
         }
 
         if (displayIdx == 5) {
@@ -250,11 +269,19 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 5) {
-            DISPLAY_ICP("Payment (ICP)", fields->pb_fields.sendrequest.payment.receiver_gets.e8s)
+            return parser_displayICP("Payment (ICP)",
+                                     fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
         }
 
         if (displayIdx == 6) {
-            DISPLAY_ICP("Maximum Fee (ICP)", fields->pb_fields.sendrequest.max_fee.e8s)
+            return parser_displayICP("Maximum fee (ICP)",
+                                     fields->pb_fields.sendrequest.max_fee.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
         }
 
         if (displayIdx == 7) {

@@ -20,7 +20,7 @@
 #include <hexutils.h>
 #include <zxmacros.h>
 #include "crypto.h"
-
+#include <string.h>
 #include <stdint.h>
 
 namespace {
@@ -42,12 +42,13 @@ namespace {
         uint8_t subaccount[32];
         uint8_t address[32];
 
-        for(int i = 0; i < 3; i ++){
+        for (int i = 0; i < 3; i++) {
             parseHexString(principal, sizeof(principal), principals[i]);
-            MEMZERO(subaccount,sizeof(subaccount));
-            MEMZERO(address,sizeof(address));
+            MEMZERO(subaccount, sizeof(subaccount));
+            MEMZERO(address, sizeof(address));
 
-            zxerr_t err = crypto_principalToSubaccount(principal, sizeof(principal), subaccount, sizeof(subaccount), address, sizeof(address));
+            zxerr_t err = crypto_principalToSubaccount(principal, sizeof(principal), subaccount, sizeof(subaccount),
+                                                       address, sizeof(address));
             EXPECT_EQ(err, zxerr_ok);
 
             parseHexString(inBuffer, sizeof(inBuffer), accounts[i]);
@@ -73,7 +74,7 @@ namespace {
         const char *tmp = "047060f720298ffa0f48d9606abdb013bc82f4ff269f9adc3e7226391af3fad8b30fd6a30deb81d5b4f9e142971085d0ae15b8e222d85af1e17438e630d09b7ef4";
         parseHexString(inBuffer, sizeof(inBuffer), tmp);
 
-        uint8_t addr[29];
+        char addr[29];
 
         crypto_computePrincipal(inBuffer, addr);
 
@@ -87,6 +88,90 @@ namespace {
         uint16_t len = 0;
         crypto_principalToTextual(addr, sizeof(addr), inBuffer, &len);
         EXPECT_STREQ((const char *) inBuffer, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
+    }
+
+    TEST(AddressToStringTests, AddrToTextSplitting1) {
+        const char *testInput = "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae";
+        char outBuffer[200];
+
+        addr_to_textual(outBuffer, sizeof(outBuffer), testInput, strlen(testInput));
+        EXPECT_STREQ((const char *) outBuffer, "di6pv-55zh2-qkzvb-27m4m-qxz5t-gmmzc-vbdcr-zcyzz-4ukad-ndaen-cae");
+    }
+
+    zxerr_t addr_getblock(const char *inS, uint16_t inLen, uint8_t index, char *outS, uint8_t outChunkLen) {
+        MEMZERO(outS, outChunkLen);
+        const uint16_t offset = index * outChunkLen;
+
+        if (inLen < offset) {
+            return zxerr_buffer_too_small;
+        }
+
+        const uint16_t size = inLen - offset < outChunkLen ? inLen - offset : outChunkLen;
+
+        MEMCPY((void *) outS, (const void *) (inS + offset), size);
+        return zxerr_ok;
+    }
+
+    zxerr_t addr_to_screen(const char *inS, uint16_t inLen, char *outS, uint16_t outLen) {
+        MEMZERO(outS, outLen);
+        char tmp[10];
+
+        CHECK_ZXERR(addr_getblock(inS, inLen, 0, tmp, 5));
+        strcat(outS, tmp);
+        strcat(outS, "-");
+        CHECK_ZXERR(addr_getblock(inS, inLen, 1, tmp, 5));
+        strcat(outS, tmp);
+        strcat(outS, "-");
+        CHECK_ZXERR(addr_getblock(inS, inLen, 2, tmp, 5));
+        strcat(outS, tmp);
+        strcat(outS, " ");
+        ////
+        CHECK_ZXERR(addr_getblock(inS, inLen, 3, tmp, 5));
+        strcat(outS, tmp);
+        strcat(outS, "-");
+        CHECK_ZXERR(addr_getblock(inS, inLen, 4, tmp, 5));
+        strcat(outS, tmp);
+        strcat(outS, "-");
+        CHECK_ZXERR(addr_getblock(inS, inLen, 5, tmp, 5));
+        strcat(outS, tmp);
+
+//        strcat(outS, tmp);
+//        strcat(outS, "-");
+//        CHECK_ZXERR(addr_getblock(inS, inLen, i, tmp, 5));
+//        strcat(outS, tmp);
+//        strcat(outS, "-");
+//
+//
+//        const int numChunks = inLen / 5 + 1;
+//        for (int i = 0; i < numChunks; i++) {
+//            char tmp[10];
+//            CHECK_ZXERR(addr_getblock(inS, inLen, i, tmp, 5));
+//            strcat(outS, tmp);
+//            strcat(outS, "-");
+//        }
+
+        return zxerr_ok;
+    }
+
+    TEST(AddressToStringTests, AddrToTextSplitting2) {
+        const char *testInput = "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae";
+        char outBuffer[200];
+
+        addr_getblock(testInput, strlen(testInput), 1, outBuffer, 5);
+        printf("%s\n", outBuffer);
+        EXPECT_STREQ((const char *) outBuffer, "55zh2");
+
+        addr_getblock(testInput, strlen(testInput), 0, outBuffer, 5);
+        printf("%s\n", outBuffer);
+        EXPECT_STREQ((const char *) outBuffer, "di6pv");
+
+        addr_getblock(testInput, strlen(testInput), 10, outBuffer, 5);
+        printf("%s\n", outBuffer);
+        EXPECT_STREQ((const char *) outBuffer, "cae");
+
+//        addr_to_screen(testInput, strlen(testInput), outBuffer, sizeof(outBuffer));
+//        printf("%s\n", outBuffer);
+//        EXPECT_STREQ((const char *) outBuffer, "di6pv-55zh2-qkzvb-27m4m-qxz5t-gmmzc-vbdcr-zcyzz-4ukad-ndaen-cae");
     }
 
 }
