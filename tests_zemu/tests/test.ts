@@ -98,7 +98,7 @@ describe('Standard', function () {
             const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
             expect(resp.principal.toString('hex')).toEqual(expected_principal);
-            expect(resp.principal_textual).toEqual(expected_principalTextual);
+            expect(resp.principalText).toEqual(expected_principalTextual);
             expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
             expect(resp.address.toString('hex')).toEqual(expected_address);
 
@@ -132,7 +132,7 @@ describe('Standard', function () {
             const expected_address = "4f3d4b40cdb852732601fccf8bd24dffe44957a647cb867913e982d98cf85676"
 
             expect(resp.principal.toString('hex')).toEqual(expected_principal);
-            expect(resp.principal_textual).toEqual(expected_principalTextual);
+            expect(resp.principalText).toEqual(expected_principalTextual);
             expect(resp.publicKey.toString('hex')).toEqual(expected_pk);
             expect(resp.address.toString('hex')).toEqual(expected_address);
         } finally {
