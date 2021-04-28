@@ -32,11 +32,11 @@ __Z_INLINE parser_error_t parser_mapCborError(CborError err);
 
 #define PARSER_ASSERT_OR_ERROR(CALL, ERROR) if (!(CALL)) return ERROR;
 
-#define CHECK_CBOR_TYPE(type, expected) {if (type!=expected) return parser_unexpected_type;}
+#define CHECK_CBOR_TYPE(TYPE, EXPECTED) {if ( (TYPE)!= (EXPECTED) ) return parser_unexpected_type;}
 
 #define INIT_CBOR_PARSER(c, it)  \
     CborParser parser;           \
-    CHECK_CBOR_MAP_ERR(cbor_parser_init(c->buffer + c->offset, c->bufferLen - c->offset, 0, &parser, &it))
+    CHECK_CBOR_MAP_ERR(cbor_parser_init((c)->buffer + (c)->offset, (c)->bufferLen - (c)->offset, 0, &parser, &it))
 
 parser_error_t parser_init_context(parser_context_t *ctx,
                                    const uint8_t *buffer,
@@ -198,7 +198,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
-    stateRead->has_requeststatus_path = strcmp((char *)stateRead->paths.paths[0].data, "request_status") == 0;
+    stateRead->has_requeststatus_path = strcmp((char *) stateRead->paths.paths[0].data, "request_status") == 0;
 
     while (!cbor_value_at_end(&it)) {
         cbor_value_advance(&it);
@@ -258,7 +258,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         if (mapsize == 7) {
             READ_STRING(content_map, "nonce", fields->nonce)
             fields->has_nonce = true;
-        }else{
+        } else {
             fields->has_nonce = false;
         }
 
@@ -278,7 +278,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         CHECK_PARSER_ERR(parsePaths(content_map, fields))
 
     } else if (strcmp(v->request_type.data, "query") == 0) {
-        return parser_unexpected_value;
+        return parser_unexpected_method;
     } else {
         return parser_unexpected_value;
     }
@@ -357,7 +357,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             }
 
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
-            uint8_t canister_textual[22];
+            char canister_textual[22];
             uint16_t outLen = 0;
 
             PARSER_ASSERT_OR_ERROR(
@@ -402,11 +402,12 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     MEMZERO(publicKey, sizeof(publicKey));
     MEMZERO(principalBytes, sizeof(principalBytes));
 
-    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok, parser_unexepected_error)
+    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                           parser_unexepected_error)
 
     PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
 
-    if(memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0){
+    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
         return parser_unexpected_value;
     }
 

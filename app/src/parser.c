@@ -104,12 +104,12 @@ parser_error_t parser_displayICP(const char *key,
 
 // FIXME: 3 groups of 5 and split
 #define DISPLAY_TEXTUAL(KEYNAME, VALUE) { \
-    uint8_t buffer[100];                                           \
+    char buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                      \
     snprintf(outKey, outKeyLen, KEYNAME); \
     uint16_t outLen = 0;          \
     char tmpbuffer[100];        \
-    crypto_principalToTextual((char *)(VALUE).data, (VALUE).len, (char *) tmpbuffer, &outLen);  \
+    crypto_principalToTextual((const uint8_t *)(VALUE).data, (VALUE).len, (char *) tmpbuffer, &outLen);  \
     addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);   \
     if (outValLen < 37) { return parser_unexpected_buffer_end; } \
     outValLen = 37; \

@@ -31,10 +31,10 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
                               0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x0a, 0x03, 0x42, 0x00};
 
 #define DER_PREFIX_SIZE 23u
-#define DER_INPUT_SIZE  DER_PREFIX_SIZE + SECP256K1_PK_LEN
+#define DER_INPUT_SIZE  (DER_PREFIX_SIZE + SECP256K1_PK_LEN)
 
 #define SIGN_PREFIX_SIZE 11u
-#define SIGN_PREHASH_SIZE SIGN_PREFIX_SIZE + CX_SHA256_SIZE
+#define SIGN_PREHASH_SIZE (SIGN_PREFIX_SIZE + CX_SHA256_SIZE)
 
 #define SUBACCOUNT_PREFIX_SIZE 11u
 
@@ -107,8 +107,7 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
 //    00 // no padding
 //    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
 
-zxerr_t crypto_computePrincipal(const uint8_t *pubKey,
-                                uint8_t *principal) {
+zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *address) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
@@ -393,7 +392,7 @@ zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen,
     input[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
     input[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
     MEMCPY(input + 4, address_in, addressLen);
-    int enc_len = base32_encode(input, 4 + addressLen, textual, 100);
+    uint32_t enc_len = base32_encode(input, 4 + addressLen, textual, 100);
     if (enc_len == 0) {
         return zxerr_unknown;
     }

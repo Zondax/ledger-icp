@@ -40,7 +40,7 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
             std::stringstream ss;
 
             err = parser_getItem(ctx,
-                                 idx,
+                                 (uint8_t) idx,
                                  keyBuffer, maxKeyLen,
                                  valueBuffer, maxValueLen,
                                  pageIdx, &pageCount);
