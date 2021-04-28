@@ -88,7 +88,7 @@ namespace {
         char addressText[100];
         MEMZERO(addressText, 100);
         crypto_principalToTextual(addr, sizeof(addr), addressText, &len);
-        EXPECT_STREQ((const char *) inBuffer, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
+        EXPECT_STREQ((const char *) addressText, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
     }
 
     TEST(AddressToStringTests, AddrToTextSplitting1) {
