@@ -68,7 +68,7 @@ int base32_decode(const uint8_t *encoded, unsigned int encodedSize, uint8_t *res
     return count;
 }
 
-int base32_encode(const uint8_t *data, unsigned int length, uint8_t *result, unsigned int bufSize) {
+int base32_encode(const uint8_t *data, unsigned int length, char *result, unsigned int bufSize) {
     if (length < 0 || length > (1 << 28)) {
         return -1;
     }

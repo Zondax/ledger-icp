@@ -306,7 +306,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     return zxerr_ok;
 }
 
-zxerr_t crypto_computePrincipal(const uint8_t *pubKey, char *address) {
+zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
@@ -321,7 +321,7 @@ zxerr_t crypto_computePrincipal(const uint8_t *pubKey, char *address) {
     picohash_final(&ctx, buf);
 
     buf[DFINITY_PRINCIPAL_LEN - 1] = 0x02;
-    MEMCPY(address, buf, DFINITY_PRINCIPAL_LEN);
+    MEMCPY(principal, buf, DFINITY_PRINCIPAL_LEN);
     return zxerr_ok;
 }
 
@@ -384,7 +384,7 @@ void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc) {
     }
 }
 
-zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, uint8_t *textual, uint16_t *outLen) {
+zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, char *textual, uint16_t *outLen) {
     uint8_t input[33];
     uint32_t crc = 0;
     crc32_small(address_in, addressLen, &crc);
@@ -466,7 +466,7 @@ typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
     uint8_t subAccountBytes[DFINITY_ADDR_LEN];
-    unsigned char addrText[DFINITY_TEXTUAL_SIZE];
+    char addrText[DFINITY_TEXTUAL_SIZE];
 
 } __attribute__((packed)) answer_t;
 
