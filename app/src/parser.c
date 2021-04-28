@@ -117,6 +117,22 @@ parser_error_t parser_displayICP(const char *key,
     return parser_ok;                            \
 }
 
+// FIXME: 32 hex characters on each line
+#define DISPLAY_ACCOUNTBYTES(PRINCIPAL, SUBACCOUNT) { \
+    char buffer[100];                                                           \
+    MEMZERO(buffer, sizeof(buffer));                                            \
+    uint8_t address[32];                                                        \
+    MEMZERO(address, sizeof(address));                                           \
+    zxerr_t err = crypto_principalToSubaccount(PRINCIPAL, 29, SUBACCOUNT, 32,   \
+                                           address, sizeof(address));           \
+    if (err != zxerr_ok){                                                       \
+        return parser_unexepected_error;                                        \
+    }                                                                           \
+    array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) address, 32);           \
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);                  \
+    return parser_ok;                                                           \
+}
+
 parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
                                                   uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
@@ -195,8 +211,8 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            // FIXME: 4 lines of 16 chars each
-            DISPLAY_TEXTUAL("From account", fields->sender)             // FIXME:
+            snprintf(outKey, outKeyLen, "From account");
+            DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
         }
 
         if (displayIdx == 2) {
@@ -256,7 +272,9 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 3) {
-            DISPLAY_TEXTUAL("From account", fields->sender)             // FIXME:
+            snprintf(outKey, outKeyLen, "From account");
+            DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
+
         }
 
         if (displayIdx == 4) {
