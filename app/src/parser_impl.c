@@ -354,8 +354,15 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                 return parser_unexpected_value;
             }
 
-            const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
-            // FIXME: Check canisterId
+            uint8_t *canisterId = v->tx_fields.call.canister_id.data;
+            uint8_t canister_textual[22];
+            uint16_t outLen = 0;
+            if (crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual, &outLen) != zxerr_ok ){
+                return parser_unexpected_value;
+            }
+            if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
+                return parser_unexpected_value;
+            }
 
             if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
                 return parser_unexpected_value;
