@@ -107,7 +107,7 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
 //    00 // no padding
 //    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
 
-zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *address) {
+zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
