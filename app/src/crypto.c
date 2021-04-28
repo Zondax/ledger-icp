@@ -74,7 +74,9 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
 }
 
 //CRC-32(b) || b with b = SHA-224(“\x0Aaccount-id“ || owner || sub-account), where owner is a (29-byte)
-zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, uint8_t *subAccount, uint16_t subaccountLen, uint8_t *address, uint16_t maxoutLen){
+zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
+                                     uint8_t *subAccount, uint16_t subaccountLen,
+                                     uint8_t *address, uint16_t maxoutLen) {
     if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN || maxoutLen < DFINITY_ADDR_LEN){
         return zxerr_invalid_crypto_settings;
     }
@@ -105,7 +107,8 @@ zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, 
 //    00 // no padding
 //    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
 
-zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
+zxerr_t crypto_computePrincipal(const uint8_t *pubKey,
+                                char *address) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
