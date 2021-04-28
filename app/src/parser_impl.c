@@ -347,7 +347,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     // Note: This is place holder for transaction level checks that the project may require before accepting
     // the parsed values. the parser already validates input
     // This function is called by parser_validate, where additional checks are made (formatting, UI/UX, etc.(
-    uint8_t *sender = NULL;
+    const uint8_t *sender = NULL;
     switch (v->txtype) {
         case token_transfer: {
             zemu_log_stack("token_transfer");
