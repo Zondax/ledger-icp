@@ -209,7 +209,7 @@ describe('Standard', function () {
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
             expect(respAddr.publicKey.toString('hex')).toEqual(expected_pk);
 
-            let txBlobStr = "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581dbd28a51aa219af2443896127d178f9b2de34215c948f3e265a0e083d02";
+            let txBlobStr = "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
             const txBlob = Buffer.from(txBlobStr, "hex");
 
             const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob);
@@ -217,7 +217,7 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_stateread_normal`, m.name === "nanos" ? 7 : 8);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_stateread_normal`, m.name === "nanos" ? 1 : 2);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
@@ -225,10 +225,10 @@ describe('Standard', function () {
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
 
-            const expected_preHash = "0a69632d7265717565737494a6b4c7dd97a1d04f7428b26ecca2b55c049fa473c23f0792bf5267bc45033f";
+            const expected_preHash = "0a69632d726571756573743223034c034fd8a23c5b4ea4e79af40a82cf43bd14c35740a8546b4fb5717a57";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            const expected_hash = "f8e8810b6b826d5335b02d3a597abc8abececa7bbe01c094c5959c1f74832274";
+            const expected_hash = "0cb5a159215db7b9534d74dbfe97a495138c534520f4788f3518aa2c277966b0";
             let hash = sha256.hex(signatureResponse.preSignHash);
             expect(hash).toEqual(expected_hash);
 
