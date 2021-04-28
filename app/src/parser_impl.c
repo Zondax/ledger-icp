@@ -347,7 +347,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     // Note: This is place holder for transaction level checks that the project may require before accepting
     // the parsed values. the parser already validates input
     // This function is called by parser_validate, where additional checks are made (formatting, UI/UX, etc.(
-
+    uint8_t *sender = NULL;
     switch (v->txtype) {
         case token_transfer:
             if (strcmp(v->request_type.data, "call") != 0) {
@@ -357,9 +357,9 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             uint8_t *canisterId = v->tx_fields.call.canister_id.data;
             uint8_t canister_textual[22];
             uint16_t outLen = 0;
-            if (crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual, &outLen) != zxerr_ok ){
-                return parser_unexpected_value;
-            }
+
+            PARSER_ASSERT_OR_ERROR(crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual, &outLen) == zxerr_ok, parser_unexepected_error)
+
             if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
                 return parser_unexpected_value;
             }
@@ -367,6 +367,8 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
                 return parser_unexpected_value;
             }
+            sender = v->tx_fields.call.sender.data;
+
             break;
         case state_transaction_read:
             if (strcmp(v->request_type.data, "read_state") != 0) {
@@ -374,12 +376,11 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             }
             //fixme: add paths check
 
+            sender = v->tx_fields.stateRead.sender.data;
             break;
         default:
             return parser_unexpected_method;
     }
-
-    uint8_t *sender = v->tx_fields.call.sender.data;
 
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
@@ -387,9 +388,9 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     MEMZERO(publicKey, sizeof(publicKey));
     MEMZERO(principalBytes, sizeof(principalBytes));
 
-    CHECK_ZXERR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)))
+    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok, parser_unexepected_error)
 
-    CHECK_ZXERR(crypto_computePrincipal(publicKey, sizeof(publicKey)))
+    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
 
     if(memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0){
         return parser_unexpected_value;
