@@ -14,8 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import jest, {expect} from "jest";
-import Zemu from "@zondax/zemu";
+import Zemu, {DEFAULT_START_OPTIONS, DeviceModel} from "@zondax/zemu";
 import DfinityApp from "@zondax/ledger-dfinity";
 import * as secp256k1 from "secp256k1";
 var sha256 = require('js-sha256');
@@ -26,44 +25,44 @@ const APP_PATH_X = Resolve("../app/output/app_x.elf");
 
 const APP_SEED = "equip will roof matter pink blind book anxiety banner elbow sun young"
 
-var simOptions = {
+const defaultOptions = {
+    ...DEFAULT_START_OPTIONS,
     logging: true,
-    start_delay: 3000,
     custom: `-s "${APP_SEED}"`,
-    X11: false
+    X11: false,
 };
-
-let models = [
-    ['S', {model: 'nanos', prefix: 'S', path: APP_PATH_S}],
-    ['X', {model: 'nanox', prefix: 'X', path: APP_PATH_X}]
-]
 
 jest.setTimeout(60000)
 
+export const models: DeviceModel[] = [
+    {name: 'nanos', prefix: 'S', path: APP_PATH_S},
+    {name: 'nanox', prefix: 'X', path: APP_PATH_X}
+]
+
 describe('Standard', function () {
-    test.each(models)('can start and stop container (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('can start and stop container', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
         } finally {
             await sim.close();
         }
     });
 
-    test.each(models)('main menu (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('main menu', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-mainmenu`, 3);
+            await sim.start({...defaultOptions, model: m.name,});
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-mainmenu`, 3);
         } finally {
             await sim.close();
         }
     });
 
-    test.each(models)('get app version (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('get app version', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
             const resp = await app.getVersion();
 
@@ -80,10 +79,10 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('get address (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('get address', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
@@ -108,17 +107,17 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('show address (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('show address', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0");
 
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-show_address`, model === "nanos" ? 4 : 5);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-show_address`, m.name === "nanos" ? 4 : 5);
 
             const resp = await respRequest;
 
@@ -141,10 +140,10 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign basic normal -- token transfer (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('sign basic normal -- token transfer', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
@@ -156,7 +155,7 @@ describe('Standard', function () {
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
             expect(respAddr.publicKey.toString('hex')).toEqual(expected_pk);
 
-            let txBlobStr = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550f5390d960c6e52f489155a4309da03da6e696e67726573735f6578706972791b1674c5e29ec9c2106673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad026b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656473656e646361726758560a0012050a0308e8071a0308890122220a2001010101010101010101010101010101010101010101010101010101010101012a220a2035548ec29e9d85305850e87a2d2642fe7214ff4bb36334070deafc3345c3b1276d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840de5bccbb0a0173c432cd58ea4495d4d1e122d6ce04e31dcf63217f3d3a9b73130dc9bbf3b10e61c8db8bf8800bb4649e27786e5bc9418838c95864be28487a6a";
+            let txBlobStr = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550f5390d960c6e52f489155a4309da03da6e696e67726573735f6578706972791b1674c5e29ec9c2106673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e3026b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656773656e645f70626361726758560a0012050a0308e8071a0308890122220a2001010101010101010101010101010101010101010101010101010101010101012a220a2035548ec29e9d85305850e87a2d2642fe7214ff4bb36334070deafc3345c3b1276d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840de5bccbb0a0173c432cd58ea4495d4d1e122d6ce04e31dcf63217f3d3a9b73130dc9bbf3b10e61c8db8bf8800bb4649e27786e5bc9418838c95864be28487a6a";
 
             const txBlob = Buffer.from(txBlobStr, "hex");
 
@@ -165,7 +164,7 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_basic_normal`, model === "nanos" ? 14 : 15);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_basic_normal`, m.name === "nanos" ? 8 : 9);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
@@ -173,10 +172,10 @@ describe('Standard', function () {
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
 
-            const expected_preHash = "0a69632d726571756573747058c3bd4323237852f94f4dfa923e3f26080679619140014356f3d6c48e674b";
+            const expected_preHash = "0a69632d7265717565737438d75af52910efe58a5c32b61d3343ad1a40f32d335e88cab5843ec69d7bdf6a";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            const expected_hash = "e5447f8722832acaaa07ee554d1807886db485043529f505adad17e32050a1fc";
+            const expected_hash = "3797e39b76c78c7b33f724ba7b44b28721c6318a32e608ccee3940f3cba49de3";
             let hash = sha256.hex(signatureResponse.preSignHash);
             expect(hash).toEqual(expected_hash);
 
@@ -195,10 +194,10 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign state transaction read (%s)', async function (_, {model, prefix, path}) {
-        const sim = new Zemu(path);
+    test.each(models)('sign state transaction read', async function (m) {
+        const sim = new Zemu(m.path);
         try {
-            await sim.start({model, ...simOptions});
+            await sim.start({...defaultOptions, model: m.name,});
             const app = new DfinityApp(sim.getTransport());
 
             const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
@@ -210,7 +209,7 @@ describe('Standard', function () {
             const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
             expect(respAddr.publicKey.toString('hex')).toEqual(expected_pk);
 
-            let txBlobStr = "d9d9f7a367636f6e74656e74a46c726571756573745f747970656a726561645f73746174656e696e67726573735f6578706972791b1674c5e2b4d947b06673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad0265706174687381824e726571756573745f73746174757358207058c3bd4323237852f94f4dfa923e3f26080679619140014356f3d6c48e674b6d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f73696758403c850f1f7d6ae07777ca077dbb7fe2a21d9e5c38494dc17d2e1736ed760d1db222688979769d978153ee4e0420af5c5052f0de5acba20e6a0865414f048ffa61";
+            let txBlobStr = "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
             const txBlob = Buffer.from(txBlobStr, "hex");
 
             const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob);
@@ -218,7 +217,7 @@ describe('Standard', function () {
             // Wait until we are not in the main menu
             await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
 
-            await sim.compareSnapshotsAndAccept(".", `${prefix.toLowerCase()}-sign_stateread_normal`, model === "nanos" ? 7 : 8);
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_stateread_normal`, m.name === "nanos" ? 1 : 2);
 
             let signatureResponse = await respRequest;
             console.log(signatureResponse);
@@ -226,10 +225,10 @@ describe('Standard', function () {
             expect(signatureResponse.returnCode).toEqual(0x9000);
             expect(signatureResponse.errorMessage).toEqual("No errors");
 
-            const expected_preHash = "0a69632d7265717565737494a6b4c7dd97a1d04f7428b26ecca2b55c049fa473c23f0792bf5267bc45033f";
+            const expected_preHash = "0a69632d726571756573743223034c034fd8a23c5b4ea4e79af40a82cf43bd14c35740a8546b4fb5717a57";
             expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
 
-            const expected_hash = "f8e8810b6b826d5335b02d3a597abc8abececa7bbe01c094c5959c1f74832274";
+            const expected_hash = "0cb5a159215db7b9534d74dbfe97a495138c534520f4788f3518aa2c277966b0";
             let hash = sha256.hex(signatureResponse.preSignHash);
             expect(hash).toEqual(expected_hash);
 

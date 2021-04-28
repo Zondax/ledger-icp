@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <zxmacros.h>
+#include <app_mode.h>
 #include "parser_impl.h"
 #include "parser.h"
 #include "coin.h"
@@ -30,9 +31,7 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
 #endif
 
 parser_error_t zeroize_parser_tx(parser_tx_t *v) {
-    for (int i = 0; i < PATH_MAX_ARRAY; i++) {
-        MEMZERO(v->tx_fields.stateRead.paths.paths[i].data, PATH_MAX_LEN);
-    }
+    MEMZERO(v, sizeof(parser_tx_t));
     return parser_ok;
 }
 
@@ -73,9 +72,28 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     char buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                  \
     snprintf(outKey, outKeyLen, KEYNAME);  \
-    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 0); \
+    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 0, NULL); \
     pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
     return parser_ok;                                          \
+}
+
+parser_error_t parser_displayICP(const char *key,
+                                 uint64_t value,
+                                 char *outKey, uint16_t outKeyLen,
+                                 char *outVal, uint16_t outValLen,
+                                 uint8_t pageIdx, uint8_t *pageCount) {
+    // FIXME: https://github.com/Zondax/ledger-dfinity/issues/46
+// - thousand separator comma: ,
+// - fractional at least 2 digits
+    char buffer[100];                                           \
+    MEMZERO(buffer, sizeof(buffer));                                  \
+    snprintf(outKey, outKeyLen, "%s", key);  \
+    fpuint64_to_str(buffer, sizeof(buffer), value, 8, NULL);          \
+    number_inplace_trimming(buffer);                           \
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
+    return parser_ok;                                          \
+
+    return parser_ok;
 }
 
 #define DISPLAY_SHORTSTRING(KEYNAME, VALUE) { \
@@ -84,25 +102,35 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;                                              \
 }
 
-#define DISPLAY_BYTES(KEYNAME, VALUE) { \
-    char buffer[100];                                           \
-    MEMZERO(buffer, sizeof(buffer));                              \
-    snprintf(outKey, outKeyLen, KEYNAME);                       \
-    array_to_hexstr(buffer, sizeof(buffer), (VALUE).data, (VALUE).len); \
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
-    return parser_ok;                            \
-}
-
+// FIXME: 3 groups of 5 and split
 #define DISPLAY_TEXTUAL(KEYNAME, VALUE) { \
     char buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                      \
     snprintf(outKey, outKeyLen, KEYNAME); \
     uint16_t outLen = 0;          \
-    uint8_t tmpbuffer[100];        \
-    crypto_principalToTextual((uint8_t *)(VALUE).data, (VALUE).len, tmpbuffer, &outLen);  \
+    char tmpbuffer[100];        \
+    crypto_principalToTextual((const uint8_t *)(VALUE).data, (VALUE).len, (char *) tmpbuffer, &outLen);  \
     addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);   \
+    if (outValLen < 37) { return parser_unexpected_buffer_end; } \
+    outValLen = 37; \
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
     return parser_ok;                            \
+}
+
+// FIXME: 32 hex characters on each line
+#define DISPLAY_ACCOUNTBYTES(PRINCIPAL, SUBACCOUNT) { \
+    char buffer[100];                                                           \
+    MEMZERO(buffer, sizeof(buffer));                                            \
+    uint8_t address[32];                                                        \
+    MEMZERO(address, sizeof(address));                                           \
+    zxerr_t err = crypto_principalToSubaccount(PRINCIPAL, 29, SUBACCOUNT, 32,   \
+                                           address, sizeof(address));           \
+    if (err != zxerr_ok){                                                       \
+        return parser_unexepected_error;                                        \
+    }                                                                           \
+    array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) address, 32);           \
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);                  \
+    return parser_ok;                                                           \
 }
 
 parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
@@ -120,34 +148,39 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
-
-
     if (displayIdx < 0 || displayIdx >= numItems) {
         return parser_no_data;
     }
 
-    if (displayIdx == 0) {
-        DISPLAY_SHORTSTRING("request_type",parser_tx_obj.request_type.data)
-    }
-    if (displayIdx == 1) {
-        DISPLAY_U64("ingress_expiry", fields->ingress_expiry)
+    if (!app_mode_expert()) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Check status");
+    } else {
+        state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
+
+        if (displayIdx == 0) {
+            DISPLAY_SHORTSTRING("Transaction type", "Check status")
+        }
+
+        if (displayIdx == 1) {
+            DISPLAY_TEXTUAL("Sender", fields->sender)
+        }
+
+        displayIdx -= 2;
+        // FIXME: path filtering
+        if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
+            return parser_no_data;
+        }
+        char buffer[100];
+        MEMZERO(buffer, sizeof(buffer));
+        uint8_t requeststatus = fields->has_requeststatus_path ? 1 : 0;
+
+        snprintf(outKey, outKeyLen, "Request ID");
+        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx+requeststatus].data,
+                        fields->paths.paths[displayIdx+requeststatus].len);
+        pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     }
 
-    if (displayIdx == 2) {
-        DISPLAY_TEXTUAL("sender",fields->sender)
-    }
-
-    displayIdx -= 3;
-    if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
-        return parser_no_data;
-    }
-    char buffer[100];
-    MEMZERO(buffer, sizeof(buffer));
-    snprintf(outKey, outKeyLen, "Path %d", displayIdx + 1);
-    array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx].data,
-                    fields->paths.paths[displayIdx].len);
-    pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     return parser_ok;
 
 
@@ -174,63 +207,105 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    if (displayIdx == 0) {
-        DISPLAY_SHORTSTRING("request_type",parser_tx_obj.request_type.data)
-    }
-
-    if (displayIdx == 1) {
-        DISPLAY_BYTES("nonce",fields->nonce)
-    }
-
-    if (displayIdx == 2) {
-        DISPLAY_U64("ingress_expiry", fields->ingress_expiry)
-    }
-
-    if (displayIdx == 3) {
-        DISPLAY_TEXTUAL("sender",fields->sender)
-    }
-
-    if (displayIdx == 4) {
-        DISPLAY_TEXTUAL("canister_id",fields->canister_id)
-    }
-
-    if (displayIdx == 5) {
-        DISPLAY_SHORTSTRING("method_name",fields->method_name.data)
-    }
-
-    if (displayIdx == 6) {
-        DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
-    }
-
-    if (displayIdx == 7) {
-        DISPLAY_U64("Payment", fields->pb_fields.sendrequest.payment.receiver_gets.e8s)
-
-    }
-
-    if (displayIdx == 8) {
-        DISPLAY_U64("ICPTs max_fee", fields->pb_fields.sendrequest.max_fee.e8s)
-    }
-
-    if (displayIdx == 9) {
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
-        snprintf(outKey, outKeyLen, "Subaccount");
-        if(fields->pb_fields.sendrequest.has_from_subaccount){
-            array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        }else{
-            snprintf(outVal, outValLen, "Not set");
+    if (!app_mode_expert()) {
+        if (displayIdx == 0) {
+            DISPLAY_SHORTSTRING("Transaction type", "Send ICP")
         }
-        return parser_ok;
-    }
 
-    if (displayIdx == 10) {
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
-        snprintf(outKey, outKeyLen, "To account");
-        array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        if (displayIdx == 1) {
+            snprintf(outKey, outKeyLen, "From account");
+            DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
+        }
+
+        if (displayIdx == 2) {
+            // FIXME: 4 lines of 16 char each
+            char buffer[100];
+            MEMZERO(buffer, sizeof(buffer));
+            snprintf(outKey, outKeyLen, "To account");
+            array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            if (outValLen < 33) {
+                return parser_unexpected_buffer_end;
+            }
+
+            outValLen = 33;
+            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            return parser_ok;
+        }
+
+        if (displayIdx == 3) {
+            return parser_displayICP("Payment (ICP)",
+                                     fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
+        }
+
+        if (displayIdx == 4) {
+            return parser_displayICP("Maximum fee (ICP)",
+                                     fields->pb_fields.sendrequest.max_fee.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
+        }
+
+        if (displayIdx == 5) {
+            DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
+        }
+    } else {
+        if (displayIdx == 0) {
+            DISPLAY_SHORTSTRING("Transaction type", "Send ICP")
+        }
+
+        if (displayIdx == 1) {
+            DISPLAY_TEXTUAL("Sender", fields->sender)
+        }
+
+        if (displayIdx == 2) {
+            char buffer[100];
+            MEMZERO(buffer, sizeof(buffer));
+            snprintf(outKey, outKeyLen, "Subaccount");
+            if (fields->pb_fields.sendrequest.has_from_subaccount) {
+                array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
+                pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            } else {
+                snprintf(outVal, outValLen, "Not set");
+            }
+            return parser_ok;
+        }
+
+        if (displayIdx == 3) {
+            snprintf(outKey, outKeyLen, "From account");
+            DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
+        }
+
+        if (displayIdx == 4) {
+            char buffer[100];
+            MEMZERO(buffer, sizeof(buffer));
+            snprintf(outKey, outKeyLen, "To account");
+            array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            return parser_ok;
+        }
+
+        if (displayIdx == 5) {
+            return parser_displayICP("Payment (ICP)",
+                                     fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
+        }
+
+        if (displayIdx == 6) {
+            return parser_displayICP("Maximum fee (ICP)",
+                                     fields->pb_fields.sendrequest.max_fee.e8s,
+                                     outKey, outKeyLen,
+                                     outVal, outValLen,
+                                     pageIdx, pageCount);
+        }
+
+        if (displayIdx == 7) {
+            DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
+        }
     }
 
     return parser_ok;

@@ -20,7 +20,7 @@
 #include <hexutils.h>
 #include <zxmacros.h>
 #include "crypto.h"
-
+#include <string.h>
 #include <stdint.h>
 
 namespace {
@@ -42,12 +42,13 @@ namespace {
         uint8_t subaccount[32];
         uint8_t address[32];
 
-        for(int i = 0; i < 3; i ++){
+        for (int i = 0; i < 3; i++) {
             parseHexString(principal, sizeof(principal), principals[i]);
-            MEMZERO(subaccount,sizeof(subaccount));
-            MEMZERO(address,sizeof(address));
+            MEMZERO(subaccount, sizeof(subaccount));
+            MEMZERO(address, sizeof(address));
 
-            zxerr_t err = crypto_principalToSubaccount(principal, sizeof(principal), subaccount, sizeof(subaccount), address, sizeof(address));
+            zxerr_t err = crypto_principalToSubaccount(principal, sizeof(principal), subaccount, sizeof(subaccount),
+                                                       address, sizeof(address));
             EXPECT_EQ(err, zxerr_ok);
 
             parseHexString(inBuffer, sizeof(inBuffer), accounts[i]);
@@ -83,10 +84,50 @@ namespace {
             EXPECT_EQ(inBuffer[i], addr[i]);
         }
 
-        MEMZERO(inBuffer, 100);
         uint16_t len = 0;
-        crypto_principalToTextual(addr, sizeof(addr), inBuffer, &len);
-        EXPECT_STREQ((const char *) inBuffer, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
+        char addressText[100];
+        MEMZERO(addressText, 100);
+        crypto_principalToTextual(addr, sizeof(addr), addressText, &len);
+        EXPECT_STREQ((const char *) addressText, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
+    }
+
+    TEST(AddressToStringTests, AddrToTextSplitting1) {
+        const char *testInput = "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae";
+        char outBuffer[200];
+
+        addr_to_textual(outBuffer, sizeof(outBuffer), testInput, strlen(testInput));
+        EXPECT_STREQ((const char *) outBuffer, "di6pv-55zh2-qkzvb-27m4m-qxz5t-gmmzc-vbdcr-zcyzz-4ukad-ndaen-cae");
+    }
+
+    zxerr_t addr_getblock(const char *inS, uint16_t inLen, uint8_t index, char *outS, uint8_t outChunkLen) {
+        MEMZERO(outS, outChunkLen);
+        const uint16_t offset = index * outChunkLen;
+
+        if (inLen < offset) {
+            return zxerr_buffer_too_small;
+        }
+
+        const uint16_t size = inLen - offset < outChunkLen ? inLen - offset : outChunkLen;
+
+        MEMCPY((void *) outS, (const void *) (inS + offset), size);
+        return zxerr_ok;
+    }
+
+    TEST(AddressToStringTests, AddrToTextSplitting2) {
+        const char *testInput = "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae";
+        char outBuffer[200];
+
+        addr_getblock(testInput, strlen(testInput), 1, outBuffer, 5);
+        printf("%s\n", outBuffer);
+        EXPECT_STREQ((const char *) outBuffer, "55zh2");
+
+        addr_getblock(testInput, strlen(testInput), 0, outBuffer, 5);
+        printf("%s\n", outBuffer);
+        EXPECT_STREQ((const char *) outBuffer, "di6pv");
+
+        addr_getblock(testInput, strlen(testInput), 10, outBuffer, 5);
+        printf("%s\n", outBuffer);
+        EXPECT_STREQ((const char *) outBuffer, "cae");
     }
 
 }

@@ -109,6 +109,9 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
         return;
     }
 
+    err = parser_validate(&ctx);
+    ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
+
     auto output = dumpUI(&ctx, 40, 40);
 
     std::cout << std::endl;

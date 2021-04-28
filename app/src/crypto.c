@@ -31,10 +31,10 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
                               0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x0a, 0x03, 0x42, 0x00};
 
 #define DER_PREFIX_SIZE 23u
-#define DER_INPUT_SIZE  DER_PREFIX_SIZE + SECP256K1_PK_LEN
+#define DER_INPUT_SIZE  (DER_PREFIX_SIZE + SECP256K1_PK_LEN)
 
 #define SIGN_PREFIX_SIZE 11u
-#define SIGN_PREHASH_SIZE SIGN_PREFIX_SIZE + CX_SHA256_SIZE
+#define SIGN_PREHASH_SIZE (SIGN_PREFIX_SIZE + CX_SHA256_SIZE)
 
 #define SUBACCOUNT_PREFIX_SIZE 11u
 
@@ -74,7 +74,9 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
 }
 
 //CRC-32(b) || b with b = SHA-224(“\x0Aaccount-id“ || owner || sub-account), where owner is a (29-byte)
-zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, uint8_t *subAccount, uint16_t subaccountLen, uint8_t *address, uint16_t maxoutLen){
+zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
+                                     uint8_t *subAccount, uint16_t subaccountLen,
+                                     uint8_t *address, uint16_t maxoutLen) {
     if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN || maxoutLen < DFINITY_ADDR_LEN){
         return zxerr_invalid_crypto_settings;
     }
@@ -105,7 +107,7 @@ zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, 
 //    00 // no padding
 //    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
 
-zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
+zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
@@ -117,7 +119,7 @@ zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
     cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
 
     buf[DFINITY_PRINCIPAL_LEN-1] = 0x02;
-    MEMCPY(address, buf, DFINITY_PRINCIPAL_LEN);
+    MEMCPY(principal, buf, DFINITY_PRINCIPAL_LEN);
     return zxerr_ok;
 }
 
@@ -192,7 +194,10 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             HASH_U64("ingress_expiry",fields->ingress_expiry, tmpdigest);
             HASH_BYTES_INTERMEDIATE("method_name", fields->method_name, tmpdigest);
             HASH_BYTES_INTERMEDIATE("request_type", parser_tx_obj.request_type, tmpdigest);
-            HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
+
+            if(fields->has_nonce){
+                HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
+            }
             HASH_BYTES_END("arg", fields->arg, tmpdigest, digest);
             return zxerr_ok;
         }
@@ -293,13 +298,14 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
 #include <hexutils.h>
 #include "picohash.h"
 
-char *crypto_testPubKey;
-
 zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
+    const char *tmp = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+    parseHexString(pubKey, pubKeyLen, tmp);
+
     return zxerr_ok;
 }
 
-zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
+zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
     uint8_t DER[DER_INPUT_SIZE];
     MEMZERO(DER, sizeof(DER));
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
@@ -314,7 +320,7 @@ zxerr_t crypto_computePrincipal(uint8_t *pubKey, uint8_t *address) {
     picohash_final(&ctx, buf);
 
     buf[DFINITY_PRINCIPAL_LEN - 1] = 0x02;
-    MEMCPY(address, buf, DFINITY_PRINCIPAL_LEN);
+    MEMCPY(principal, buf, DFINITY_PRINCIPAL_LEN);
     return zxerr_ok;
 }
 
@@ -326,18 +332,23 @@ zxerr_t crypto_sign(uint8_t *signature,
     return zxerr_ok;
 }
 
-zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, uint8_t *subAccount, uint16_t subaccountLen, uint8_t *address, uint16_t maxoutLen){
-    if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN || maxoutLen < DFINITY_ADDR_LEN){
+zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
+                                     uint8_t *subAccount, uint16_t subaccountLen,
+                                     uint8_t *address, uint16_t maxoutLen) {
+
+    if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN ||
+        maxoutLen < DFINITY_ADDR_LEN) {
         return zxerr_invalid_crypto_settings;
     }
+
     uint8_t hashinput[SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN];
     MEMZERO(hashinput, sizeof(hashinput));
     hashinput[0] = 0x0a;
-    MEMCPY(&hashinput[1], (uint8_t *)"account-id",SUBACCOUNT_PREFIX_SIZE - 1);
+    MEMCPY(&hashinput[1], (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE - 1);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, subAccount, DFINITY_SUBACCOUNT_LEN);
-    uint8_t buf[32];
 
+    uint8_t buf[32];
     picohash_ctx_t ctx;
 
     picohash_init_sha224(&ctx);
@@ -347,11 +358,11 @@ zxerr_t crypto_principalToSubaccount(uint8_t *principal, uint16_t principalLen, 
     MEMCPY(address + 4, buf, 28);
 
     uint32_t crc = 0;
-    crc32_small(address+4, DFINITY_ADDR_LEN-4,&crc);
-    address[0] = (uint8_t)((crc & 0xFF000000) >> 24);
-    address[1] = (uint8_t)((crc & 0x00FF0000) >> 16);
-    address[2] = (uint8_t)((crc & 0x0000FF00) >> 8);
-    address[3] = (uint8_t)((crc & 0x000000FF) >> 0);
+    crc32_small(address + 4, DFINITY_ADDR_LEN - 4, &crc);
+    address[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
+    address[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
+    address[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
+    address[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
     return zxerr_ok;
 }
 
@@ -372,16 +383,16 @@ void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc) {
     }
 }
 
-zxerr_t crypto_principalToTextual(uint8_t *address, uint8_t addressLen, unsigned char *textual, uint16_t *outLen){
+zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, char *textual, uint16_t *outLen) {
     uint8_t input[33];
     uint32_t crc = 0;
-    crc32_small(address, addressLen, &crc);
+    crc32_small(address_in, addressLen, &crc);
     input[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
     input[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
     input[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
     input[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
-    MEMCPY(input + 4, address, addressLen);
-    int enc_len = base32_encode(input, 4 + addressLen, textual, 100);
+    MEMCPY(input + 4, address_in, addressLen);
+    uint32_t enc_len = base32_encode(input, 4 + addressLen, textual, 100);
     if (enc_len == 0) {
         return zxerr_unknown;
     }
@@ -389,18 +400,18 @@ zxerr_t crypto_principalToTextual(uint8_t *address, uint8_t addressLen, unsigned
     return zxerr_ok;
 }
 
-zxerr_t addr_to_textual(char *s, uint16_t max, const char *text, uint16_t textLen) {
-    MEMZERO(s, max);
+zxerr_t addr_to_textual(char *s_out, uint16_t s_max, const char *text_in, uint16_t text_in_len) {
+    MEMZERO(s_out, s_max);
     uint16_t offset = 0;
-    for (uint16_t index = 0; index < textLen; index += 5) {
-        if (offset + 6 > max) {
+    for (uint16_t index = 0; index < text_in_len; index += 5) {
+        if (offset + 6 > s_max) {
             return zxerr_unknown;
         }
-        uint8_t maxLen = (textLen - index) < 5 ? (textLen - index) : 5;
-        MEMCPY(s + offset, text + index, maxLen);
+        uint8_t maxLen = (text_in_len - index) < 5 ? (text_in_len - index) : 5;
+        MEMCPY(s_out + offset, text_in + index, maxLen);
         offset += 5;
-        if (index + 5 < textLen) {
-            s[offset] = '-';
+        if (index + 5 < text_in_len) {
+            s_out[offset] = '-';
             offset += 1;
         }
     }
@@ -454,7 +465,7 @@ typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
     uint8_t subAccountBytes[DFINITY_ADDR_LEN];
-    unsigned char addrText[DFINITY_TEXTUAL_SIZE];
+    char addrText[DFINITY_TEXTUAL_SIZE];
 
 } __attribute__((packed)) answer_t;
 
@@ -476,7 +487,9 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
     uint8_t zero_subaccount[DFINITY_SUBACCOUNT_LEN];
     MEMZERO(zero_subaccount, DFINITY_SUBACCOUNT_LEN);
 
-    CHECK_ZXERR(crypto_principalToSubaccount(answer->principalBytes, sizeof_field(answer_t, principalBytes), zero_subaccount, DFINITY_SUBACCOUNT_LEN, answer->subAccountBytes, sizeof_field(answer_t, subAccountBytes)));
+    CHECK_ZXERR(crypto_principalToSubaccount(answer->principalBytes, sizeof_field(answer_t, principalBytes),
+                                             zero_subaccount, DFINITY_SUBACCOUNT_LEN, answer->subAccountBytes,
+                                             sizeof_field(answer_t, subAccountBytes)));
 
     uint16_t outLen = 0;
 

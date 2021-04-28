@@ -49,11 +49,8 @@
 extern "C" {
 #endif
 
-int base32_decode(const uint8_t *encoded, unsigned int encodedSize, uint8_t *result, unsigned int bufSize)
-__attribute__((visibility("hidden")));
-
-int base32_encode(const uint8_t *data, unsigned int length, uint8_t *result,
-                  unsigned int bufSize) __attribute__((visibility("hidden")));
+uint32_t base32_encode(const uint8_t *data, unsigned int length,
+                       char *result, uint32_t bufSize) __attribute__((visibility("hidden")));
 
 #ifdef __cplusplus
 }

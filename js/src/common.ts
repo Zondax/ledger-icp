@@ -23,8 +23,8 @@ export const P1_VALUES = {
 
 export const PKLEN = 65;
 export const ADDRLEN = 32;
-export const PRINCIPALLEN = 29;
-export const PREHASHLEN = 43;
+export const PRINCIPAL_LEN = 29;
+export const PREHASH_LEN = 43;
 export const SIGRSLEN = 64;
 
 export enum LedgerError {

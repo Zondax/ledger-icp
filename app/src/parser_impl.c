@@ -32,11 +32,11 @@ __Z_INLINE parser_error_t parser_mapCborError(CborError err);
 
 #define PARSER_ASSERT_OR_ERROR(CALL, ERROR) if (!(CALL)) return ERROR;
 
-#define CHECK_CBOR_TYPE(type, expected) {if (type!=expected) return parser_unexpected_type;}
+#define CHECK_CBOR_TYPE(TYPE, EXPECTED) {if ( (TYPE)!= (EXPECTED) ) return parser_unexpected_type;}
 
 #define INIT_CBOR_PARSER(c, it)  \
     CborParser parser;           \
-    CHECK_CBOR_MAP_ERR(cbor_parser_init(c->buffer + c->offset, c->bufferLen - c->offset, 0, &parser, &it))
+    CHECK_CBOR_MAP_ERR(cbor_parser_init((c)->buffer + (c)->offset, (c)->bufferLen - (c)->offset, 0, &parser, &it))
 
 parser_error_t parser_init_context(parser_context_t *ctx,
                                    const uint8_t *buffer,
@@ -140,7 +140,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
 //    content [map]
 //        request_type [text]
 //        read_state / query [blob]
-//        nonce [blob]
+//        nonce [blob] (optional)
 //        ingress_expiry [nat]
 //        sender [principal]
 //        canister_id [principal]
@@ -198,6 +198,8 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
+    stateRead->has_requeststatus_path = strcmp((char *) stateRead->paths.paths[0].data, "request_status") == 0;
+
     while (!cbor_value_at_end(&it)) {
         cbor_value_advance(&it);
     }
@@ -246,13 +248,20 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     size_t mapsize = 0;
     if (strcmp(v->request_type.data, "call") == 0) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
-        PARSER_ASSERT_OR_ERROR(mapsize == 7, parser_context_unexpected_size)
+        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
         v->txtype = token_transfer;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
         READ_STRING(content_map, "sender", fields->sender)
         READ_STRING(content_map, "canister_id", fields->canister_id)
-        READ_STRING(content_map, "nonce", fields->nonce)
+
+        if (mapsize == 7) {
+            READ_STRING(content_map, "nonce", fields->nonce)
+            fields->has_nonce = true;
+        } else {
+            fields->has_nonce = false;
+        }
+
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
         READ_STRING(content_map, "arg", fields->arg)
@@ -269,7 +278,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         CHECK_PARSER_ERR(parsePaths(content_map, fields))
 
     } else if (strcmp(v->request_type.data, "query") == 0) {
-        return parser_unexpected_value;
+        return parser_unexpected_method;
     } else {
         return parser_unexpected_value;
     }
@@ -338,18 +347,92 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     // Note: This is place holder for transaction level checks that the project may require before accepting
     // the parsed values. the parser already validates input
     // This function is called by parser_validate, where additional checks are made (formatting, UI/UX, etc.(
+    const uint8_t *sender = NULL;
+    switch (v->txtype) {
+        case token_transfer: {
+            zemu_log_stack("token_transfer");
+            if (strcmp(v->request_type.data, "call") != 0) {
+                zemu_log_stack("call not found");
+                return parser_unexpected_value;
+            }
+
+            const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
+            char canister_textual[22];
+            uint16_t outLen = 0;
+
+            PARSER_ASSERT_OR_ERROR(
+                    crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual,
+                                              &outLen) == zxerr_ok, parser_unexepected_error)
+
+            if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
+                zemu_log_stack("invalid canister");
+                return parser_unexpected_value;
+            }
+
+            if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
+                zemu_log_stack("send_pb missing");
+                return parser_unexpected_value;
+            }
+
+            sender = v->tx_fields.call.sender.data;
+            break;
+        }
+        case state_transaction_read: {
+            zemu_log_stack("state_transaction_read");
+            if (strcmp(v->request_type.data, "read_state") != 0) {
+                return parser_unexpected_value;
+            }
+
+            // FIXME: add paths check
+
+            sender = v->tx_fields.stateRead.sender.data;
+            break;
+        }
+        default: {
+            zemu_log_stack("unsupported tx");
+            return parser_unexpected_method;
+        }
+    }
+
+    zemu_log_stack("_validateDone!");
+
+    uint8_t publicKey[SECP256K1_PK_LEN];
+    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+
+    MEMZERO(publicKey, sizeof(publicKey));
+    MEMZERO(principalBytes, sizeof(principalBytes));
+
+    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                           parser_unexepected_error)
+
+    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+
+    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+        return parser_unexpected_value;
+    }
+
     return parser_ok;
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     uint8_t itemCount = 0;
     switch (v->txtype) {
-        case 0x00 : {
-            itemCount = 6 + 5; //cbor contents + token transfer protobuf data
+        case token_transfer: {
+            if (!app_mode_expert()) {
+                return 6;
+            }
+            uint8_t nonce = v->tx_fields.call.has_nonce ? 1 : 0;
+            itemCount = 7 + nonce;          //cbor contents + token transfer protobuf data
             break;
         }
-        case 0x01 : {
-            itemCount = 3 + v->tx_fields.stateRead.paths.arrayLen;
+        case state_transaction_read : {
+            // based on https://github.com/Zondax/ledger-dfinity/issues/48
+            if (!app_mode_expert()) {
+                return 1;               // only check status
+            }
+            uint8_t requeststatus = v->tx_fields.stateRead.has_requeststatus_path ? 1 : 0;
+
+            itemCount = 2 + v->tx_fields.stateRead.paths.arrayLen - requeststatus;
             break;
         }
         default : {
