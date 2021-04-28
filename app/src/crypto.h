@@ -36,8 +36,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT],
 zxerr_t crypto_computePrincipal(const uint8_t *pubKey,
                                 char *address);
 
-zxerr_t crypto_principalToTextual(const char *address_in, uint8_t addressLen,
-                                  uint8_t *textual, uint16_t *outLen);
+zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, uint8_t *textual, uint16_t *outLen);
 
 zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrLen);
 

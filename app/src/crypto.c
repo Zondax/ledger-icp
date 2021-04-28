@@ -381,7 +381,7 @@ void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc) {
     }
 }
 
-zxerr_t crypto_principalToTextual(const char *address_in, uint8_t addressLen, uint8_t *textual, uint16_t *outLen) {
+zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, uint8_t *textual, uint16_t *outLen) {
     uint8_t input[33];
     uint32_t crc = 0;
     crc32_small(address_in, addressLen, &crc);

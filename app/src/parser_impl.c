@@ -349,38 +349,52 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     // This function is called by parser_validate, where additional checks are made (formatting, UI/UX, etc.(
     uint8_t *sender = NULL;
     switch (v->txtype) {
-        case token_transfer:
+        case token_transfer: {
+            zemu_log_stack("token_transfer");
             if (strcmp(v->request_type.data, "call") != 0) {
+                zemu_log_stack("call not found");
                 return parser_unexpected_value;
             }
 
-            uint8_t *canisterId = v->tx_fields.call.canister_id.data;
+            const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
             uint8_t canister_textual[22];
             uint16_t outLen = 0;
 
-            PARSER_ASSERT_OR_ERROR(crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual, &outLen) == zxerr_ok, parser_unexepected_error)
+            PARSER_ASSERT_OR_ERROR(
+                    crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual,
+                                              &outLen) == zxerr_ok, parser_unexepected_error)
 
             if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
+                zemu_log_stack("invalid canister");
                 return parser_unexpected_value;
             }
 
             if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
+                zemu_log_stack("send_pb missing");
                 return parser_unexpected_value;
             }
-            sender = v->tx_fields.call.sender.data;
 
+            sender = v->tx_fields.call.sender.data;
             break;
-        case state_transaction_read:
+        }
+        case state_transaction_read: {
+            zemu_log_stack("state_transaction_read");
             if (strcmp(v->request_type.data, "read_state") != 0) {
                 return parser_unexpected_value;
             }
-            //fixme: add paths check
+
+            // FIXME: add paths check
 
             sender = v->tx_fields.stateRead.sender.data;
             break;
-        default:
+        }
+        default: {
+            zemu_log_stack("unsupported tx");
             return parser_unexpected_method;
+        }
     }
+
+    zemu_log_stack("_validateDone!");
 
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
