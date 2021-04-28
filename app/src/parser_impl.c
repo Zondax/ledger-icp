@@ -198,6 +198,8 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
+    stateRead->has_requeststatus_path = strcmp((char *)stateRead->paths.paths[0].data, "request_status") == 0;
+
     while (!cbor_value_at_end(&it)) {
         cbor_value_advance(&it);
     }
@@ -387,7 +389,9 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             if (!app_mode_expert()) {
                 return 1;               // only check status
             }
-            itemCount = 2 + v->tx_fields.stateRead.paths.arrayLen;
+            uint8_t requeststatus = v->tx_fields.stateRead.has_requeststatus_path ? 1 : 0;
+
+            itemCount = 2 + v->tx_fields.stateRead.paths.arrayLen - requeststatus;
             break;
         }
         default : {

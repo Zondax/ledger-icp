@@ -173,9 +173,11 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         }
         char buffer[100];
         MEMZERO(buffer, sizeof(buffer));
-        snprintf(outKey, outKeyLen, "Request ID %d", displayIdx + 1);
-        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx].data,
-                        fields->paths.paths[displayIdx].len);
+        uint8_t requeststatus = fields->has_requeststatus_path ? 1 : 0;
+
+        snprintf(outKey, outKeyLen, "Request ID");
+        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx+requeststatus].data,
+                        fields->paths.paths[displayIdx+requeststatus].len);
         pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     }
 
@@ -274,7 +276,6 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 3) {
             snprintf(outKey, outKeyLen, "From account");
             DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
-
         }
 
         if (displayIdx == 4) {

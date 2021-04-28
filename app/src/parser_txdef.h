@@ -107,6 +107,7 @@ typedef struct {
     sender_t sender;
 
     pathArray_t paths;
+    bool has_requeststatus_path;
 } state_read_t;
 
 typedef struct {
