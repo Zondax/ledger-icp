@@ -86,6 +86,7 @@ typedef struct {
 
 typedef struct {
     nonce_t nonce;
+    bool has_nonce;
 
     uint64_t ingress_expiry;
 

@@ -196,8 +196,9 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             HASH_BYTES_INTERMEDIATE("method_name", fields->method_name, tmpdigest);
             HASH_BYTES_INTERMEDIATE("request_type", parser_tx_obj.request_type, tmpdigest);
 
-            // FIXME: https://github.com/Zondax/ledger-dfinity/issues/45
-            HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
+            if(fields->has_nonce){
+                HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
+            }
             HASH_BYTES_END("arg", fields->arg, tmpdigest, digest);
             return zxerr_ok;
         }

@@ -246,15 +246,19 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     size_t mapsize = 0;
     if (strcmp(v->request_type.data, "call") == 0) {
         CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
-        PARSER_ASSERT_OR_ERROR(mapsize == 7, parser_context_unexpected_size)
+        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
         v->txtype = token_transfer;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
         READ_STRING(content_map, "sender", fields->sender)
         READ_STRING(content_map, "canister_id", fields->canister_id)
 
-        // FIXME: https://github.com/Zondax/ledger-dfinity/issues/45
-        READ_STRING(content_map, "nonce", fields->nonce)
+        if (mapsize == 7) {
+            READ_STRING(content_map, "nonce", fields->nonce)
+            fields->has_nonce = true;
+        }else{
+            fields->has_nonce = false;
+        }
 
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
