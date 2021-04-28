@@ -367,14 +367,32 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
                 return parser_unexpected_value;
             }
-
-            // FIX: matches current principal
-
             break;
         case state_transaction_read:
+            if (strcmp(v->request_type.data, "read_state") != 0) {
+                return parser_unexpected_value;
+            }
+            //fixme: add paths check
+
             break;
         default:
             return parser_unexpected_method;
+    }
+
+    uint8_t *sender = v->tx_fields.call.sender.data;
+
+    uint8_t publicKey[SECP256K1_PK_LEN];
+    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+
+    MEMZERO(publicKey, sizeof(publicKey));
+    MEMZERO(principalBytes, sizeof(principalBytes));
+
+    CHECK_ZXERR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)))
+
+    CHECK_ZXERR(crypto_computePrincipal(publicKey, sizeof(publicKey)))
+
+    if(memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0){
+        return parser_unexpected_value;
     }
 
     return parser_ok;
