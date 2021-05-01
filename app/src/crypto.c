@@ -436,34 +436,6 @@ zxerr_t compressLEB128(const uint64_t input, uint16_t maxSize, uint8_t *output, 
     return zxerr_ok;
 }
 
-uint8_t decompressLEB128(const uint8_t *input, uint16_t inputSize, uint64_t *v) {
-    unsigned int i = 0;
-
-    *v = 0;
-    uint16_t shift = 0;
-    while (i < 10u && i < inputSize) {
-        uint64_t b = input[i] & 0x7fu;
-
-        if (shift >= 63 && b > 1) {
-            // This will overflow uint64_t
-            break;
-        }
-
-        *v |= b << shift;
-
-        if (!(input[i] & 0x80u)) {
-            return 1;
-        }
-
-        shift += 7;
-        i++;
-    }
-
-    // exit because of overflowing outputSize
-    *v = 0;
-    return 0;
-}
-
 typedef struct {
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
@@ -494,7 +466,7 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
                                              zero_subaccount, DFINITY_SUBACCOUNT_LEN, answer->subAccountBytes,
                                              sizeof_field(answer_t, subAccountBytes)));
 
-    uint16_t outLen = 0;
+    uint16_t outLen = DFINITY_TEXTUAL_SIZE;
 
     CHECK_ZXERR(crypto_principalToTextual(answer->principalBytes, DFINITY_PRINCIPAL_LEN, answer->addrText, &outLen));
 

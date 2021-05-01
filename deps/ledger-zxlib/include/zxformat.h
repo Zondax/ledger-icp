@@ -223,7 +223,8 @@ __Z_INLINE void number_inplace_trimming(char *s, uint8_t non_trimmed) {
         return;
     }
 
-    for (size_t i = (len - 1); i > (dec_point + non_trimmed) && s[i] == '0'; i--) {
+    const size_t limit = (size_t) dec_point + non_trimmed;
+    for (size_t i = (len - 1); i > limit && s[i] == '0'; i--) {
         s[i] = 0;
     }
 }
