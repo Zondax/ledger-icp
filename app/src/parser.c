@@ -22,6 +22,7 @@
 #include "coin.h"
 #include "parser_txdef.h"
 #include "crypto.h"
+#include "formatting.h"
 
 #if defined(TARGET_NANOX)
 // For some reason NanoX requires this function
@@ -82,17 +83,16 @@ parser_error_t parser_displayICP(const char *key,
                                  char *outKey, uint16_t outKeyLen,
                                  char *outVal, uint16_t outValLen,
                                  uint8_t pageIdx, uint8_t *pageCount) {
-    // FIXME: https://github.com/Zondax/ledger-dfinity/issues/46
-// - thousand separator comma: ,
-// - fractional at least 2 digits
-    char buffer[100];                                           \
-    MEMZERO(buffer, sizeof(buffer));                                  \
-    snprintf(outKey, outKeyLen, "%s", key);  \
-    fpuint64_to_str(buffer, sizeof(buffer), value, 8, NULL);          \
-    number_inplace_trimming(buffer);                           \
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
-    return parser_ok;                                          \
+    char buffer[300];
+    MEMZERO(buffer, sizeof(buffer));
 
+    zxerr_t err = formatICP(buffer, sizeof(buffer), value);
+    if (err != zxerr_ok) {
+        return parser_unexepected_error;
+    }
+
+    snprintf(outKey, outKeyLen, "%s", key);
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
     return parser_ok;
 }
 
@@ -107,10 +107,10 @@ parser_error_t parser_displayICP(const char *key,
     char buffer[100];                                           \
     MEMZERO(buffer, sizeof(buffer));                                      \
     snprintf(outKey, outKeyLen, KEYNAME); \
-    uint16_t outLen = 0;          \
-    char tmpbuffer[100];        \
-    crypto_principalToTextual((const uint8_t *)(VALUE).data, (VALUE).len, (char *) tmpbuffer, &outLen);  \
-    addr_to_textual(buffer, sizeof(buffer), (const char *)tmpbuffer, outLen);   \
+    char tmpBuffer[100];        \
+    uint16_t outLen = sizeof(tmpBuffer);          \
+    crypto_principalToTextual((const uint8_t *)(VALUE).data, (VALUE).len, (char *) tmpBuffer, &outLen);  \
+    addr_to_textual(buffer, sizeof(buffer), (const char *)tmpBuffer, outLen);   \
     if (outValLen < 37) { return parser_unexpected_buffer_end; } \
     outValLen = 37; \
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
@@ -176,8 +176,8 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         uint8_t requeststatus = fields->has_requeststatus_path ? 1 : 0;
 
         snprintf(outKey, outKeyLen, "Request ID");
-        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx+requeststatus].data,
-                        fields->paths.paths[displayIdx+requeststatus].len);
+        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx + requeststatus].data,
+                        fields->paths.paths[displayIdx + requeststatus].len);
         pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     }
 

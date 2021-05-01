@@ -20,8 +20,8 @@
 #include <hexutils.h>
 #include <zxmacros.h>
 #include "crypto.h"
-#include <string.h>
-#include <stdint.h>
+#include <cstring>
+#include <cstdint>
 
 namespace {
     TEST(SubaccountTests, AddressesTest) {

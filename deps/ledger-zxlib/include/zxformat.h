@@ -207,7 +207,7 @@ __Z_INLINE uint16_t fpuint64_to_str(char *out, uint16_t outLen, const uint64_t v
     return (uint16_t) strlen(out);
 }
 
-__Z_INLINE void number_inplace_trimming(char *s) {
+__Z_INLINE void number_inplace_trimming(char *s, uint8_t non_trimmed) {
     const size_t len = strlen(s);
     if (len == 0 || len == 1 || len > 1024) {
         return;
@@ -223,7 +223,7 @@ __Z_INLINE void number_inplace_trimming(char *s) {
         return;
     }
 
-    for (int16_t i = (int16_t) (len - 1); i > (dec_point + 1) && s[i] == '0'; i--) {
+    for (size_t i = (len - 1); i > (dec_point + non_trimmed) && s[i] == '0'; i--) {
         s[i] = 0;
     }
 }

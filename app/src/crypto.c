@@ -391,11 +391,14 @@ zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen,
     input[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
     input[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
     input[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
+
     MEMCPY(input + 4, address_in, addressLen);
-    uint32_t enc_len = base32_encode(input, 4 + addressLen, textual, 100);
+    uint32_t enc_len = base32_encode(input, 4 + addressLen, textual, *outLen);
+
     if (enc_len == 0) {
         return zxerr_unknown;
     }
+
     *outLen = enc_len;
     return zxerr_ok;
 }
