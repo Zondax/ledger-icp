@@ -45,9 +45,11 @@ typedef enum {
     addr_secp256k1 = 0,
 } address_kind_e;
 
-#define CBOR_PARSER_MAX_RECURSIONS          4
-#define COIN_SECRET_REQUIRED_CLICKS         0
-#define COIN_AMOUNT_DECIMAL_PLACES          0                              // FIXME: Adjust this
+#define CBOR_PARSER_MAX_RECURSIONS              4
+#define COIN_SECRET_REQUIRED_CLICKS             0
+#define COIN_AMOUNT_DECIMAL_PLACES              8
+#define COIN_AMOUNT_DECIMAL_NON_TRIMMED_PLACES  2
+#define COIN_AMOUNT_THOUSAND_SEPARATOR          '\''
 
 #define VIEW_ADDRESS_OFFSET_SECP256K1       (SECP256K1_PK_LEN )
 #define VIEW_PRINCIPAL_OFFSET_TEXT          (SECP256K1_PK_LEN + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN)

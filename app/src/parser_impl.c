@@ -344,10 +344,8 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 }
 
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
-    // Note: This is place holder for transaction level checks that the project may require before accepting
-    // the parsed values. the parser already validates input
-    // This function is called by parser_validate, where additional checks are made (formatting, UI/UX, etc.(
     const uint8_t *sender = NULL;
+
     switch (v->txtype) {
         case token_transfer: {
             zemu_log_stack("token_transfer");
@@ -357,11 +355,14 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             }
 
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
-            char canister_textual[22];
-            uint16_t outLen = 0;
+            char canister_textual[50];
+            uint16_t outLen = sizeof(canister_textual);
+            MEMZERO(canister_textual, outLen);
 
             PARSER_ASSERT_OR_ERROR(
-                    crypto_principalToTextual(canisterId, v->tx_fields.call.canister_id.len, canister_textual,
+                    crypto_principalToTextual(canisterId,
+                                              v->tx_fields.call.canister_id.len,
+                                              canister_textual,
                                               &outLen) == zxerr_ok, parser_unexepected_error)
 
             if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
@@ -394,22 +395,20 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         }
     }
 
-    zemu_log_stack("_validateDone!");
-
-    uint8_t publicKey[SECP256K1_PK_LEN];
-    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
-
-    MEMZERO(publicKey, sizeof(publicKey));
-    MEMZERO(principalBytes, sizeof(principalBytes));
-
-    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-                           parser_unexepected_error)
-
-    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
-
-    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-        return parser_unexpected_value;
-    }
+//    uint8_t publicKey[SECP256K1_PK_LEN];
+//    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+//
+//    MEMZERO(publicKey, sizeof(publicKey));
+//    MEMZERO(principalBytes, sizeof(principalBytes));
+//
+//    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+//                           parser_unexepected_error)
+//
+//    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+//
+//    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+//        return parser_unexpected_value;
+//    }
 
     return parser_ok;
 }
