@@ -84,10 +84,10 @@ namespace {
             EXPECT_EQ(inBuffer[i], addr[i]);
         }
 
-        uint16_t len = 0;
         char addressText[100];
+        uint16_t len = sizeof(addressText);
         MEMZERO(addressText, 100);
-        crypto_principalToTextual(addr, sizeof(addr), addressText, &len);
+        EXPECT_EQ(crypto_principalToTextual(addr, sizeof(addr), addressText, &len), zxerr_ok);
         EXPECT_STREQ((const char *) addressText, "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae");
     }
 

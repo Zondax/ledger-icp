@@ -78,12 +78,10 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;                                          \
 }
 
-parser_error_t parser_displayICP(const char *key,
-                                 uint64_t value,
-                                 char *outKey, uint16_t outKeyLen,
+parser_error_t parser_displayICP(uint64_t value,
                                  char *outVal, uint16_t outValLen,
                                  uint8_t pageIdx, uint8_t *pageCount) {
-    char buffer[300];
+    char buffer[200];
     MEMZERO(buffer, sizeof(buffer));
 
     zxerr_t err = formatICP(buffer, sizeof(buffer), value);
@@ -91,30 +89,32 @@ parser_error_t parser_displayICP(const char *key,
         return parser_unexepected_error;
     }
 
-    snprintf(outKey, outKeyLen, "%s", key);
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
     return parser_ok;
 }
 
-#define DISPLAY_SHORTSTRING(KEYNAME, VALUE) { \
-    snprintf(outKey, outKeyLen, KEYNAME);                       \
-    snprintf(outVal, outValLen, "%s", VALUE); \
-    return parser_ok;                                              \
-}
+__Z_INLINE parser_error_t print_textual(sender_t *sender,
+                                        char *outVal, uint16_t outValLen,
+                                        uint8_t pageIdx, uint8_t *pageCount) {
+    char tmpBuffer[100];
+    uint16_t outLen = sizeof(tmpBuffer);
+    zxerr_t err = crypto_principalToTextual((const uint8_t *) sender->data, sender->len, (char *) tmpBuffer, &outLen);
+    if (err != zxerr_ok) {
+        return parser_unexepected_error;
+    }
 
-// FIXME: 3 groups of 5 and split
-#define DISPLAY_TEXTUAL(KEYNAME, VALUE) { \
-    char buffer[100];                                           \
-    MEMZERO(buffer, sizeof(buffer));                                      \
-    snprintf(outKey, outKeyLen, KEYNAME); \
-    char tmpBuffer[100];        \
-    uint16_t outLen = sizeof(tmpBuffer);          \
-    crypto_principalToTextual((const uint8_t *)(VALUE).data, (VALUE).len, (char *) tmpBuffer, &outLen);  \
-    addr_to_textual(buffer, sizeof(buffer), (const char *)tmpBuffer, outLen);   \
-    if (outValLen < 37) { return parser_unexpected_buffer_end; } \
-    outValLen = 37; \
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);  \
-    return parser_ok;                            \
+    char buffer[100];
+    MEMZERO(buffer, sizeof(buffer));
+    err = addr_to_textual(buffer, sizeof(buffer), (const char *) tmpBuffer, outLen);   \
+    if (err != zxerr_ok) {
+        return parser_unexepected_error;
+    }
+
+    if (outValLen < 37) { return parser_unexpected_buffer_end; }
+    outValLen = 37;
+
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
 }
 
 // FIXME: 32 hex characters on each line
@@ -159,11 +159,16 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
         if (displayIdx == 0) {
-            DISPLAY_SHORTSTRING("Transaction type", "Check status")
+            snprintf(outKey, outKeyLen, "Transaction type");                       \
+            snprintf(outVal, outValLen, "Check status");
+
+            return parser_ok;                                              \
+
         }
 
         if (displayIdx == 1) {
-            DISPLAY_TEXTUAL("Sender", fields->sender)
+            snprintf(outKey, outKeyLen, "Sender");
+            return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;
@@ -209,7 +214,8 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (!app_mode_expert()) {
         if (displayIdx == 0) {
-            DISPLAY_SHORTSTRING("Transaction type", "Send ICP")
+            snprintf(outKey, outKeyLen, "Transaction type");
+            snprintf(outVal, outValLen, "Send ICP");
         }
 
         if (displayIdx == 1) {
@@ -218,10 +224,11 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 2) {
+            snprintf(outKey, outKeyLen, "To account");
+
             // FIXME: 4 lines of 16 char each
             char buffer[100];
             MEMZERO(buffer, sizeof(buffer));
-            snprintf(outKey, outKeyLen, "To account");
             array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
             if (outValLen < 33) {
                 return parser_unexpected_buffer_end;
@@ -233,17 +240,15 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 3) {
-            return parser_displayICP("Payment (ICP)",
-                                     fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
-                                     outKey, outKeyLen,
+            snprintf(outKey, outKeyLen, "Payment (ICP)");
+            return parser_displayICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
                                      outVal, outValLen,
                                      pageIdx, pageCount);
         }
 
         if (displayIdx == 4) {
-            return parser_displayICP("Maximum fee (ICP)",
-                                     fields->pb_fields.sendrequest.max_fee.e8s,
-                                     outKey, outKeyLen,
+            snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+            return parser_displayICP(fields->pb_fields.sendrequest.max_fee.e8s,
                                      outVal, outValLen,
                                      pageIdx, pageCount);
         }
@@ -253,23 +258,26 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
     } else {
         if (displayIdx == 0) {
-            DISPLAY_SHORTSTRING("Transaction type", "Send ICP")
+            snprintf(outKey, outKeyLen, "Transaction type");
+            snprintf(outVal, outValLen, "Send ICP");
         }
 
         if (displayIdx == 1) {
-            DISPLAY_TEXTUAL("Sender", fields->sender)
+            snprintf(outKey, outKeyLen, "Sender");
+            return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
-            char buffer[100];
-            MEMZERO(buffer, sizeof(buffer));
             snprintf(outKey, outKeyLen, "Subaccount");
+            snprintf(outVal, outValLen, "Not set");
+
             if (fields->pb_fields.sendrequest.has_from_subaccount) {
+                char buffer[100];
+                MEMZERO(buffer, sizeof(buffer));
                 array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
                 pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-            } else {
-                snprintf(outVal, outValLen, "Not set");
             }
+
             return parser_ok;
         }
 
@@ -288,17 +296,15 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 5) {
-            return parser_displayICP("Payment (ICP)",
-                                     fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
-                                     outKey, outKeyLen,
+            snprintf(outKey, outKeyLen, "Payment (ICP)");
+            return parser_displayICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
                                      outVal, outValLen,
                                      pageIdx, pageCount);
         }
 
         if (displayIdx == 6) {
-            return parser_displayICP("Maximum fee (ICP)",
-                                     fields->pb_fields.sendrequest.max_fee.e8s,
-                                     outKey, outKeyLen,
+            snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+            return parser_displayICP(fields->pb_fields.sendrequest.max_fee.e8s,
                                      outVal, outValLen,
                                      pageIdx, pageCount);
         }
@@ -318,12 +324,16 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               uint8_t pageIdx, uint8_t *pageCount) {
     switch (parser_tx_obj.txtype) {
         case token_transfer: {
-            return parser_getItemTokenTransfer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx,
-                                               pageCount);
+            return parser_getItemTokenTransfer(ctx, displayIdx,
+                                               outKey, outKeyLen,
+                                               outVal, outValLen,
+                                               pageIdx, pageCount);
         }
         case state_transaction_read: {
-            return parser_getItemTransactionStateRead(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx,
-                                                      pageCount);
+            return parser_getItemTransactionStateRead(ctx, displayIdx,
+                                                      outKey, outKeyLen,
+                                                      outVal, outValLen,
+                                                      pageIdx, pageCount);
         }
         default : {
             return parser_unexepected_error;
