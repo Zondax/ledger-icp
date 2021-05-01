@@ -159,7 +159,7 @@ __Z_INLINE int64_t str_to_int64(const char *start, const char *end, char *error)
 
 uint8_t intstr_to_fpstr_inplace(char *number, size_t number_max_size, uint8_t decimalPlaces);
 
-__Z_INLINE uint8_t fpstr_to_str(char *out, uint16_t outLen, const char *number, uint8_t decimals, char *kSep) {
+__Z_INLINE uint8_t fpstr_to_str(char *out, uint16_t outLen, const char *number, uint8_t decimals) {
     MEMZERO(out, outLen);
     size_t digits = strlen(number);
 
@@ -199,11 +199,11 @@ __Z_INLINE uint8_t fpstr_to_str(char *out, uint16_t outLen, const char *number, 
     return 0;
 }
 
-__Z_INLINE uint16_t fpuint64_to_str(char *out, uint16_t outLen, const uint64_t value, uint8_t decimals, char *kSep) {
+__Z_INLINE uint16_t fpuint64_to_str(char *out, uint16_t outLen, const uint64_t value, uint8_t decimals) {
     char buffer[30];
     MEMZERO(buffer, sizeof(buffer));
     uint64_to_str(buffer, sizeof(buffer), value);
-    fpstr_to_str(out, outLen, buffer, decimals, kSep);
+    fpstr_to_str(out, outLen, buffer, decimals);
     return (uint16_t) strlen(out);
 }
 

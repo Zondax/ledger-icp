@@ -72,7 +72,7 @@ zxerr_t number_inplace_thousands(char *s, uint16_t sMaxLen, char separator) {
 zxerr_t formatICP(char *out, uint16_t outLen, uint64_t value) {
     MEMZERO(out, outLen);
 
-    fpuint64_to_str(out, outLen, value, COIN_AMOUNT_DECIMAL_PLACES, NULL);
+    fpuint64_to_str(out, outLen, value, COIN_AMOUNT_DECIMAL_PLACES);
     number_inplace_trimming(out, COIN_AMOUNT_DECIMAL_NON_TRIMMED_PLACES);
     CHECK_ZXERR(number_inplace_thousands(out, outLen, COIN_AMOUNT_THOUSAND_SEPARATOR));
 

@@ -69,18 +69,20 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;
 }
 
-#define DISPLAY_U64(KEYNAME, VALUE) { \
-    char buffer[100];                                           \
-    MEMZERO(buffer, sizeof(buffer));                                  \
-    snprintf(outKey, outKeyLen, KEYNAME);  \
-    fpuint64_to_str(buffer, sizeof(buffer), VALUE, 0, NULL); \
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount); \
-    return parser_ok;                                          \
+__Z_INLINE parser_error_t print_u64(uint64_t value,
+                                    char *outVal, uint16_t outValLen,
+                                    uint8_t pageIdx, uint8_t *pageCount) {
+    char buffer[100];
+    MEMZERO(buffer, sizeof(buffer));
+    fpuint64_to_str(buffer, sizeof(buffer), value, 0);
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
+
 }
 
-parser_error_t parser_displayICP(uint64_t value,
-                                 char *outVal, uint16_t outValLen,
-                                 uint8_t pageIdx, uint8_t *pageCount) {
+__Z_INLINE parser_error_t print_ICP(uint64_t value,
+                                    char *outVal, uint16_t outValLen,
+                                    uint8_t pageIdx, uint8_t *pageCount) {
     char buffer[200];
     MEMZERO(buffer, sizeof(buffer));
 
@@ -98,7 +100,8 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
                                         uint8_t pageIdx, uint8_t *pageCount) {
     char tmpBuffer[100];
     uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual((const uint8_t *) sender->data, sender->len, (char *) tmpBuffer, &outLen);
+    zxerr_t err = crypto_principalToTextual((const uint8_t *) sender->data, sender->len, (char *) tmpBuffer,
+                                            &outLen);
     if (err != zxerr_ok) {
         return parser_unexepected_error;
     }
@@ -118,19 +121,26 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
 }
 
 // FIXME: 32 hex characters on each line
-#define DISPLAY_ACCOUNTBYTES(PRINCIPAL, SUBACCOUNT) { \
-    char buffer[100];                                                           \
-    MEMZERO(buffer, sizeof(buffer));                                            \
-    uint8_t address[32];                                                        \
-    MEMZERO(address, sizeof(address));                                           \
-    zxerr_t err = crypto_principalToSubaccount(PRINCIPAL, 29, SUBACCOUNT, 32,   \
-                                           address, sizeof(address));           \
-    if (err != zxerr_ok){                                                       \
-        return parser_unexepected_error;                                        \
-    }                                                                           \
-    array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) address, 32);           \
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);                  \
-    return parser_ok;                                                           \
+__Z_INLINE parser_error_t print_accountBytes(sender_t sender,
+                                             SendRequest *sendrequest,
+                                             char *outVal, uint16_t outValLen,
+                                             uint8_t pageIdx, uint8_t *pageCount) {
+    uint8_t address[32];
+    MEMZERO(address, sizeof(address));
+
+    zxerr_t err = crypto_principalToSubaccount(sender.data, sender.len,
+                                               sendrequest->from_subaccount.sub_account, 32,
+                                               address, sizeof(address));
+    if (err != zxerr_ok) {
+        return parser_unexepected_error;
+    }
+
+    char buffer[80];
+    MEMZERO(buffer, sizeof(buffer));
+    array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) address, 32);
+
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
 }
 
 parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
@@ -152,19 +162,14 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    if (!app_mode_expert()) {
+    if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         snprintf(outVal, outValLen, "Check status");
-    } else {
+        return parser_ok;
+    }
+
+    if (app_mode_expert()) {
         state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
-
-        if (displayIdx == 0) {
-            snprintf(outKey, outKeyLen, "Transaction type");                       \
-            snprintf(outVal, outValLen, "Check status");
-
-            return parser_ok;                                              \
-
-        }
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender");
@@ -176,6 +181,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
             return parser_no_data;
         }
+
         char buffer[100];
         MEMZERO(buffer, sizeof(buffer));
         uint8_t requeststatus = fields->has_requeststatus_path ? 1 : 0;
@@ -187,8 +193,6 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
     }
 
     return parser_ok;
-
-
 }
 
 parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
@@ -220,7 +224,9 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "From account");
-            DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
+            return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
+                                      outVal, outValLen,
+                                      pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
@@ -241,20 +247,21 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 3) {
             snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return parser_displayICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
-                                     outVal, outValLen,
-                                     pageIdx, pageCount);
+            return print_ICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+                             outVal, outValLen,
+                             pageIdx, pageCount);
         }
 
         if (displayIdx == 4) {
             snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return parser_displayICP(fields->pb_fields.sendrequest.max_fee.e8s,
-                                     outVal, outValLen,
-                                     pageIdx, pageCount);
+            return print_ICP(fields->pb_fields.sendrequest.max_fee.e8s,
+                             outVal, outValLen,
+                             pageIdx, pageCount);
         }
 
         if (displayIdx == 5) {
-            DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
+            snprintf(outKey, outKeyLen, "Memo");
+            return print_u64(fields->pb_fields.sendrequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
     } else {
         if (displayIdx == 0) {
@@ -274,7 +281,8 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
             if (fields->pb_fields.sendrequest.has_from_subaccount) {
                 char buffer[100];
                 MEMZERO(buffer, sizeof(buffer));
-                array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
+                array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account,
+                                32);
                 pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             }
 
@@ -283,7 +291,9 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 3) {
             snprintf(outKey, outKeyLen, "From account");
-            DISPLAY_ACCOUNTBYTES(fields->sender.data, fields->pb_fields.sendrequest.from_subaccount.sub_account)
+            return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
+                                      outVal, outValLen,
+                                      pageIdx, pageCount);
         }
 
         if (displayIdx == 4) {
@@ -297,20 +307,21 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 5) {
             snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return parser_displayICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
-                                     outVal, outValLen,
-                                     pageIdx, pageCount);
+            return print_ICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+                             outVal, outValLen,
+                             pageIdx, pageCount);
         }
 
         if (displayIdx == 6) {
             snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return parser_displayICP(fields->pb_fields.sendrequest.max_fee.e8s,
-                                     outVal, outValLen,
-                                     pageIdx, pageCount);
+            return print_ICP(fields->pb_fields.sendrequest.max_fee.e8s,
+                             outVal, outValLen,
+                             pageIdx, pageCount);
         }
 
         if (displayIdx == 7) {
-            DISPLAY_U64("Memo", fields->pb_fields.sendrequest.memo.memo)
+            snprintf(outKey, outKeyLen, "Memo");
+            return print_u64(fields->pb_fields.sendrequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
     }
 
