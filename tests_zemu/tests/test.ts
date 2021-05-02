@@ -140,7 +140,7 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign basic normal -- token transfer', async function (m) {
+    test.each(models)('sign normal -- token transfer', async function (m) {
         const sim = new Zemu(m.path);
         try {
             await sim.start({...defaultOptions, model: m.name,});
@@ -194,7 +194,7 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign state transaction read', async function (m) {
+    test.each(models)('sign normal -- state transaction read', async function (m) {
         const sim = new Zemu(m.path);
         try {
             await sim.start({...defaultOptions, model: m.name,});
@@ -247,7 +247,7 @@ describe('Standard', function () {
         }
     });
 
-    test.each(models)('sign basic expert -- token transfer', async function (m) {
+    test.each(models)('sign expert -- token transfer', async function (m) {
         const sim = new Zemu(m.path);
         try {
             await sim.start({...defaultOptions, model: m.name,});
@@ -304,4 +304,64 @@ describe('Standard', function () {
             await sim.close();
         }
     });
+
+    test.each(models)('sign expert -- state transaction read', async function (m) {
+        const sim = new Zemu(m.path);
+        try {
+            await sim.start({...defaultOptions, model: m.name,});
+            const app = new DfinityApp(sim.getTransport());
+
+            // Enable expert mode
+            console.log("Set expert mode")
+            await sim.clickRight();
+            await sim.clickBoth();
+            await sim.clickLeft();
+
+            // get public key
+            const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
+            console.log(respAddr)
+            expect(respAddr.returnCode).toEqual(0x9000);
+            expect(respAddr.errorMessage).toEqual("No errors");
+            const expected_pk = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
+            expect(respAddr.publicKey.toString('hex')).toEqual(expected_pk);
+
+            // Sign blob
+            let txBlobStr = "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+            const txBlob = Buffer.from(txBlobStr, "hex");
+
+            const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob);
+
+            // Wait until we are not in the main menu
+            await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot());
+
+            await sim.compareSnapshotsAndAccept(".", `${m.prefix.toLowerCase()}-sign_stateread_expert`, m.name === "nanos" ? 5 : 6);
+
+            let signatureResponse = await respRequest;
+            console.log(signatureResponse);
+
+            expect(signatureResponse.returnCode).toEqual(0x9000);
+            expect(signatureResponse.errorMessage).toEqual("No errors");
+
+            const expected_preHash = "0a69632d726571756573743223034c034fd8a23c5b4ea4e79af40a82cf43bd14c35740a8546b4fb5717a57";
+            expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash);
+
+            const expected_hash = "0cb5a159215db7b9534d74dbfe97a495138c534520f4788f3518aa2c277966b0";
+            let hash = sha256.hex(signatureResponse.preSignHash);
+            expect(hash).toEqual(expected_hash);
+
+            const pk = Uint8Array.from(respAddr.publicKey)
+            expect(pk.byteLength).toEqual(65);
+            const digest = Uint8Array.from(Buffer.from(hash, 'hex'));
+            const signature = Uint8Array.from(signatureResponse.signatureRS);
+            //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
+            expect(signature.byteLength).toEqual(64);
+
+            const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk);
+            expect(signatureOk).toEqual(true);
+
+        } finally {
+            await sim.close();
+        }
+    });
+
 });
