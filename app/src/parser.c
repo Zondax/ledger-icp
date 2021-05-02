@@ -223,7 +223,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "From account");
+            snprintf(outKey, outKeyLen, "FromAccount");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
@@ -290,7 +290,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "From account");
+            snprintf(outKey, outKeyLen, "FromAccount");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
