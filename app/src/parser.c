@@ -117,10 +117,16 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
     outValLen = 37;
 
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    // Remove trailing dashes
+    if (outVal[17] == '-') outVal[17] = ' ';
+    if (outVal[35] == '-') outVal[35] = ' ';
+#endif
+
     return parser_ok;
 }
 
-// FIXME: 32 hex characters on each line
 __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
                                              SendRequest *sendrequest,
                                              char *outVal, uint16_t outValLen,
@@ -139,7 +145,19 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     MEMZERO(buffer, sizeof(buffer));
     array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) address, 32);
 
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    // insert spaces to force alignment
+    inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
+    inplace_insert_char(buffer, sizeof(buffer), 17, ' ');
+    inplace_insert_char(buffer, sizeof(buffer), 26, ' ');
+    inplace_insert_char(buffer, sizeof(buffer), 35, ' ');
+    inplace_insert_char(buffer, sizeof(buffer), 44, ' ');
+    inplace_insert_char(buffer, sizeof(buffer), 53, ' ');
+    inplace_insert_char(buffer, sizeof(buffer), 62, ' ');
+#endif
+
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+
     return parser_ok;
 }
 
@@ -223,7 +241,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "From account");
+            snprintf(outKey, outKeyLen, "FromAccount");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
@@ -290,7 +308,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "From account");
+            snprintf(outKey, outKeyLen, "FromAccount");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
