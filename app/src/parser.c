@@ -117,6 +117,13 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
     outValLen = 37;
 
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    // Remove trailing dashes
+    if (outVal[17] == '-') outVal[17] = ' ';
+    if (outVal[35] == '-') outVal[35] = ' ';
+#endif
+
     return parser_ok;
 }
 
