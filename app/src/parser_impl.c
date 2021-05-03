@@ -174,7 +174,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
 
     size_t pathsLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&it, &pathsLen))
-    if(pathsLen != 1){
+    if (pathsLen != 1) {
         return parser_value_out_of_range;
     }
 
@@ -204,7 +204,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
-    if(strcmp((char *) stateRead->paths.paths[0].data, "request_status") != 0){
+    if (strcmp((char *) stateRead->paths.paths[0].data, "request_status") != 0) {
         return parser_context_mismatch;
     }
 
@@ -417,7 +417,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         return parser_unexpected_value;
     }
 #endif
-    
+
     return parser_ok;
 }
 
