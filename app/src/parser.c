@@ -190,7 +190,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "Sender");
+            snprintf(outKey, outKeyLen, "Sender     ");
             return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
         }
 
@@ -239,14 +239,14 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "FromAccount");
+            snprintf(outKey, outKeyLen, "From account");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
-            snprintf(outKey, outKeyLen, "To account");
+            snprintf(outKey, outKeyLen, "To account  ");
 
             // FIXME: 4 lines of 16 char each
             char buffer[100];
@@ -286,12 +286,12 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "Sender");
+            snprintf(outKey, outKeyLen, "Sender     ");
             return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
-            snprintf(outKey, outKeyLen, "Subaccount");
+            snprintf(outKey, outKeyLen, "Subaccount   ");
             snprintf(outVal, outValLen, "Not set");
 
             if (fields->pb_fields.sendrequest.has_from_subaccount) {
@@ -306,7 +306,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "FromAccount");
+            snprintf(outKey, outKeyLen, "From account");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
@@ -315,7 +315,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 4) {
             char buffer[100];
             MEMZERO(buffer, sizeof(buffer));
-            snprintf(outKey, outKeyLen, "To account");
+            snprintf(outKey, outKeyLen, "To account  ");
             array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return parser_ok;

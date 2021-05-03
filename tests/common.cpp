@@ -47,7 +47,7 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
 
             ss << fmt::format("{} | {}", idx, keyBuffer);
             if (pageCount > 1) {
-                ss << fmt::format(" [{}/{}]", pageIdx + 1, pageCount);
+                ss << fmt::format("[{}/{}]", pageIdx + 1, pageCount);
             }
             ss << " : ";
 
