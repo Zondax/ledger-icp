@@ -227,6 +227,9 @@ namespace {
         parser_context_t ctx;
         auto err = parser_parse(&ctx, inBuffer, inBufferLen);
         EXPECT_EQ(err, parser_ok);
+
+        err = parser_validate(&ctx);
+        EXPECT_EQ(err, parser_ok);
     }
 
     TEST(CBORParserTest, TransactionStateRead) {
@@ -237,6 +240,9 @@ namespace {
 
         parser_context_t ctx;
         auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        EXPECT_EQ(err, parser_ok);
+
+        err = parser_validate(&ctx);
         EXPECT_EQ(err, parser_ok);
     }
 

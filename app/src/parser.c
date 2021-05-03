@@ -195,18 +195,16 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         }
 
         displayIdx -= 2;
-        // FIXME: path filtering
+
         if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
             return parser_no_data;
         }
 
         char buffer[100];
         MEMZERO(buffer, sizeof(buffer));
-        uint8_t requeststatus = fields->has_requeststatus_path ? 1 : 0;
-
         snprintf(outKey, outKeyLen, "Request ID");
-        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[displayIdx + requeststatus].data,
-                        fields->paths.paths[displayIdx + requeststatus].len);
+        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[1].data,
+                        fields->paths.paths[1].len);
         pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     }
 

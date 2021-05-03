@@ -41,6 +41,16 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
 
+zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen){
+    if(outputLen < 28){
+        return zxerr_invalid_crypto_settings;
+    }
+    cx_sha256_t ctx;
+    cx_sha224_init(&ctx);
+    cx_hash(&ctx.header, CX_LAST, input, inputLen, output, 224);
+    return zxerr_ok;
+}
+
 zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
     cx_ecfp_public_key_t cx_publicKey;
     cx_ecfp_private_key_t cx_privateKey;
@@ -70,56 +80,6 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     END_TRY;
 
     memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
-    return zxerr_ok;
-}
-
-//CRC-32(b) || b with b = SHA-224(“\x0Aaccount-id“ || owner || sub-account), where owner is a (29-byte)
-zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
-                                     uint8_t *subAccount, uint16_t subaccountLen,
-                                     uint8_t *address, uint16_t maxoutLen) {
-    if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN || maxoutLen < DFINITY_ADDR_LEN){
-        return zxerr_invalid_crypto_settings;
-    }
-    uint8_t hashinput[SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN];
-    MEMZERO(hashinput, sizeof(hashinput));
-    hashinput[0] = 0x0a;
-    MEMCPY(&hashinput[1], (uint8_t *)"account-id",SUBACCOUNT_PREFIX_SIZE - 1);
-    MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
-    MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, subAccount, DFINITY_SUBACCOUNT_LEN);
-    cx_sha256_t ctx;
-    cx_sha224_init(&ctx);
-    cx_hash(&ctx.header, CX_LAST, hashinput, SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN, address + 4, 224);
-    uint32_t crc = 0;
-    crc32_small(address+4, DFINITY_ADDR_LEN-4,&crc);
-    address[0] = (uint8_t)((crc & 0xFF000000) >> 24);
-    address[1] = (uint8_t)((crc & 0x00FF0000) >> 16);
-    address[2] = (uint8_t)((crc & 0x0000FF00) >> 8);
-    address[3] = (uint8_t)((crc & 0x000000FF) >> 0);
-    return zxerr_ok;
-}
-
-//DER encoding:
-//3056 // SEQUENCE
-//  3010 // SEQUENCE
-//    06072a8648ce3d0201 // OID ECDSA
-//    06052b8104000a // OID secp256k1
-//  0342 // BIT STRING
-//    00 // no padding
-//    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
-
-zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
-    uint8_t DER[DER_INPUT_SIZE];
-    MEMZERO(DER, sizeof(DER));
-    MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
-
-    MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
-    uint8_t buf[CX_SHA256_SIZE];
-    cx_sha256_t ctx;
-    cx_sha224_init(&ctx);
-    cx_hash(&ctx.header, CX_LAST, DER, DER_INPUT_SIZE, buf, 224);
-
-    buf[DFINITY_PRINCIPAL_LEN-1] = 0x02;
-    MEMCPY(principal, buf, DFINITY_PRINCIPAL_LEN);
     return zxerr_ok;
 }
 
@@ -298,12 +258,29 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
 #include <hexutils.h>
 #include "picohash.h"
 
-zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
-    const char *tmp = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
-    parseHexString(pubKey, pubKeyLen, tmp);
+zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen) {
+    if (outputLen < 28) {
+        return zxerr_invalid_crypto_settings;
+    }
+    picohash_ctx_t ctx;
 
+    picohash_init_sha224(&ctx);
+    picohash_update(&ctx, input, inputLen);
+    picohash_final(&ctx, output);
     return zxerr_ok;
 }
+
+#endif
+
+
+//DER encoding:
+//3056 // SEQUENCE
+//  3010 // SEQUENCE
+//    06072a8648ce3d0201 // OID ECDSA
+//    06052b8104000a // OID secp256k1
+//  0342 // BIT STRING
+//    00 // no padding
+//    047060f720298ffa0f48d9606abdb0 ... // point on curve, uncompressed
 
 zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
     uint8_t DER[DER_INPUT_SIZE];
@@ -311,36 +288,23 @@ zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
     MEMCPY(DER, DER_PREFIX, DER_PREFIX_SIZE);
 
     MEMCPY(DER + DER_PREFIX_SIZE, pubKey, SECP256K1_PK_LEN);
-    uint8_t buf[32];
+    uint8_t buf[DFINITY_PRINCIPAL_LEN];
 
-    picohash_ctx_t ctx;
-
-    picohash_init_sha224(&ctx);
-    picohash_update(&ctx, DER, DER_INPUT_SIZE);
-    picohash_final(&ctx, buf);
+    CHECK_ZXERR(hash_sha224(DER, DER_INPUT_SIZE, buf, DFINITY_PRINCIPAL_LEN));
 
     buf[DFINITY_PRINCIPAL_LEN - 1] = 0x02;
     MEMCPY(principal, buf, DFINITY_PRINCIPAL_LEN);
     return zxerr_ok;
 }
 
-zxerr_t crypto_sign(uint8_t *signature,
-                    uint16_t signatureMaxlen,
-                    const uint8_t *message,
-                    uint16_t messageLen,
-                    uint16_t *sigSize) {
-    return zxerr_ok;
-}
-
+//CRC-32(b) || b with b = SHA-224(“\x0Aaccount-id“ || owner || sub-account), where owner is a (29-byte)
 zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
                                      uint8_t *subAccount, uint16_t subaccountLen,
                                      uint8_t *address, uint16_t maxoutLen) {
-
     if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN ||
         maxoutLen < DFINITY_ADDR_LEN) {
         return zxerr_invalid_crypto_settings;
     }
-
     uint8_t hashinput[SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN];
     MEMZERO(hashinput, sizeof(hashinput));
     hashinput[0] = 0x0a;
@@ -348,14 +312,9 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
     MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, subAccount, DFINITY_SUBACCOUNT_LEN);
 
-    uint8_t buf[32];
-    picohash_ctx_t ctx;
-
-    picohash_init_sha224(&ctx);
-    picohash_update(&ctx, hashinput, SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN);
-    picohash_final(&ctx, buf);
-
-    MEMCPY(address + 4, buf, 28);
+    CHECK_ZXERR(
+            hash_sha224(hashinput, SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN, address + 4,
+                        (maxoutLen - 4)));
 
     uint32_t crc = 0;
     crc32_small(address + 4, DFINITY_ADDR_LEN - 4, &crc);
@@ -365,8 +324,6 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
     address[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
     return zxerr_ok;
 }
-
-#endif
 
 uint32_t crc32_for_byte(uint8_t rbyte) {
     uint32_t r = (uint32_t) (rbyte) & (uint32_t) 0x000000FF;

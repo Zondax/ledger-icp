@@ -172,6 +172,12 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(content_map, "paths", &it));
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(&it), parser_unexpected_type);
 
+    size_t pathsLen = 0;
+    CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&it, &pathsLen))
+    if (pathsLen != 1) {
+        return parser_value_out_of_range;
+    }
+
     CborValue content_paths;
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &content_paths))
 
@@ -198,10 +204,12 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
-    stateRead->has_requeststatus_path = strcmp((char *) stateRead->paths.paths[0].data, "request_status") == 0;
+    if (strcmp((char *) stateRead->paths.paths[0].data, "request_status") != 0) {
+        return parser_context_mismatch;
+    }
 
     while (!cbor_value_at_end(&it)) {
-        cbor_value_advance(&it);
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
     CHECK_CBOR_MAP_ERR(cbor_value_leave_container(&content_paths, &it))
 
@@ -284,7 +292,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     }
     // Skip fields until the end
     while (!cbor_value_at_end(&content_it)) {
-        cbor_value_advance(&content_it);
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&content_it));
     }
 
     // Exit envelope
@@ -331,7 +339,7 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 
         // Skip fields until the end
         while (!cbor_value_at_end(&envelope)) {
-            cbor_value_advance(&envelope);
+            CHECK_CBOR_MAP_ERR(cbor_value_advance(&envelope));
         }
 
         // Exit envelope
@@ -384,8 +392,6 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                 return parser_unexpected_value;
             }
 
-            // FIXME: add paths check
-
             sender = v->tx_fields.stateRead.sender.data;
             break;
         }
@@ -395,20 +401,22 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         }
     }
 
-//    uint8_t publicKey[SECP256K1_PK_LEN];
-//    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
-//
-//    MEMZERO(publicKey, sizeof(publicKey));
-//    MEMZERO(principalBytes, sizeof(principalBytes));
-//
-//    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-//                           parser_unexepected_error)
-//
-//    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
-//
-//    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-//        return parser_unexpected_value;
-//    }
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    uint8_t publicKey[SECP256K1_PK_LEN];
+    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+
+    MEMZERO(publicKey, sizeof(publicKey));
+    MEMZERO(principalBytes, sizeof(principalBytes));
+
+    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                           parser_unexepected_error)
+
+    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+
+    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+        return parser_unexpected_value;
+    }
+#endif
 
     return parser_ok;
 }
@@ -429,9 +437,8 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             if (!app_mode_expert()) {
                 return 1;               // only check status
             }
-            uint8_t requeststatus = v->tx_fields.stateRead.has_requeststatus_path ? 1 : 0;
 
-            itemCount = 2 + v->tx_fields.stateRead.paths.arrayLen - requeststatus;
+            itemCount = 3;
             break;
         }
         default : {
