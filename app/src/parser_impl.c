@@ -401,21 +401,23 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         }
     }
 
-//    uint8_t publicKey[SECP256K1_PK_LEN];
-//    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
-//
-//    MEMZERO(publicKey, sizeof(publicKey));
-//    MEMZERO(principalBytes, sizeof(principalBytes));
-//
-//    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-//                           parser_unexepected_error)
-//
-//    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
-//
-//    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-//        return parser_unexpected_value;
-//    }
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    uint8_t publicKey[SECP256K1_PK_LEN];
+    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
+    MEMZERO(publicKey, sizeof(publicKey));
+    MEMZERO(principalBytes, sizeof(principalBytes));
+
+    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                           parser_unexepected_error)
+
+    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+
+    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+        return parser_unexpected_value;
+    }
+#endif
+    
     return parser_ok;
 }
 
