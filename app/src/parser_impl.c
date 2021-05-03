@@ -209,7 +209,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     }
 
     while (!cbor_value_at_end(&it)) {
-        cbor_value_advance(&it);
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
     CHECK_CBOR_MAP_ERR(cbor_value_leave_container(&content_paths, &it))
 
@@ -292,7 +292,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     }
     // Skip fields until the end
     while (!cbor_value_at_end(&content_it)) {
-        cbor_value_advance(&content_it);
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&content_it));
     }
 
     // Exit envelope
@@ -339,7 +339,7 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 
         // Skip fields until the end
         while (!cbor_value_at_end(&envelope)) {
-            cbor_value_advance(&envelope);
+            CHECK_CBOR_MAP_ERR(cbor_value_advance(&envelope));
         }
 
         // Exit envelope

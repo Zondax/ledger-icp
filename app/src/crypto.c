@@ -270,14 +270,6 @@ zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t
     return zxerr_ok;
 }
 
-zxerr_t crypto_sign(uint8_t *signature,
-                    uint16_t signatureMaxlen,
-                    const uint8_t *message,
-                    uint16_t messageLen,
-                    uint16_t *sigSize) {
-    return zxerr_ok;
-}
-
 #endif
 
 

@@ -38,6 +38,9 @@ zxerr_t addr_getItem(int8_t displayIdx,
     char buffer[300];
     snprintf(buffer, sizeof(buffer), "addr_getItem %d/%d", displayIdx, pageIdx);
     zemu_log_stack(buffer);
+    if(action_addrResponseLen < VIEW_PRINCIPAL_OFFSET_TEXT || IO_APDU_BUFFER_SIZE < action_addrResponseLen){
+        return zxerr_buffer_too_small;
+    }
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Principal");
