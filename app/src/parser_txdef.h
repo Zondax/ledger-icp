@@ -36,7 +36,7 @@ extern "C" {
 #define NONCE_MAX_LEN 32
 #define ARG_MAX_LEN 100
 #define PATH_MAX_LEN 40
-#define PATH_MAX_ARRAY 5
+#define PATH_MAX_ARRAY 2
 
 typedef enum {
     unknown = 0x00,                 // default is not accepted
@@ -107,7 +107,7 @@ typedef struct {
     sender_t sender;
 
     pathArray_t paths;
-    bool has_requeststatus_path;
+
 } state_read_t;
 
 typedef struct {
