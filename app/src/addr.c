@@ -43,18 +43,41 @@ zxerr_t addr_getItem(int8_t displayIdx,
     }
     switch (displayIdx) {
         case 0:
-            snprintf(outKey, outKeyLen, "Principal");
+            snprintf(outKey, outKeyLen, "Principal ");
             CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer),
                                         (const char *) G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
                                         action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT));
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+
+            if (outValLen < 37) { return zxerr_buffer_too_small; }
+            outValLen = 37;
+
+            #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+                // Remove trailing dashes
+                if (outVal[17] == '-') outVal[17] = ' ';
+                if (outVal[35] == '-') outVal[35] = ' ';
+                if (outVal[53] == '-') outVal[53] = ' ';
+            #endif
+
             return zxerr_ok;
 
         case 1:
-            snprintf(outKey, outKeyLen, "Address");
+            snprintf(outKey, outKeyLen, "Address ");
             MEMZERO(buffer, sizeof(buffer));
             array_to_hexstr(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT,
                             DFINITY_SUBACCOUNT_LEN);
+
+            #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+                // insert spaces to force alignment
+                inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
+                inplace_insert_char(buffer, sizeof(buffer), 17, ' ');
+                inplace_insert_char(buffer, sizeof(buffer), 26, ' ');
+                inplace_insert_char(buffer, sizeof(buffer), 35, ' ');
+                inplace_insert_char(buffer, sizeof(buffer), 44, ' ');
+                inplace_insert_char(buffer, sizeof(buffer), 53, ' ');
+                inplace_insert_char(buffer, sizeof(buffer), 62, ' ');
+            #endif
+
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return zxerr_ok;
 

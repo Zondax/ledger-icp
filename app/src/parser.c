@@ -122,9 +122,29 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
     // Remove trailing dashes
     if (outVal[17] == '-') outVal[17] = ' ';
     if (outVal[35] == '-') outVal[35] = ' ';
+    if (outVal[53] == '-') outVal[53] = ' ';
 #endif
 
     return parser_ok;
+}
+
+__Z_INLINE zxerr_t print_hexstring(char *out, uint16_t outLen, uint8_t *data, uint16_t dataLen) {
+    MEMZERO(out, outLen);
+    const uint32_t writtenBytes = array_to_hexstr(out, outLen, data, dataLen);
+    if (writtenBytes != dataLen*2) {
+        return zxerr_out_of_bounds;
+    }
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    // insert spaces to force alignment
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 8, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 17, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 26, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 35, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 44, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 53, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 62, ' '))
+#endif
+    return zxerr_ok;
 }
 
 __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
@@ -142,19 +162,10 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     }
 
     char buffer[80];
-    MEMZERO(buffer, sizeof(buffer));
-    array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) address, 32);
-
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
-    // insert spaces to force alignment
-    inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
-    inplace_insert_char(buffer, sizeof(buffer), 17, ' ');
-    inplace_insert_char(buffer, sizeof(buffer), 26, ' ');
-    inplace_insert_char(buffer, sizeof(buffer), 35, ' ');
-    inplace_insert_char(buffer, sizeof(buffer), 44, ' ');
-    inplace_insert_char(buffer, sizeof(buffer), 53, ' ');
-    inplace_insert_char(buffer, sizeof(buffer), 62, ' ');
-#endif
+    err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) address, 32);
+    if (err != zxerr_ok) {
+        return parser_unexepected_error;
+    }
 
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
 
@@ -190,7 +201,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
         state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "Sender");
+            snprintf(outKey, outKeyLen, "Sender ");
             return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
         }
 
@@ -200,11 +211,15 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
             return parser_no_data;
         }
 
+        snprintf(outKey, outKeyLen, "Request ID ");
         char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
-        snprintf(outKey, outKeyLen, "Request ID");
-        array_to_hexstr(buffer, sizeof(buffer), fields->paths.paths[1].data,
-                        fields->paths.paths[1].len);
+        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
+                                      fields->paths.paths[1].data,
+                                      fields->paths.paths[1].len);
+        if (err != zxerr_ok) {
+            return parser_unexepected_error;
+        }
+
         pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
     }
 
@@ -239,24 +254,21 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "FromAccount");
+            snprintf(outKey, outKeyLen, "From account");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
-            snprintf(outKey, outKeyLen, "To account");
+            snprintf(outKey, outKeyLen, "To account ");
 
-            // FIXME: 4 lines of 16 char each
             char buffer[100];
-            MEMZERO(buffer, sizeof(buffer));
-            array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
-            if (outValLen < 33) {
-                return parser_unexpected_buffer_end;
+            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            if (err != zxerr_ok) {
+                return parser_unexepected_error;
             }
 
-            outValLen = 33;
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return parser_ok;
         }
@@ -286,19 +298,20 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "Sender");
+            snprintf(outKey, outKeyLen, "Sender ");
             return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
-            snprintf(outKey, outKeyLen, "Subaccount");
+            snprintf(outKey, outKeyLen, "Subaccount ");
             snprintf(outVal, outValLen, "Not set");
 
             if (fields->pb_fields.sendrequest.has_from_subaccount) {
                 char buffer[100];
-                MEMZERO(buffer, sizeof(buffer));
-                array_to_hexstr(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account,
-                                32);
+                zxerr_t err = print_hexstring(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
+                if (err != zxerr_ok) {
+                    return parser_unexepected_error;
+                }
                 pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             }
 
@@ -306,17 +319,20 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "FromAccount");
+            snprintf(outKey, outKeyLen, "From account");
             return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
         }
 
         if (displayIdx == 4) {
+            snprintf(outKey, outKeyLen, "To account ");
             char buffer[100];
-            MEMZERO(buffer, sizeof(buffer));
-            snprintf(outKey, outKeyLen, "To account");
-            array_to_hexstr(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            if (err != zxerr_ok) {
+                return parser_unexepected_error;
+            }
+
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return parser_ok;
         }
