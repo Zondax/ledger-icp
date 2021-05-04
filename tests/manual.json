@@ -8,22 +8,22 @@
       "0 | Transaction type : Send ICP",
       "1 | From account[1/2] : 6956653cd25f069f308d4d8a61491d99fa82e27",
       "1 | From account[2/2] : 2110f77a36bd10e06a28c82b0",
-      "2 | To account  [1/2] : 35548ec29e9d85305850e87a2d2642fe",
-      "2 | To account  [2/2] : 7214ff4bb36334070deafc3345c3b127",
+      "2 | To account [1/2] : 35548ec29e9d85305850e87a2d2642fe7214ff4",
+      "2 | To account [2/2] : bb36334070deafc3345c3b127",
       "3 | Payment (ICP) : 0.00001",
       "4 | Maximum fee (ICP) : 0.00000137",
       "5 | Memo : 0"
     ],
     "output_expert": [
       "0 | Transaction type : Send ICP",
-      "1 | Sender      [1/2] : 5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-",
-      "1 | Sender      [2/2] : obhal-yb5xj-ue32x-ktkql-rqe",
-      "2 | Subaccount  [1/2] : 010101010101010101010101010101010101010",
-      "2 | Subaccount  [2/2] : 1010101010101010101010101",
+      "1 | Sender [1/2] : 5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-",
+      "1 | Sender [2/2] : obhal-yb5xj-ue32x-ktkql-rqe",
+      "2 | Subaccount [1/2] : 010101010101010101010101010101010101010",
+      "2 | Subaccount [2/2] : 1010101010101010101010101",
       "3 | From account[1/2] : 6956653cd25f069f308d4d8a61491d99fa82e27",
       "3 | From account[2/2] : 2110f77a36bd10e06a28c82b0",
-      "4 | To account  [1/2] : 35548ec29e9d85305850e87a2d2642fe7214ff4",
-      "4 | To account  [2/2] : bb36334070deafc3345c3b127",
+      "4 | To account [1/2] : 35548ec29e9d85305850e87a2d2642fe7214ff4",
+      "4 | To account [2/2] : bb36334070deafc3345c3b127",
       "5 | Payment (ICP) : 0.00001",
       "6 | Maximum fee (ICP) : 0.00000137",
       "7 | Memo : 0"
@@ -39,10 +39,10 @@
     ],
     "output_expert": [
       "0 | Transaction type : Check status",
-      "1 | Sender      [1/2] : 5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-",
-      "1 | Sender      [2/2] : obhal-yb5xj-ue32x-ktkql-rqe",
-      "2 | Request ID  [1/2] : a740262068c4b22efed0cc67095fc9ce46c8831",
-      "2 | Request ID  [2/2] : 82c09aa045b4c0396060105d2"
+      "1 | Sender [1/2] : 5upke-tazvi-6ufqc-i3v6r-j4gpu-dpwti-",
+      "1 | Sender [2/2] : obhal-yb5xj-ue32x-ktkql-rqe",
+      "2 | Request ID [1/2] : a740262068c4b22efed0cc67095fc9ce46c8831",
+      "2 | Request ID [2/2] : 82c09aa045b4c0396060105d2"
     ]
   }
 ]
