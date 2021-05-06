@@ -47,7 +47,7 @@ $(info ************  LOGGING ENABLED ************)
 endif
 
 ifndef COIN
-COIN=DFN
+COIN=ICP
 endif
 
 APPVERSION_M=0
@@ -55,13 +55,13 @@ APPVERSION_N=3
 APPVERSION_P=4
 
 $(info COIN  = [$(COIN)])
-ifeq ($(COIN),DFN)
+ifeq ($(COIN),ICP)
 # Main app configuration
 DEFINES += APP_STANDARD
-APPNAME = "Dfinity"
+APPNAME = "Internet Computer"
 APPPATH = "44'/223'"
 
-else ifeq ($(COIN),DFN_INVALID)
+else ifeq ($(COIN),ICP_INVALID)
 else
 define error_message
 
@@ -230,4 +230,4 @@ dep/%.d: %.c Makefile
 
 .PHONY: listvariants
 listvariants:
-	@echo VARIANTS COIN DFN
+	@echo VARIANTS COIN ICP

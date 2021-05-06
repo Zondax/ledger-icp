@@ -56,8 +56,8 @@ typedef enum {
 #define VIEW_ADDRESS_OFFSET_TEXT            (SECP256K1_PK_LEN + DFINITY_PRINCIPAL_LEN)
 #define COIN_SUPPORTED_TX_VERSION           0
 
-#define MENU_MAIN_APP_LINE1                 "Dfinity"
-#define MENU_MAIN_APP_LINE2                 "DO NOT USE"
+#define MENU_MAIN_APP_LINE1                 "Internet"
+#define MENU_MAIN_APP_LINE2                 "Computer"
 #define MENU_MAIN_APP_LINE2_SECRET          "???"
 #define APPVERSION_LINE1                    "Version"
 #define APPVERSION_LINE2                    "v" APPVERSION
