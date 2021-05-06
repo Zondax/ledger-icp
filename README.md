@@ -1,4 +1,4 @@
-# Ledger Dfinity app
+# Ledger Internet Computer app
 ![stability-wip](https://img.shields.io/badge/stability-work_in_progress-lightgrey.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CircleCI](https://circleci.com/gh/Zondax/ledger-dfinity.svg?style=shield&circle-token=3dcc030e7286c8d4e9f7df436c3765b5ade5d2e1)](https://circleci.com/gh/Zondax/ledger-dfinity)

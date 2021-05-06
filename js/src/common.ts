@@ -2,7 +2,7 @@ import Transport from '@ledgerhq/hw-transport';
 
 export const CLA = 0x11;
 export const CHUNK_SIZE = 250;
-export const APP_KEY = 'DFN';
+export const APP_KEY = 'ICP';
 
 export const INS = {
     GET_VERSION: 0x00,
