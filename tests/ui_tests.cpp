@@ -48,6 +48,13 @@ public:
     };
 };
 
+std::string CleanTestname(std::string s) {
+    s.erase(remove_if(s.begin(), s.end(), [](char v) -> bool {
+        return v == ':' || v == ' ' || v == '/' || v == '-' || v == '.' || v == '_' || v == '#';
+    }), s.end());
+    return s;
+}
+
 std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
     auto answer = std::vector<testcase_t>();
 
@@ -78,11 +85,18 @@ std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
             outputs_expert.push_back(s.asString());
         }
 
+        bool valid = true;
+        if (i.isMember("value")) {
+            valid = i["valid"].asBool();
+        }
+
+        auto name = CleanTestname(i["name"].asString());
+
         answer.push_back(testcase_t{
                 i["index"].asUInt64(),
-                i["name"].asString(),
+                name,
                 i["blob"].asString(),
-                i["valid"].asBool(),
+                valid,
                 outputs,
                 outputs_expert
         });
@@ -112,7 +126,7 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
     err = parser_validate(&ctx);
     ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
 
-    auto output = dumpUI(&ctx, 40, 40);
+    auto output = dumpUI(&ctx, 40, 37);
 
     std::cout << std::endl;
     for (const auto &i : output) {

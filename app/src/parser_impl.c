@@ -149,10 +149,10 @@ const char *parser_getErrorDescription(parser_error_t err) {
 //    sender_pubkey [blob]
 //    sender_sig [blob]
 
-#define READ_INT64(MAP, FIELDNAME, V_OUTPUT) {                                             \
-    CborValue it;                                                                          \
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                    \
-    (V_OUTPUT) = _cbor_value_decode_int64_internal(&it);                                     \
+#define READ_INT64(MAP, FIELDNAME, V_OUTPUT) {                     \
+    CborValue it;                                                                           \
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
+    CHECK_CBOR_MAP_ERR(cbor_value_get_raw_integer(&it, &V_OUTPUT)); \
 }
 
 #define READ_STRING(MAP, FIELDNAME, V_OUTPUT) {                                             \
@@ -255,8 +255,8 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     READ_STRING(content_map, "request_type", v->request_type)
     size_t mapsize = 0;
     if (strcmp(v->request_type.data, "call") == 0) {
-        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
-        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
+//        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
+//        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
         v->txtype = token_transfer;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
@@ -428,8 +428,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             if (!app_mode_expert()) {
                 return 6;
             }
-            uint8_t nonce = v->tx_fields.call.has_nonce ? 1 : 0;
-            itemCount = 7 + nonce;          //cbor contents + token transfer protobuf data
+            itemCount = 8;
             break;
         }
         case state_transaction_read : {

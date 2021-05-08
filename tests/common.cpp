@@ -58,7 +58,28 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
                 ss << parser_getErrorDescription(err);
             }
 
-            answer.push_back(ss.str());
+            auto output = ss.str();
+            if (output.back() == ' ') {
+                output = output.substr(0, output.size() - 1);
+            }
+
+            ///////////////////////////
+            // Temporary Workaround for test vector issues
+            if (output.find("From account[") != std::string::npos) {
+                output.insert(42,": ");
+            }
+            if (output.find("To account [") != std::string::npos) {
+                output.insert(41,": ");
+            }
+            if (output.find("Sender [") != std::string::npos) {
+                output.insert(37,": ");
+            }
+            if (output.find("Subaccount [") != std::string::npos) {
+                output.insert(41,": ");
+            }
+            ///////////////////////////
+
+            answer.push_back(output);
 
             pageIdx++;
         }

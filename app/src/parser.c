@@ -118,12 +118,10 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
 
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
     // Remove trailing dashes
     if (outVal[17] == '-') outVal[17] = ' ';
     if (outVal[35] == '-') outVal[35] = ' ';
     if (outVal[53] == '-') outVal[53] = ' ';
-#endif
 
     return parser_ok;
 }
@@ -134,7 +132,7 @@ __Z_INLINE zxerr_t print_hexstring(char *out, uint16_t outLen, uint8_t *data, ui
     if (writtenBytes != dataLen*2) {
         return zxerr_out_of_bounds;
     }
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+
     // insert spaces to force alignment
     CHECK_ZXERR(inplace_insert_char(out, outLen, 8, ' '))
     CHECK_ZXERR(inplace_insert_char(out, outLen, 17, ' '))
@@ -143,7 +141,7 @@ __Z_INLINE zxerr_t print_hexstring(char *out, uint16_t outLen, uint8_t *data, ui
     CHECK_ZXERR(inplace_insert_char(out, outLen, 44, ' '))
     CHECK_ZXERR(inplace_insert_char(out, outLen, 53, ' '))
     CHECK_ZXERR(inplace_insert_char(out, outLen, 62, ' '))
-#endif
+
     return zxerr_ok;
 }
 
