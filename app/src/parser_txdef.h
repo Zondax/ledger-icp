@@ -34,7 +34,7 @@ extern "C" {
 #define REQUEST_MAX_LEN 10
 #define METHOD_MAX_LEN 20
 #define NONCE_MAX_LEN 32
-#define ARG_MAX_LEN 100
+#define ARG_MAX_LEN 200
 #define PATH_MAX_LEN 40
 #define PATH_MAX_ARRAY 2
 

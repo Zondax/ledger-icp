@@ -149,10 +149,10 @@ const char *parser_getErrorDescription(parser_error_t err) {
 //    sender_pubkey [blob]
 //    sender_sig [blob]
 
-#define READ_INT64(MAP, FIELDNAME, V_OUTPUT) {                                             \
-    CborValue it;                                                                          \
-    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                    \
-    (V_OUTPUT) = _cbor_value_decode_int64_internal(&it);                                     \
+#define READ_INT64(MAP, FIELDNAME, V_OUTPUT) {                     \
+    CborValue it;                                                                           \
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
+    CHECK_CBOR_MAP_ERR(cbor_value_get_raw_integer(&it, &V_OUTPUT)); \
 }
 
 #define READ_STRING(MAP, FIELDNAME, V_OUTPUT) {                                             \
@@ -165,6 +165,27 @@ const char *parser_getErrorDescription(parser_error_t err) {
     PARSER_ASSERT_OR_ERROR(stringLen < sizeof((V_OUTPUT).data), parser_context_unexpected_size)   \
     (V_OUTPUT).len = stringLen; \
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
+}
+
+parser_error_t try_read_nonce(CborValue *content_map, parser_tx_t *v){
+    size_t stringLen = 0;
+    CborValue it;
+
+    size_t *dataLen = &v->tx_fields.call.nonce.len;
+
+    MEMZERO(&v->tx_fields.call.nonce.data, sizeof(v->tx_fields.call.nonce.data));
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(content_map, "nonce", &it))
+    if(!cbor_value_is_valid(&it)){
+        v->tx_fields.call.has_nonce = false;
+        return parser_ok;
+    }
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_byte_string(&it) || cbor_value_is_text_string(&it), parser_context_mismatch);
+    CHECK_CBOR_MAP_ERR(cbor_value_get_string_length(&it, &stringLen));
+    PARSER_ASSERT_OR_ERROR(stringLen < sizeof(v->tx_fields.call.nonce.data), parser_context_unexpected_size)
+    *dataLen = stringLen;
+    CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, v->tx_fields.call.nonce.data, dataLen, NULL));
+    v->tx_fields.call.has_nonce = true;
+    return parser_ok;
 }
 
 parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
@@ -255,20 +276,15 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     READ_STRING(content_map, "request_type", v->request_type)
     size_t mapsize = 0;
     if (strcmp(v->request_type.data, "call") == 0) {
-        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
-        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
+//        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
+//        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
         v->txtype = token_transfer;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
         READ_STRING(content_map, "sender", fields->sender)
         READ_STRING(content_map, "canister_id", fields->canister_id)
 
-        if (mapsize == 7) {
-            READ_STRING(content_map, "nonce", fields->nonce)
-            fields->has_nonce = true;
-        } else {
-            fields->has_nonce = false;
-        }
+        CHECK_PARSER_ERR(try_read_nonce(content_map, v));
 
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
@@ -429,7 +445,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                 return 6;
             }
             uint8_t nonce = v->tx_fields.call.has_nonce ? 1 : 0;
-            itemCount = 7 + nonce;          //cbor contents + token transfer protobuf data
+            itemCount = 7 + nonce;
             break;
         }
         case state_transaction_read : {
