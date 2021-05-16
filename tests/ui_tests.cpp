@@ -86,7 +86,7 @@ std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
         }
 
         bool valid = true;
-        if (i.isMember("value")) {
+        if (i.isMember("valid")) {
             valid = i["valid"].asBool();
         }
 
