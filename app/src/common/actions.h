@@ -43,6 +43,7 @@ __Z_INLINE void app_sign() {
 }
 
 __Z_INLINE void app_reject() {
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
