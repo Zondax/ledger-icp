@@ -259,7 +259,7 @@ describe('Standard', function () {
             await sim.clickBoth();
             await sim.clickLeft();
 
-            // Get public key        
+            // Get public key
             const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0");
             console.log(respAddr)
             expect(respAddr.returnCode).toEqual(0x9000);

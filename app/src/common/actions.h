@@ -26,12 +26,10 @@
 extern uint16_t action_addrResponseLen;
 
 __Z_INLINE void app_sign() {
-    const uint8_t *message = tx_get_buffer();
-    const uint16_t messageLength = tx_get_buffer_length();
     uint16_t replyLen = 0;
 
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, message, messageLength, &replyLen);
+    zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen);
 
     if (err != zxerr_ok || replyLen == 0) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
@@ -43,6 +41,7 @@ __Z_INLINE void app_sign() {
 }
 
 __Z_INLINE void app_reject() {
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }

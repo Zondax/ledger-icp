@@ -43,7 +43,7 @@ if (ENABLE_FUZZING)
     set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,bugprone-*,cert-*,clang-analyzer-*,-cert-err58-cpp,misc-*,-bugprone-suspicious-include)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        # require at least clang 12
+        # require at least clang 11
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0)
             message(FATAL_ERROR "Clang version must be at least 11.0!")
         endif ()

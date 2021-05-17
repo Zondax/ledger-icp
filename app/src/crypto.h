@@ -52,8 +52,6 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
 
 zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
-                    const uint8_t *message,
-                    uint16_t messageLen,
                     uint16_t *sigSize);
 
 #ifdef __cplusplus

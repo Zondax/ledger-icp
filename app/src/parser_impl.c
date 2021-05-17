@@ -368,6 +368,7 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 }
 
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
+    UNUSED(c);
     const uint8_t *sender = NULL;
 
     switch (v->txtype) {
@@ -438,6 +439,8 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
+    UNUSED(c);
+
     uint8_t itemCount = 0;
     switch (v->txtype) {
         case token_transfer: {

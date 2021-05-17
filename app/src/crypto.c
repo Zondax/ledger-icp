@@ -72,6 +72,9 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
             cx_ecfp_init_public_key(CX_CURVE_256K1, NULL, 0, &cx_publicKey);
             cx_ecfp_generate_pair(CX_CURVE_256K1, &cx_publicKey, &cx_privateKey, 1);
         }
+        CATCH_OTHER(e) {
+            return zxerr_ledger_api_error;
+        }
         FINALLY {
             MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
             MEMZERO(privateKeyData, 32);
@@ -88,8 +91,8 @@ typedef struct {
     uint8_t s[32];
     uint8_t v;
 
-//    // DER signature max size should be 73
-//    // https://bitcoin.stackexchange.com/questions/77191/what-is-the-maximum-size-of-a-der-encoded-ecdsa-signature#77192
+    // DER signature max size should be 73
+    // https://bitcoin.stackexchange.com/questions/77191/what-is-the-maximum-size-of-a-der-encoded-ecdsa-signature#77192
     uint8_t der_signature[73];
 
 } __attribute__((packed)) signature_t;
@@ -189,8 +192,6 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
 
 zxerr_t crypto_sign(uint8_t *signatureBuffer,
                     uint16_t signatureMaxlen,
-                    const uint8_t *message,
-                    uint16_t messageLen,
                     uint16_t *sigSize) {
     if (signatureMaxlen < SIGN_PREHASH_SIZE + sizeof(signature_t)){
         return zxerr_buffer_too_small;
