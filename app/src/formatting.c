@@ -39,7 +39,7 @@ zxerr_t number_inplace_thousands(char *s, uint16_t sMaxLen, char separator) {
 
     // find decimal point
     int32_t dec_point = -1;
-    for (int32_t i = 0; i < len && dec_point < 0; i++) {
+    for (uint32_t i = 0; i < len && dec_point < 0; i++) {
         if (s[i] == '.') {
             dec_point = i;
         }

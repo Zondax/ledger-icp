@@ -40,7 +40,7 @@ $(info EXAMPLE_VUE_DIR       : $(EXAMPLE_VUE_DIR))
 $(info TESTS_JS_DIR          : $(TESTS_JS_DIR))
 $(info TESTS_JS_PACKAGE      : $(TESTS_JS_PACKAGE))
 
-DOCKER_IMAGE=zondax/builder-bolos@sha256:0e0097c01ef3c6c964fea8d8b6e3a584f4ff209a04ec68b6b2b4aeab64379c23
+DOCKER_IMAGE=zondax/builder-bolos@sha256:e43b2ece1e42ca09cb9ccf90466982d95d3f1842e1b9aac18cd8d5762b308eeb
 
 ifdef INTERACTIVE
 INTERACTIVE_SETTING:="-i"
@@ -65,6 +65,7 @@ define run_docker
 	-e BOLOS_ENV=/opt/bolos \
 	-u $(USERID) \
 	-v $(shell pwd):/project \
+	-e SUPPORT_SR25519=$(SUPPORT_SR25519) \
 	-e COIN=$(COIN) \
 	-e APP_TESTING=$(APP_TESTING) \
 	$(DOCKER_IMAGE) "$(2)"
