@@ -220,7 +220,7 @@ namespace {
 
     TEST(CBORParserTest, TransactionSimpleEnvelope) {
         uint8_t inBuffer[1000];
-        // FIXME: remove first byte
+
         const char *tmp = "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b167886d92efc388065706174687381824e726571756573745f7374617475735820564fd7aba0d5facd386adad8c095339be3ad9222389decf64e0bddee3cc11e466c726571756573745f747970656a726561645f73746174656673656e646572581dbd28a51aa219af2443896127d178f9b2de34215c948f3e265a0e083d02";
         auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
 
