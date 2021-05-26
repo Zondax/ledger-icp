@@ -453,8 +453,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             if (!app_mode_expert()) {
                 return 6;
             }
-            uint8_t nonce = v->tx_fields.call.has_nonce ? 1 : 0;
-            itemCount = 8 + nonce;
+            itemCount = 8;
             break;
         }
         case state_transaction_read : {
