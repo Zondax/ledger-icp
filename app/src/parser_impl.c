@@ -275,9 +275,19 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     // Check request type
     READ_STRING(content_map, "request_type", v->request_type)
     size_t mapsize = 0;
+
+    // Skip fields until the end
+    size_t fieldCount = 0;
+    while (!cbor_value_at_end(&content_it)) {
+        CHECK_CBOR_MAP_ERR(cbor_value_advance(&content_it));
+        fieldCount++;
+    }
+
     if (strcmp(v->request_type.data, "call") == 0) {
-//        CHECK_CBOR_MAP_ERR(cbor_value_get_map_length(content_map, &mapsize))
-//        PARSER_ASSERT_OR_ERROR(mapsize == 7 || mapsize == 6, parser_context_unexpected_size)
+        if (fieldCount != 6*2 && fieldCount != 7*2) {
+            return parser_context_unexpected_size;
+        }
+
         v->txtype = token_transfer;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
@@ -305,10 +315,6 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         return parser_unexpected_method;
     } else {
         return parser_unexpected_value;
-    }
-    // Skip fields until the end
-    while (!cbor_value_at_end(&content_it)) {
-        CHECK_CBOR_MAP_ERR(cbor_value_advance(&content_it));
     }
 
     // Exit envelope
@@ -447,8 +453,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             if (!app_mode_expert()) {
                 return 6;
             }
-            uint8_t nonce = v->tx_fields.call.has_nonce ? 1 : 0;
-            itemCount = 7 + nonce;
+            itemCount = 8;
             break;
         }
         case state_transaction_read : {

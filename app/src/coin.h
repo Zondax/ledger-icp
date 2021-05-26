@@ -45,7 +45,6 @@ typedef enum {
     addr_secp256k1 = 0,
 } address_kind_e;
 
-#define CBOR_PARSER_MAX_RECURSIONS              4
 #define COIN_SECRET_REQUIRED_CLICKS             0
 #define COIN_AMOUNT_DECIMAL_PLACES              8
 #define COIN_AMOUNT_DECIMAL_NON_TRIMMED_PLACES  2

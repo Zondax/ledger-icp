@@ -51,7 +51,7 @@ COIN=ICP
 endif
 
 APPVERSION_M=0
-APPVERSION_N=4
+APPVERSION_N=5
 APPVERSION_P=0
 
 $(info COIN  = [$(COIN)])
@@ -81,12 +81,14 @@ APP_STACK_SIZE:=1892
 ICONNAME:=$(CURDIR)/nanos_icon.gif
 OUTPUT_ELF:= $(CURDIR)/output/app_s.elf
 OUTPUT_INSTALLER:= $(CURDIR)/pkg/installer_s.sh
+DEFINES += CBOR_PARSER_MAX_RECURSIONS=4
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 ICONNAME:=$(CURDIR)/nanox_icon.gif
 OUTPUT_ELF:= $(CURDIR)/output/app_x.elf
 OUTPUT_INSTALLER:= $(CURDIR)/pkg/installer_x.sh
+DEFINES += CBOR_PARSER_MAX_RECURSIONS=16
 endif
 
 $(info TARGET_NAME  = [$(TARGET_NAME)])
