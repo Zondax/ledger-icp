@@ -47,6 +47,7 @@ __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, u
         *flags |= IO_ASYNCH_REPLY;
         return;
     }
+
     *tx = action_addrResponseLen;
     THROW(APDU_CODE_OK);
 }

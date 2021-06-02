@@ -49,8 +49,8 @@ jobs:
       - run:
           name: Install node + yarn
           command: |
-            nvm install 14.4.0
-            nvm use 14.4.0
+            nvm install 14.17.0
+            nvm use 14.17.0
             npm install -g yarn
       - run:
           name: Build Ledger app
@@ -61,13 +61,13 @@ jobs:
       - run:
           name: Build/Install build js deps
           command: |
-            nvm use 14.4.0
+            nvm use 14.17.0
             export PATH=~/.cargo/bin:$PATH
             make zemu_install
       - run:
           name: Run zemu tests
           command: |
-            nvm use 14.4.0
+            nvm use 14.17.0
             export PATH=~/.cargo/bin:$PATH
             make zemu_test
 

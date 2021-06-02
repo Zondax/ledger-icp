@@ -40,12 +40,6 @@ __Z_INLINE void app_sign() {
     }
 }
 
-__Z_INLINE void app_reject() {
-    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-}
-
 __Z_INLINE zxerr_t app_fill_address() {
     // Put data directly in the apdu buffer
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
@@ -58,6 +52,12 @@ __Z_INLINE zxerr_t app_fill_address() {
     }
 
     return zxerr_ok;
+}
+
+__Z_INLINE void app_reject() {
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
 __Z_INLINE void app_reply_address() {

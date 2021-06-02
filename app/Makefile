@@ -40,10 +40,14 @@ all: bin/app.elf
 
 include $(BOLOS_SDK)/Makefile.defines
 
+#DEFINES += APP_SECRET_MODE_ENABLED
+
+$(info ************ TARGET_NAME  = [$(TARGET_NAME)])
+
 ifeq ($(APP_TESTING),1)
 DEFINES += APP_TESTING
 DEFINES += ZEMU_LOGGING
-$(info ************  LOGGING ENABLED ************)
+$(info ************ LOGGING ENABLED ************)
 endif
 
 ifndef COIN
@@ -55,6 +59,7 @@ APPVERSION_N=5
 APPVERSION_P=0
 
 $(info COIN  = [$(COIN)])
+
 ifeq ($(COIN),ICP)
 # Main app configuration
 DEFINES += APP_STANDARD
@@ -79,14 +84,14 @@ DEFINES += HAVE_PENDING_REVIEW_SCREEN
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 APP_STACK_SIZE:=1892
 ICONNAME:=$(CURDIR)/nanos_icon.gif
-OUTPUT_ELF:= $(CURDIR)/output/app_s.elf
-OUTPUT_INSTALLER:= $(CURDIR)/pkg/installer_s.sh
+OUTPUT_ELF ?= $(CURDIR)/output/app_s.elf
+OUTPUT_INSTALLER := $(CURDIR)/pkg/installer_s.sh
 DEFINES += CBOR_PARSER_MAX_RECURSIONS=4
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 ICONNAME:=$(CURDIR)/nanox_icon.gif
-OUTPUT_ELF:= $(CURDIR)/output/app_x.elf
+OUTPUT_ELF ?= $(CURDIR)/output/app_x.elf
 OUTPUT_INSTALLER:= $(CURDIR)/pkg/installer_x.sh
 DEFINES += CBOR_PARSER_MAX_RECURSIONS=16
 endif

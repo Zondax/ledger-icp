@@ -73,6 +73,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
             cx_ecfp_generate_pair(CX_CURVE_256K1, &cx_publicKey, &cx_privateKey, 1);
         }
         CATCH_OTHER(e) {
+            CLOSE_TRY;
             return zxerr_ledger_api_error;
         }
         FINALLY {
@@ -221,9 +222,9 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
         {
             // Generate keys
             os_perso_derive_node_bip32(CX_CURVE_SECP256K1,
-                                                      hdPath,
-                                                      HDPATH_LEN_DEFAULT,
-                                                      privateKeyData, NULL);
+                                       hdPath,
+                                       HDPATH_LEN_DEFAULT,
+                                       privateKeyData, NULL);
 
             cx_ecfp_init_private_key(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey);
 

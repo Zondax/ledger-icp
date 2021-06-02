@@ -65,16 +65,16 @@ define run_docker
 	-e BOLOS_ENV=/opt/bolos \
 	-u $(USERID) \
 	-v $(shell pwd):/project \
-	-e SUPPORT_SR25519=$(SUPPORT_SR25519) \
 	-e COIN=$(COIN) \
 	-e APP_TESTING=$(APP_TESTING) \
 	$(DOCKER_IMAGE) "$(2)"
 endef
 
 all:
-	@$(MAKE) clean
+	@$(MAKE) clean_output
+	@$(MAKE) clean_build
 	@$(MAKE) buildS
-	@$(MAKE) clean
+	@$(MAKE) clean_build
 	@$(MAKE) buildX
 
 .PHONY: check_python
@@ -111,24 +111,17 @@ buildS: build_rustS
 buildX: build_rustX
 	$(call run_docker,$(DOCKER_BOLOS_SDKX),make -j $(NPROC) -C $(DOCKER_APP_SRC))
 
-.PHONY: clean
-clean: cleanS cleanX
+.PHONY: clean_output
+clean_output:
+	@echo "Removing output files"
+	@rm -f app/output/app* || true
 
-.PHONY: cleanS
-cleanS:
+.PHONY: clean
+clean_build:
 	$(call run_docker,$(DOCKER_BOLOS_SDKS),make -C $(DOCKER_APP_SRC) clean)
 
-.PHONY: cleanX
-cleanX:
-	$(call run_docker,$(DOCKER_BOLOS_SDKX),make -C $(DOCKER_APP_SRC) clean)
-
-.PHONY: clean_rustS
-clean_rustS:
-	$(call run_docker,$(DOCKER_BOLOS_SDKS),make -C $(DOCKER_APP_SRC) rust_clean)
-
-.PHONY: clean_rustX
-clean_rustX:
-	$(call run_docker,$(DOCKER_BOLOS_SDKX),make -C $(DOCKER_APP_SRC) rust_clean)
+.PHONY: clean
+clean: clean_output clean_build
 
 .PHONY: listvariants
 listvariants:
@@ -291,5 +284,6 @@ fuzz: fuzz_build
 	./fuzz/run-fuzzers.py
 
 .PHONY: fuzz_crash
+fuzz_crash: FUZZ_LOGGING=1
 fuzz_crash: fuzz_build
 	./fuzz/run-fuzz-crashes.py
