@@ -55,9 +55,7 @@ jobs:
       - run:
           name: Build Ledger app
           command: |
-            make buildS
-            make clean
-            make buildX
+            make
       - run:
           name: Build/Install build js deps
           command: |
