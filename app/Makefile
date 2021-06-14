@@ -91,6 +91,7 @@ endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
 ICONNAME:=$(CURDIR)/nanox_icon.gif
+SCRIPT_LD:=$(CURDIR)/script_x.ld
 OUTPUT_ELF ?= $(CURDIR)/output/app_x.elf
 OUTPUT_INSTALLER:= $(CURDIR)/pkg/installer_x.sh
 DEFINES += CBOR_PARSER_MAX_RECURSIONS=16

@@ -74,6 +74,8 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
         }
         CATCH_OTHER(e) {
             CLOSE_TRY;
+            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+            MEMZERO(privateKeyData, 32);
             return zxerr_ledger_api_error;
         }
         FINALLY {
@@ -237,6 +239,12 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
                                             signature->der_signature,
                                             sizeof_field(signature_t, der_signature),
                                             &info);
+        }
+        CATCH_OTHER(e) {
+            CLOSE_TRY;
+            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+            MEMZERO(privateKeyData, 32);
+            return zxerr_ledger_api_error;
         }
         FINALLY {
             MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
