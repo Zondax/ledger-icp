@@ -53,8 +53,8 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     uint8_t numItems = 0;
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems));
 
-    char tmpKey[40];
-    char tmpVal[40];
+    char tmpKey[100];
+    char tmpVal[100];
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
@@ -113,15 +113,12 @@ __Z_INLINE parser_error_t print_textual(sender_t *sender,
         return parser_unexepected_error;
     }
 
-    if (outValLen < 37) { return parser_unexpected_buffer_end; }
-    outValLen = 37;
+    // Remove trailing dashes
+    if (buffer[17] == '-') buffer[17] = ' ';
+    if (buffer[35] == '-') buffer[35] = ' ';
+    if (buffer[53] == '-') buffer[53] = ' ';
 
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
-    // Remove trailing dashes
-    if (outVal[17] == '-') outVal[17] = ' ';
-    if (outVal[35] == '-') outVal[35] = ' ';
-    if (outVal[53] == '-') outVal[53] = ' ';
 
     return parser_ok;
 }
