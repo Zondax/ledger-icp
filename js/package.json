@@ -1,28 +1,28 @@
 {
-  "name": "@zondax/ledger-dfinity",
+  "name": "@zondax/ledger-icp",
   "author": "Zondax GmbH",
   "license": "Apache-2.0",
   "version": "0.1.0",
-  "description": "Node API for Dfinity App (Ledger Nano S/X)",
+  "description": "Node API for the Internet Computer App (Ledger Nano S/X)",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "types": "./dist/index.d.ts",
-  "homepage": "https://github.com/zondax/ledger-dfinity",
+  "homepage": "https://github.com/zondax/ledger-icp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zondax/ledger-dfinity.git"
+    "url": "git+https://github.com/zondax/ledger-icp.git"
   },
   "keywords": [
     "Zondax",
     "Ledger",
     "Javascript",
-    "Dfinity"
+    "Icp"
   ],
   "scripts": {
     "build": "tsc"
   },
   "bugs": {
-    "url": "https://github.com/zondax/ledger-dfinity/issues"
+    "url": "https://github.com/zondax/ledger-icp/issues"
   },
   "dependencies": {
     "@ledgerhq/hw-transport": "^5.39.1"
