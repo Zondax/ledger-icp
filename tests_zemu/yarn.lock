@@ -1001,10 +1001,9 @@
     "@typescript-eslint/types" "4.25.0"
     eslint-visitor-keys "^2.0.0"
 
-"@zondax/ledger-dfinity@link:../js":
-  version "0.1.0"
-  dependencies:
-    "@ledgerhq/hw-transport" "^5.39.1"
+"@zondax/ledger-icp@link:../js":
+  version "0.0.0"
+  uid ""
 
 "@zondax/zemu@^0.14.5":
   version "0.14.5"
