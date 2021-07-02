@@ -15,7 +15,7 @@
  ******************************************************************************* */
 
 import Zemu, { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
-import DfinityApp from '@zondax/ledger-dfinity'
+import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
 
 const sha256 = require('js-sha256')
@@ -64,7 +64,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
       const resp = await app.getVersion()
 
       console.log(resp)
@@ -84,7 +84,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
 
       const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
 
@@ -112,7 +112,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
 
       const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0")
 
@@ -146,7 +146,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
       console.log(respAddr)
@@ -201,7 +201,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
       console.log(respAddr)
@@ -255,7 +255,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
 
       // Enable expert mode
       console.log('Set expert mode')
@@ -314,7 +314,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...defaultOptions, model: m.name })
-      const app = new DfinityApp(sim.getTransport())
+      const app = new InternetComputerApp(sim.getTransport())
 
       // Enable expert mode
       console.log('Set expert mode')
