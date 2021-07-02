@@ -3,7 +3,7 @@
   "author": "Zondax GmbH",
   "license": "Apache-2.0",
   "version": "0.1.0",
-  "description": "Node API for InternetComputer App (Ledger Nano S/X)",
+  "description": "Node API for the Internet Computer App (Ledger Nano S/X)",
   "main": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "types": "./dist/index.d.ts",
