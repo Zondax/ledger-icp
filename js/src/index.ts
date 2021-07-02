@@ -66,7 +66,7 @@ function processGetAddrResponse(response: Buffer) {
   };
 }
 
-export default class DfinityApp {
+export default class InternetComputerApp {
   private transport: Transport;
 
   constructor(transport: Transport) {
@@ -97,7 +97,7 @@ export default class DfinityApp {
   }
 
   async signGetChunks(path: string, message: Buffer) {
-    return DfinityApp.prepareChunks(serializePath(path), message);
+    return InternetComputerApp.prepareChunks(serializePath(path), message);
   }
 
   async getVersion(): Promise<ResponseVersion> {
