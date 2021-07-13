@@ -123,6 +123,7 @@ namespace {
     TEST(AddressToStringTests, AddrToTextSplitting2) {
         const char *testInput = "di6pv55zh2qkzvb27m4mqxz5tgmmzcvbdcrzcyzz4ukadndaencae";
         char outBuffer[200];
+        MEMZERO(outBuffer,sizeof(outBuffer));
 
         addr_getblock(testInput, strlen(testInput), 1, outBuffer, 5);
         printf("%s\n", outBuffer);
