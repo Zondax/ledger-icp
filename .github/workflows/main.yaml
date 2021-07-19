@@ -100,7 +100,9 @@ jobs:
           make
       - name: Set tag name var
         id: vars
-        run: echo ::set-output name=tag_name::$(./app/pkg/installer_s.sh version)
+        run: |
+          pip install ledgerblue
+          echo ::set-output name=tag_name::$(./app/pkg/installer_s.sh version)
       - name: Create or Update Release
         id: create_release
         uses: softprops/action-gh-release@v1
