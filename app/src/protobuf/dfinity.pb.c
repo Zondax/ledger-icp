@@ -30,52 +30,7 @@ PB_BIND(BlockHeight, BlockHeight, AUTO)
 PB_BIND(SendRequest, SendRequest, AUTO)
 
 
-PB_BIND(ManageNeuron, ManageNeuron, 2)
-
-
-PB_BIND(ManageNeuron_IncreaseDissolveDelay, ManageNeuron_IncreaseDissolveDelay, AUTO)
-
-
-PB_BIND(ManageNeuron_SetDissolveTimestamp, ManageNeuron_SetDissolveTimestamp, AUTO)
-
-
-PB_BIND(ManageNeuron_StartDissolving, ManageNeuron_StartDissolving, AUTO)
-
-
-PB_BIND(ManageNeuron_StopDissolving, ManageNeuron_StopDissolving, AUTO)
-
-
-PB_BIND(ManageNeuron_AddHotKey, ManageNeuron_AddHotKey, AUTO)
-
-
-PB_BIND(ManageNeuron_RemoveHotKey, ManageNeuron_RemoveHotKey, AUTO)
-
-
-PB_BIND(ManageNeuron_Configure, ManageNeuron_Configure, AUTO)
-
-
-PB_BIND(ManageNeuron_Disburse, ManageNeuron_Disburse, AUTO)
-
-
-PB_BIND(ManageNeuron_Disburse_Amount, ManageNeuron_Disburse_Amount, AUTO)
-
-
-PB_BIND(ManageNeuron_Split, ManageNeuron_Split, AUTO)
-
-
-PB_BIND(ManageNeuron_Spawn, ManageNeuron_Spawn, AUTO)
-
-
-PB_BIND(ManageNeuron_DisburseToNeuron, ManageNeuron_DisburseToNeuron, AUTO)
-
-
-PB_BIND(ManageNeuron_Follow, ManageNeuron_Follow, AUTO)
-
-
-PB_BIND(ManageNeuron_RegisterVote, ManageNeuron_RegisterVote, AUTO)
-
-
-PB_BIND(ManageNeuron_ClaimOrRefresh, ManageNeuron_ClaimOrRefresh, AUTO)
+PB_BIND(ManageNeuronPb, ManageNeuronPb, AUTO)
 
 
 

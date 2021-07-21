@@ -5,8 +5,6 @@
 #define PB_DFINITY_PB_H_INCLUDED
 #include <pb.h>
 #include "base_types.pb.h"
-#include "common_types.pb.h"
-#include "types.pb.h"
 #include "governance.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
@@ -14,14 +12,6 @@
 #endif
 
 /* Struct definitions */
-typedef struct _ManageNeuron_StartDissolving { 
-    char dummy_field;
-} ManageNeuron_StartDissolving;
-
-typedef struct _ManageNeuron_StopDissolving { 
-    char dummy_field;
-} ManageNeuron_StopDissolving;
-
 typedef struct _AccountIdentifier { 
     pb_byte_t hash[32]; /* always 32 bytes, starts with CRC32 */
 } AccountIdentifier;
@@ -34,63 +24,10 @@ typedef struct _ICPTs {
     uint64_t e8s; 
 } ICPTs;
 
-typedef struct _ManageNeuron_AddHotKey { 
-    bool has_new_hot_key;
-    ic_base_types_pb_v1_PrincipalId new_hot_key; 
-} ManageNeuron_AddHotKey;
-
-typedef struct _ManageNeuron_ClaimOrRefresh { 
-    pb_size_t which_by;
-    union {
-        uint64_t memo;
-    } by; 
-} ManageNeuron_ClaimOrRefresh;
-
-typedef struct _ManageNeuron_DisburseToNeuron { 
-    bool has_new_controller;
-    ic_base_types_pb_v1_PrincipalId new_controller; 
-    uint64_t amount_e8s; 
-    uint64_t dissolve_delay_seconds; 
-    bool kyc_verified; 
-    uint64_t nonce; 
-} ManageNeuron_DisburseToNeuron;
-
-typedef struct _ManageNeuron_Disburse_Amount { 
-    uint64_t e8s; 
-} ManageNeuron_Disburse_Amount;
-
-typedef struct _ManageNeuron_Follow { 
-    ic_nns_governance_pb_v1_Topic topic; 
-    pb_callback_t followees; 
-} ManageNeuron_Follow;
-
-typedef struct _ManageNeuron_IncreaseDissolveDelay { 
-    uint32_t additional_dissolve_delay_seconds; 
-} ManageNeuron_IncreaseDissolveDelay;
-
-typedef struct _ManageNeuron_RegisterVote { 
-    bool has_proposal;
-    ic_nns_common_pb_v1_ProposalId proposal; 
-    ic_nns_governance_pb_v1_Vote vote; 
-} ManageNeuron_RegisterVote;
-
-typedef struct _ManageNeuron_RemoveHotKey { 
-    bool has_hot_key_to_remove;
-    ic_base_types_pb_v1_PrincipalId hot_key_to_remove; 
-} ManageNeuron_RemoveHotKey;
-
-typedef struct _ManageNeuron_SetDissolveTimestamp { 
-    uint64_t dissolve_timestamp_seconds; 
-} ManageNeuron_SetDissolveTimestamp;
-
-typedef struct _ManageNeuron_Spawn { 
-    bool has_new_controller;
-    ic_base_types_pb_v1_PrincipalId new_controller; 
-} ManageNeuron_Spawn;
-
-typedef struct _ManageNeuron_Split { 
-    uint64_t amount_e8s; 
-} ManageNeuron_Split;
+typedef struct _ManageNeuronPb { 
+    bool has_manage_neuron;
+    ic_nns_governance_pb_v1_ManageNeuron manage_neuron; 
+} ManageNeuronPb;
 
 typedef struct _Memo { 
     uint64_t memo; 
@@ -104,59 +41,10 @@ typedef struct _TimeStamp {
     uint64_t timestamp_nanos; 
 } TimeStamp;
 
-typedef struct _ManageNeuron_Configure { 
-    pb_size_t which_operation;
-    union {
-        ManageNeuron_IncreaseDissolveDelay increase_dissolve_delay;
-        ManageNeuron_StartDissolving start_dissolving;
-        ManageNeuron_StopDissolving stop_dissolving;
-        ManageNeuron_AddHotKey add_hot_key;
-        ManageNeuron_RemoveHotKey remove_hot_key;
-        ManageNeuron_SetDissolveTimestamp set_dissolve_timestamp;
-    } operation; 
-} ManageNeuron_Configure;
-
-typedef struct _ManageNeuron_Disburse { 
-    bool has_amount;
-    ManageNeuron_Disburse_Amount amount; 
-    bool has_to_account;
-    ic_ledger_pb_v1_AccountIdentifier to_account; 
-} ManageNeuron_Disburse;
-
 typedef struct _Payment { 
     bool has_receiver_gets;
     ICPTs receiver_gets; 
 } Payment;
-
-/* All operations that modify the state of an existing neuron are
- represented by instances of `ManageNeuron`.
-
- All commands are available to the `controller` of the neuron. In
- addition, commands related to voting, i.g., [manage_neuron::Follow]
- and [manage_neuron::RegisterVote], are also available to the
- registered hot keys of the neuron. */
-typedef struct _ManageNeuron { 
-    /* This is the legacy way to specify neuron IDs that is now discouraged. */
-    bool has_id;
-    ic_nns_common_pb_v1_NeuronId id; 
-    pb_size_t which_command;
-    union {
-        ManageNeuron_Configure configure;
-        ManageNeuron_Disburse disburse;
-        ManageNeuron_Spawn spawn;
-        ManageNeuron_Follow follow;
-        ic_nns_governance_pb_v1_Proposal make_proposal;
-        ManageNeuron_RegisterVote register_vote;
-        ManageNeuron_Split split;
-        ManageNeuron_DisburseToNeuron disburse_to_neuron;
-        ManageNeuron_ClaimOrRefresh claim_or_refresh;
-    } command; 
-    pb_size_t which_neuron_id_or_subaccount;
-    union {
-        pb_callback_t subaccount;
-        ic_nns_common_pb_v1_NeuronId neuron_id;
-    } neuron_id_or_subaccount; 
-} ManageNeuron;
 
 typedef struct _SendRequest { 
     bool has_memo;
@@ -189,22 +77,7 @@ extern "C" {
 #define AccountIdentifier_init_default           {{0}}
 #define BlockHeight_init_default                 {0}
 #define SendRequest_init_default                 {false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default, false, TimeStamp_init_default}
-#define ManageNeuron_init_default                {false, ic_nns_common_pb_v1_NeuronId_init_default, 0, {ManageNeuron_Configure_init_default}, 0, {{{NULL}, NULL}}}
-#define ManageNeuron_IncreaseDissolveDelay_init_default {0}
-#define ManageNeuron_SetDissolveTimestamp_init_default {0}
-#define ManageNeuron_StartDissolving_init_default {0}
-#define ManageNeuron_StopDissolving_init_default {0}
-#define ManageNeuron_AddHotKey_init_default      {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ManageNeuron_RemoveHotKey_init_default   {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ManageNeuron_Configure_init_default      {0, {ManageNeuron_IncreaseDissolveDelay_init_default}}
-#define ManageNeuron_Disburse_init_default       {false, ManageNeuron_Disburse_Amount_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default}
-#define ManageNeuron_Disburse_Amount_init_default {0}
-#define ManageNeuron_Split_init_default          {0}
-#define ManageNeuron_Spawn_init_default          {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ManageNeuron_DisburseToNeuron_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default, 0, 0, 0, 0}
-#define ManageNeuron_Follow_init_default         {_ic_nns_governance_pb_v1_Topic_MIN, {{NULL}, NULL}}
-#define ManageNeuron_RegisterVote_init_default   {false, ic_nns_common_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ManageNeuron_ClaimOrRefresh_init_default {0, {0}}
+#define ManageNeuronPb_init_default              {false, ic_nns_governance_pb_v1_ManageNeuron_init_default}
 #define TimeStamp_init_zero                      {0}
 #define Memo_init_zero                           {0}
 #define ICPTs_init_zero                          {0}
@@ -213,68 +86,17 @@ extern "C" {
 #define AccountIdentifier_init_zero              {{0}}
 #define BlockHeight_init_zero                    {0}
 #define SendRequest_init_zero                    {false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero, false, TimeStamp_init_zero}
-#define ManageNeuron_init_zero                   {false, ic_nns_common_pb_v1_NeuronId_init_zero, 0, {ManageNeuron_Configure_init_zero}, 0, {{{NULL}, NULL}}}
-#define ManageNeuron_IncreaseDissolveDelay_init_zero {0}
-#define ManageNeuron_SetDissolveTimestamp_init_zero {0}
-#define ManageNeuron_StartDissolving_init_zero   {0}
-#define ManageNeuron_StopDissolving_init_zero    {0}
-#define ManageNeuron_AddHotKey_init_zero         {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ManageNeuron_RemoveHotKey_init_zero      {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ManageNeuron_Configure_init_zero         {0, {ManageNeuron_IncreaseDissolveDelay_init_zero}}
-#define ManageNeuron_Disburse_init_zero          {false, ManageNeuron_Disburse_Amount_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
-#define ManageNeuron_Disburse_Amount_init_zero   {0}
-#define ManageNeuron_Split_init_zero             {0}
-#define ManageNeuron_Spawn_init_zero             {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ManageNeuron_DisburseToNeuron_init_zero  {false, ic_base_types_pb_v1_PrincipalId_init_zero, 0, 0, 0, 0}
-#define ManageNeuron_Follow_init_zero            {_ic_nns_governance_pb_v1_Topic_MIN, {{NULL}, NULL}}
-#define ManageNeuron_RegisterVote_init_zero      {false, ic_nns_common_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ManageNeuron_ClaimOrRefresh_init_zero    {0, {0}}
+#define ManageNeuronPb_init_zero                 {false, ic_nns_governance_pb_v1_ManageNeuron_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define AccountIdentifier_hash_tag               1
 #define BlockHeight_height_tag                   1
 #define ICPTs_e8s_tag                            1
-#define ManageNeuron_AddHotKey_new_hot_key_tag   1
-#define ManageNeuron_ClaimOrRefresh_memo_tag     1
-#define ManageNeuron_DisburseToNeuron_new_controller_tag 1
-#define ManageNeuron_DisburseToNeuron_amount_e8s_tag 2
-#define ManageNeuron_DisburseToNeuron_dissolve_delay_seconds_tag 3
-#define ManageNeuron_DisburseToNeuron_kyc_verified_tag 4
-#define ManageNeuron_DisburseToNeuron_nonce_tag  5
-#define ManageNeuron_Disburse_Amount_e8s_tag     1
-#define ManageNeuron_Follow_topic_tag            1
-#define ManageNeuron_Follow_followees_tag        2
-#define ManageNeuron_IncreaseDissolveDelay_additional_dissolve_delay_seconds_tag 1
-#define ManageNeuron_RegisterVote_proposal_tag   1
-#define ManageNeuron_RegisterVote_vote_tag       2
-#define ManageNeuron_RemoveHotKey_hot_key_to_remove_tag 1
-#define ManageNeuron_SetDissolveTimestamp_dissolve_timestamp_seconds_tag 1
-#define ManageNeuron_Spawn_new_controller_tag    1
-#define ManageNeuron_Split_amount_e8s_tag        1
+#define ManageNeuronPb_manage_neuron_tag         1
 #define Memo_memo_tag                            1
 #define Subaccount_sub_account_tag               1
 #define TimeStamp_timestamp_nanos_tag            1
-#define ManageNeuron_Configure_increase_dissolve_delay_tag 1
-#define ManageNeuron_Configure_start_dissolving_tag 2
-#define ManageNeuron_Configure_stop_dissolving_tag 3
-#define ManageNeuron_Configure_add_hot_key_tag   4
-#define ManageNeuron_Configure_remove_hot_key_tag 5
-#define ManageNeuron_Configure_set_dissolve_timestamp_tag 6
-#define ManageNeuron_Disburse_amount_tag         1
-#define ManageNeuron_Disburse_to_account_tag     2
 #define Payment_receiver_gets_tag                1
-#define ManageNeuron_id_tag                      1
-#define ManageNeuron_configure_tag               2
-#define ManageNeuron_disburse_tag                3
-#define ManageNeuron_spawn_tag                   4
-#define ManageNeuron_follow_tag                  5
-#define ManageNeuron_make_proposal_tag           6
-#define ManageNeuron_register_vote_tag           7
-#define ManageNeuron_split_tag                   8
-#define ManageNeuron_disburse_to_neuron_tag      9
-#define ManageNeuron_claim_or_refresh_tag        10
-#define ManageNeuron_subaccount_tag              11
-#define ManageNeuron_neuron_id_tag               12
 #define SendRequest_memo_tag                     1
 #define SendRequest_payment_tag                  2
 #define SendRequest_max_fee_tag                  3
@@ -338,133 +160,11 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   7)
 #define SendRequest_created_at_MSGTYPE BlockHeight
 #define SendRequest_created_at_time_MSGTYPE TimeStamp
 
-#define ManageNeuron_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,configure,command.configure),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,follow,command.follow),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,make_proposal,command.make_proposal),   6) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,register_vote,command.register_vote),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,split,command.split),   8) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse_to_neuron,command.disburse_to_neuron),   9) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,claim_or_refresh,command.claim_or_refresh),  10) \
-X(a, CALLBACK, ONEOF,    BYTES,    (neuron_id_or_subaccount,subaccount,neuron_id_or_subaccount.subaccount),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (neuron_id_or_subaccount,neuron_id,neuron_id_or_subaccount.neuron_id),  12)
-#define ManageNeuron_CALLBACK pb_default_field_callback
-#define ManageNeuron_DEFAULT NULL
-#define ManageNeuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
-#define ManageNeuron_command_configure_MSGTYPE ManageNeuron_Configure
-#define ManageNeuron_command_disburse_MSGTYPE ManageNeuron_Disburse
-#define ManageNeuron_command_spawn_MSGTYPE ManageNeuron_Spawn
-#define ManageNeuron_command_follow_MSGTYPE ManageNeuron_Follow
-#define ManageNeuron_command_make_proposal_MSGTYPE ic_nns_governance_pb_v1_Proposal
-#define ManageNeuron_command_register_vote_MSGTYPE ManageNeuron_RegisterVote
-#define ManageNeuron_command_split_MSGTYPE ManageNeuron_Split
-#define ManageNeuron_command_disburse_to_neuron_MSGTYPE ManageNeuron_DisburseToNeuron
-#define ManageNeuron_command_claim_or_refresh_MSGTYPE ManageNeuron_ClaimOrRefresh
-#define ManageNeuron_neuron_id_or_subaccount_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
-
-#define ManageNeuron_IncreaseDissolveDelay_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   additional_dissolve_delay_seconds,   1)
-#define ManageNeuron_IncreaseDissolveDelay_CALLBACK NULL
-#define ManageNeuron_IncreaseDissolveDelay_DEFAULT NULL
-
-#define ManageNeuron_SetDissolveTimestamp_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_timestamp_seconds,   1)
-#define ManageNeuron_SetDissolveTimestamp_CALLBACK NULL
-#define ManageNeuron_SetDissolveTimestamp_DEFAULT NULL
-
-#define ManageNeuron_StartDissolving_FIELDLIST(X, a) \
-
-#define ManageNeuron_StartDissolving_CALLBACK NULL
-#define ManageNeuron_StartDissolving_DEFAULT NULL
-
-#define ManageNeuron_StopDissolving_FIELDLIST(X, a) \
-
-#define ManageNeuron_StopDissolving_CALLBACK NULL
-#define ManageNeuron_StopDissolving_DEFAULT NULL
-
-#define ManageNeuron_AddHotKey_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_hot_key,       1)
-#define ManageNeuron_AddHotKey_CALLBACK NULL
-#define ManageNeuron_AddHotKey_DEFAULT NULL
-#define ManageNeuron_AddHotKey_new_hot_key_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ManageNeuron_RemoveHotKey_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  hot_key_to_remove,   1)
-#define ManageNeuron_RemoveHotKey_CALLBACK NULL
-#define ManageNeuron_RemoveHotKey_DEFAULT NULL
-#define ManageNeuron_RemoveHotKey_hot_key_to_remove_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ManageNeuron_Configure_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,increase_dissolve_delay,operation.increase_dissolve_delay),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,start_dissolving,operation.start_dissolving),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,stop_dissolving,operation.stop_dissolving),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,add_hot_key,operation.add_hot_key),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_hot_key),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,set_dissolve_timestamp,operation.set_dissolve_timestamp),   6)
-#define ManageNeuron_Configure_CALLBACK NULL
-#define ManageNeuron_Configure_DEFAULT NULL
-#define ManageNeuron_Configure_operation_increase_dissolve_delay_MSGTYPE ManageNeuron_IncreaseDissolveDelay
-#define ManageNeuron_Configure_operation_start_dissolving_MSGTYPE ManageNeuron_StartDissolving
-#define ManageNeuron_Configure_operation_stop_dissolving_MSGTYPE ManageNeuron_StopDissolving
-#define ManageNeuron_Configure_operation_add_hot_key_MSGTYPE ManageNeuron_AddHotKey
-#define ManageNeuron_Configure_operation_remove_hot_key_MSGTYPE ManageNeuron_RemoveHotKey
-#define ManageNeuron_Configure_operation_set_dissolve_timestamp_MSGTYPE ManageNeuron_SetDissolveTimestamp
-
-#define ManageNeuron_Disburse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to_account,        2)
-#define ManageNeuron_Disburse_CALLBACK NULL
-#define ManageNeuron_Disburse_DEFAULT NULL
-#define ManageNeuron_Disburse_amount_MSGTYPE ManageNeuron_Disburse_Amount
-#define ManageNeuron_Disburse_to_account_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
-
-#define ManageNeuron_Disburse_Amount_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   e8s,               1)
-#define ManageNeuron_Disburse_Amount_CALLBACK NULL
-#define ManageNeuron_Disburse_Amount_DEFAULT NULL
-
-#define ManageNeuron_Split_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   amount_e8s,        1)
-#define ManageNeuron_Split_CALLBACK NULL
-#define ManageNeuron_Split_DEFAULT NULL
-
-#define ManageNeuron_Spawn_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1)
-#define ManageNeuron_Spawn_CALLBACK NULL
-#define ManageNeuron_Spawn_DEFAULT NULL
-#define ManageNeuron_Spawn_new_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ManageNeuron_DisburseToNeuron_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1) \
-X(a, STATIC,   SINGULAR, UINT64,   amount_e8s,        2) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_delay_seconds,   3) \
-X(a, STATIC,   SINGULAR, BOOL,     kyc_verified,      4) \
-X(a, STATIC,   SINGULAR, UINT64,   nonce,             5)
-#define ManageNeuron_DisburseToNeuron_CALLBACK NULL
-#define ManageNeuron_DisburseToNeuron_DEFAULT NULL
-#define ManageNeuron_DisburseToNeuron_new_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ManageNeuron_Follow_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    topic,             1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,         2)
-#define ManageNeuron_Follow_CALLBACK pb_default_field_callback
-#define ManageNeuron_Follow_DEFAULT NULL
-#define ManageNeuron_Follow_followees_MSGTYPE ic_nns_common_pb_v1_NeuronId
-
-#define ManageNeuron_RegisterVote_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal,          1) \
-X(a, STATIC,   SINGULAR, UENUM,    vote,              2)
-#define ManageNeuron_RegisterVote_CALLBACK NULL
-#define ManageNeuron_RegisterVote_DEFAULT NULL
-#define ManageNeuron_RegisterVote_proposal_MSGTYPE ic_nns_common_pb_v1_ProposalId
-
-#define ManageNeuron_ClaimOrRefresh_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    UINT64,   (by,memo,by.memo),   1)
-#define ManageNeuron_ClaimOrRefresh_CALLBACK NULL
-#define ManageNeuron_ClaimOrRefresh_DEFAULT NULL
+#define ManageNeuronPb_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  manage_neuron,     1)
+#define ManageNeuronPb_CALLBACK NULL
+#define ManageNeuronPb_DEFAULT NULL
+#define ManageNeuronPb_manage_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron
 
 extern const pb_msgdesc_t TimeStamp_msg;
 extern const pb_msgdesc_t Memo_msg;
@@ -474,22 +174,7 @@ extern const pb_msgdesc_t Subaccount_msg;
 extern const pb_msgdesc_t AccountIdentifier_msg;
 extern const pb_msgdesc_t BlockHeight_msg;
 extern const pb_msgdesc_t SendRequest_msg;
-extern const pb_msgdesc_t ManageNeuron_msg;
-extern const pb_msgdesc_t ManageNeuron_IncreaseDissolveDelay_msg;
-extern const pb_msgdesc_t ManageNeuron_SetDissolveTimestamp_msg;
-extern const pb_msgdesc_t ManageNeuron_StartDissolving_msg;
-extern const pb_msgdesc_t ManageNeuron_StopDissolving_msg;
-extern const pb_msgdesc_t ManageNeuron_AddHotKey_msg;
-extern const pb_msgdesc_t ManageNeuron_RemoveHotKey_msg;
-extern const pb_msgdesc_t ManageNeuron_Configure_msg;
-extern const pb_msgdesc_t ManageNeuron_Disburse_msg;
-extern const pb_msgdesc_t ManageNeuron_Disburse_Amount_msg;
-extern const pb_msgdesc_t ManageNeuron_Split_msg;
-extern const pb_msgdesc_t ManageNeuron_Spawn_msg;
-extern const pb_msgdesc_t ManageNeuron_DisburseToNeuron_msg;
-extern const pb_msgdesc_t ManageNeuron_Follow_msg;
-extern const pb_msgdesc_t ManageNeuron_RegisterVote_msg;
-extern const pb_msgdesc_t ManageNeuron_ClaimOrRefresh_msg;
+extern const pb_msgdesc_t ManageNeuronPb_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define TimeStamp_fields &TimeStamp_msg
@@ -500,54 +185,19 @@ extern const pb_msgdesc_t ManageNeuron_ClaimOrRefresh_msg;
 #define AccountIdentifier_fields &AccountIdentifier_msg
 #define BlockHeight_fields &BlockHeight_msg
 #define SendRequest_fields &SendRequest_msg
-#define ManageNeuron_fields &ManageNeuron_msg
-#define ManageNeuron_IncreaseDissolveDelay_fields &ManageNeuron_IncreaseDissolveDelay_msg
-#define ManageNeuron_SetDissolveTimestamp_fields &ManageNeuron_SetDissolveTimestamp_msg
-#define ManageNeuron_StartDissolving_fields &ManageNeuron_StartDissolving_msg
-#define ManageNeuron_StopDissolving_fields &ManageNeuron_StopDissolving_msg
-#define ManageNeuron_AddHotKey_fields &ManageNeuron_AddHotKey_msg
-#define ManageNeuron_RemoveHotKey_fields &ManageNeuron_RemoveHotKey_msg
-#define ManageNeuron_Configure_fields &ManageNeuron_Configure_msg
-#define ManageNeuron_Disburse_fields &ManageNeuron_Disburse_msg
-#define ManageNeuron_Disburse_Amount_fields &ManageNeuron_Disburse_Amount_msg
-#define ManageNeuron_Split_fields &ManageNeuron_Split_msg
-#define ManageNeuron_Spawn_fields &ManageNeuron_Spawn_msg
-#define ManageNeuron_DisburseToNeuron_fields &ManageNeuron_DisburseToNeuron_msg
-#define ManageNeuron_Follow_fields &ManageNeuron_Follow_msg
-#define ManageNeuron_RegisterVote_fields &ManageNeuron_RegisterVote_msg
-#define ManageNeuron_ClaimOrRefresh_fields &ManageNeuron_ClaimOrRefresh_msg
+#define ManageNeuronPb_fields &ManageNeuronPb_msg
 
 /* Maximum encoded size of messages (where known) */
-/* ManageNeuron_size depends on runtime parameters */
-/* ManageNeuron_Follow_size depends on runtime parameters */
 #define AccountIdentifier_size                   34
 #define BlockHeight_size                         11
 #define ICPTs_size                               11
-#define ManageNeuron_ClaimOrRefresh_size         11
-#define ManageNeuron_Disburse_Amount_size        11
-#define ManageNeuron_IncreaseDissolveDelay_size  6
-#define ManageNeuron_RegisterVote_size           15
-#define ManageNeuron_SetDissolveTimestamp_size   11
-#define ManageNeuron_Split_size                  11
-#define ManageNeuron_StartDissolving_size        0
-#define ManageNeuron_StopDissolving_size         0
 #define Memo_size                                11
 #define Payment_size                             13
 #define SendRequest_size                         139
 #define Subaccount_size                          34
 #define TimeStamp_size                           11
-#if defined(ic_base_types_pb_v1_PrincipalId_size)
-#define ManageNeuron_AddHotKey_size              (6 + ic_base_types_pb_v1_PrincipalId_size)
-#define ManageNeuron_DisburseToNeuron_size       (41 + ic_base_types_pb_v1_PrincipalId_size)
-#define ManageNeuron_RemoveHotKey_size           (6 + ic_base_types_pb_v1_PrincipalId_size)
-#define ManageNeuron_Spawn_size                  (6 + ic_base_types_pb_v1_PrincipalId_size)
-#endif
-#if defined(ic_base_types_pb_v1_PrincipalId_size) && defined(ic_base_types_pb_v1_PrincipalId_size)
-#define ManageNeuron_Configure_size              (0 + sizeof(union ManageNeuron_Configure_operation_size_union))
-union ManageNeuron_Configure_operation_size_union {char f4[(12 + ic_base_types_pb_v1_PrincipalId_size)]; char f5[(12 + ic_base_types_pb_v1_PrincipalId_size)]; char f0[13];};
-#endif
-#if defined(ic_ledger_pb_v1_AccountIdentifier_size)
-#define ManageNeuron_Disburse_size               (19 + ic_ledger_pb_v1_AccountIdentifier_size)
+#if defined(ic_nns_governance_pb_v1_ManageNeuron_size)
+#define ManageNeuronPb_size                      (6 + ic_nns_governance_pb_v1_ManageNeuron_size)
 #endif
 
 #ifdef __cplusplus
