@@ -1,6 +1,11 @@
 syntax = "proto3";
 import "nanopb.proto";
 
+import "base_types.proto";
+import "common_types.proto";
+import "types.proto";
+import "governance.proto";
+
 message TimeStamp {
   uint64 timestamp_nanos = 1;
 }
