@@ -26,6 +26,7 @@
 
 #include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
+#include "protobuf/governance.pb.h"
 
 // Basic CBOR test cases generated with http://cbor.me/
 
@@ -33,14 +34,14 @@ namespace {
     TEST(NANOPBTEST, test) {
         uint8_t inBuffer[1000];
         const char *tmp = "0A0012050A0308E8071A0308890122220A2001010101010101010101010101010101010101010101010101010101010101012A220A2035548EC29E9D85305850E87A2D2642FE7214FF4BB36334070DEAFC3345C3B127";
-        parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
         bool status;
 
         /* Allocate space for the decoded message. */
         SendRequest request = SendRequest_init_zero;
 
         /* Create a stream that reads from the buffer. */
-        pb_istream_t stream = pb_istream_from_buffer(inBuffer, 86);
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
 
         /* Now we are ready to decode the message. */
         status = pb_decode(&stream, SendRequest_fields, &request);
@@ -48,6 +49,27 @@ namespace {
         EXPECT_EQ(status, true);
 
         EXPECT_EQ(request.to.hash[0], 0x35);
+    }
+
+    TEST(NANOPBTEST, test2) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "0A02107B12060A040880A305";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id, 0);
+        EXPECT_EQ(request.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds, 86400);
     }
 
     TEST(CBORParserTest, MinimalListTest) {

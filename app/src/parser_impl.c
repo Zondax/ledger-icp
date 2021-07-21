@@ -253,14 +253,14 @@ parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
 
     /* Now we are ready to decode the message. */
     status = pb_decode(&stream, SendRequest_fields, &request);
-
-    zemu_log(stream.errmsg);
-    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.sendrequest, &request, sizeof(SendRequest));
-    CHECK_APP_CANARY()
     /* Check for errors... */
     if (!status) {
         return parser_unexepected_error;
     }
+
+    zemu_log(stream.errmsg);
+    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.sendrequest, &request, sizeof(SendRequest));
+    CHECK_APP_CANARY()
 
     return parser_ok;
 }
