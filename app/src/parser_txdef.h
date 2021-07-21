@@ -40,7 +40,7 @@ extern "C" {
 
 typedef enum {
     unknown = 0x00,                 // default is not accepted
-    token_transfer = 0x01,
+    call = 0x01,
     state_transaction_read = 0x02,
 } txtype_e;
 

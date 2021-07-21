@@ -361,7 +361,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount) {
     switch (parser_tx_obj.txtype) {
-        case token_transfer: {
+        case call: {
             return parser_getItemTokenTransfer(ctx, displayIdx,
                                                outKey, outKeyLen,
                                                outVal, outValLen,

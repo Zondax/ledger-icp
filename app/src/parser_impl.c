@@ -288,7 +288,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
             return parser_context_unexpected_size;
         }
 
-        v->txtype = token_transfer;
+        v->txtype = call;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
         READ_STRING(content_map, "sender", fields->sender)
@@ -378,7 +378,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     const uint8_t *sender = NULL;
 
     switch (v->txtype) {
-        case token_transfer: {
+        case call: {
             zemu_log_stack("token_transfer");
             if (strcmp(v->request_type.data, "call") != 0) {
                 zemu_log_stack("call not found");
@@ -449,7 +449,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
 
     uint8_t itemCount = 0;
     switch (v->txtype) {
-        case token_transfer: {
+        case call: {
             if (!app_mode_expert()) {
                 return 6;
             }
