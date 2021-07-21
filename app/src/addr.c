@@ -48,17 +48,13 @@ zxerr_t addr_getItem(int8_t displayIdx,
             CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer),
                                         (const char *) G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
                                         action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT));
+
+            // Remove trailing dashes
+            if (buffer[17] == '-') buffer[17] = ' ';
+            if (buffer[35] == '-') buffer[35] = ' ';
+            if (buffer[53] == '-') buffer[53] = ' ';
+
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
-            if (outValLen < 37) { return zxerr_buffer_too_small; }
-            outValLen = 37;
-
-            #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
-                // Remove trailing dashes
-                if (outVal[17] == '-') outVal[17] = ' ';
-                if (outVal[35] == '-') outVal[35] = ' ';
-                if (outVal[53] == '-') outVal[53] = ' ';
-            #endif
 
             return zxerr_ok;
 
