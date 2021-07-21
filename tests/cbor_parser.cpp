@@ -254,4 +254,18 @@ namespace {
         auto err = parser_parse(&ctx, inBuffer, inBufferLen);
         EXPECT_EQ(err, parser_ok);
     }
+
+    TEST(CBORParserTest, IncreaseNeuronTimer) {
+        uint8_t inBuffer[1000];
+
+        const char *tmp = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550732123f52b79b4a4de9b89e0cc3de7586e696e67726573735f6578706972791b1674db8a3bb843006673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad026b63616e69737465725f69644a000000000000000101016b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f7062636172674c0a02107b12060a040880a3056d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840953620923534b8840d057341bfaf4511dfa73f57372e7946aed83bfde737e44c5c3005b6f19d4342b9e46c78b2c6fa4f67cf203d6a7cab51a84aa486b459536b";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        parser_context_t ctx;
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        EXPECT_EQ(err, parser_ok);
+
+        err = parser_validate(&ctx);
+        EXPECT_EQ(err, parser_ok);
+    }
 }
