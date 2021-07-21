@@ -48,7 +48,6 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
 
 parser_error_t parser_validate(const parser_context_t *ctx) {
     CHECK_PARSER_ERR(_validateTx(ctx, &parser_tx_obj))
-
     // Iterate through all items to check that all can be shown and are valid
     uint8_t numItems = 0;
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems));

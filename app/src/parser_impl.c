@@ -373,13 +373,32 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     return parser_ok;
 }
 
+#define CHECK_METHOD_WITH_CANISTER(METHOD, CANISTER_ID){                           \
+    if (strcmp(v->tx_fields.call.method_name.data, (METHOD)) == 0) {           \
+        if (strcmp(canister_textual, (CANISTER_ID)) != 0) {                     \
+            zemu_log_stack("invalid canister");                                 \
+            return parser_unexpected_value;                                     \
+        } else {                                                                \
+            return parser_ok;                                                   \
+        }                                                                       \
+    }                                                                           \
+}
+
+parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual){
+    CHECK_METHOD_WITH_CANISTER("send_pb","ryjl3tyaaaaaaaaaaabacai")
+
+    CHECK_METHOD_WITH_CANISTER("manage_neuron_pb","rrkahfqaaaaaaaaaaaaqcai")
+
+    return parser_unexpected_type;
+}
+
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
     const uint8_t *sender = NULL;
 
     switch (v->txtype) {
         case call: {
-            zemu_log_stack("token_transfer");
+            zemu_log_stack("Call type");
             if (strcmp(v->request_type.data, "call") != 0) {
                 zemu_log_stack("call not found");
                 return parser_unexpected_value;
@@ -395,16 +414,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                                               v->tx_fields.call.canister_id.len,
                                               canister_textual,
                                               &outLen) == zxerr_ok, parser_unexepected_error)
-
-            if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
-                zemu_log_stack("invalid canister");
-                return parser_unexpected_value;
-            }
-
-            if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
-                zemu_log_stack("send_pb missing");
-                return parser_unexpected_value;
-            }
+            CHECK_PARSER_ERR(checkPossibleCanisters(v, (char *) canister_textual))
 
             sender = v->tx_fields.call.sender.data;
             break;
