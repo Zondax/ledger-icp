@@ -249,7 +249,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "From account");
-            return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
+            return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
         }
@@ -258,7 +258,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
             snprintf(outKey, outKeyLen, "To account ");
 
             char buffer[100];
-            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
             if (err != zxerr_ok) {
                 return parser_unexepected_error;
             }
@@ -269,21 +269,21 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 3) {
             snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return print_ICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+            return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
                              outVal, outValLen,
                              pageIdx, pageCount);
         }
 
         if (displayIdx == 4) {
             snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return print_ICP(fields->pb_fields.sendrequest.max_fee.e8s,
+            return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
                              outVal, outValLen,
                              pageIdx, pageCount);
         }
 
         if (displayIdx == 5) {
             snprintf(outKey, outKeyLen, "Memo");
-            return print_u64(fields->pb_fields.sendrequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
+            return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
     } else {
         if (displayIdx == 0) {
@@ -300,9 +300,9 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
             snprintf(outKey, outKeyLen, "Subaccount ");
             snprintf(outVal, outValLen, "Not set");
 
-            if (fields->pb_fields.sendrequest.has_from_subaccount) {
+            if (fields->pb_fields.SendRequest.has_from_subaccount) {
                 char buffer[100];
-                zxerr_t err = print_hexstring(buffer, sizeof(buffer), fields->pb_fields.sendrequest.from_subaccount.sub_account, 32);
+                zxerr_t err = print_hexstring(buffer, sizeof(buffer), fields->pb_fields.SendRequest.from_subaccount.sub_account, 32);
                 if (err != zxerr_ok) {
                     return parser_unexepected_error;
                 }
@@ -314,7 +314,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 3) {
             snprintf(outKey, outKeyLen, "From account");
-            return print_accountBytes(fields->sender, &fields->pb_fields.sendrequest,
+            return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
                                       outVal, outValLen,
                                       pageIdx, pageCount);
         }
@@ -322,7 +322,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 4) {
             snprintf(outKey, outKeyLen, "To account ");
             char buffer[100];
-            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.sendrequest.to.hash, 32);
+            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
             if (err != zxerr_ok) {
                 return parser_unexepected_error;
             }
@@ -333,21 +333,21 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 5) {
             snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return print_ICP(fields->pb_fields.sendrequest.payment.receiver_gets.e8s,
+            return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
                              outVal, outValLen,
                              pageIdx, pageCount);
         }
 
         if (displayIdx == 6) {
             snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return print_ICP(fields->pb_fields.sendrequest.max_fee.e8s,
+            return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
                              outVal, outValLen,
                              pageIdx, pageCount);
         }
 
         if (displayIdx == 7) {
             snprintf(outKey, outKeyLen, "Memo");
-            return print_u64(fields->pb_fields.sendrequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
+            return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
     }
 

@@ -21,6 +21,7 @@
 #define ZX_NO_CPP
 
 #include "protobuf/dfinity.pb.h"
+#include "protobuf/governance.pb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,7 +98,8 @@ typedef struct {
     arg_t arg;
 
     union {
-        SendRequest sendrequest;
+        SendRequest SendRequest;
+        ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
     } pb_fields;
 } call_t;
 

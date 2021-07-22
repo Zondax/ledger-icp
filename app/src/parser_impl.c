@@ -21,6 +21,7 @@
 #include "app_mode.h"
 #include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
+#include "protobuf/governance.pb.h"
 
 parser_tx_t parser_tx_obj;
 
@@ -237,32 +238,35 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     return parser_ok;
 }
 
-parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
-    bool status;
+#define GEN_PARSER_PB(OBJ) parser_error_t _parser_pb_ ## OBJ(uint8_t *buffer, size_t bufferLen) \
+{                                                                                            \
+    bool status;                                                                             \
+    OBJ request = OBJ ##_init_zero;                                                         \
+    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);                \
+    CHECK_APP_CANARY()                                                                        \
+    status = pb_decode(&stream, OBJ ##_fields, &request);                                   \
+    if (!status) {                                                                          \
+        return parser_unexepected_error;                                                      \
+    }                                                                                         \
+    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));         \
+    CHECK_APP_CANARY()                                                                                         \
+    return parser_ok;                                                                        \
+}                                                                                               \
 
-    CHECK_APP_CANARY()
-    /* Allocate space for the decoded message. */
-    SendRequest request = SendRequest_init_zero;
-    CHECK_APP_CANARY()
+GEN_PARSER_PB(SendRequest)
+GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 
-    /* Create a stream that reads from the buffer. */
-    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
-    CHECK_APP_CANARY()
 
-    ZEMU_TRACE()
-
-    /* Now we are ready to decode the message. */
-    status = pb_decode(&stream, SendRequest_fields, &request);
-    /* Check for errors... */
-    if (!status) {
-        return parser_unexepected_error;
+parser_error_t readProtobuf(char *method, uint8_t *buffer, size_t bufferLen) {
+    if (strcmp(method, "send") == 0) {
+        return _parser_pb_SendRequest(buffer, bufferLen);
     }
 
-    zemu_log(stream.errmsg);
-    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.sendrequest, &request, sizeof(SendRequest));
-    CHECK_APP_CANARY()
+    if(strcmp(method, "manage_neuron_pb") == 0) {
+        return _parser_pb_ic_nns_governance_pb_v1_ManageNeuron(buffer,bufferLen);
+    }
 
-    return parser_ok;
+    return parser_unexpected_type;
 }
 
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
@@ -299,7 +303,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
         READ_STRING(content_map, "arg", fields->arg)
-        CHECK_PARSER_ERR(readProtobuf(fields->arg.data, fields->arg.len));
+        CHECK_PARSER_ERR(readProtobuf(fields->method_name.data, fields->arg.data, fields->arg.len));
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
         state_read_t *fields = &v->tx_fields.stateRead;
@@ -385,7 +389,7 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 }
 
 parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual){
-    CHECK_METHOD_WITH_CANISTER("send_pb","ryjl3tyaaaaaaaaaaabacai")
+    CHECK_METHOD_WITH_CANISTER("send","ryjl3tyaaaaaaaaaaabacai")
 
     CHECK_METHOD_WITH_CANISTER("manage_neuron_pb","rrkahfqaaaaaaaaaaaaqcai")
 

@@ -153,7 +153,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
     MEMZERO(tmpdigest,sizeof(tmpdigest));
 
     switch(txtype){
-        case token_transfer: {
+        case call: {
             call_t *fields = &parser_tx_obj.tx_fields.call;
             HASH_BYTES_INTERMEDIATE("sender", fields->sender, tmpdigest);
             HASH_BYTES_INTERMEDIATE("canister_id", fields->canister_id, tmpdigest);
