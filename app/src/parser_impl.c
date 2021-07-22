@@ -258,7 +258,7 @@ GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 
 
 parser_error_t readProtobuf(char *method, uint8_t *buffer, size_t bufferLen) {
-    if (strcmp(method, "send") == 0) {
+    if (strcmp(method, "send_pb") == 0) {
         return _parser_pb_SendRequest(buffer, bufferLen);
     }
 
@@ -389,7 +389,7 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 }
 
 parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual){
-    CHECK_METHOD_WITH_CANISTER("send","ryjl3tyaaaaaaaaaaabacai")
+    CHECK_METHOD_WITH_CANISTER("send_pb","ryjl3tyaaaaaaaaaaabacai")
 
     CHECK_METHOD_WITH_CANISTER("manage_neuron_pb","rrkahfqaaaaaaaaaaaaqcai")
 
