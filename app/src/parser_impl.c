@@ -238,7 +238,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     return parser_ok;
 }
 
-#define GEN_PARSER_PB(OBJ) parser_error_t _parser_pb_ ## OBJ(uint8_t *buffer, size_t bufferLen) \
+#define GEN_PARSER_PB(OBJ) parser_error_t _parser_pb_ ## OBJ(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) \
 {                                                                                            \
     bool status;                                                                             \
     OBJ request = OBJ ##_init_zero;                                                         \
@@ -248,7 +248,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     if (!status) {                                                                          \
         return parser_unexepected_error;                                                      \
     }                                                                                         \
-    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));         \
+    MEMCPY(&v->tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));         \
     CHECK_APP_CANARY()                                                                                         \
     return parser_ok;                                                                        \
 }                                                                                               \
@@ -257,13 +257,16 @@ GEN_PARSER_PB(SendRequest)
 GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 
 
-parser_error_t readProtobuf(char *method, uint8_t *buffer, size_t bufferLen) {
+parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
+    char *method = v->tx_fields.call.method_name.data;
     if (strcmp(method, "send_pb") == 0) {
-        return _parser_pb_SendRequest(buffer, bufferLen);
+        v->tx_fields.call.pbtype = pb_sendrequest;
+        return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
 
     if(strcmp(method, "manage_neuron_pb") == 0) {
-        return _parser_pb_ic_nns_governance_pb_v1_ManageNeuron(buffer,bufferLen);
+        v->tx_fields.call.pbtype = pb_manageneuron;
+        return _parser_pb_ic_nns_governance_pb_v1_ManageNeuron(v, buffer, bufferLen);
     }
 
     return parser_unexpected_type;
@@ -303,7 +306,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
         READ_STRING(content_map, "arg", fields->arg)
-        CHECK_PARSER_ERR(readProtobuf(fields->method_name.data, fields->arg.data, fields->arg.len));
+        CHECK_PARSER_ERR(readProtobuf(v, fields->arg.data, fields->arg.len));
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
         state_read_t *fields = &v->tx_fields.stateRead;
@@ -377,23 +380,29 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     return parser_ok;
 }
 
-#define CHECK_METHOD_WITH_CANISTER(METHOD, CANISTER_ID){                           \
-    if (strcmp(v->tx_fields.call.method_name.data, (METHOD)) == 0) {           \
+#define CHECK_METHOD_WITH_CANISTER(CANISTER_ID){                           \
         if (strcmp(canister_textual, (CANISTER_ID)) != 0) {                     \
             zemu_log_stack("invalid canister");                                 \
             return parser_unexpected_value;                                     \
         } else {                                                                \
             return parser_ok;                                                   \
         }                                                                       \
-    }                                                                           \
 }
 
 parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual){
-    CHECK_METHOD_WITH_CANISTER("send_pb","ryjl3tyaaaaaaaaaaabacai")
+    switch(v->tx_fields.call.pbtype) {
+        case pb_sendrequest : {
+            CHECK_METHOD_WITH_CANISTER("ryjl3tyaaaaaaaaaaabacai")
+        }
 
-    CHECK_METHOD_WITH_CANISTER("manage_neuron_pb","rrkahfqaaaaaaaaaaaaqcai")
+        case pb_manageneuron : {
+            CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
+        }
 
-    return parser_unexpected_type;
+        default: {
+            return parser_unexpected_type;
+        }
+    }
 }
 
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {

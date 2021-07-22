@@ -361,10 +361,19 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               uint8_t pageIdx, uint8_t *pageCount) {
     switch (parser_tx_obj.txtype) {
         case call: {
-            return parser_getItemTokenTransfer(ctx, displayIdx,
-                                               outKey, outKeyLen,
-                                               outVal, outValLen,
-                                               pageIdx, pageCount);
+            switch(parser_tx_obj.tx_fields.call.pbtype) {
+                case pb_sendrequest : {
+                    return parser_getItemTokenTransfer(ctx, displayIdx,
+                                                       outKey, outKeyLen,
+                                                       outVal, outValLen,
+                                                       pageIdx, pageCount);
+                }
+
+                default : {
+                    return parser_unexpected_type;
+                }
+            }
+
         }
         case state_transaction_read: {
             return parser_getItemTransactionStateRead(ctx, displayIdx,

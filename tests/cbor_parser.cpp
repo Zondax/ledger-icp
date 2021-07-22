@@ -69,7 +69,31 @@ namespace {
         EXPECT_EQ(status, true);
 
         EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id, 0);
-        EXPECT_EQ(request.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds, 86400);
+        EXPECT_EQ(request.which_command, 2);
+    }
+
+    TEST(NANOPBTEST, test3) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "0A02107B122322210A1F0A1D45717A3A0E68FCEEF546AC77BAC551754B48DBB1FCCFA180673030B602";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.which_command, 2);
+
+        EXPECT_EQ(request.command.configure.which_operation,4);
+
+
     }
 
     TEST(CBORParserTest, MinimalListTest) {

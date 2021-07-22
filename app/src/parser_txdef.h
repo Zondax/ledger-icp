@@ -45,6 +45,12 @@ typedef enum {
     state_transaction_read = 0x02,
 } txtype_e;
 
+typedef enum {
+    pb_unknown = 0x00,          //default is not accepted
+    pb_sendrequest = 0x01,
+    pb_manageneuron = 0x02,
+} pbtype_e;
+
 typedef struct {
     uint8_t data[SENDER_MAX_LEN + 1];
     size_t len;
@@ -95,6 +101,7 @@ typedef struct {
     sender_t sender;
 
     method_t method_name;
+    pbtype_e pbtype;
     arg_t arg;
 
     union {
