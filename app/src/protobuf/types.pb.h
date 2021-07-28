@@ -11,10 +11,6 @@
 #endif
 
 /* Struct definitions */
-typedef struct _ic_ledger_pb_v1_AccountIdentifier { 
-    pb_callback_t hash; 
-} ic_ledger_pb_v1_AccountIdentifier;
-
 /* Add blocks to the archive canister */
 typedef struct _ic_ledger_pb_v1_ArchiveAddRequest { 
     pb_callback_t blocks; 
@@ -88,11 +84,10 @@ typedef struct _ic_ledger_pb_v1_TransactionNotificationResponse {
     pb_callback_t response; 
 } ic_ledger_pb_v1_TransactionNotificationResponse;
 
-/* Get the balance of an account */
-typedef struct _ic_ledger_pb_v1_AccountBalanceRequest { 
-    bool has_account;
-    ic_ledger_pb_v1_AccountIdentifier account; 
-} ic_ledger_pb_v1_AccountBalanceRequest;
+typedef PB_BYTES_ARRAY_T(33) ic_ledger_pb_v1_AccountIdentifier_hash_t;
+typedef struct _ic_ledger_pb_v1_AccountIdentifier { 
+    ic_ledger_pb_v1_AccountIdentifier_hash_t hash; 
+} ic_ledger_pb_v1_AccountIdentifier;
 
 typedef struct _ic_ledger_pb_v1_ArchiveIndexEntry { 
     uint64_t height_from; 
@@ -150,16 +145,6 @@ typedef struct _ic_ledger_pb_v1_IterBlocksRequest {
     uint64_t length; 
 } ic_ledger_pb_v1_IterBlocksRequest;
 
-/* Initialise the ledger canister */
-typedef struct _ic_ledger_pb_v1_LedgerInit { 
-    bool has_minting_account;
-    ic_ledger_pb_v1_AccountIdentifier minting_account; 
-    pb_callback_t initial_values; 
-    bool has_archive_canister;
-    ic_base_types_pb_v1_PrincipalId archive_canister; 
-    uint32_t max_message_size_bytes; 
-} ic_ledger_pb_v1_LedgerInit;
-
 typedef struct _ic_ledger_pb_v1_Memo { 
     uint64_t memo; 
 } ic_ledger_pb_v1_Memo;
@@ -174,6 +159,12 @@ typedef struct _ic_ledger_pb_v1_Account {
     bool has_balance;
     ic_ledger_pb_v1_ICPTs balance; 
 } ic_ledger_pb_v1_Account;
+
+/* Get the balance of an account */
+typedef struct _ic_ledger_pb_v1_AccountBalanceRequest { 
+    bool has_account;
+    ic_ledger_pb_v1_AccountIdentifier account; 
+} ic_ledger_pb_v1_AccountBalanceRequest;
 
 typedef struct _ic_ledger_pb_v1_AccountBalanceResponse { 
     bool has_balance;
@@ -192,6 +183,16 @@ typedef struct _ic_ledger_pb_v1_LedgerArchiveRequest {
     bool has_timestamp;
     ic_ledger_pb_v1_TimeStamp timestamp; 
 } ic_ledger_pb_v1_LedgerArchiveRequest;
+
+/* Initialise the ledger canister */
+typedef struct _ic_ledger_pb_v1_LedgerInit { 
+    bool has_minting_account;
+    ic_ledger_pb_v1_AccountIdentifier minting_account; 
+    pb_callback_t initial_values; 
+    bool has_archive_canister;
+    ic_base_types_pb_v1_PrincipalId archive_canister; 
+    uint32_t max_message_size_bytes; 
+} ic_ledger_pb_v1_LedgerInit;
 
 typedef struct _ic_ledger_pb_v1_Mint { 
     bool has_to;
@@ -371,7 +372,7 @@ extern "C" {
 #define ic_ledger_pb_v1_Send_init_default        {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
 #define ic_ledger_pb_v1_Mint_init_default        {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
 #define ic_ledger_pb_v1_Burn_init_default        {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_AccountIdentifier_init_default {{{NULL}, NULL}}
+#define ic_ledger_pb_v1_AccountIdentifier_init_default {{0, {0}}}
 #define ic_ledger_pb_v1_Subaccount_init_default  {{{NULL}, NULL}}
 #define ic_ledger_pb_v1_Memo_init_default        {0}
 #define ic_ledger_pb_v1_TimeStamp_init_default   {0}
@@ -419,14 +420,13 @@ extern "C" {
 #define ic_ledger_pb_v1_Send_init_zero           {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
 #define ic_ledger_pb_v1_Mint_init_zero           {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
 #define ic_ledger_pb_v1_Burn_init_zero           {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_AccountIdentifier_init_zero {{{NULL}, NULL}}
+#define ic_ledger_pb_v1_AccountIdentifier_init_zero {{0, {0}}}
 #define ic_ledger_pb_v1_Subaccount_init_zero     {{{NULL}, NULL}}
 #define ic_ledger_pb_v1_Memo_init_zero           {0}
 #define ic_ledger_pb_v1_TimeStamp_init_zero      {0}
 #define ic_ledger_pb_v1_Certification_init_zero  {{{NULL}, NULL}}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define ic_ledger_pb_v1_AccountIdentifier_hash_tag 1
 #define ic_ledger_pb_v1_ArchiveAddRequest_blocks_tag 1
 #define ic_ledger_pb_v1_ArchiveIndexResponse_entries_tag 1
 #define ic_ledger_pb_v1_Certification_certification_tag 1
@@ -437,7 +437,7 @@ extern "C" {
 #define ic_ledger_pb_v1_IterBlocksResponse_blocks_tag 1
 #define ic_ledger_pb_v1_Subaccount_sub_account_tag 1
 #define ic_ledger_pb_v1_TransactionNotificationResponse_response_tag 1
-#define ic_ledger_pb_v1_AccountBalanceRequest_account_tag 1
+#define ic_ledger_pb_v1_AccountIdentifier_hash_tag 1
 #define ic_ledger_pb_v1_ArchiveIndexEntry_height_from_tag 1
 #define ic_ledger_pb_v1_ArchiveIndexEntry_height_to_tag 2
 #define ic_ledger_pb_v1_ArchiveIndexEntry_canister_id_tag 3
@@ -454,18 +454,19 @@ extern "C" {
 #define ic_ledger_pb_v1_ICPTs_e8s_tag            1
 #define ic_ledger_pb_v1_IterBlocksRequest_start_tag 1
 #define ic_ledger_pb_v1_IterBlocksRequest_length_tag 2
-#define ic_ledger_pb_v1_LedgerInit_minting_account_tag 1
-#define ic_ledger_pb_v1_LedgerInit_initial_values_tag 2
-#define ic_ledger_pb_v1_LedgerInit_archive_canister_tag 3
-#define ic_ledger_pb_v1_LedgerInit_max_message_size_bytes_tag 4
 #define ic_ledger_pb_v1_Memo_memo_tag            1
 #define ic_ledger_pb_v1_TimeStamp_timestamp_nanos_tag 1
 #define ic_ledger_pb_v1_Account_identifier_tag   1
 #define ic_ledger_pb_v1_Account_balance_tag      2
+#define ic_ledger_pb_v1_AccountBalanceRequest_account_tag 1
 #define ic_ledger_pb_v1_AccountBalanceResponse_balance_tag 1
 #define ic_ledger_pb_v1_Burn_from_tag            1
 #define ic_ledger_pb_v1_Burn_amount_tag          3
 #define ic_ledger_pb_v1_LedgerArchiveRequest_timestamp_tag 1
+#define ic_ledger_pb_v1_LedgerInit_minting_account_tag 1
+#define ic_ledger_pb_v1_LedgerInit_initial_values_tag 2
+#define ic_ledger_pb_v1_LedgerInit_archive_canister_tag 3
+#define ic_ledger_pb_v1_LedgerInit_max_message_size_bytes_tag 4
 #define ic_ledger_pb_v1_Mint_to_tag              2
 #define ic_ledger_pb_v1_Mint_amount_tag          3
 #define ic_ledger_pb_v1_NotifyRequest_block_height_tag 1
@@ -833,8 +834,8 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            3)
 #define ic_ledger_pb_v1_Burn_amount_MSGTYPE ic_ledger_pb_v1_ICPTs
 
 #define ic_ledger_pb_v1_AccountIdentifier_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    hash,              1)
-#define ic_ledger_pb_v1_AccountIdentifier_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, BYTES,    hash,              1)
+#define ic_ledger_pb_v1_AccountIdentifier_CALLBACK NULL
 #define ic_ledger_pb_v1_AccountIdentifier_DEFAULT NULL
 
 #define ic_ledger_pb_v1_Subaccount_FIELDLIST(X, a) \
@@ -963,7 +964,6 @@ extern const pb_msgdesc_t ic_ledger_pb_v1_Certification_msg;
 /* ic_ledger_pb_v1_TransactionNotificationRequest_size depends on runtime parameters */
 /* ic_ledger_pb_v1_TransactionNotificationResponse_size depends on runtime parameters */
 /* ic_ledger_pb_v1_CyclesNotificationResponse_size depends on runtime parameters */
-/* ic_ledger_pb_v1_AccountBalanceRequest_size depends on runtime parameters */
 /* ic_ledger_pb_v1_TipOfChainResponse_size depends on runtime parameters */
 /* ic_ledger_pb_v1_EncodedBlock_size depends on runtime parameters */
 /* ic_ledger_pb_v1_BlockResponse_size depends on runtime parameters */
@@ -976,19 +976,18 @@ extern const pb_msgdesc_t ic_ledger_pb_v1_Certification_msg;
 /* ic_ledger_pb_v1_GetNodesResponse_size depends on runtime parameters */
 /* ic_ledger_pb_v1_Block_size depends on runtime parameters */
 /* ic_ledger_pb_v1_Hash_size depends on runtime parameters */
-/* ic_ledger_pb_v1_Account_size depends on runtime parameters */
-/* ic_ledger_pb_v1_Transaction_size depends on runtime parameters */
-/* ic_ledger_pb_v1_Send_size depends on runtime parameters */
-/* ic_ledger_pb_v1_Mint_size depends on runtime parameters */
-/* ic_ledger_pb_v1_Burn_size depends on runtime parameters */
-/* ic_ledger_pb_v1_AccountIdentifier_size depends on runtime parameters */
 /* ic_ledger_pb_v1_Subaccount_size depends on runtime parameters */
 /* ic_ledger_pb_v1_Certification_size depends on runtime parameters */
+#define ic_ledger_pb_v1_AccountBalanceRequest_size 37
 #define ic_ledger_pb_v1_AccountBalanceResponse_size 13
+#define ic_ledger_pb_v1_AccountIdentifier_size   35
+#define ic_ledger_pb_v1_Account_size             50
 #define ic_ledger_pb_v1_ArchiveAddResponse_size  0
+#define ic_ledger_pb_v1_ArchiveIndexEntry_size   56
 #define ic_ledger_pb_v1_ArchiveInit_size         12
 #define ic_ledger_pb_v1_BlockHeight_size         11
 #define ic_ledger_pb_v1_BlockRequest_size        11
+#define ic_ledger_pb_v1_Burn_size                50
 #define ic_ledger_pb_v1_GetBlocksRequest_size    22
 #define ic_ledger_pb_v1_GetNodesRequest_size     0
 #define ic_ledger_pb_v1_ICPTs_size               11
@@ -996,17 +995,17 @@ extern const pb_msgdesc_t ic_ledger_pb_v1_Certification_msg;
 #define ic_ledger_pb_v1_LedgerArchiveRequest_size 13
 #define ic_ledger_pb_v1_LedgerUpgrade_size       0
 #define ic_ledger_pb_v1_Memo_size                11
+#define ic_ledger_pb_v1_Mint_size                50
 #define ic_ledger_pb_v1_NotifyResponse_size      0
 #define ic_ledger_pb_v1_Payment_size             13
 #define ic_ledger_pb_v1_SendResponse_size        13
+#define ic_ledger_pb_v1_Send_size                100
 #define ic_ledger_pb_v1_TimeStamp_size           11
 #define ic_ledger_pb_v1_TipOfChainRequest_size   0
 #define ic_ledger_pb_v1_ToppedUp_size            0
 #define ic_ledger_pb_v1_TotalSupplyRequest_size  0
 #define ic_ledger_pb_v1_TotalSupplyResponse_size 13
-#if defined(ic_base_types_pb_v1_PrincipalId_size)
-#define ic_ledger_pb_v1_ArchiveIndexEntry_size   (28 + ic_base_types_pb_v1_PrincipalId_size)
-#endif
+#define ic_ledger_pb_v1_Transaction_size         141
 
 #ifdef __cplusplus
 } /* extern "C" */

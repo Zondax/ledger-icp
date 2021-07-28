@@ -2178,6 +2178,8 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccoun
 #define ic_nns_governance_pb_v1_BallotInfo_size  15
 #define ic_nns_governance_pb_v1_Ballot_size      13
 #define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_size 45
+#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_size 93
+#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_size 82
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_size 13
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_size 0
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_size 11
@@ -2192,6 +2194,7 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccoun
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_size 36
 #define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_size 69
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_size 11
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size 50
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_size 6
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_size 15
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_size 34
@@ -2204,17 +2207,10 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccoun
 #define ic_nns_governance_pb_v1_NodeProvider_size 34
 #define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_size 24
 #define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_size 24
+#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_size 37
 #define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_size 11
+#define ic_nns_governance_pb_v1_RewardNodeProvider_size 86
 #define ic_nns_governance_pb_v1_Tally_size       44
-#if defined(ic_ledger_pb_v1_AccountIdentifier_size)
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_size (26 + sizeof(union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union))
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_size (11 + sizeof(union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union))
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size (19 + ic_ledger_pb_v1_AccountIdentifier_size)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_size (6 + ic_ledger_pb_v1_AccountIdentifier_size)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_size (47 + sizeof(union ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_size_union))
-union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union {char f2[(25 + ic_ledger_pb_v1_AccountIdentifier_size)]; char f0[71];};
-union ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_size_union {char f5[(12 + ic_ledger_pb_v1_AccountIdentifier_size)]; char f0[13];};
-#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
