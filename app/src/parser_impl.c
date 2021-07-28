@@ -31,8 +31,6 @@ __Z_INLINE parser_error_t parser_mapCborError(CborError err);
     CborError err = CALL;  \
     if (err!=CborNoError) return parser_mapCborError(err);}
 
-#define PARSER_ASSERT_OR_ERROR(CALL, ERROR) if (!(CALL)) return ERROR;
-
 #define CHECK_CBOR_TYPE(TYPE, EXPECTED) {if ( (TYPE)!= (EXPECTED) ) return parser_unexpected_type;}
 
 #define INIT_CBOR_PARSER(c, it)  \
@@ -492,28 +490,42 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
 
-    uint8_t itemCount = 0;
     switch (v->txtype) {
         case call: {
-            if (!app_mode_expert()) {
-                return 6;
+            switch(v->tx_fields.call.pbtype) {
+                case pb_sendrequest: {
+                    if (!app_mode_expert()) {
+                        return 6;
+                    }
+                    return 8;
+                }
+
+                case pb_manageneuron : {
+                    switch(v->tx_fields.call.manage_neuron_type){
+                        case IncreaseNeuronDissolutionTimer : {
+                            return 3;
+                        }
+
+                        default: {
+                            return 0;
+                        }
+                    }
+                }
+                default :{
+                    return 0;
+                }
             }
-            itemCount = 8;
-            break;
         }
         case state_transaction_read : {
             // based on https://github.com/Zondax/ledger-dfinity/issues/48
             if (!app_mode_expert()) {
                 return 1;               // only check status
             }
-
-            itemCount = 3;
-            break;
+            return 3;
         }
         default : {
-            break;
+            return 0;
         }
     }
 
-    return itemCount;
 }

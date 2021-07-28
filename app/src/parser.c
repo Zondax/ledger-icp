@@ -65,6 +65,7 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
 
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     *num_items = _getNumItems(ctx, &parser_tx_obj);
+    PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
     return parser_ok;
 }
 
@@ -389,6 +390,7 @@ parser_error_t parser_getItemIncreaseNeuronTimer(const parser_context_t *ctx,
         MEMCPY(&value, &fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
         return print_u64(value, outVal, outValLen, pageIdx, pageCount);
     }
+    return parser_no_data;
 }
 
 parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
@@ -406,22 +408,10 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    call_t *fields = &parser_tx_obj.tx_fields.call;
-    pb_size_t command = fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
-    switch(command){
-        case 2:
-        {
-            pb_size_t operation = fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
-            switch(operation){
-                case 1: return parser_getItemIncreaseNeuronTimer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
-                default: return parser_no_data;
-            }
-        }
+    switch(parser_tx_obj.tx_fields.call.manage_neuron_type){
+        case IncreaseNeuronDissolutionTimer: return parser_getItemIncreaseNeuronTimer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         default: return parser_no_data;
     }
-
-    return parser_no_data;
 }
 
 parser_error_t parser_getItem(const parser_context_t *ctx,
@@ -437,6 +427,13 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                                                        outKey, outKeyLen,
                                                        outVal, outValLen,
                                                        pageIdx, pageCount);
+                }
+
+                case pb_manageneuron : {
+                    return parser_getItemManageNeuron(ctx, displayIdx,
+                                                      outKey, outKeyLen,
+                                                      outVal, outValLen,
+                                                      pageIdx, pageCount);
                 }
 
                 default : {
