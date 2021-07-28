@@ -27,6 +27,7 @@
 #include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
 #include "protobuf/governance.pb.h"
+#include "protobuf/base_types.pb.h"
 
 // Basic CBOR test cases generated with http://cbor.me/
 
@@ -51,7 +52,7 @@ namespace {
         EXPECT_EQ(request.to.hash[0], 0x35);
     }
 
-    TEST(NANOPBTEST, test2) {
+    TEST(NANOPBTEST, increaseTimer) {
         uint8_t inBuffer[1000];
         const char *tmp = "0A02107B12060A040880A305";
         size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
@@ -71,11 +72,10 @@ namespace {
         EXPECT_EQ(request.id.id,123);
         EXPECT_EQ(request.which_command, 2);
         EXPECT_EQ(request.command.configure.which_operation, 1);
-        EXPECT_EQ(request.command.disburse.amount.e8s,86400);
         EXPECT_EQ(request.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds, 86400);
     }
 
-    TEST(NANOPBTEST, test3) {
+    TEST(NANOPBTEST, AddHotkey) {
         uint8_t inBuffer[1000];
         const char *tmp = "0A02107B122322210A1F0A1D45717A3A0E68FCEEF546AC77BAC551754B48DBB1FCCFA180673030B602";
         size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
@@ -96,7 +96,32 @@ namespace {
 
         EXPECT_EQ(request.command.configure.which_operation,4);
 
+        EXPECT_EQ(request.id.id,123);
 
+        EXPECT_EQ(request.command.configure.operation.add_hot_key.has_new_hot_key, true);
+        EXPECT_EQ(request.command.configure.operation.add_hot_key.new_hot_key.)
+    }
+
+    TEST(NANOPBTEST, RemoveHotkey) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "0A02107B12232A210A1F0A1D45717A3A0E68FCEEF546AC77BAC551754B48DBB1FCCFA180673030B602";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.which_command, 2);
+
+        EXPECT_EQ(request.command.configure.which_operation,5);
     }
 
     TEST(CBORParserTest, MinimalListTest) {
