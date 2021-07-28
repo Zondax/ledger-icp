@@ -10,10 +10,11 @@
 #endif
 
 /* Struct definitions */
+typedef PB_BYTES_ARRAY_T(30) ic_base_types_pb_v1_PrincipalId_serialized_id_t;
 /* A PB container for a PrincipalId, which uniquely identifies
  a principal. */
 typedef struct _ic_base_types_pb_v1_PrincipalId { 
-    pb_callback_t serialized_id; 
+    ic_base_types_pb_v1_PrincipalId_serialized_id_t serialized_id; 
 } ic_base_types_pb_v1_PrincipalId;
 
 
@@ -28,8 +29,8 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ic_base_types_pb_v1_PrincipalId_init_default {{{NULL}, NULL}}
-#define ic_base_types_pb_v1_PrincipalId_init_zero {{{NULL}, NULL}}
+#define ic_base_types_pb_v1_PrincipalId_init_default {{0, {0}}}
+#define ic_base_types_pb_v1_PrincipalId_init_zero {{0, {0}}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ic_base_types_pb_v1_PrincipalId_serialized_id_tag 1
@@ -38,8 +39,8 @@ extern "C" {
 
 /* Struct field encoding specification for nanopb */
 #define ic_base_types_pb_v1_PrincipalId_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    serialized_id,     1)
-#define ic_base_types_pb_v1_PrincipalId_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, BYTES,    serialized_id,     1)
+#define ic_base_types_pb_v1_PrincipalId_CALLBACK NULL
 #define ic_base_types_pb_v1_PrincipalId_DEFAULT NULL
 
 extern const pb_msgdesc_t ic_base_types_pb_v1_PrincipalId_msg;
@@ -48,7 +49,7 @@ extern const pb_msgdesc_t ic_base_types_pb_v1_PrincipalId_msg;
 #define ic_base_types_pb_v1_PrincipalId_fields &ic_base_types_pb_v1_PrincipalId_msg
 
 /* Maximum encoded size of messages (where known) */
-/* ic_base_types_pb_v1_PrincipalId_size depends on runtime parameters */
+#define ic_base_types_pb_v1_PrincipalId_size     32
 
 #ifdef __cplusplus
 } /* extern "C" */

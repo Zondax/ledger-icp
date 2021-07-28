@@ -2174,16 +2174,10 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccoun
 /* ic_nns_governance_pb_v1_ListNeuronsResponse_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_size depends on runtime parameters */
-#if defined(ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_size (17 + ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_size (6 + ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_size (41 + ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_size (6 + ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_size (6 + ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_NodeProvider_size (6 + ic_base_types_pb_v1_PrincipalId_size)
-#endif
+#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_size 36
 #define ic_nns_governance_pb_v1_BallotInfo_size  15
 #define ic_nns_governance_pb_v1_Ballot_size      13
+#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_size 45
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_size 13
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_size 0
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_size 11
@@ -2193,37 +2187,33 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccoun
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_size 0
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_size 13
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_size 13
+#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_size 34
 #define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_size 11
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_size 36
+#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_size 69
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_size 6
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_size 15
+#define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_size 34
 #define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_size 11
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_size 34
 #define ic_nns_governance_pb_v1_ManageNeuron_Split_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_size 0
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_size 0
 #define ic_nns_governance_pb_v1_NetworkEconomics_size 83
+#define ic_nns_governance_pb_v1_NodeProvider_size 34
 #define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_size 24
 #define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_size 24
 #define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_size 11
 #define ic_nns_governance_pb_v1_Tally_size       44
-#if defined(ic_base_types_pb_v1_PrincipalId_size) && defined(ic_base_types_pb_v1_PrincipalId_size)
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_size (0 + sizeof(union ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_change_size_union))
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_size (0 + sizeof(union ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_size_union))
-union ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_change_size_union {char f1[(12 + ic_base_types_pb_v1_PrincipalId_size)]; char f2[(12 + ic_base_types_pb_v1_PrincipalId_size)];};
-union ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_size_union {char f4[(12 + ic_base_types_pb_v1_PrincipalId_size)]; char f5[(12 + ic_base_types_pb_v1_PrincipalId_size)]; char f0[13];};
-#endif
-#if defined(ic_base_types_pb_v1_PrincipalId_size) && defined(ic_ledger_pb_v1_AccountIdentifier_size)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_size (23 + ic_base_types_pb_v1_PrincipalId_size + sizeof(union ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_size_union))
-union ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_size_union {char f5[(12 + ic_ledger_pb_v1_AccountIdentifier_size)]; char f0[13];};
-#endif
 #if defined(ic_ledger_pb_v1_AccountIdentifier_size)
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size (19 + ic_ledger_pb_v1_AccountIdentifier_size)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_size (6 + ic_ledger_pb_v1_AccountIdentifier_size)
-#endif
-#if defined(ic_ledger_pb_v1_AccountIdentifier_size) && defined(ic_base_types_pb_v1_PrincipalId_size) && defined(ic_base_types_pb_v1_PrincipalId_size) && defined(ic_base_types_pb_v1_PrincipalId_size)
 #define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_size (26 + sizeof(union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union))
 #define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_size (11 + sizeof(union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union))
-union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union {char f2[(25 + ic_ledger_pb_v1_AccountIdentifier_size)]; char f4[(12 + ic_base_types_pb_v1_PrincipalId_size)]; char f5[(47 + ic_base_types_pb_v1_PrincipalId_size)]; char f6[(23 + ic_base_types_pb_v1_PrincipalId_size)]; char f0[13];};
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size (19 + ic_ledger_pb_v1_AccountIdentifier_size)
+#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_size (6 + ic_ledger_pb_v1_AccountIdentifier_size)
+#define ic_nns_governance_pb_v1_RewardNodeProvider_size (47 + sizeof(union ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_size_union))
+union ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_size_union {char f2[(25 + ic_ledger_pb_v1_AccountIdentifier_size)]; char f0[71];};
+union ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_size_union {char f5[(12 + ic_ledger_pb_v1_AccountIdentifier_size)]; char f0[13];};
 #endif
 
 #ifdef __cplusplus
