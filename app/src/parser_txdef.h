@@ -51,6 +51,11 @@ typedef enum {
     pb_manageneuron = 0x02,
 } pbtype_e;
 
+typedef enum {
+    wrong_operation = 0x00,          //default is not accepted
+    IncreaseNeuronDissolutionTimer = 0x01,
+} manageNeuron_e;
+
 typedef struct {
     uint8_t data[SENDER_MAX_LEN + 1];
     size_t len;
@@ -102,6 +107,7 @@ typedef struct {
 
     method_t method_name;
     pbtype_e pbtype;
+    manageNeuron_e manage_neuron_type;
     arg_t arg;
 
     union {

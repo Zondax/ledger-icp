@@ -256,6 +256,27 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
 GEN_PARSER_PB(SendRequest)
 GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 
+parser_error_t getManageNeuronType(parser_tx_t *v){
+    pb_size_t command = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
+    switch(command){
+        case 2: {
+            pb_size_t operation = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
+            switch(operation){
+                case 1: {
+                    v->tx_fields.call.manage_neuron_type = IncreaseNeuronDissolutionTimer;
+                    return parser_ok;
+                }
+                default :{
+                    return parser_unexpected_type;
+                }
+            }
+        }
+
+        default: {
+            return parser_unexpected_type;
+        }
+    }
+}
 
 parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
@@ -266,7 +287,8 @@ parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
 
     if(strcmp(method, "manage_neuron_pb") == 0) {
         v->tx_fields.call.pbtype = pb_manageneuron;
-        return _parser_pb_ic_nns_governance_pb_v1_ManageNeuron(v, buffer, bufferLen);
+        CHECK_PARSER_ERR(_parser_pb_ic_nns_governance_pb_v1_ManageNeuron(v, buffer, bufferLen))
+        return getManageNeuronType(v);
     }
 
     return parser_unexpected_type;

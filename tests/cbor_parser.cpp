@@ -68,8 +68,11 @@ namespace {
 
         EXPECT_EQ(status, true);
 
-        EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id, 0);
+        EXPECT_EQ(request.id.id,123);
         EXPECT_EQ(request.which_command, 2);
+        EXPECT_EQ(request.command.configure.which_operation, 1);
+        EXPECT_EQ(request.command.disburse.amount.e8s,86400);
+        EXPECT_EQ(request.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds, 86400);
     }
 
     TEST(NANOPBTEST, test3) {

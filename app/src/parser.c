@@ -354,6 +354,76 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     return parser_ok;
 }
 
+/*
+ *  Configure configure = 2;
+    Disburse disburse = 3;
+    Spawn spawn = 4;
+    Follow follow = 5;
+    RegisterVote register_vote = 7;
+    Split split = 8;
+    DisburseToNeuron disburse_to_neuron = 9;
+    ClaimOrRefresh claim_or_refresh = 10;
+ */
+
+parser_error_t parser_getItemIncreaseNeuronTimer(const parser_context_t *ctx,
+                                                  uint8_t displayIdx,
+                                                  char *outKey, uint16_t outKeyLen,
+                                                  char *outVal, uint16_t outValLen,
+                                                  uint8_t pageIdx, uint8_t *pageCount) {
+
+    call_t *fields = &parser_tx_obj.tx_fields.call;
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Incr. Neuron Timer");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        return print_u64(fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.id.id, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Increased time");
+        uint64_t value = 0;
+        MEMCPY(&value, &fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
+        return print_u64(value, outVal, outValLen, pageIdx, pageCount);
+    }
+}
+
+parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
+                                           uint8_t displayIdx,
+                                           char *outKey, uint16_t outKeyLen,
+                                           char *outVal, uint16_t outValLen,
+                                           uint8_t pageIdx, uint8_t *pageCount) {
+    MEMZERO(outKey, outKeyLen);
+    MEMZERO(outVal, outValLen);
+    snprintf(outKey, outKeyLen, "?");
+    snprintf(outVal, outValLen, "?");
+    *pageCount = 1;
+
+    uint8_t numItems = 0;
+    CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
+    CHECK_APP_CANARY()
+
+    call_t *fields = &parser_tx_obj.tx_fields.call;
+    pb_size_t command = fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
+    switch(command){
+        case 2:
+        {
+            pb_size_t operation = fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
+            switch(operation){
+                case 1: return parser_getItemIncreaseNeuronTimer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+
+                default: return parser_no_data;
+            }
+        }
+        default: return parser_no_data;
+    }
+
+    return parser_no_data;
+}
+
 parser_error_t parser_getItem(const parser_context_t *ctx,
                               uint8_t displayIdx,
                               char *outKey, uint16_t outKeyLen,
