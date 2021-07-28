@@ -256,15 +256,31 @@ GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 
 parser_error_t getManageNeuronType(parser_tx_t *v){
     pb_size_t command = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
+    manageNeuron_e *mn_type = &v->tx_fields.call.manage_neuron_type;
     switch(command){
         case 2: {
             pb_size_t operation = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
             if(1 <= operation && operation <= 6){
-                v->tx_fields.call.manage_neuron_type = (manageNeuron_e)operation;
+                *mn_type = (manageNeuron_e)operation;
                 return parser_ok;
             }else{
                 return parser_unexpected_type;
             }
+        }
+
+        case 3: {
+            *mn_type = Disburse;
+            return parser_ok;
+        }
+
+        case 4: {
+            *mn_type = Spawn;
+            return parser_ok;
+        }
+
+        case 5: {
+            *mn_type = Follow;
+            return parser_ok;
         }
 
         default: {
@@ -507,6 +523,10 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                         case AddHotKey :
                         case IncreaseDissolveDelay : {
                             return 3;
+                        }
+
+                        case Disburse : {
+                            return 4;
                         }
 
                         default: {

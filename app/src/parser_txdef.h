@@ -59,6 +59,13 @@ typedef enum {
     AddHotKey = 4,
     RemoveHotKey = 5,
     SetDissolveTimestamp = 6,
+    Disburse = 7,
+    Spawn = 8,
+    Follow = 9,
+    Register_Vote = 10,
+    Split = 11,
+    DisburseToNeuron = 12,
+    ClaimOrRefresh = 13,
 } manageNeuron_e;
 
 typedef struct {
