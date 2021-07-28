@@ -366,8 +366,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     ClaimOrRefresh claim_or_refresh = 10;
  */
 
-parser_error_t parser_getItemIncreaseNeuronTimer(const parser_context_t *ctx,
-                                                  uint8_t displayIdx,
+parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
                                                   char *outVal, uint16_t outValLen,
                                                   uint8_t pageIdx, uint8_t *pageCount) {
@@ -409,7 +408,7 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
     CHECK_APP_CANARY()
 
     switch(parser_tx_obj.tx_fields.call.manage_neuron_type){
-        case IncreaseNeuronDissolutionTimer: return parser_getItemIncreaseNeuronTimer(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case IncreaseNeuronDissolutionTimer: return parser_getItemIncreaseNeuronTimer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         default: return parser_no_data;
     }
 }
