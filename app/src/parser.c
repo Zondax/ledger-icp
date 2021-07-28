@@ -377,7 +377,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
  */
 
 
-parser_error_t parser_getItemAddHotkey(uint8_t displayIdx,
+parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
                                                  char *outVal, uint16_t outValLen,
                                                  uint8_t pageIdx, uint8_t *pageCount) {
@@ -385,7 +385,11 @@ parser_error_t parser_getItemAddHotkey(uint8_t displayIdx,
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Add Hotkey");
+        if (parser_tx_obj.tx_fields.call.manage_neuron_type == AddHotKey) {
+            snprintf(outVal, outValLen, "Add Hotkey");
+        }else{
+            snprintf(outVal, outValLen, "Remove Hotkey");
+        }
         return parser_ok;
     }
 
@@ -449,7 +453,8 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
     switch(parser_tx_obj.tx_fields.call.manage_neuron_type){
         case IncreaseDissolveDelay: return parser_getItemIncreaseNeuronTimer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
-        case AddHotKey: return parser_getItemAddHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case RemoveHotKey:
+        case AddHotKey: return parser_getItemAddRemoveHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
         default: return parser_no_data;
     }
