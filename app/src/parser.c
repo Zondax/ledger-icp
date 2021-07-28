@@ -376,6 +376,30 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     ClaimOrRefresh claim_or_refresh = 10;
  */
 
+parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
+                                             char *outKey, uint16_t outKeyLen,
+                                             char *outVal, uint16_t outValLen,
+                                             uint8_t pageIdx, uint8_t *pageCount) {
+
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        if (parser_tx_obj.tx_fields.call.manage_neuron_type == StartDissolving) {
+            snprintf(outVal, outValLen, "Start Dissolve");
+        }else{
+            snprintf(outVal, outValLen, "Stop Dissolve");
+        }
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
 
 parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
@@ -452,6 +476,11 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
 
     switch(parser_tx_obj.tx_fields.call.manage_neuron_type){
         case IncreaseDissolveDelay: return parser_getItemIncreaseNeuronTimer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+
+        case StopDissolving :
+        case StartDissolving : {
+            return parser_getItemStartStopDissolve(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
 
         case RemoveHotKey:
         case AddHotKey: return parser_getItemAddRemoveHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);

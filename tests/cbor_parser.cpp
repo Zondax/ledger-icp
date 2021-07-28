@@ -128,6 +128,28 @@ namespace {
         EXPECT_EQ(request.command.configure.which_operation,5);
     }
 
+    TEST(NANOPBTEST, StartDisolve) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "0A02107B12021200";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.which_command, 2);
+
+        EXPECT_EQ(request.command.configure.which_operation,2);
+    }
+
     TEST(CBORParserTest, MinimalListTest) {
         // [1,2,3]
         uint8_t inBuffer[100];

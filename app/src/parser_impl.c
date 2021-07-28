@@ -499,6 +499,10 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
 
                 case pb_manageneuron : {
                     switch(v->tx_fields.call.manage_neuron_type){
+                        case StopDissolving :
+                        case StartDissolving : {
+                            return 2;
+                        }
                         case RemoveHotKey :
                         case AddHotKey :
                         case IncreaseDissolveDelay : {
