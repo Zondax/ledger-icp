@@ -259,14 +259,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
     switch(command){
         case 2: {
             pb_size_t operation = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
-            switch(operation){
-                case 1: {
-                    v->tx_fields.call.manage_neuron_type = IncreaseNeuronDissolutionTimer;
-                    return parser_ok;
-                }
-                default :{
-                    return parser_unexpected_type;
-                }
+            if(1 <= operation && operation <= 6){
+                v->tx_fields.call.manage_neuron_type = (manageNeuron_e)operation;
+                return parser_ok;
+            }else{
+                return parser_unexpected_type;
             }
         }
 
@@ -502,7 +499,11 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
 
                 case pb_manageneuron : {
                     switch(v->tx_fields.call.manage_neuron_type){
-                        case IncreaseNeuronDissolutionTimer : {
+                        case IncreaseDissolveDelay : {
+                            return 3;
+                        }
+
+                        case AddHotKey : {
                             return 3;
                         }
 

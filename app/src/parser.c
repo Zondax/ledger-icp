@@ -80,6 +80,16 @@ __Z_INLINE parser_error_t print_u64(uint64_t value,
 
 }
 
+__Z_INLINE parser_error_t parser_printBytes(const uint8_t *bytes, uint16_t byteLength,
+                                 char *outVal, uint16_t outValLen,
+                                 uint8_t pageIdx, uint8_t *pageCount) {
+    char buffer[300];
+    MEMZERO(buffer, sizeof(buffer));
+    array_to_hexstr(buffer, sizeof(buffer), bytes, byteLength);
+    pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
+    return parser_ok;
+}
+
 __Z_INLINE parser_error_t print_ICP(uint64_t value,
                                     char *outVal, uint16_t outValLen,
                                     uint8_t pageIdx, uint8_t *pageCount) {
@@ -366,6 +376,35 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     ClaimOrRefresh claim_or_refresh = 10;
  */
 
+
+parser_error_t parser_getItemAddHotkey(uint8_t displayIdx,
+                                                 char *outKey, uint16_t outKeyLen,
+                                                 char *outVal, uint16_t outValLen,
+                                                 uint8_t pageIdx, uint8_t *pageCount) {
+
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Add Hotkey");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Principal");
+
+        PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29, parser_value_out_of_range);
+
+        return parser_printBytes(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
 parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
                                                   char *outVal, uint16_t outValLen,
@@ -408,7 +447,10 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
     CHECK_APP_CANARY()
 
     switch(parser_tx_obj.tx_fields.call.manage_neuron_type){
-        case IncreaseNeuronDissolutionTimer: return parser_getItemIncreaseNeuronTimer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case IncreaseDissolveDelay: return parser_getItemIncreaseNeuronTimer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+
+        case AddHotKey: return parser_getItemAddHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+
         default: return parser_no_data;
     }
 }

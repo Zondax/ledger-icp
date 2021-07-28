@@ -52,8 +52,13 @@ typedef enum {
 } pbtype_e;
 
 typedef enum {
-    wrong_operation = 0x00,          //default is not accepted
-    IncreaseNeuronDissolutionTimer = 0x01,
+    wrong_operation = 0,          //default is not accepted
+    IncreaseDissolveDelay = 1,
+    StartDissolving = 2,
+    StopDissolving = 3,
+    AddHotKey = 4,
+    RemoveHotKey = 5,
+    SetDissolveTimestamp = 6,
 } manageNeuron_e;
 
 typedef struct {

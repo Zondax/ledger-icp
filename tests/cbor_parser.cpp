@@ -99,7 +99,11 @@ namespace {
         EXPECT_EQ(request.id.id,123);
 
         EXPECT_EQ(request.command.configure.operation.add_hot_key.has_new_hot_key, true);
-        EXPECT_EQ(request.command.configure.operation.add_hot_key.new_hot_key.)
+        EXPECT_EQ(request.command.configure.operation.add_hot_key.new_hot_key.serialized_id.size,29);
+
+        char buffer[100];
+        array_to_hexstr(buffer, 100, request.command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29);
+        printf("%s\n", buffer);
     }
 
     TEST(NANOPBTEST, RemoveHotkey) {
