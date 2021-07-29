@@ -173,7 +173,6 @@ namespace {
 
         EXPECT_EQ(request.id.id,123);
 
-
         EXPECT_EQ(request.command.disburse.amount.e8s,4000000);
 
         EXPECT_EQ(request.command.disburse.to_account.hash.size, 32);

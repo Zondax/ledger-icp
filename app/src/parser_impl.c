@@ -278,11 +278,6 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             return parser_ok;
         }
 
-        case 5: {
-            *mn_type = Follow;
-            return parser_ok;
-        }
-
         default: {
             return parser_unexpected_type;
         }
@@ -519,6 +514,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                         case StartDissolving : {
                             return 2;
                         }
+                        case Spawn :
                         case RemoveHotKey :
                         case AddHotKey :
                         case IncreaseDissolveDelay : {

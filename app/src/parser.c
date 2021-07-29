@@ -389,6 +389,34 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
     return parser_no_data;
 }
 
+parser_error_t parser_getItemSpawn(uint8_t displayIdx,
+                                             char *outKey, uint16_t outKeyLen,
+                                             char *outVal, uint16_t outValLen,
+                                             uint8_t pageIdx, uint8_t *pageCount) {
+
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Spawn");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "New Controller");
+
+        PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size == 29, parser_value_out_of_range);
+
+        return parser_printBytes(fields->command.spawn.new_controller.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
 
 parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
@@ -464,7 +492,8 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
                                                   char *outVal, uint16_t outValLen,
                                                   uint8_t pageIdx, uint8_t *pageCount) {
 
-    call_t *fields = &parser_tx_obj.tx_fields.call;
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         snprintf(outVal, outValLen, "Incr. Neuron Timer");
@@ -473,13 +502,13 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.id.id, outVal, outValLen, pageIdx, pageCount);
+        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Increased time");
         uint64_t value = 0;
-        MEMCPY(&value, &fields->pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
+        MEMCPY(&value, &fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
         return print_u64(value, outVal, outValLen, pageIdx, pageCount);
     }
     return parser_no_data;
@@ -507,6 +536,8 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
         case StartDissolving : {
             return parser_getItemStartStopDissolve(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
+
+        case Spawn : return parser_getItemSpawn(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
         case RemoveHotKey:
         case AddHotKey: return parser_getItemAddRemoveHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);

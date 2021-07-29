@@ -61,11 +61,11 @@ typedef enum {
     SetDissolveTimestamp = 6,
     Disburse = 7,
     Spawn = 8,
-    Follow = 9,
-    Register_Vote = 10,
-    Split = 11,
-    DisburseToNeuron = 12,
-    ClaimOrRefresh = 13,
+//    Follow = 9,
+//    Register_Vote = 10,
+//    Split = 11,
+//    DisburseToNeuron = 12,
+//    ClaimOrRefresh = 13,
 } manageNeuron_e;
 
 typedef struct {
