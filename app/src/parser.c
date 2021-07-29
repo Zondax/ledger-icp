@@ -105,12 +105,12 @@ __Z_INLINE parser_error_t print_ICP(uint64_t value,
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t print_textual(sender_t *sender,
+__Z_INLINE parser_error_t print_textual(uint8_t *data, uint16_t len,
                                         char *outVal, uint16_t outValLen,
                                         uint8_t pageIdx, uint8_t *pageCount) {
     char tmpBuffer[100];
     uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual((const uint8_t *) sender->data, sender->len, (char *) tmpBuffer,
+    zxerr_t err = crypto_principalToTextual((const uint8_t *) data, len, (char *) tmpBuffer,
                                             &outLen);
     if (err != zxerr_ok) {
         return parser_unexepected_error;
@@ -207,7 +207,7 @@ parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
+            return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;
@@ -304,7 +304,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(&fields->sender, outVal, outValLen, pageIdx, pageCount);
+            return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
@@ -411,7 +411,7 @@ parser_error_t parser_getItemSpawn(uint8_t displayIdx,
 
         PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size == 29, parser_value_out_of_range);
 
-        return parser_printBytes(fields->command.spawn.new_controller.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
+        return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -444,7 +444,7 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
 
         PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29, parser_value_out_of_range);
 
-        return parser_printBytes(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
+        return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -480,7 +480,7 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
     }
 
     if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "Amount");
+        snprintf(outKey, outKeyLen, "Amount (ICP)");
         return print_u64(fields->command.disburse.amount.e8s, outVal, outValLen, pageIdx, pageCount);
     }
 

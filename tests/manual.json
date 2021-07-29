@@ -8746,14 +8746,14 @@
     "output": [
       "0 | Transaction type : Add Hotkey",
       "1 | Neuron ID : 123",
-      "2 | Principal[1/2] : 45717a3a0e68fceef546ac77bac551754b48",
-      "2 | Principal[2/2] : dbb1fccfa180673030b602"
+      "2 | Principal[1/2] : vcruu-d2fof-5dudt i7txp-krvmo-65mku",
+      "2 | Principal[2/2] : lvjne-nxmp4-z6qya zzqgc-3ae"
     ],
     "output_expert": [
       "0 | Transaction type : Add Hotkey",
       "1 | Neuron ID : 123",
-      "2 | Principal[1/2] : 45717a3a0e68fceef546ac77bac551754b48",
-      "2 | Principal[2/2] : dbb1fccfa180673030b602"
+      "2 | Principal[1/2] : vcruu-d2fof-5dudt i7txp-krvmo-65mku",
+      "2 | Principal[2/2] : lvjne-nxmp4-z6qya zzqgc-3ae"
     ],
     "request_id": "88a4621b36ff02533e19b5b50a2076bbab2ae52fa99d8f4dd3b6914653d405f0",
     "valid": true
@@ -8765,14 +8765,14 @@
     "output": [
       "0 | Transaction type : Remove Hotkey",
       "1 | Neuron ID : 123",
-      "2 | Principal[1/2] : 45717a3a0e68fceef546ac77bac551754b48",
-      "2 | Principal[2/2] : dbb1fccfa180673030b602"
+      "2 | Principal[1/2] : vcruu-d2fof-5dudt i7txp-krvmo-65mku",
+      "2 | Principal[2/2] : lvjne-nxmp4-z6qya zzqgc-3ae"
     ],
     "output_expert": [
       "0 | Transaction type : Remove Hotkey",
       "1 | Neuron ID : 123",
-      "2 | Principal[1/2] : 45717a3a0e68fceef546ac77bac551754b48",
-      "2 | Principal[2/2] : dbb1fccfa180673030b602"
+      "2 | Principal[1/2] : vcruu-d2fof-5dudt i7txp-krvmo-65mku",
+      "2 | Principal[2/2] : lvjne-nxmp4-z6qya zzqgc-3ae"
     ],
     "request_id": "88a4621b36ff02533e19b5b50a2076bbab2ae52fa99d8f4dd3b6914653d405f0",
     "valid": true
@@ -8818,14 +8818,14 @@
       "1 | Neuron ID : 123",
       "2 | Account[1/2] : 35548ec2 9e9d8530 5850e87a 2d2642fe",
       "2 | Account[2/2] : 7214ff4b b3633407 0deafc33 45c3b127",
-      "3 | Amount : 4000000"
+      "3 | Amount (ICP) : 4000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse",
       "1 | Neuron ID : 123",
       "2 | Account[1/2] : 35548ec2 9e9d8530 5850e87a 2d2642fe",
       "2 | Account[2/2] : 7214ff4b b3633407 0deafc33 45c3b127",
-      "3 | Amount : 4000000"
+      "3 | Amount (ICP) : 4000000"
     ],
     "request_id": "88a4621b36ff02533e19b5b50a2076bbab2ae52fa99d8f4dd3b6914653d405f0",
     "valid": true
@@ -8838,14 +8838,14 @@
     "output": [
       "0 | Transaction type : Spawn",
       "1 | Neuron ID : 123",
-      "2 | New Controller[1/2] : 45717a3a0e68fceef546ac77bac551754b48",
-      "2 | New Controller[2/2] : dbb1fccfa180673030b602"
+      "2 | New Controller[1/2] : s3n4b-khvi2-whpow fkf2u-wsg3w-h6m7i",
+      "2 | New Controller[2/2] : mam4y-dbnqc-aaaaa aaaaa-aaa"
     ],
     "output_expert": [
       "0 | Transaction type : Spawn",
       "1 | Neuron ID : 123",
-      "2 | New Controller[1/2] : 45717a3a0e68fceef546ac77bac551754b48",
-      "2 | New Controller[2/2] : dbb1fccfa180673030b602"
+      "2 | New Controller[1/2] : s3n4b-khvi2-whpow fkf2u-wsg3w-h6m7i",
+      "2 | New Controller[2/2] : mam4y-dbnqc-aaaaa aaaaa-aaa"
     ],
     "request_id": "88a4621b36ff02533e19b5b50a2076bbab2ae52fa99d8f4dd3b6914653d405f0",
     "valid": true
