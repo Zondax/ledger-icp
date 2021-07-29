@@ -80,16 +80,6 @@ __Z_INLINE parser_error_t print_u64(uint64_t value,
 
 }
 
-__Z_INLINE parser_error_t parser_printBytes(const uint8_t *bytes, uint16_t byteLength,
-                                 char *outVal, uint16_t outValLen,
-                                 uint8_t pageIdx, uint8_t *pageCount) {
-    char buffer[300];
-    MEMZERO(buffer, sizeof(buffer));
-    array_to_hexstr(buffer, sizeof(buffer), bytes, byteLength);
-    pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
-    return parser_ok;
-}
-
 __Z_INLINE parser_error_t print_ICP(uint64_t value,
                                     char *outVal, uint16_t outValLen,
                                     uint8_t pageIdx, uint8_t *pageCount) {
