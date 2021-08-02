@@ -138,4 +138,25 @@ namespace {
         EXPECT_STREQ((const char *) outBuffer, "cae");
     }
 
+    TEST(AddressToStringTests, StakeAccount) {
+        uint8_t inBuffer[100];
+        const char *tmp = "EF9E5D18E3B90E0B388A988441C39E95F006C85CA2D5D9023C30D30A02";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        char addressText[100];
+        uint16_t lenT = sizeof(addressText);
+        MEMZERO(addressText, 100);
+        EXPECT_EQ(crypto_principalToTextual(inBuffer, 29, addressText, &lenT), zxerr_ok);
+        EXPECT_STREQ((const char *) addressText, "fzy62xpptzorry5zbyftrcuyqra4hhuv6admqxfc2xmqepbq2mfae");
+
+        uint8_t memo[8] = {0x00, 0xf4, 0x1d, 0x14, 0x5f, 0xfe, 0x95, 0x7f};
+
+        uint8_t address[32];
+        zxerr_t err = crypto_principalToStakeAccount(inBuffer, len, memo, address, sizeof(address));
+
+        char outBuffer[300];
+        array_to_hexstr(outBuffer, sizeof(outBuffer),address, 32);
+        printf("%s\n", outBuffer);
+        EXPECT_EQ(err, zxerr_ok);
+    }
 }

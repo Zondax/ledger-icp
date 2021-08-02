@@ -40,8 +40,13 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
     if (dataLen < 1) {
         return parser_no_data;
     }
-
-    CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
+    if(is_stake_tx){
+        PARSER_ASSERT_OR_ERROR(dataLen > 8, parser_context_unexpected_size);
+        MEMCPY(parser_tx_obj.tx_fields.call.neuron_creation_memo, data, 8);
+        CHECK_PARSER_ERR(parser_init(ctx, data + 8, dataLen - 8))
+    }else {
+        CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
+    }
     CHECK_PARSER_ERR(zeroize_parser_tx(&parser_tx_obj));
     return _readEnvelope(ctx, &parser_tx_obj);
 }

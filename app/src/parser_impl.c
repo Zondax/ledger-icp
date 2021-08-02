@@ -24,6 +24,7 @@
 #include "protobuf/governance.pb.h"
 
 parser_tx_t parser_tx_obj;
+bool is_stake_tx;
 
 __Z_INLINE parser_error_t parser_mapCborError(CborError err);
 
@@ -462,6 +463,9 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         }
         case state_transaction_read: {
             zemu_log_stack("state_transaction_read");
+            if(is_stake_tx){
+                return parser_unexpected_value; //cannot be stake_tx for state read
+            }
             if (strcmp(v->request_type.data, "read_state") != 0) {
                 return parser_unexpected_value;
             }
@@ -491,6 +495,19 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         return parser_unexpected_value;
     }
 #endif
+
+    if(is_stake_tx){
+        uint8_t to_hash[32];
+        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                        v->tx_fields.call.neuron_creation_memo,
+                                                        to_hash,sizeof(to_hash)), parser_unexepected_error);
+
+        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
+
+        if(memcmp(to_hash, to, 32) != 0){
+            return parser_unexpected_value;
+        }
+    }
 
     return parser_ok;
 }

@@ -30,6 +30,7 @@
 #include "coin.h"
 #include "zxmacros.h"
 #include "secret.h"
+#include "parser_impl.h"
 
 __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
@@ -56,6 +57,8 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
+
+    is_stake_tx = G_io_apdu_buffer[OFFSET_P2] == 1;
 
     CHECK_APP_CANARY()
 

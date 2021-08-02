@@ -37,6 +37,8 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #define SIGN_PREHASH_SIZE (SIGN_PREFIX_SIZE + CX_SHA256_SIZE)
 
 #define SUBACCOUNT_PREFIX_SIZE 11u
+#define STAKEACCOUNT_PREFIX_SIZE 12u
+#define STAKEACCOUNT_PRINCIPAL_SIZE 27u
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
@@ -263,10 +265,23 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     return zxerr_ok;
 }
 
+
 #else
 
 #include <hexutils.h>
 #include "picohash.h"
+
+zxerr_t cx_hash_sha256(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen) {
+    if (outputLen < 32) {
+        return zxerr_invalid_crypto_settings;
+    }
+    picohash_ctx_t ctx;
+
+    picohash_init_sha256(&ctx);
+    picohash_update(&ctx, input, inputLen);
+    picohash_final(&ctx, output);
+    return zxerr_ok;
+}
 
 zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen) {
     if (outputLen < 28) {
@@ -282,6 +297,49 @@ zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t
 
 #endif
 
+/*
+ * neuron_sub_account =
+     sha256(0x0c | “neuron-stake” | neuron_holder_principal | neuron_creation_memo)
+to.hash = account_identifier(
+             “rrkah-fqaaa-aaaaa-aaaaq-cai”,
+             neuron_sub_account)
+
+ */
+
+zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
+                                       const uint8_t *neuron_creation_memo,
+                                       uint8_t *address, uint16_t maxoutLen){
+    if (principalLen != DFINITY_PRINCIPAL_LEN ||
+        maxoutLen < DFINITY_ADDR_LEN) {
+        return zxerr_invalid_crypto_settings;
+    }
+    uint8_t sub_hashinput[1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + 8];
+    MEMZERO(sub_hashinput, sizeof(sub_hashinput));
+    sub_hashinput[0] = 0x0c;
+    MEMCPY(sub_hashinput + 1, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
+    MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
+    MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, neuron_creation_memo, 8);
+
+    uint8_t digest[32];
+    MEMZERO(digest, 32);
+    cx_hash_sha256(sub_hashinput, sizeof(sub_hashinput), digest, 32);
+
+    uint8_t id_hashinput[STAKEACCOUNT_PRINCIPAL_SIZE + 32];
+    MEMCPY(id_hashinput, (uint8_t *)"rrkah-fqaaa-aaaaa-aaaaq-cai", STAKEACCOUNT_PRINCIPAL_SIZE);
+    MEMCPY(id_hashinput + STAKEACCOUNT_PRINCIPAL_SIZE, digest, 32);
+
+    CHECK_ZXERR(
+            hash_sha224(id_hashinput, STAKEACCOUNT_PRINCIPAL_SIZE + 32, address + 4,
+                        (maxoutLen - 4)));
+
+    uint32_t crc = 0;
+    crc32_small(address + 4, DFINITY_ADDR_LEN - 4, &crc);
+    address[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
+    address[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
+    address[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
+    address[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
+    return zxerr_ok;
+}
 
 //DER encoding:
 //3056 // SEQUENCE
