@@ -38,7 +38,7 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 
 #define SUBACCOUNT_PREFIX_SIZE 11u
 #define STAKEACCOUNT_PREFIX_SIZE 12u
-#define STAKEACCOUNT_PRINCIPAL_SIZE 27u
+#define STAKEACCOUNT_PRINCIPAL_SIZE 10u
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
@@ -307,7 +307,7 @@ to.hash = account_identifier(
  */
 
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
-                                       const uint8_t *neuron_creation_memo,
+                                       const uint64_t neuron_creation_memo,
                                        uint8_t *address, uint16_t maxoutLen){
     if (principalLen != DFINITY_PRINCIPAL_LEN ||
         maxoutLen < DFINITY_ADDR_LEN) {
@@ -315,21 +315,24 @@ zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t princi
     }
     uint8_t sub_hashinput[1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + 8];
     MEMZERO(sub_hashinput, sizeof(sub_hashinput));
-    sub_hashinput[0] = 0x0c;
+    sub_hashinput[0] = 0x0C;
     MEMCPY(sub_hashinput + 1, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
     MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
-    MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, neuron_creation_memo, 8);
+    MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, (uint8_t*)&neuron_creation_memo, 8);
 
     uint8_t digest[32];
     MEMZERO(digest, 32);
     cx_hash_sha256(sub_hashinput, sizeof(sub_hashinput), digest, 32);
 
-    uint8_t id_hashinput[STAKEACCOUNT_PRINCIPAL_SIZE + 32];
-    MEMCPY(id_hashinput, (uint8_t *)"rrkah-fqaaa-aaaaa-aaaaq-cai", STAKEACCOUNT_PRINCIPAL_SIZE);
-    MEMCPY(id_hashinput + STAKEACCOUNT_PRINCIPAL_SIZE, digest, 32);
+    uint8_t id_hashinput[SUBACCOUNT_PREFIX_SIZE + STAKEACCOUNT_PRINCIPAL_SIZE + 32];
+    id_hashinput[0] = 0x0A;
+    MEMCPY(&id_hashinput[1], (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE - 1);
+    uint8_t stake_principal[STAKEACCOUNT_PRINCIPAL_SIZE] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01};
+    MEMCPY(id_hashinput+SUBACCOUNT_PREFIX_SIZE, stake_principal, STAKEACCOUNT_PRINCIPAL_SIZE);
+    MEMCPY(id_hashinput + SUBACCOUNT_PREFIX_SIZE + STAKEACCOUNT_PRINCIPAL_SIZE, digest, 32);
 
     CHECK_ZXERR(
-            hash_sha224(id_hashinput, STAKEACCOUNT_PRINCIPAL_SIZE + 32, address + 4,
+            hash_sha224(id_hashinput, sizeof(id_hashinput), address + 4,
                         (maxoutLen - 4)));
 
     uint32_t crc = 0;

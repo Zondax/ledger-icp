@@ -23,6 +23,20 @@
 #include <cstring>
 #include <cstdint>
 
+#define SWAP_BYTES(x, y, tmp) { \
+                   tmp = x;     \
+                   x = y;       \
+                   y = tmp;\
+}
+
+#define SWAP_ENDIAN_U64(x) { \
+    uint8_t tmp = 0;                        \
+    SWAP_BYTES(*x, *(x + 7), tmp); \
+    SWAP_BYTES(*(x+1), *(x + 6), tmp);         \
+    SWAP_BYTES(*(x+2), *(x + 5), tmp);         \
+    SWAP_BYTES(*(x+3), *(x + 4), tmp);         \
+}
+
 zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
     const char *tmp = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
     parseHexString(pubKey, pubKeyLen, tmp);
@@ -138,25 +152,25 @@ namespace {
         EXPECT_STREQ((const char *) outBuffer, "cae");
     }
 
-    TEST(AddressToStringTests, StakeAccount) {
-        uint8_t inBuffer[100];
-        const char *tmp = "EF9E5D18E3B90E0B388A988441C39E95F006C85CA2D5D9023C30D30A02";
-        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
-
-        char addressText[100];
-        uint16_t lenT = sizeof(addressText);
-        MEMZERO(addressText, 100);
-        EXPECT_EQ(crypto_principalToTextual(inBuffer, 29, addressText, &lenT), zxerr_ok);
-        EXPECT_STREQ((const char *) addressText, "fzy62xpptzorry5zbyftrcuyqra4hhuv6admqxfc2xmqepbq2mfae");
-
-        uint8_t memo[8] = {0x00, 0xf4, 0x1d, 0x14, 0x5f, 0xfe, 0x95, 0x7f};
+    TEST(AddressToStringTests, StakeAccount0) {
+        uint8_t inBufferP[100];
+        const char *tmpP = "18D22E6DC4203DA3827AFFE043AA3E30AC1FA4DF1733972EB358B63D02";
+        size_t len = parseHexString(inBufferP, sizeof(inBufferP), tmpP);
 
         uint8_t address[32];
-        zxerr_t err = crypto_principalToStakeAccount(inBuffer, len, memo, address, sizeof(address));
 
-        char outBuffer[300];
-        array_to_hexstr(outBuffer, sizeof(outBuffer),address, 32);
-        printf("%s\n", outBuffer);
+        uint64_t memo = 30936831863058138;
+
+        uint8_t memodata[8];
+        MEMCPY(memodata, &memo, 8);
+
+        SWAP_ENDIAN_U64(memodata)
+        zxerr_t err = crypto_principalToStakeAccount(inBufferP, 29, *(uint64_t *)memodata, address, sizeof(address));
         EXPECT_EQ(err, zxerr_ok);
+        char outBuffer[300];
+
+        array_to_hexstr(outBuffer, sizeof(outBuffer),address, 32);
+        EXPECT_STREQ((const char *) outBuffer, "73db063b556d745507b937a2bd4458cb983c79bdfe7deef08970ddad35fdf73f");
     }
+
 }
