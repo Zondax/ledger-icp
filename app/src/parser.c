@@ -383,7 +383,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
     }
 
-    return parser_ok;
+    return parser_no_data;
 }
 
 parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,

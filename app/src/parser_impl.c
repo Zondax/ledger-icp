@@ -479,37 +479,37 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             return parser_unexpected_method;
         }
     }
-//
-//#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
-//    uint8_t publicKey[SECP256K1_PK_LEN];
-//    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
-//
-//    MEMZERO(publicKey, sizeof(publicKey));
-//    MEMZERO(principalBytes, sizeof(principalBytes));
-//
-//    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-//                           parser_unexepected_error)
-//
-//    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
-//
-//    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-//        return parser_unexpected_value;
-//    }
-//#endif
 
-//    if(is_stake_tx){
-//        uint8_t to_hash[32];
-//        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-//                                                        v->tx_fields.call.neuron_creation_memo,
-//                                                        to_hash,sizeof(to_hash)), parser_unexepected_error);
-//
-//        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
-//
-//        if(memcmp(to_hash, to, 32) != 0){
-//            return parser_unexpected_value;
-//        }
-//    }
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    uint8_t publicKey[SECP256K1_PK_LEN];
+    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
+    MEMZERO(publicKey, sizeof(publicKey));
+    MEMZERO(principalBytes, sizeof(principalBytes));
+
+    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                           parser_unexepected_error)
+
+    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+
+    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+        return parser_unexpected_value;
+    }
+
+#endif
+
+    if(is_stake_tx){
+        uint8_t to_hash[32];
+        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                                          v->tx_fields.call.neuron_creation_memo,
+                                                                          to_hash,sizeof(to_hash)), parser_unexepected_error);
+
+        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
+
+        if(memcmp(to_hash, to, 32) != 0){
+            return parser_invalid_address;
+        }
+    }
     return parser_ok;
 }
 
