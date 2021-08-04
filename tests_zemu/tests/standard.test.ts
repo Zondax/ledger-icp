@@ -430,7 +430,9 @@ describe('Standard', function () {
 
       const txBlob = Buffer.from(txBlobStr, 'hex')
 
-      const respRequest = app.sign_staketx("m/44'/223'/0'/0/0", txBlob, BigInt("9193533898659590925"))
+      const neuron_memo = BigInt("9193533898659590925");
+
+      const respRequest = app.sign_staketx("m/44'/223'/0'/0/0", txBlob, neuron_memo)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
