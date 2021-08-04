@@ -3,44 +3,50 @@
 
 #ifndef PB_DFINITY_PB_H_INCLUDED
 #define PB_DFINITY_PB_H_INCLUDED
-
 #include <pb.h>
+#include "base_types.pb.h"
+#include "governance.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
 /* Struct definitions */
-typedef struct _AccountIdentifier {
+typedef struct _AccountIdentifier { 
     pb_byte_t hash[32]; /* always 32 bytes, starts with CRC32 */
 } AccountIdentifier;
 
-typedef struct _BlockHeight {
-    uint64_t height;
+typedef struct _BlockHeight { 
+    uint64_t height; 
 } BlockHeight;
 
-typedef struct _ICPTs {
-    uint64_t e8s;
+typedef struct _ICPTs { 
+    uint64_t e8s; 
 } ICPTs;
 
-typedef struct _Memo {
-    uint64_t memo;
+typedef struct _ManageNeuronPb { 
+    bool has_manage_neuron;
+    ic_nns_governance_pb_v1_ManageNeuron manage_neuron; 
+} ManageNeuronPb;
+
+typedef struct _Memo { 
+    uint64_t memo; 
 } Memo;
 
-typedef struct _Subaccount {
+typedef struct _Subaccount { 
     pb_byte_t sub_account[32]; /* always 32 bytes */
 } Subaccount;
 
-typedef struct _TimeStamp {
-    uint64_t timestamp_nanos;
+typedef struct _TimeStamp { 
+    uint64_t timestamp_nanos; 
 } TimeStamp;
 
-typedef struct _Payment {
+typedef struct _Payment { 
     bool has_receiver_gets;
-    ICPTs receiver_gets;
+    ICPTs receiver_gets; 
 } Payment;
 
-typedef struct _SendRequest {
+typedef struct _SendRequest { 
     bool has_memo;
     Memo memo; /* required */
     bool has_payment;
@@ -71,6 +77,7 @@ extern "C" {
 #define AccountIdentifier_init_default           {{0}}
 #define BlockHeight_init_default                 {0}
 #define SendRequest_init_default                 {false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default, false, TimeStamp_init_default}
+#define ManageNeuronPb_init_default              {false, ic_nns_governance_pb_v1_ManageNeuron_init_default}
 #define TimeStamp_init_zero                      {0}
 #define Memo_init_zero                           {0}
 #define ICPTs_init_zero                          {0}
@@ -79,11 +86,13 @@ extern "C" {
 #define AccountIdentifier_init_zero              {{0}}
 #define BlockHeight_init_zero                    {0}
 #define SendRequest_init_zero                    {false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero, false, TimeStamp_init_zero}
+#define ManageNeuronPb_init_zero                 {false, ic_nns_governance_pb_v1_ManageNeuron_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define AccountIdentifier_hash_tag               1
 #define BlockHeight_height_tag                   1
 #define ICPTs_e8s_tag                            1
+#define ManageNeuronPb_manage_neuron_tag         1
 #define Memo_memo_tag                            1
 #define Subaccount_sub_account_tag               1
 #define TimeStamp_timestamp_nanos_tag            1
@@ -151,6 +160,12 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   7)
 #define SendRequest_created_at_MSGTYPE BlockHeight
 #define SendRequest_created_at_time_MSGTYPE TimeStamp
 
+#define ManageNeuronPb_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  manage_neuron,     1)
+#define ManageNeuronPb_CALLBACK NULL
+#define ManageNeuronPb_DEFAULT NULL
+#define ManageNeuronPb_manage_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron
+
 extern const pb_msgdesc_t TimeStamp_msg;
 extern const pb_msgdesc_t Memo_msg;
 extern const pb_msgdesc_t ICPTs_msg;
@@ -159,6 +174,7 @@ extern const pb_msgdesc_t Subaccount_msg;
 extern const pb_msgdesc_t AccountIdentifier_msg;
 extern const pb_msgdesc_t BlockHeight_msg;
 extern const pb_msgdesc_t SendRequest_msg;
+extern const pb_msgdesc_t ManageNeuronPb_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define TimeStamp_fields &TimeStamp_msg
@@ -169,6 +185,7 @@ extern const pb_msgdesc_t SendRequest_msg;
 #define AccountIdentifier_fields &AccountIdentifier_msg
 #define BlockHeight_fields &BlockHeight_msg
 #define SendRequest_fields &SendRequest_msg
+#define ManageNeuronPb_fields &ManageNeuronPb_msg
 
 /* Maximum encoded size of messages (where known) */
 #define AccountIdentifier_size                   34
@@ -179,6 +196,9 @@ extern const pb_msgdesc_t SendRequest_msg;
 #define SendRequest_size                         139
 #define Subaccount_size                          34
 #define TimeStamp_size                           11
+#if defined(ic_nns_governance_pb_v1_ManageNeuron_size)
+#define ManageNeuronPb_size                      (6 + ic_nns_governance_pb_v1_ManageNeuron_size)
+#endif
 
 #ifdef __cplusplus
 } /* extern "C" */

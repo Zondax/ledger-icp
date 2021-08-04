@@ -373,4 +373,46 @@ describe('Standard', function () {
       await sim.close()
     }
   })
+
+  test.each(models)('sign normal -- Increase Neuron Timer', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const pkhex =
+          '0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835'
+
+      const txBlobStr =
+          'd9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550732123f52b79b4a4de9b89e0cc3de7586e696e67726573735f6578706972791b1674db8a3bb843006673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e3026b63616e69737465725f69644a000000000000000101016b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f7062636172674c0a02107b12060a040880a3056d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840953620923534b8840d057341bfaf4511dfa73f57372e7946aed83bfde737e44c5c3005b6f19d4342b9e46c78b2c6fa4f67cf203d6a7cab51a84aa486b459536b'
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_increaseTimer_normal`, m.name === 'nanos' ? 3 : 4)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+      const hash = sha256.hex(signatureResponse.preSignHash)
+
+      const pk = Uint8Array.from(Buffer.from(pkhex, 'hex'))
+      expect(pk.byteLength).toEqual(65)
+      const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
+      const signature = Uint8Array.from(signatureResponse.signatureRS)
+      //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
+      expect(signature.byteLength).toEqual(64)
+
+      const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
+      expect(signatureOk).toEqual(true)
+    } finally {
+      await sim.close()
+    }
+  })
 })

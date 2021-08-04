@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#define PARSER_ASSERT_OR_ERROR(CALL, ERROR) if (!(CALL)) return ERROR;
+
 extern parser_tx_t parser_tx_obj;
 
 parser_error_t parser_init(parser_context_t *ctx, const uint8_t *buffer, uint16_t bufferSize);
