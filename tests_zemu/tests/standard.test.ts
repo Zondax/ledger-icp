@@ -415,4 +415,52 @@ describe('Standard', function () {
       await sim.close()
     }
   })
+
+  test.each(models)('sign normal -- stake transfer', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const expected_pk =
+          '0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835'
+
+      const txBlobStr =
+          'd9d9f7a367636f6e74656e74bf6c726571756573745f747970656463616c6c6b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656773656e645f70626361726758620a06088fc8c4d05c12020a001a0022220a20fe104574fb6f9440741213337dd71c4543c5eaea4faf38cb4e689b2e8f7ed72b2a220a20c4f03f320911d4e7d11e526f05976f20f0600d568b1250889c5e6855c36770dc3a0a08a9a6cbf0d8ebc392656673656e646572581df898bb70c2093d73e88b0d7d65436e6e9d815e2ec1933b284a1db1b3026e696e67726573735f65787069727900ff6d73656e6465725f7075626b65795838302a300506032b6570032100302a300506032b65700321005f1eb090e10bec97b73eea2abafa983b69691b4ae59e78342cf0219a5b8ecd766a73656e6465725f7369675840ae2560ce05c94a8465ef642a81b32df8855308cd227d9226b03bad963fc9d0c5d85463381234841cccd34ac5281ca63cdbb7cf3552840b41f348e4392e6cac04'
+
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign_staketx("m/44'/223'/0'/0/0", txBlob, BigInt("9193533898659590925"))
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_staketx_normal`, m.name === 'nanos' ? 9 : 10)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+      //
+      // const expected_preHash = '0a69632d7265717565737438d75af52910efe58a5c32b61d3343ad1a40f32d335e88cab5843ec69d7bdf6a'
+      // expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash)
+      //
+      // const expected_hash = '3797e39b76c78c7b33f724ba7b44b28721c6318a32e608ccee3940f3cba49de3'
+      // const hash = sha256.hex(signatureResponse.preSignHash)
+      // expect(hash).toEqual(expected_hash)
+      //
+      // const pk = Uint8Array.from(respAddr.publicKey)
+      // expect(pk.byteLength).toEqual(65)
+      // const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
+      // const signature = Uint8Array.from(signatureResponse.signatureRS)
+      // //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
+      // expect(signature.byteLength).toEqual(64)
+      //
+      // const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
+      // expect(signatureOk).toEqual(true)
+    } finally {
+      await sim.close()
+    }
+  })
 })

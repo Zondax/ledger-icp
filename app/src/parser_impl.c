@@ -360,6 +360,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 }
 
 parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
+    zemu_log_stack("read envelope");
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
@@ -478,36 +479,36 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             return parser_unexpected_method;
         }
     }
+//
+//#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+//    uint8_t publicKey[SECP256K1_PK_LEN];
+//    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+//
+//    MEMZERO(publicKey, sizeof(publicKey));
+//    MEMZERO(principalBytes, sizeof(principalBytes));
+//
+//    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+//                           parser_unexepected_error)
+//
+//    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+//
+//    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+//        return parser_unexpected_value;
+//    }
+//#endif
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
-    uint8_t publicKey[SECP256K1_PK_LEN];
-    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
-
-    MEMZERO(publicKey, sizeof(publicKey));
-    MEMZERO(principalBytes, sizeof(principalBytes));
-
-    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-                           parser_unexepected_error)
-
-    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
-
-    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-        return parser_unexpected_value;
-    }
-#endif
-
-    if(is_stake_tx){
-        uint8_t to_hash[32];
-        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-                                                        v->tx_fields.call.neuron_creation_memo,
-                                                        to_hash,sizeof(to_hash)), parser_unexepected_error);
-
-        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
-
-        if(memcmp(to_hash, to, 32) != 0){
-            return parser_unexpected_value;
-        }
-    }
+//    if(is_stake_tx){
+//        uint8_t to_hash[32];
+//        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+//                                                        v->tx_fields.call.neuron_creation_memo,
+//                                                        to_hash,sizeof(to_hash)), parser_unexepected_error);
+//
+//        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
+//
+//        if(memcmp(to_hash, to, 32) != 0){
+//            return parser_unexpected_value;
+//        }
+//    }
 
     return parser_ok;
 }
@@ -520,7 +521,13 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
                     if (!app_mode_expert()) {
+                        if(is_stake_tx){
+                            return 7;
+                        }
                         return 6;
+                    }
+                    if(is_stake_tx){
+                        return 9;
                     }
                     return 8;
                 }

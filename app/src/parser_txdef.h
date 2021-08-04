@@ -113,7 +113,7 @@ typedef struct {
     bool has_nonce;
 
     uint64_t ingress_expiry;
-    uint8_t neuron_creation_memo[8];
+    uint64_t neuron_creation_memo;
 
     canister_t canister_id;
     sender_t sender;
