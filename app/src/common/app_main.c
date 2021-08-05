@@ -30,6 +30,8 @@
 #include "zxmacros.h"
 #include "app_mode.h"
 
+#include "parser_impl.h"
+
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 unsigned char io_event(unsigned char channel) {
@@ -120,20 +122,33 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
         THROW(APDU_CODE_WRONG_LENGTH);
     }
 
+    if(G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1){
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
     uint32_t added;
     switch (payloadType) {
         case 0:
             tx_initialize();
             tx_reset();
             extractHDPath(rx, OFFSET_DATA);
+            is_stake_tx = G_io_apdu_buffer[OFFSET_P2] == 1;
             return false;
         case 1:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+                is_stake_tx = false;
+                THROW(APDU_CODE_DATA_INVALID);
+            }
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
             if (added != rx - OFFSET_DATA) {
                 THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
             }
             return false;
         case 2:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+                is_stake_tx = false;
+                THROW(APDU_CODE_DATA_INVALID);
+            }
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
             if (added != rx - OFFSET_DATA) {
                 THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);

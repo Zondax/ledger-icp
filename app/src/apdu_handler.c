@@ -58,8 +58,6 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
         THROW(APDU_CODE_OK);
     }
 
-    is_stake_tx = G_io_apdu_buffer[OFFSET_P2] == 1;
-
     CHECK_APP_CANARY()
 
     const char *error_msg = tx_parse();
@@ -125,6 +123,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
         }
         CATCH_OTHER(e)
         {
+            is_stake_tx = false;
             switch (e & 0xF000) {
                 case 0x6000:
                 case APDU_CODE_OK:
