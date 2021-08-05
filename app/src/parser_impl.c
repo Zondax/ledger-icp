@@ -25,11 +25,6 @@
 
 parser_tx_t parser_tx_obj;
 
-parser_error_t zeroize_parser_tx(parser_tx_t *v) {
-    MEMZERO(v, sizeof(parser_tx_t));
-    return parser_ok;
-}
-
 __Z_INLINE parser_error_t parser_mapCborError(CborError err);
 
 #define CHECK_CBOR_MAP_ERR(CALL) { \

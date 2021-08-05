@@ -27,8 +27,6 @@ extern "C" {
 
 extern parser_tx_t parser_tx_obj;
 
-parser_error_t zeroize_parser_tx(parser_tx_t *v);
-
 parser_error_t parser_init(parser_context_t *ctx, const uint8_t *buffer, uint16_t bufferSize);
 
 parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v);
