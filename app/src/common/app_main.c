@@ -126,17 +126,22 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.is_stake_tx;
+
     uint32_t added;
     switch (payloadType) {
         case 0:
             tx_initialize();
             tx_reset();
             extractHDPath(rx, OFFSET_DATA);
-            is_stake_tx = G_io_apdu_buffer[OFFSET_P2] == 1;
+            if(zeroize_parser_tx(&parser_tx_obj) != parser_ok){
+                THROW(APDU_CODE_EXECUTION_ERROR);
+            }
+            parser_tx_obj.tx_fields.call.is_stake_tx = G_io_apdu_buffer[OFFSET_P2] == 1;
             return false;
         case 1:
             if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
-                is_stake_tx = false;
+                parser_tx_obj.tx_fields.call.is_stake_tx = false;
                 THROW(APDU_CODE_DATA_INVALID);
             }
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
@@ -146,7 +151,7 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             return false;
         case 2:
             if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
-                is_stake_tx = false;
+                parser_tx_obj.tx_fields.call.is_stake_tx = false;
                 THROW(APDU_CODE_DATA_INVALID);
             }
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);

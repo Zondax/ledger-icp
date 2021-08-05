@@ -24,7 +24,11 @@
 #include "protobuf/governance.pb.h"
 
 parser_tx_t parser_tx_obj;
-bool is_stake_tx;
+
+parser_error_t zeroize_parser_tx(parser_tx_t *v) {
+    MEMZERO(v, sizeof(parser_tx_t));
+    return parser_ok;
+}
 
 __Z_INLINE parser_error_t parser_mapCborError(CborError err);
 
@@ -464,7 +468,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         }
         case state_transaction_read: {
             zemu_log_stack("state_transaction_read");
-            if(is_stake_tx){
+            if(parser_tx_obj.tx_fields.call.is_stake_tx){
                 return parser_unexpected_value; //cannot be stake_tx for state read
             }
             if (strcmp(v->request_type.data, "read_state") != 0) {
@@ -498,7 +502,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 #endif
 
-    if(is_stake_tx){
+    if(parser_tx_obj.tx_fields.call.is_stake_tx){
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
                                                                           v->tx_fields.call.neuron_creation_memo,
@@ -522,12 +526,12 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
                     if (!app_mode_expert()) {
-                        if(is_stake_tx){
+                        if(parser_tx_obj.tx_fields.call.is_stake_tx){
                             return 7;
                         }
                         return 6;
                     }
-                    if(is_stake_tx){
+                    if(parser_tx_obj.tx_fields.call.is_stake_tx){
                         return 9;
                     }
                     return 8;

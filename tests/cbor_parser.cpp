@@ -403,7 +403,7 @@ namespace {
     }
 
     TEST(CBORParserTest, StakeTx) {
-        is_stake_tx = true;
+        parser_tx_obj.tx_fields.call.is_stake_tx = true;
         uint8_t inBuffer[1000];
 
         uint64_t memo = 593939389840108146;
@@ -419,10 +419,7 @@ namespace {
 
         err = parser_validate(&ctx);
         EXPECT_EQ(err, parser_ok);
-
-        char buffer[300];
-        array_to_hexstr(buffer, 300, inBuffer, 32);
-        printf("%s", buffer);
+        parser_tx_obj.tx_fields.call.is_stake_tx = false;
     }
 
 }

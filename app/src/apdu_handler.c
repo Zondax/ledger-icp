@@ -30,7 +30,6 @@
 #include "coin.h"
 #include "zxmacros.h"
 #include "secret.h"
-#include "parser_impl.h"
 
 __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
@@ -123,7 +122,6 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
         }
         CATCH_OTHER(e)
         {
-            is_stake_tx = false;
             switch (e & 0xF000) {
                 case 0x6000:
                 case APDU_CODE_OK:

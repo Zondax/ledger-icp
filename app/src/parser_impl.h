@@ -27,7 +27,7 @@ extern "C" {
 
 extern parser_tx_t parser_tx_obj;
 
-extern bool is_stake_tx;
+parser_error_t zeroize_parser_tx(parser_tx_t *v);
 
 parser_error_t parser_init(parser_context_t *ctx, const uint8_t *buffer, uint16_t bufferSize);
 

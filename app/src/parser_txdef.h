@@ -114,7 +114,7 @@ typedef struct {
 
     uint64_t ingress_expiry;
     uint64_t neuron_creation_memo;
-
+    bool is_stake_tx;
     canister_t canister_id;
     sender_t sender;
 
