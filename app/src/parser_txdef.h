@@ -68,6 +68,11 @@ typedef enum {
 //    ClaimOrRefresh = 13,
 } manageNeuron_e;
 
+typedef enum {
+    invalid = 0x00,
+    neuron_stake_transaction = 0x01,
+} special_transfer_e;
+
 typedef struct {
     uint8_t data[SENDER_MAX_LEN + 1];
     size_t len;
@@ -114,7 +119,9 @@ typedef struct {
 
     uint64_t ingress_expiry;
     uint64_t neuron_creation_memo;
-    bool is_stake_tx;
+
+    special_transfer_e special_transfer_type;
+
     canister_t canister_id;
     sender_t sender;
 

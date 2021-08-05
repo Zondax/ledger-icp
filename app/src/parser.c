@@ -57,7 +57,8 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
     }
     zemu_log_stack("parser parse");
     CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
-    if(parser_tx_obj.tx_fields.call.is_stake_tx) {
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if(is_stake_tx) {
         CHECK_PARSER_ERR(_readUInt64(ctx, &parser_tx_obj.tx_fields.call.neuron_creation_memo))
     }
     return _readEnvelope(ctx, &parser_tx_obj);
@@ -259,10 +260,11 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         return parser_no_data;
     }
 
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
     if (!app_mode_expert()) {
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
-            if(parser_tx_obj.tx_fields.call.is_stake_tx){
+            if(is_stake_tx){
                 snprintf(outVal, outValLen, "Send ICP to own    neuron");
             }else {
                 snprintf(outVal, outValLen, "Send ICP");
@@ -309,14 +311,14 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
 
-        if(parser_tx_obj.tx_fields.call.is_stake_tx && displayIdx == 6){
+        if(is_stake_tx && displayIdx == 6){
             snprintf(outKey, outKeyLen, "Creation memo");
             return print_u64(fields->neuron_creation_memo, outVal, outValLen, pageIdx, pageCount);
         }
     } else {
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
-            if(parser_tx_obj.tx_fields.call.is_stake_tx){
+            if(is_stake_tx){
                 snprintf(outVal, outValLen, "Send ICP to own    neuron");
             }else {
                 snprintf(outVal, outValLen, "Send ICP");
@@ -383,7 +385,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
 
-        if(parser_tx_obj.tx_fields.call.is_stake_tx && displayIdx == 8){
+        if(is_stake_tx && displayIdx == 8){
             snprintf(outKey, outKeyLen, "Creation memo");
             return print_u64(fields->neuron_creation_memo, outVal, outValLen, pageIdx, pageCount);
         }

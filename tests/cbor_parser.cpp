@@ -403,7 +403,7 @@ namespace {
     }
 
     TEST(CBORParserTest, StakeTx) {
-        parser_tx_obj.tx_fields.call.is_stake_tx = true;
+        parser_tx_obj.tx_fields.call.special_transfer_type = neuron_stake_transaction;
         uint8_t inBuffer[1000];
 
         uint64_t memo = 593939389840108146;
@@ -419,7 +419,7 @@ namespace {
 
         err = parser_validate(&ctx);
         EXPECT_EQ(err, parser_ok);
-        parser_tx_obj.tx_fields.call.is_stake_tx = false;
+        parser_tx_obj.tx_fields.call.special_transfer_type = invalid;
     }
 
 }

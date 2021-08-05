@@ -463,9 +463,6 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         }
         case state_transaction_read: {
             zemu_log_stack("state_transaction_read");
-            if(parser_tx_obj.tx_fields.call.is_stake_tx){
-                return parser_unexpected_value; //cannot be stake_tx for state read
-            }
             if (strcmp(v->request_type.data, "read_state") != 0) {
                 return parser_unexpected_value;
             }
@@ -497,7 +494,8 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 #endif
 
-    if(parser_tx_obj.tx_fields.call.is_stake_tx){
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if(is_stake_tx){
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
                                                                           v->tx_fields.call.neuron_creation_memo,
@@ -515,18 +513,18 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
-
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
     switch (v->txtype) {
         case call: {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
                     if (!app_mode_expert()) {
-                        if(parser_tx_obj.tx_fields.call.is_stake_tx){
+                        if(is_stake_tx){
                             return 7;
                         }
                         return 6;
                     }
-                    if(parser_tx_obj.tx_fields.call.is_stake_tx){
+                    if(is_stake_tx){
                         return 9;
                     }
                     return 8;
