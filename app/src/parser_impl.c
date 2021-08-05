@@ -507,6 +507,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
         const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
 
         if(memcmp(to_hash, to, 32) != 0){
+            zemu_log_stack("wrong data");
             return parser_invalid_address;
         }
     }

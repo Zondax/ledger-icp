@@ -168,7 +168,6 @@ namespace {
         uint8_t memodata[8];
         MEMCPY(memodata, &memo, 8);
 
-        SWAP_ENDIAN_U64(memodata)
         zxerr_t err = crypto_principalToStakeAccount(inBufferP, 29, *(uint64_t *)memodata, address, sizeof(address));
         EXPECT_EQ(err, zxerr_ok);
         char outBuffer[300];
@@ -208,7 +207,6 @@ namespace {
 
             uint8_t memodata[8];
             MEMCPY(memodata, &memo, 8);
-            SWAP_ENDIAN_U64(memodata)
 
             uint8_t computed_account[32];
             zxerr_t err = crypto_principalToStakeAccount(principal, 29, *(uint64_t *)memodata, computed_account, sizeof(computed_account));

@@ -20,6 +20,20 @@
 #include "base32.h"
 #include "parser_impl.h"
 
+#define SWAP_BYTES(x, y, tmp) { \
+                   (tmp) = (x);     \
+                   (x) = (y);       \
+                   (y) = (tmp);\
+}
+
+#define SWAP_ENDIAN_U64(x) { \
+    uint8_t tmp = 0;                        \
+    SWAP_BYTES(*(x), *((x) + 7), tmp); \
+    SWAP_BYTES(*((x)+1), *((x) + 6), tmp);         \
+    SWAP_BYTES(*((x)+2), *((x) + 5), tmp);         \
+    SWAP_BYTES(*((x)+3), *((x) + 4), tmp);         \
+}
+
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
 bool isTestnet() {
@@ -319,7 +333,7 @@ zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t princi
     MEMCPY(sub_hashinput + 1, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
     MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
     MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, (uint8_t*)&neuron_creation_memo, 8);
-
+    SWAP_ENDIAN_U64(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN)
     uint8_t digest[32];
     MEMZERO(digest, 32);
     cx_hash_sha256(sub_hashinput, sizeof(sub_hashinput), digest, 32);

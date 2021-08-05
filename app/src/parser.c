@@ -59,7 +59,7 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
     if (dataLen < 1) {
         return parser_no_data;
     }
-    zemu_log_stack("parrser parse");
+    zemu_log_stack("parser parse");
     CHECK_PARSER_ERR(zeroize_parser_tx(&parser_tx_obj));
     CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
     if(is_stake_tx) {
@@ -268,10 +268,11 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
             if(is_stake_tx){
-                snprintf(outVal, outValLen, "Send ICP to own neuron");
+                snprintf(outVal, outValLen, "Send ICP to own    neuron");
             }else {
                 snprintf(outVal, outValLen, "Send ICP");
             }
+            return parser_ok;
         }
 
         if (displayIdx == 1) {
@@ -320,7 +321,12 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     } else {
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
-            snprintf(outVal, outValLen, "Send ICP");
+            if(is_stake_tx){
+                snprintf(outVal, outValLen, "Send ICP to own    neuron");
+            }else {
+                snprintf(outVal, outValLen, "Send ICP");
+            }
+            return parser_ok;
         }
 
         if (displayIdx == 1) {
@@ -380,6 +386,11 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 7) {
             snprintf(outKey, outKeyLen, "Memo");
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if(is_stake_tx && displayIdx == 8){
+            snprintf(outKey, outKeyLen, "Creation memo");
+            return print_u64(fields->neuron_creation_memo, outVal, outValLen, pageIdx, pageCount);
         }
     }
 

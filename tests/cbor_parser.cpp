@@ -405,15 +405,24 @@ namespace {
     TEST(CBORParserTest, StakeTx) {
         is_stake_tx = true;
         uint8_t inBuffer[1000];
-        const char *tmp = "3b88d07a44aa5879d9d9f7a367636f6e74656e74bf6c726571756573745f747970656463616c6c6b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656773656e645f70626361726758410a0808dbac959fde810212020a001a002a220a203e3c615b2e8dcefcac710252b2cdbe3bb0f2caf6091eca62a46e0e8875b38cb43a0b088fb2bf9ca99ea1ebc2016673656e646572581d53f1a4dd67e2f619f8ec0de95589591dc8002d1ee948751210ddf1ab026e696e67726573735f65787069727900ff6d73656e6465725f7075626b65795838302a300506032b6570032100302a300506032b6570032100c76d8b5ac64104d23b29d064b087cd0c934aae35c7b264763244742617f9f95d6a73656e6465725f7369675840dbdd1d6201117d08bd519c9fd446c49531c51f807305d32fc331161d645dbf0894fdc0cd8d7a59574f251116d34771b6e7b720987179ff99a3e3b31097718706";
-        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        uint64_t memo = 593939389840108146;
+
+        const char *tmp = "d9d9f7a167636f6e74656e74a663617267583e0a0a08f2d4a0eca697869f0812070a050880c2d72f1a0308904e2a220a20a8a1abecdb66f57eb6eba44c3b5f11a6c433fe932680a9519b064b80ca8794e16b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b16985a582755f1806b6d6574686f645f6e616d656773656e645f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+        auto inBufferLen = parseHexString(inBuffer + 8, sizeof(inBuffer) - 8, tmp);
+
+        MEMCPY(inBuffer, (uint8_t*)&memo, 8);
 
         parser_context_t ctx;
-        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen + 8);
         EXPECT_EQ(err, parser_ok);
 
         err = parser_validate(&ctx);
         EXPECT_EQ(err, parser_ok);
+
+        char buffer[300];
+        array_to_hexstr(buffer, 300, inBuffer, 32);
+        printf("%s", buffer);
     }
 
 }
