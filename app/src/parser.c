@@ -332,7 +332,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
             if(is_stake_tx){
-                snprintf(outVal, outValLen, "Send ICP to own    neuron");
+                snprintf(outVal, outValLen, "Stake Neuron");
             }else {
                 snprintf(outVal, outValLen, "Send ICP");
             }
@@ -382,7 +382,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
             if(is_stake_tx){
-                snprintf(outVal, outValLen, "Send ICP to own    neuron");
+                snprintf(outVal, outValLen, "Stake Neuron");
             }else {
                 snprintf(outVal, outValLen, "Send ICP");
             }
