@@ -328,67 +328,17 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
-    if (!app_mode_expert()) {
-        if (displayIdx == 0) {
-            snprintf(outKey, outKeyLen, "Transaction type");
-            if(is_stake_tx){
-                snprintf(outVal, outValLen, "Stake Neuron");
-            }else {
-                snprintf(outVal, outValLen, "Send ICP");
-            }
-            return parser_ok;
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        if(is_stake_tx){
+            snprintf(outVal, outValLen, "Stake Neuron");
+        }else {
+            snprintf(outVal, outValLen, "Send ICP");
         }
+        return parser_ok;
+    }
 
-        if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "From account");
-            return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
-                                      outVal, outValLen,
-                                      pageIdx, pageCount);
-        }
-
-        if (displayIdx == 2) {
-            snprintf(outKey, outKeyLen, "To account ");
-
-            char buffer[100];
-            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
-            if (err != zxerr_ok) {
-                return parser_unexepected_error;
-            }
-
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-            return parser_ok;
-        }
-
-        if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 4) {
-            snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 5) {
-            snprintf(outKey, outKeyLen, "Memo");
-            return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
-        }
-
-    } else {
-        if (displayIdx == 0) {
-            snprintf(outKey, outKeyLen, "Transaction type");
-            if(is_stake_tx){
-                snprintf(outVal, outValLen, "Stake Neuron");
-            }else {
-                snprintf(outVal, outValLen, "Send ICP");
-            }
-            return parser_ok;
-        }
-
+    if(app_mode_expert()){
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
             return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
@@ -409,44 +359,46 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
             return parser_ok;
         }
+        displayIdx -= 2;
+    }
 
-        if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "From account");
-            return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
-                                      outVal, outValLen,
-                                      pageIdx, pageCount);
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "From account");
+        return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
+                                  outVal, outValLen,
+                                  pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "To account ");
+
+        char buffer[100];
+        zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
+        if (err != zxerr_ok) {
+            return parser_unexepected_error;
         }
 
-        if (displayIdx == 4) {
-            snprintf(outKey, outKeyLen, "To account ");
-            char buffer[100];
-            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
-            if (err != zxerr_ok) {
-                return parser_unexepected_error;
-            }
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
 
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-            return parser_ok;
-        }
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Payment (ICP)");
+        return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
 
-        if (displayIdx == 5) {
-            snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
+    if (displayIdx == 4) {
+        snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
 
-        if (displayIdx == 6) {
-            snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 7) {
-            snprintf(outKey, outKeyLen, "Memo");
-            return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
-        }
+    if (displayIdx == 5) {
+        snprintf(outKey, outKeyLen, "Memo");
+        return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
