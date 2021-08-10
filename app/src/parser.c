@@ -57,10 +57,6 @@ parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t d
     }
     zemu_log_stack("parser parse");
     CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
-    if(is_stake_tx) {
-        CHECK_PARSER_ERR(_readUInt64(ctx, &parser_tx_obj.tx_fields.call.neuron_creation_memo))
-    }
     return _readEnvelope(ctx, &parser_tx_obj);
 }
 
@@ -307,14 +303,14 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 5) {
-            snprintf(outKey, outKeyLen, "Memo");
+            if(is_stake_tx) {
+                snprintf(outKey, outKeyLen, "Creation Memo");
+            }else {
+                snprintf(outKey, outKeyLen, "Memo");
+            }
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
 
-        if(is_stake_tx && displayIdx == 6){
-            snprintf(outKey, outKeyLen, "Creation memo");
-            return print_u64(fields->neuron_creation_memo, outVal, outValLen, pageIdx, pageCount);
-        }
     } else {
         if (displayIdx == 0) {
             snprintf(outKey, outKeyLen, "Transaction type");
@@ -381,13 +377,12 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 7) {
-            snprintf(outKey, outKeyLen, "Memo");
+            if(is_stake_tx) {
+                snprintf(outKey, outKeyLen, "Creation Memo");
+            }else {
+                snprintf(outKey, outKeyLen, "Memo");
+            }
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
-        }
-
-        if(is_stake_tx && displayIdx == 8){
-            snprintf(outKey, outKeyLen, "Creation memo");
-            return print_u64(fields->neuron_creation_memo, outVal, outValLen, pageIdx, pageCount);
         }
     }
 

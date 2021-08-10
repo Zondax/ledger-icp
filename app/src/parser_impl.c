@@ -498,7 +498,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     if(is_stake_tx){
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-                                                                          v->tx_fields.call.neuron_creation_memo,
+                                                                          v->tx_fields.call.pb_fields.SendRequest.memo.memo,
                                                                           to_hash,sizeof(to_hash)), parser_unexepected_error);
 
         const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
@@ -513,19 +513,12 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
     switch (v->txtype) {
         case call: {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
                     if (!app_mode_expert()) {
-                        if(is_stake_tx){
-                            return 7;
-                        }
                         return 6;
-                    }
-                    if(is_stake_tx){
-                        return 9;
                     }
                     return 8;
                 }

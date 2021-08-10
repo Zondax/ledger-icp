@@ -406,15 +406,11 @@ namespace {
         parser_tx_obj.tx_fields.call.special_transfer_type = neuron_stake_transaction;
         uint8_t inBuffer[1000];
 
-        uint64_t memo = 593939389840108146;
-
         const char *tmp = "d9d9f7a167636f6e74656e74a663617267583e0a0a08f2d4a0eca697869f0812070a050880c2d72f1a0308904e2a220a20a8a1abecdb66f57eb6eba44c3b5f11a6c433fe932680a9519b064b80ca8794e16b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b16985a582755f1806b6d6574686f645f6e616d656773656e645f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
-        auto inBufferLen = parseHexString(inBuffer + 8, sizeof(inBuffer) - 8, tmp);
-
-        MEMCPY(inBuffer, (uint8_t*)&memo, 8);
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
 
         parser_context_t ctx;
-        auto err = parser_parse(&ctx, inBuffer, inBufferLen + 8);
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
         EXPECT_EQ(err, parser_ok);
 
         err = parser_validate(&ctx);

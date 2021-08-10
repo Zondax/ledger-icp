@@ -170,7 +170,7 @@ export default class InternetComputerApp {
       .then(processGetAddrResponse, processErrorResponse);
   }
 
-  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, is_stake_tx: boolean): Promise<ResponseSign> {
+  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number): Promise<ResponseSign> {
     let payloadType = PAYLOAD_TYPE.ADD;
     if (chunkIdx === 1) {
       payloadType = PAYLOAD_TYPE.INIT;
@@ -180,7 +180,7 @@ export default class InternetComputerApp {
     }
 
     return this.transport
-      .send(CLA, INS.SIGN_SECP256K1, payloadType, is_stake_tx ? 1 : 0, chunk, [
+      .send(CLA, INS.SIGN_SECP256K1, payloadType, txtype, chunk, [
         LedgerError.NoErrors,
         LedgerError.DataIsInvalid,
         LedgerError.BadKeyHandle,
@@ -224,9 +224,9 @@ export default class InternetComputerApp {
       }, processErrorResponse);
   }
 
-  async sign(path: string, message: Buffer) {
+  async sign(path: string, message: Buffer, txtype: number) {
     return this.signGetChunks(path, message).then(chunks => {
-      return this.signSendChunk(1, chunks.length, chunks[0], false).then(async response => {
+      return this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async response => {
         let result = {
           returnCode: response.returnCode,
           errorMessage: response.errorMessage,
@@ -237,33 +237,7 @@ export default class InternetComputerApp {
 
         for (let i = 1; i < chunks.length; i += 1) {
           // eslint-disable-next-line no-await-in-loop
-          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], false);
-          if (result.returnCode !== LedgerError.NoErrors) {
-            break;
-          }
-        }
-        return result;
-      }, processErrorResponse);
-    }, processErrorResponse);
-  }
-
-  async sign_staketx(path: string, tx: Buffer, neuron_creation_memo: bigint) {
-    const message = Buffer.alloc(8 + tx.byteLength);
-    message.writeBigUInt64LE(neuron_creation_memo, 0);
-    tx.copy(message, 8);
-    return this.signGetChunks(path, message).then(chunks => {
-      return this.signSendChunk(1, chunks.length, chunks[0], true).then(async response => {
-        let result = {
-          returnCode: response.returnCode,
-          errorMessage: response.errorMessage,
-          preSignHash: null as null | Buffer,
-          signatureRS: null as null | Buffer,
-          signatureDER: null as null | Buffer,
-        } as ResponseSign;
-
-        for (let i = 1; i < chunks.length; i += 1) {
-          // eslint-disable-next-line no-await-in-loop
-          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], true);
+          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256);
           if (result.returnCode !== LedgerError.NoErrors) {
             break;
           }
