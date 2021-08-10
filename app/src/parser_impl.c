@@ -286,7 +286,7 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
 
 parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
-    if (strcmp(method, "send_pb") == 0) {
+    if (strcmp(method, "send_pb") == 0 || v->tx_fields.call.special_transfer_type == neuron_stake_transaction) {
         v->tx_fields.call.pbtype = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
