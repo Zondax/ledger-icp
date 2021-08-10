@@ -443,23 +443,16 @@ describe('Standard', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-      //
-      // const expected_preHash = '0a69632d7265717565737438d75af52910efe58a5c32b61d3343ad1a40f32d335e88cab5843ec69d7bdf6a'
-      // expect(signatureResponse.preSignHash.toString('hex')).toEqual(expected_preHash)
-      //
-      // const expected_hash = '3797e39b76c78c7b33f724ba7b44b28721c6318a32e608ccee3940f3cba49de3'
-      // const hash = sha256.hex(signatureResponse.preSignHash)
-      // expect(hash).toEqual(expected_hash)
-      //
-      // const pk = Uint8Array.from(respAddr.publicKey)
-      // expect(pk.byteLength).toEqual(65)
-      // const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      // const signature = Uint8Array.from(signatureResponse.signatureRS)
-      // //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
-      // expect(signature.byteLength).toEqual(64)
-      //
-      // const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
-      // expect(signatureOk).toEqual(true)
+
+      const hash = sha256.hex(signatureResponse.preSignHash)
+
+      const pk = Uint8Array.from(Buffer.from(expected_pk, 'hex'))
+      const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
+      const signature = Uint8Array.from(signatureResponse.signatureRS)
+      expect(signature.byteLength).toEqual(64)
+
+      const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
+      expect(signatureOk).toEqual(true)
     } finally {
       await sim.close()
     }
