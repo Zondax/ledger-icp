@@ -181,6 +181,77 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     return parser_ok;
 }
 
+parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize){
+    MEMZERO(buffer,bufferSize);
+    uint16_t index = 0;
+    uint64_t years = value / (uint64_t)(365.25 * 24*60*60);
+    if(years > 1){
+        index += fpuint64_to_str(buffer, bufferSize, years, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"y", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(365.25 *60*60*24);
+
+    uint64_t days = value / (uint64_t)(60*60*24);
+    if(days > 1){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer, bufferSize, days, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"d", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(60*60*24);
+
+    uint64_t hours = value / (uint64_t)(60*60);
+    if(hours > 1){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer, bufferSize, hours, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"h", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(60*60);
+
+    uint64_t minutes = value / (uint64_t)(60);
+    if(minutes > 1){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer, bufferSize, minutes, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"m", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(60);
+
+    uint64_t seconds = value;
+    if(seconds > 1){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer, bufferSize, seconds, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"s", 1);
+        index += 1;
+    }
+
+    buffer[index] = 0;
+    return parser_ok;
+}
+
 parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
                                                   uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
@@ -538,10 +609,14 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Additional delay");
+        snprintf(outKey, outKeyLen, "Additional Delay");
+        char buffer[100];
+        MEMZERO(buffer,sizeof(buffer));
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
-        return print_u64(value, outVal, outValLen, pageIdx, pageCount);
+        CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
     }
     return parser_no_data;
 }
