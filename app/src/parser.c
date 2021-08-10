@@ -303,11 +303,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 5) {
-            if(is_stake_tx) {
-                snprintf(outKey, outKeyLen, "Creation Memo");
-            }else {
-                snprintf(outKey, outKeyLen, "Memo");
-            }
+            snprintf(outKey, outKeyLen, "Memo");
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
 
@@ -377,11 +373,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         }
 
         if (displayIdx == 7) {
-            if(is_stake_tx) {
-                snprintf(outKey, outKeyLen, "Creation Memo");
-            }else {
-                snprintf(outKey, outKeyLen, "Memo");
-            }
+            snprintf(outKey, outKeyLen, "Memo");
             return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
         }
     }
@@ -407,7 +399,11 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     return parser_no_data;
@@ -460,11 +456,16 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
+
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Principal");
+        snprintf(outKey, outKeyLen, "Principal ");
 
         PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29, parser_value_out_of_range);
 
@@ -520,17 +521,24 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Incr. Neuron Timer");
+        char buffer[100];
+        MEMZERO(buffer,sizeof(buffer));
+        MEMCPY(buffer, (char*) "Increase Dissolve Delay", 23);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Increased time");
+        snprintf(outKey, outKeyLen, "Additional delay");
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
         return print_u64(value, outVal, outValLen, pageIdx, pageCount);
