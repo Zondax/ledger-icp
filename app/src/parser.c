@@ -194,13 +194,13 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
     value %= (uint64_t)(365.25 *60*60*24);
 
     uint64_t days = value / (uint64_t)(60*60*24);
-    if(days > 1){
+    if(days > 0){
         if(index > 0) {
             PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
             MEMCPY(buffer + index, (char *) ", ", 2);
             index += 2;
         }
-        index += fpuint64_to_str(buffer, bufferSize, days, 0);
+        index += fpuint64_to_str(buffer + index, bufferSize - index, days, 0);
         PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
         MEMCPY(buffer + index, (char *)"d", 1);
         index += 1;
@@ -208,13 +208,13 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
     value %= (uint64_t)(60*60*24);
 
     uint64_t hours = value / (uint64_t)(60*60);
-    if(hours > 1){
+    if(hours > 0){
         if(index > 0) {
             PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
             MEMCPY(buffer + index, (char *) ", ", 2);
             index += 2;
         }
-        index += fpuint64_to_str(buffer, bufferSize, hours, 0);
+        index += fpuint64_to_str(buffer + index, bufferSize - index, hours, 0);
         PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
         MEMCPY(buffer + index, (char *)"h", 1);
         index += 1;
@@ -222,13 +222,13 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
     value %= (uint64_t)(60*60);
 
     uint64_t minutes = value / (uint64_t)(60);
-    if(minutes > 1){
+    if(minutes > 0){
         if(index > 0) {
             PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
             MEMCPY(buffer + index, (char *) ", ", 2);
             index += 2;
         }
-        index += fpuint64_to_str(buffer, bufferSize, minutes, 0);
+        index += fpuint64_to_str(buffer + index, bufferSize - index, minutes, 0);
         PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
         MEMCPY(buffer + index, (char *)"m", 1);
         index += 1;
@@ -236,13 +236,13 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
     value %= (uint64_t)(60);
 
     uint64_t seconds = value;
-    if(seconds > 1){
+    if(seconds > 0){
         if(index > 0) {
             PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
             MEMCPY(buffer + index, (char *) ", ", 2);
             index += 2;
         }
-        index += fpuint64_to_str(buffer, bufferSize, seconds, 0);
+        index += fpuint64_to_str(buffer + index, bufferSize - index, seconds, 0);
         PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
         MEMCPY(buffer + index, (char *)"s", 1);
         index += 1;
@@ -461,9 +461,9 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         if (parser_tx_obj.tx_fields.call.manage_neuron_type == StartDissolving) {
-            snprintf(outVal, outValLen, "Start Dissolve");
+            snprintf(outVal, outValLen, "Start Dissolve     Neuron");
         }else{
-            snprintf(outVal, outValLen, "Stop Dissolve");
+            snprintf(outVal, outValLen, "Stop Dissolve      Neuron");
         }
         return parser_ok;
     }
@@ -592,10 +592,7 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        char buffer[100];
-        MEMZERO(buffer,sizeof(buffer));
-        MEMCPY(buffer, (char*) "Increase Dissolve Delay", 23);
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        snprintf(outVal, outValLen, "Increase Dissolve  Delay");
         return parser_ok;
     }
 
