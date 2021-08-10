@@ -17,6 +17,7 @@
 import Zemu, { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
+import {SIGN_VALUES_P2} from "@zondax/ledger-icp/dist/common";
 
 const sha256 = require('js-sha256')
 
@@ -167,7 +168,7 @@ describe('Standard', function () {
 
       const txBlob = Buffer.from(txBlobStr, 'hex')
 
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, 0)
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -221,7 +222,7 @@ describe('Standard', function () {
         'd9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
       const txBlob = Buffer.from(txBlobStr, 'hex')
 
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, 0)
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -280,7 +281,7 @@ describe('Standard', function () {
       const txBlobStr =
         'd9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550f5390d960c6e52f489155a4309da03da6e696e67726573735f6578706972791b1674c5e29ec9c2106673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e3026b63616e69737465725f69644a000000000000000201016b6d6574686f645f6e616d656773656e645f70626361726758560a0012050a0308e8071a0308890122220a2001010101010101010101010101010101010101010101010101010101010101012a220a2035548ec29e9d85305850e87a2d2642fe7214ff4bb36334070deafc3345c3b1276d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840de5bccbb0a0173c432cd58ea4495d4d1e122d6ce04e31dcf63217f3d3a9b73130dc9bbf3b10e61c8db8bf8800bb4649e27786e5bc9418838c95864be28487a6a'
       const txBlob = Buffer.from(txBlobStr, 'hex')
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, 0)
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -340,7 +341,7 @@ describe('Standard', function () {
         'd9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
       const txBlob = Buffer.from(txBlobStr, 'hex')
 
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, 0)
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -387,7 +388,7 @@ describe('Standard', function () {
           'd9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550732123f52b79b4a4de9b89e0cc3de7586e696e67726573735f6578706972791b1674db8a3bb843006673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e3026b63616e69737465725f69644a000000000000000101016b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f7062636172674c0a02107b12060a040880a3056d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840953620923534b8840d057341bfaf4511dfa73f57372e7946aed83bfde737e44c5c3005b6f19d4342b9e46c78b2c6fa4f67cf203d6a7cab51a84aa486b459536b'
       const txBlob = Buffer.from(txBlobStr, 'hex')
 
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, 0)
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -430,7 +431,7 @@ describe('Standard', function () {
 
       const txBlob = Buffer.from(txBlobStr, 'hex')
 
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, 1)
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.STAKE_TX)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())

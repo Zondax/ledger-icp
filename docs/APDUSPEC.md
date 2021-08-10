@@ -109,7 +109,7 @@ The general structure of commands and responses is as follows:
 The first packet/chunk includes only the derivation path
 
 If the transaction blob is from a Neuron-stake transaction, it expects P2 == 1.
-Otherwise P2 is ignored.
+Otherwise P2 needs to be 0.
 
 All other packets/chunks contain data chunks that are described below
 
@@ -134,9 +134,6 @@ Data is defined as:
 | Field   | Type     | Content         | Expected |
 | ------- | -------- | --------------- | -------- |
 | Message | bytes..  | CBOR data to sign   |      |
-
-
-If the transaction is a stake transaction, we expect 8 bytes Little-Endian for the neuron_creation_memo (uint64_t)
 
 #### Response
 
