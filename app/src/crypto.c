@@ -62,6 +62,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
         return zxerr_invalid_crypto_settings;
     }
 
+    zxerr_t err = zxerr_ok;
     BEGIN_TRY
     {
         TRY {
@@ -73,12 +74,10 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
             cx_ecfp_init_private_key(CX_CURVE_256K1, privateKeyData, 32, &cx_privateKey);
             cx_ecfp_init_public_key(CX_CURVE_256K1, NULL, 0, &cx_publicKey);
             cx_ecfp_generate_pair(CX_CURVE_256K1, &cx_publicKey, &cx_privateKey, 1);
+            memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
         }
-        CATCH_OTHER(e) {
-            CLOSE_TRY;
-            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-            MEMZERO(privateKeyData, 32);
-            return zxerr_ledger_api_error;
+        CATCH_ALL {
+            err = zxerr_ledger_api_error;
         }
         FINALLY {
             MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
@@ -87,8 +86,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     }
     END_TRY;
 
-    memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
-    return zxerr_ok;
+    return err;
 }
 
 typedef struct {
@@ -220,6 +218,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
 
     signature_t *const signature = (signature_t *) (signatureBuffer + SIGN_PREHASH_SIZE);
 
+    zxerr_t err = zxerr_ok;
     BEGIN_TRY
     {
         TRY
@@ -241,12 +240,17 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
                                             signature->der_signature,
                                             sizeof_field(signature_t, der_signature),
                                             &info);
+
+            err_convert_e err_c = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
+            if (err_c != no_error) {
+                MEMZERO(signatureBuffer, signatureMaxlen);
+                err = zxerr_unknown;
+            }else{
+                *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
+            }
         }
-        CATCH_OTHER(e) {
-            CLOSE_TRY;
-            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-            MEMZERO(privateKeyData, 32);
-            return zxerr_ledger_api_error;
+        CATCH_ALL {
+            err = zxerr_ledger_api_error;
         }
         FINALLY {
             MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
@@ -255,14 +259,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     }
     END_TRY;
 
-    err_convert_e err = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
-    if (err != no_error) {
-        // Error while converting so return length 0
-        return zxerr_unknown;
-    }
-    *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
-
-    return zxerr_ok;
+    return err;
 }
 
 
