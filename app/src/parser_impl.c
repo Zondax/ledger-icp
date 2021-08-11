@@ -286,7 +286,7 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
 
 parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
-    if (strcmp(method, "send_pb") == 0) {
+    if (strcmp(method, "send_pb") == 0 || v->tx_fields.call.special_transfer_type == neuron_stake_transaction) {
         v->tx_fields.call.pbtype = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
@@ -359,6 +359,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 }
 
 parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
+    zemu_log_stack("read envelope");
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
@@ -445,6 +446,11 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                 return parser_unexpected_value;
             }
 
+            if (v->tx_fields.call.pbtype == pb_manageneuron){
+                ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0), parser_unexepected_error);
+            }
+
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
             char canister_textual[50];
             uint16_t outLen = sizeof(canister_textual);
@@ -490,14 +496,28 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
         return parser_unexpected_value;
     }
+
 #endif
 
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if(is_stake_tx){
+        uint8_t to_hash[32];
+        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                                          v->tx_fields.call.pb_fields.SendRequest.memo.memo,
+                                                                          to_hash,sizeof(to_hash)), parser_unexepected_error);
+
+        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
+
+        if(memcmp(to_hash, to, 32) != 0){
+            zemu_log_stack("wrong data");
+            return parser_invalid_address;
+        }
+    }
     return parser_ok;
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
-
     switch (v->txtype) {
         case call: {
             switch(v->tx_fields.call.pbtype) {

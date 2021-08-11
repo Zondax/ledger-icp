@@ -23,6 +23,24 @@
 #include <cstring>
 #include <cstdint>
 
+#include <iostream>
+#include <fstream>
+#include <json/json.h>
+
+#define SWAP_BYTES(x, y, tmp) { \
+                   tmp = x;     \
+                   x = y;       \
+                   y = tmp;\
+}
+
+#define SWAP_ENDIAN_U64(x) { \
+    uint8_t tmp = 0;                        \
+    SWAP_BYTES(*x, *(x + 7), tmp); \
+    SWAP_BYTES(*(x+1), *(x + 6), tmp);         \
+    SWAP_BYTES(*(x+2), *(x + 5), tmp);         \
+    SWAP_BYTES(*(x+3), *(x + 4), tmp);         \
+}
+
 zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
     const char *tmp = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
     parseHexString(pubKey, pubKeyLen, tmp);
@@ -138,4 +156,65 @@ namespace {
         EXPECT_STREQ((const char *) outBuffer, "cae");
     }
 
+    TEST(AddressToStringTests, StakeAccount0) {
+        uint8_t inBufferP[100];
+        const char *tmpP = "18D22E6DC4203DA3827AFFE043AA3E30AC1FA4DF1733972EB358B63D02";
+        size_t len = parseHexString(inBufferP, sizeof(inBufferP), tmpP);
+
+        uint8_t address[32];
+
+        uint64_t memo = 30936831863058138;
+
+        uint8_t memodata[8];
+        MEMCPY(memodata, &memo, 8);
+
+        zxerr_t err = crypto_principalToStakeAccount(inBufferP, 29, *(uint64_t *)memodata, address, sizeof(address));
+        EXPECT_EQ(err, zxerr_ok);
+        char outBuffer[300];
+
+        array_to_hexstr(outBuffer, sizeof(outBuffer),address, 32);
+        EXPECT_STREQ((const char *) outBuffer, "73db063b556d745507b937a2bd4458cb983c79bdfe7deef08970ddad35fdf73f");
+    }
+
+    TEST(AddressToStringTests, StakeAccounts) {
+
+        const std::string &jsonFile = "stake_accounts.json";
+
+        Json::CharReaderBuilder builder;
+        Json::Value obj;
+
+        std::string fullPathJsonFile = std::string(TESTVECTORS_DIR) + jsonFile;
+
+        std::ifstream inFile(fullPathJsonFile);
+
+        // Retrieve all test cases
+        JSONCPP_STRING errs;
+        Json::parseFromStream(builder, inFile, &obj, &errs);
+        std::cout << "Number of testcases: " << obj.size() << std::endl;
+
+        for (auto &i : obj) {
+
+            auto outputs = std::vector<std::string>();
+            const auto &principal_str = i["principal"].asString();
+            const auto &account_str = i["account_identifier"].asString();
+            const auto &memo = i["nonce"].asUInt64();
+
+            uint8_t principal[29];
+            parseHexString(principal, sizeof(principal), principal_str.data());
+
+            uint8_t account[32];
+            parseHexString(account, sizeof(account), account_str.data());
+
+            uint8_t memodata[8];
+            MEMCPY(memodata, &memo, 8);
+
+            uint8_t computed_account[32];
+            zxerr_t err = crypto_principalToStakeAccount(principal, 29, *(uint64_t *)memodata, computed_account, sizeof(computed_account));
+            EXPECT_EQ(err, zxerr_ok);
+
+            char buffer[300];
+            array_to_hexstr(buffer, sizeof(buffer), computed_account, sizeof(computed_account));
+            EXPECT_STREQ(account_str.data(), buffer);
+        }
+    }
 }

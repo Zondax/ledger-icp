@@ -31,18 +31,32 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
 }
 #endif
 
-parser_error_t zeroize_parser_tx(parser_tx_t *v) {
-    MEMZERO(v, sizeof(parser_tx_t));
-    return parser_ok;
+#define GEN_DEC_READFIX_UNSIGNED(BITS) parser_error_t _readUInt ## BITS(parser_context_t *ctx, uint ## BITS ##_t *value) \
+{                                                                                           \
+    if (value == NULL)  return parser_no_data;                                              \
+    *value = 0u;                                                                            \
+    for(uint8_t i=0u; i < (BITS##u>>3u); i++, ctx->offset++) {                              \
+        if (ctx->offset >= ctx->bufferLen) return parser_unexpected_buffer_end;             \
+        *value += (uint ## BITS ##_t) *(ctx->buffer + ctx->offset) << (8u*i);               \
+    }                                                                                       \
+    return parser_ok;                                                                       \
 }
+
+GEN_DEC_READFIX_UNSIGNED(8);
+
+GEN_DEC_READFIX_UNSIGNED(16);
+
+GEN_DEC_READFIX_UNSIGNED(32);
+
+GEN_DEC_READFIX_UNSIGNED(64);
+
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
     if (dataLen < 1) {
         return parser_no_data;
     }
-
+    zemu_log_stack("parser parse");
     CHECK_PARSER_ERR(parser_init(ctx, data, dataLen))
-    CHECK_PARSER_ERR(zeroize_parser_tx(&parser_tx_obj));
     return _readEnvelope(ctx, &parser_tx_obj);
 }
 
@@ -167,6 +181,77 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     return parser_ok;
 }
 
+parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize){
+    MEMZERO(buffer,bufferSize);
+    uint16_t index = 0;
+    uint64_t years = value / (uint64_t)(365.25 * 24*60*60);
+    if(years > 1){
+        index += fpuint64_to_str(buffer, bufferSize, years, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"y", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(365.25 *60*60*24);
+
+    uint64_t days = value / (uint64_t)(60*60*24);
+    if(days > 0){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, days, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"d", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(60*60*24);
+
+    uint64_t hours = value / (uint64_t)(60*60);
+    if(hours > 0){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, hours, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"h", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(60*60);
+
+    uint64_t minutes = value / (uint64_t)(60);
+    if(minutes > 0){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, minutes, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"m", 1);
+        index += 1;
+    }
+    value %= (uint64_t)(60);
+
+    uint64_t seconds = value;
+    if(seconds > 0){
+        if(index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end);
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, seconds, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
+        MEMCPY(buffer + index, (char *)"s", 1);
+        index += 1;
+    }
+
+    buffer[index] = 0;
+    return parser_ok;
+}
+
 parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
                                                   uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
@@ -242,56 +327,18 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    if (!app_mode_expert()) {
-        if (displayIdx == 0) {
-            snprintf(outKey, outKeyLen, "Transaction type");
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        if(is_stake_tx){
+            snprintf(outVal, outValLen, "Stake Neuron");
+        }else {
             snprintf(outVal, outValLen, "Send ICP");
         }
+        return parser_ok;
+    }
 
-        if (displayIdx == 1) {
-            snprintf(outKey, outKeyLen, "From account");
-            return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
-                                      outVal, outValLen,
-                                      pageIdx, pageCount);
-        }
-
-        if (displayIdx == 2) {
-            snprintf(outKey, outKeyLen, "To account ");
-
-            char buffer[100];
-            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
-            if (err != zxerr_ok) {
-                return parser_unexepected_error;
-            }
-
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-            return parser_ok;
-        }
-
-        if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 4) {
-            snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 5) {
-            snprintf(outKey, outKeyLen, "Memo");
-            return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
-        }
-    } else {
-        if (displayIdx == 0) {
-            snprintf(outKey, outKeyLen, "Transaction type");
-            snprintf(outVal, outValLen, "Send ICP");
-        }
-
+    if(app_mode_expert()){
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
             return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
@@ -312,47 +359,49 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
             return parser_ok;
         }
-
-        if (displayIdx == 3) {
-            snprintf(outKey, outKeyLen, "From account");
-            return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
-                                      outVal, outValLen,
-                                      pageIdx, pageCount);
-        }
-
-        if (displayIdx == 4) {
-            snprintf(outKey, outKeyLen, "To account ");
-            char buffer[100];
-            zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
-            if (err != zxerr_ok) {
-                return parser_unexepected_error;
-            }
-
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-            return parser_ok;
-        }
-
-        if (displayIdx == 5) {
-            snprintf(outKey, outKeyLen, "Payment (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 6) {
-            snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-            return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
-        }
-
-        if (displayIdx == 7) {
-            snprintf(outKey, outKeyLen, "Memo");
-            return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
-        }
+        displayIdx -= 2;
     }
 
-    return parser_ok;
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "From account");
+        return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
+                                  outVal, outValLen,
+                                  pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "To account ");
+
+        char buffer[100];
+        zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->pb_fields.SendRequest.to.hash, 32);
+        if (err != zxerr_ok) {
+            return parser_unexepected_error;
+        }
+
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Payment (ICP)");
+        return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
+
+    if (displayIdx == 4) {
+        snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
+
+    if (displayIdx == 5) {
+        snprintf(outKey, outKeyLen, "Memo");
+        return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
 }
 
 parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
@@ -364,16 +413,20 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         if (parser_tx_obj.tx_fields.call.manage_neuron_type == StartDissolving) {
-            snprintf(outVal, outValLen, "Start Dissolve");
+            snprintf(outVal, outValLen, "Start Dissolve     Neuron");
         }else{
-            snprintf(outVal, outValLen, "Stop Dissolve");
+            snprintf(outVal, outValLen, "Stop Dissolve      Neuron");
         }
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     return parser_no_data;
@@ -426,11 +479,16 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
+
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Principal");
+        snprintf(outKey, outKeyLen, "Principal ");
 
         PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29, parser_value_out_of_range);
 
@@ -486,20 +544,28 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Incr. Neuron Timer");
+        snprintf(outVal, outValLen, "Increase Dissolve  Delay");
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Increased time");
+        snprintf(outKey, outKeyLen, "Additional Delay");
+        char buffer[100];
+        MEMZERO(buffer,sizeof(buffer));
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
-        return print_u64(value, outVal, outValLen, pageIdx, pageCount);
+        CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
     }
     return parser_no_data;
 }

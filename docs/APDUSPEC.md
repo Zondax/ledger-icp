@@ -103,10 +103,13 @@ The general structure of commands and responses is as follows:
 | P1    | byte (1) | Payload desc           | 0 = init  |
 |       |          |                        | 1 = add   |
 |       |          |                        | 2 = last  |
-| P2    | byte (1) | ----                   | not used  |
+| P2    | byte (1) | ----                   | is_stake_tx  |
 | L     | byte (1) | Bytes in payload       | (depends) |
 
 The first packet/chunk includes only the derivation path
+
+If the transaction blob is from a Neuron-stake transaction, it expects P2 == 1.
+Otherwise P2 needs to be 0.
 
 All other packets/chunks contain data chunks that are described below
 

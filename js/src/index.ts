@@ -170,7 +170,7 @@ export default class InternetComputerApp {
       .then(processGetAddrResponse, processErrorResponse);
   }
 
-  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<ResponseSign> {
+  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number): Promise<ResponseSign> {
     let payloadType = PAYLOAD_TYPE.ADD;
     if (chunkIdx === 1) {
       payloadType = PAYLOAD_TYPE.INIT;
@@ -180,7 +180,7 @@ export default class InternetComputerApp {
     }
 
     return this.transport
-      .send(CLA, INS.SIGN_SECP256K1, payloadType, 0, chunk, [
+      .send(CLA, INS.SIGN_SECP256K1, payloadType, txtype, chunk, [
         LedgerError.NoErrors,
         LedgerError.DataIsInvalid,
         LedgerError.BadKeyHandle,
@@ -224,9 +224,9 @@ export default class InternetComputerApp {
       }, processErrorResponse);
   }
 
-  async sign(path: string, message: Buffer) {
+  async sign(path: string, message: Buffer, txtype: number) {
     return this.signGetChunks(path, message).then(chunks => {
-      return this.signSendChunk(1, chunks.length, chunks[0]).then(async response => {
+      return this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async response => {
         let result = {
           returnCode: response.returnCode,
           errorMessage: response.errorMessage,
@@ -237,7 +237,7 @@ export default class InternetComputerApp {
 
         for (let i = 1; i < chunks.length; i += 1) {
           // eslint-disable-next-line no-await-in-loop
-          result = await this.signSendChunk(1 + i, chunks.length, chunks[i]);
+          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256);
           if (result.returnCode !== LedgerError.NoErrors) {
             break;
           }

@@ -69,7 +69,7 @@ namespace {
 
         EXPECT_EQ(status, true);
 
-        EXPECT_EQ(request.id.id,123);
+        EXPECT_EQ(request.id.id, 123);
         EXPECT_EQ(request.which_command, 2);
         EXPECT_EQ(request.command.configure.which_operation, 1);
         EXPECT_EQ(request.command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds, 86400);
@@ -94,15 +94,16 @@ namespace {
 
         EXPECT_EQ(request.which_command, 2);
 
-        EXPECT_EQ(request.command.configure.which_operation,4);
+        EXPECT_EQ(request.command.configure.which_operation, 4);
 
-        EXPECT_EQ(request.id.id,123);
+        EXPECT_EQ(request.id.id, 123);
 
         EXPECT_EQ(request.command.configure.operation.add_hot_key.has_new_hot_key, true);
-        EXPECT_EQ(request.command.configure.operation.add_hot_key.new_hot_key.serialized_id.size,29);
+        EXPECT_EQ(request.command.configure.operation.add_hot_key.new_hot_key.serialized_id.size, 29);
 
         char buffer[100];
-        array_to_hexstr(buffer, 100, request.command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29);
+        array_to_hexstr(buffer, 100, request.command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes,
+                        29);
         printf("%s\n", buffer);
     }
 
@@ -125,7 +126,7 @@ namespace {
 
         EXPECT_EQ(request.which_command, 2);
 
-        EXPECT_EQ(request.command.configure.which_operation,5);
+        EXPECT_EQ(request.command.configure.which_operation, 5);
     }
 
     TEST(NANOPBTEST, StartDisolve) {
@@ -145,11 +146,11 @@ namespace {
 
         EXPECT_EQ(status, true);
 
-        EXPECT_EQ(request.id.id,123);
+        EXPECT_EQ(request.id.id, 123);
 
         EXPECT_EQ(request.which_command, 2);
 
-        EXPECT_EQ(request.command.configure.which_operation,2);
+        EXPECT_EQ(request.command.configure.which_operation, 2);
     }
 
     TEST(NANOPBTEST, Disburse) {
@@ -171,9 +172,9 @@ namespace {
 
         EXPECT_EQ(request.which_command, 3);
 
-        EXPECT_EQ(request.id.id,123);
+        EXPECT_EQ(request.id.id, 123);
 
-        EXPECT_EQ(request.command.disburse.amount.e8s,4000000);
+        EXPECT_EQ(request.command.disburse.amount.e8s, 4000000);
 
         EXPECT_EQ(request.command.disburse.to_account.hash.size, 32);
     }
@@ -400,4 +401,21 @@ namespace {
         err = parser_validate(&ctx);
         EXPECT_EQ(err, parser_ok);
     }
+
+    TEST(CBORParserTest, StakeTx) {
+        parser_tx_obj.tx_fields.call.special_transfer_type = neuron_stake_transaction;
+        uint8_t inBuffer[1000];
+
+        const char *tmp = "d9d9f7a167636f6e74656e74a663617267583e0a0a08f2d4a0eca697869f0812070a050880c2d72f1a0308904e2a220a20a8a1abecdb66f57eb6eba44c3b5f11a6c433fe932680a9519b064b80ca8794e16b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b16985a582755f1806b6d6574686f645f6e616d656773656e645f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        parser_context_t ctx;
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        EXPECT_EQ(err, parser_ok);
+
+        err = parser_validate(&ctx);
+        EXPECT_EQ(err, parser_ok);
+        parser_tx_obj.tx_fields.call.special_transfer_type = invalid;
+    }
+
 }
