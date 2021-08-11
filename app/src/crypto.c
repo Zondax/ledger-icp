@@ -20,20 +20,6 @@
 #include "base32.h"
 #include "parser_impl.h"
 
-#define SWAP_BYTES(x, y, tmp) { \
-                   (tmp) = (x);     \
-                   (x) = (y);       \
-                   (y) = (tmp);\
-}
-
-#define SWAP_ENDIAN_U64(x) { \
-    uint8_t tmp = 0;                        \
-    SWAP_BYTES(*(x), *((x) + 7), tmp); \
-    SWAP_BYTES(*((x)+1), *((x) + 6), tmp);         \
-    SWAP_BYTES(*((x)+2), *((x) + 5), tmp);         \
-    SWAP_BYTES(*((x)+3), *((x) + 4), tmp);         \
-}
-
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
 bool isTestnet() {
@@ -319,6 +305,38 @@ to.hash = account_identifier(
              neuron_sub_account)
 
  */
+typedef struct {
+    uint8_t prefix_byte;
+    uint8_t prefix_string[STAKEACCOUNT_PREFIX_SIZE];
+    uint8_t principal[DFINITY_PRINCIPAL_LEN];
+    uint64_t memo_be;
+} __attribute__((packed)) stake_account_pre_hash;
+
+
+typedef struct {
+    uint8_t prefix_byte;
+    uint8_t prefix_string[SUBACCOUNT_PREFIX_SIZE-1];
+    uint8_t principal[STAKEACCOUNT_PRINCIPAL_SIZE];
+    uint8_t pre_hash[32];
+} __attribute__((packed)) stake_account_hash;
+
+typedef struct {
+    union {
+        stake_account_pre_hash pre_hash;
+        stake_account_hash stake_hash;
+    } hash_fields;
+} stake_account;
+
+
+uint64_t change_endianness(uint64_t value){
+    uint64_t result = 0;
+    for(uint8_t i = 0; i < 7; i++){
+        result += ((value >> i * 8u) & 0xFFu);
+        result <<= 8u;
+    }
+    result += ((value >> 56u) & 0xFFu);
+    return result;
+}
 
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
                                        const uint64_t neuron_creation_memo,
@@ -327,26 +345,26 @@ zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t princi
         maxoutLen < DFINITY_ADDR_LEN) {
         return zxerr_invalid_crypto_settings;
     }
-    uint8_t sub_hashinput[1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + 8];
-    MEMZERO(sub_hashinput, sizeof(sub_hashinput));
-    sub_hashinput[0] = 0x0C;
-    MEMCPY(sub_hashinput + 1, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
-    MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
-    MEMCPY(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, (uint8_t*)&neuron_creation_memo, 8);
-    SWAP_ENDIAN_U64(sub_hashinput + 1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN)
-    uint8_t digest[32];
-    MEMZERO(digest, 32);
-    cx_hash_sha256(sub_hashinput, sizeof(sub_hashinput), digest, 32);
+    stake_account account;
+    MEMZERO(&account, sizeof(stake_account));
 
-    uint8_t id_hashinput[SUBACCOUNT_PREFIX_SIZE + STAKEACCOUNT_PRINCIPAL_SIZE + 32];
-    id_hashinput[0] = 0x0A;
-    MEMCPY(&id_hashinput[1], (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE - 1);
+    stake_account_pre_hash *pre_hash = &account.hash_fields.pre_hash;
+    pre_hash->prefix_byte = 0x0C;
+    MEMCPY(pre_hash->prefix_string, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
+    MEMCPY(pre_hash->principal, principal, DFINITY_PRINCIPAL_LEN);
+    pre_hash->memo_be = change_endianness(neuron_creation_memo);
+
+    stake_account_hash *final_hash = &account.hash_fields.stake_hash;
+
+    cx_hash_sha256((uint8_t*)pre_hash, sizeof(stake_account_pre_hash), final_hash->pre_hash, 32);
+
+    final_hash->prefix_byte = 0x0A;
+    MEMCPY(final_hash->prefix_string, (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE-1);
     uint8_t stake_principal[STAKEACCOUNT_PRINCIPAL_SIZE] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01};
-    MEMCPY(id_hashinput+SUBACCOUNT_PREFIX_SIZE, stake_principal, STAKEACCOUNT_PRINCIPAL_SIZE);
-    MEMCPY(id_hashinput + SUBACCOUNT_PREFIX_SIZE + STAKEACCOUNT_PRINCIPAL_SIZE, digest, 32);
+    MEMCPY(final_hash->principal,stake_principal,STAKEACCOUNT_PRINCIPAL_SIZE);
 
     CHECK_ZXERR(
-            hash_sha224(id_hashinput, sizeof(id_hashinput), address + 4,
+            hash_sha224((uint8_t*)final_hash, sizeof(stake_account_hash), address + 4,
                         (maxoutLen - 4)));
 
     uint32_t crc = 0;
