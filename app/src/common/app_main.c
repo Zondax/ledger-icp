@@ -30,6 +30,8 @@
 #include "zxmacros.h"
 #include "app_mode.h"
 
+#include "parser_impl.h"
+
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static bool tx_initialized = false;
@@ -118,13 +120,15 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
     UNUSED(tx);
     const uint8_t payloadType = G_io_apdu_buffer[OFFSET_PAYLOAD_TYPE];
 
-    if (G_io_apdu_buffer[OFFSET_P2] != 0) {
-        THROW(APDU_CODE_INVALIDP1P2);
-    }
-
     if (rx < OFFSET_DATA) {
         THROW(APDU_CODE_WRONG_LENGTH);
     }
+
+    if(G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1){
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
 
     uint32_t added;
     switch (payloadType) {
@@ -132,9 +136,16 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             tx_initialize();
             tx_reset();
             extractHDPath(rx, OFFSET_DATA);
+            MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
+            if(G_io_apdu_buffer[OFFSET_P2] == 1){
+                parser_tx_obj.tx_fields.call.special_transfer_type = neuron_stake_transaction;
+            }
             tx_initialized = true;
             return false;
         case 1:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+                THROW(APDU_CODE_DATA_INVALID);
+            }
             if (!tx_initialized) {
                 THROW(APDU_CODE_TX_NOT_INITIALIZED);
             }
@@ -145,6 +156,9 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             }
             return false;
         case 2:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+                THROW(APDU_CODE_DATA_INVALID);
+            }
             if (!tx_initialized) {
                 THROW(APDU_CODE_TX_NOT_INITIALIZED);
             }
