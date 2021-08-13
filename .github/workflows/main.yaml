@@ -1,4 +1,4 @@
-name: "Test and build"
+name: "Test/Build"
 on: [push]
 
 jobs:
