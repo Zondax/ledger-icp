@@ -29,6 +29,8 @@ jobs:
       - name: Get latest release version number
         id: get_version
         uses: battila7/get-version-action@v2
+      - name: Show version
+        run: echo ${{ steps.get_version.outputs.version }}
       - name: Clean latest release version number
         id: get_version_cleaned
         uses: bhowell2/github-substring-action
