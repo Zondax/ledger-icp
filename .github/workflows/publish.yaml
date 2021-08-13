@@ -33,7 +33,7 @@ jobs:
         run: echo ${{ steps.get_version.outputs.version }}
       - name: Clean latest release version number
         id: get_version_cleaned
-        uses: bhowell2/github-substring-action
+        uses: bhowell2/github-substring-action@v1
         with:
           output_name: version
           value: ${{ steps.get_version.outputs.version }}
