@@ -370,6 +370,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 2) {
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_to, parser_unexpected_number_items)
         snprintf(outKey, outKeyLen, "To account ");
 
         char buffer[100];
@@ -384,6 +385,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Payment (ICP)");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.payment.has_receiver_gets, parser_unexpected_number_items)
         return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
                          outVal, outValLen,
                          pageIdx, pageCount);
@@ -391,6 +393,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (displayIdx == 4) {
         snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_max_fee, parser_unexpected_number_items)
         return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
                          outVal, outValLen,
                          pageIdx, pageCount);
@@ -398,6 +401,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (displayIdx == 5) {
         snprintf(outKey, outKeyLen, "Memo");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_memo, parser_unexpected_number_items)
         return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
     }
 
