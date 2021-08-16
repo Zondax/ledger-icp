@@ -131,7 +131,7 @@ namespace {
 
     TEST(NANOPBTEST, StartDisolve) {
         uint8_t inBuffer[1000];
-        const char *tmp = "0A02107B12021200";
+        const char *tmp = "620A10A7D18AAAD3A2A2C6131A2B0A0508959AEF3A12220A2068D518E2FD2BE6566E62C36611B9794DFCBC04EB4227EEFB73AB3C7A2D0AE577";
         size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
         bool status;
 
@@ -151,6 +151,32 @@ namespace {
         EXPECT_EQ(request.which_command, 2);
 
         EXPECT_EQ(request.command.configure.which_operation, 2);
+    }
+
+    TEST(NANOPBTEST, Spawn) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "620310D20922210A1F0A1D1AE9690FA70DA5046B84210162105D0F6E510B7211FA7B72AEED333702";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.command.spawn.new_controller.serialized_id.size, 29);
+
+        char buffer[300];
+
+        array_to_hexstr(buffer, 300, request.command.spawn.new_controller.serialized_id.bytes,29);
+        printf("%s", buffer);
+
     }
 
     TEST(NANOPBTEST, Disburse) {
@@ -391,7 +417,7 @@ namespace {
     TEST(CBORParserTest, IncreaseNeuronTimer) {
         uint8_t inBuffer[1000];
 
-        const char *tmp = "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550732123f52b79b4a4de9b89e0cc3de7586e696e67726573735f6578706972791b1674db8a3bb843006673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad026b63616e69737465725f69644a000000000000000101016b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f7062636172674c0a02107b12060a040880a3056d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f7369675840953620923534b8840d057341bfaf4511dfa73f57372e7946aed83bfde737e44c5c3005b6f19d4342b9e46c78b2c6fa4f67cf203d6a7cab51a84aa486b459536b";
+        const char *tmp = "d9d9f7a167636f6e74656e74a6636172675839620a10a7d18aaad3a2a2c6131a2b0a0508959aef3a12220a2068d518e2fd2be6566e62c36611b9794dfcbc04eb4227eefb73ab3c7a2d0ae5776b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc8985c330d006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02";
         auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
 
         parser_context_t ctx;
