@@ -559,6 +559,10 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Additional Delay");
+        if(fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds == 0){
+            snprintf(outVal, outValLen, "0s");
+            return parser_ok;
+        }
         char buffer[100];
         MEMZERO(buffer,sizeof(buffer));
         uint64_t value = 0;
