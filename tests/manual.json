@@ -9042,6 +9042,24 @@
     "2 | Disburse To  : Self",
     "3 | Amount (ICP) : 9.99999999"
   ]
+},{
+  "name": "Disburse",
+  "index": 1015,
+  "blob" : "d9d9f7a167636f6e74656e74a6636172675834620a10a7d18aaad3a2a2c6131a260a0012220a2068d518e2fd2be6566e62c36611b9794dfcbc04eb4227eefb73ab3c7a2d0ae5776b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bcadbc87007806b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+  "output": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 0.00"
+  ],
+  "output_expert": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 0.00"
+  ]
 }
 
 ]
