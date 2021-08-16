@@ -131,7 +131,7 @@ namespace {
 
     TEST(NANOPBTEST, StartDisolve) {
         uint8_t inBuffer[1000];
-        const char *tmp = "620A10A7D18AAAD3A2A2C6131A2B0A0508959AEF3A12220A2068D518E2FD2BE6566E62C36611B9794DFCBC04EB4227EEFB73AB3C7A2D0AE577";
+        const char *tmp = "0A02107B12021200";
         size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
         bool status;
 
