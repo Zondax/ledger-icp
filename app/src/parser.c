@@ -440,18 +440,27 @@ parser_error_t parser_getItemSpawn(uint8_t displayIdx,
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Spawn");
+        snprintf(outVal, outValLen, "Spawn Neuron");
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "New Controller");
+        if(!fields->command.spawn.has_new_controller){
+            snprintf(outKey, outKeyLen, "Controller");
 
+            snprintf(outVal, outValLen, "Self");
+            return parser_ok;
+        }
+        snprintf(outKey, outKeyLen, "New Controller ");
         PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size == 29, parser_value_out_of_range);
 
         return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
@@ -506,7 +515,7 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Disburse");
+        snprintf(outVal, outValLen, "Disburse Neuron");
         return parser_ok;
     }
 
@@ -515,8 +524,13 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
         return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
     }
 
+
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Account");
+        snprintf(outKey, outKeyLen, "Disburse To");
+        if(!fields->command.disburse.has_to_account){
+            snprintf(outVal, outValLen, "Self");
+            return parser_ok;
+        }
         char buffer[80];
         zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *)fields->command.disburse.to_account.hash.bytes, 32);
         if (err != zxerr_ok) {
@@ -529,7 +543,11 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Amount (ICP)");
-        return print_u64(fields->command.disburse.amount.e8s, outVal, outValLen, pageIdx, pageCount);
+        if(!fields->command.disburse.has_amount){
+            snprintf(outVal, outValLen, "0");
+            return parser_ok;
+        }
+        return print_ICP(fields->command.disburse.amount.e8s, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
