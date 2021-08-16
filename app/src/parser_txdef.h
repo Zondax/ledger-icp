@@ -49,6 +49,7 @@ typedef enum {
     pb_unknown = 0x00,          //default is not accepted
     pb_sendrequest = 0x01,
     pb_manageneuron = 0x02,
+    pb_listneurons = 0x03,
 } pbtype_e;
 
 typedef enum {
@@ -133,6 +134,7 @@ typedef struct {
     union {
         SendRequest SendRequest;
         ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
+        ListNeurons ListNeurons;
     } pb_fields;
 } call_t;
 

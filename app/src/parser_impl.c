@@ -253,6 +253,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
 
 GEN_PARSER_PB(SendRequest)
 GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
+GEN_PARSER_PB(ListNeurons)
 
 parser_error_t getManageNeuronType(parser_tx_t *v){
     pb_size_t command = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
@@ -296,6 +297,12 @@ parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         CHECK_PARSER_ERR(_parser_pb_ic_nns_governance_pb_v1_ManageNeuron(v, buffer, bufferLen))
         return getManageNeuronType(v);
     }
+
+    if(strcmp(method, "list_neurons_pb") == 0) {
+        v->tx_fields.call.pbtype = pb_listneurons;
+        return _parser_pb_ListNeurons(v, buffer, bufferLen);
+    }
+
 
     return parser_unexpected_type;
 }
@@ -424,6 +431,7 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
             CHECK_METHOD_WITH_CANISTER("ryjl3tyaaaaaaaaaaabacai")
         }
 
+        case pb_listneurons :
         case pb_manageneuron : {
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
@@ -526,6 +534,10 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                         return 6;
                     }
                     return 8;
+                }
+
+                case pb_listneurons : {
+                    return 1;
                 }
 
                 case pb_manageneuron : {

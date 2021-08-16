@@ -595,6 +595,18 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
     return parser_no_data;
 }
 
+parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
+                                         char *outKey, uint16_t outKeyLen,
+                                         char *outVal, uint16_t outValLen) {
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "List Own Neurons");
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
                                            uint8_t displayIdx,
                                            char *outKey, uint16_t outKeyLen,
@@ -649,6 +661,12 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                                                       outKey, outKeyLen,
                                                       outVal, outValLen,
                                                       pageIdx, pageCount);
+                }
+
+                case pb_listneurons : {
+                    return parser_getItemListNeurons(displayIdx,
+                                                      outKey, outKeyLen,
+                                                      outVal, outValLen);
                 }
 
                 default : {
