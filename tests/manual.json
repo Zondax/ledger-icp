@@ -8897,21 +8897,21 @@
   },
   {
     "blob": "d9d9f7a367636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e636550f32e1cc0ef26e539649d93d512b5ce1a6e696e67726573735f6578706972791b1674dbc956a6fb406673656e646572581d7bdd7f75eea6fcf58001e0dfb7d718b9e8f2c3b01e1ccec9ab305aad026b63616e69737465725f69644a000000000000000101016b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626361726758310a02107b1a2b0a05088092f40112220a2035548ec29e9d85305850e87a2d2642fe7214ff4bb36334070deafc3345c3b1276d73656e6465725f7075626b657958583056301006072a8648ce3d020106052b8104000a03420004e1142e1fbc940344d9161709196bb8bd151f94379c48dd507ab99a0776109128b94b5303cf2b2d28e25a779da175b62f8a975599b20c63d5193202640576ec5e6a73656e6465725f73696758400caa078adacd97043a8ad58eabd6f52f116baeb51037c525587462ca333f6c89c2cb3fb1a501a9fa5151e657ccd983eae827a420c263861e1ae602a8e3eee3f5",
-    "index": 1006,
+    "index": 10055,
     "name": "Disburse",
     "output": [
-      "0 | Transaction type : Disburse",
+      "0 | Transaction type : Disburse Neuron",
       "1 | Neuron ID : 123",
-      "2 | Account[1/2] : 35548ec2 9e9d8530 5850e87a 2d2642fe",
-      "2 | Account[2/2] : 7214ff4b b3633407 0deafc33 45c3b127",
-      "3 | Amount (ICP) : 4000000"
+      "2 | Disburse To [1/2] : 35548ec2 9e9d8530 5850e87a 2d2642fe",
+      "2 | Disburse To [2/2] : 7214ff4b b3633407 0deafc33 45c3b127",
+      "3 | Amount (ICP) : 0.04"
     ],
     "output_expert": [
-      "0 | Transaction type : Disburse",
+      "0 | Transaction type : Disburse Neuron",
       "1 | Neuron ID : 123",
-      "2 | Account[1/2] : 35548ec2 9e9d8530 5850e87a 2d2642fe",
-      "2 | Account[2/2] : 7214ff4b b3633407 0deafc33 45c3b127",
-      "3 | Amount (ICP) : 4000000"
+      "2 | Disburse To [1/2] : 35548ec2 9e9d8530 5850e87a 2d2642fe",
+      "2 | Disburse To [2/2] : 7214ff4b b3633407 0deafc33 45c3b127",
+      "3 | Amount (ICP) : 0.04"
     ],
     "request_id": "88a4621b36ff02533e19b5b50a2076bbab2ae52fa99d8f4dd3b6914653d405f0",
     "valid": true
@@ -8922,19 +8922,155 @@
     "index": 1006,
     "name": "Spawn",
     "output": [
-      "0 | Transaction type : Spawn",
+      "0 | Transaction type : Spawn Neuron",
       "1 | Neuron ID : 123",
-      "2 | New Controller[1/2] : s3n4b-khvi2-whpow fkf2u-wsg3w-h6m7i",
-      "2 | New Controller[2/2] : mam4y-dbnqc-aaaaa aaaaa-aaa"
+      "2 | Controller [1/2] : vcruu-d2fof-5dudt i7txp-krvmo-65mku",
+      "2 | Controller [2/2] : lvjne-nxmp4-z6qya zzqgc-3ae"
     ],
     "output_expert": [
-      "0 | Transaction type : Spawn",
+      "0 | Transaction type : Spawn Neuron",
       "1 | Neuron ID : 123",
-      "2 | New Controller[1/2] : s3n4b-khvi2-whpow fkf2u-wsg3w-h6m7i",
-      "2 | New Controller[2/2] : mam4y-dbnqc-aaaaa aaaaa-aaa"
+      "2 | Controller [1/2] : vcruu-d2fof-5dudt i7txp-krvmo-65mku",
+      "2 | Controller [2/2] : lvjne-nxmp4-z6qya zzqgc-3ae"
     ],
     "request_id": "88a4621b36ff02533e19b5b50a2076bbab2ae52fa99d8f4dd3b6914653d405f0",
     "valid": true
-  }
+  },
+  {
+    "name": "Spawn",
+    "valid": true,
+    "index": 1007,
+    "blob": "d9d9f7a167636f6e74656e74a6636172675828620310d20922210a1f0a1d1ae9690fa70da5046b84210162105d0f6e510b7211fa7b72aeed3337026b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc12386d9c0c06b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+    "output": [
+      "0 | Transaction type : Spawn Neuron",
+      "1 | Neuron ID : 1234",
+      "2 | Controller [1/2] : l62rd-4y25f-uq7jy nuucg-xbbba-frbax",
+      "2 | Controller [2/2] : ipnzi-qw4qr-7j5xf lxngm-3qe"
+    ],
+    "output_expert": [
+      "0 | Transaction type : Spawn Neuron",
+      "1 | Neuron ID : 1234",
+      "2 | Controller [1/2] : l62rd-4y25f-uq7jy nuucg-xbbba-frbax",
+      "2 | Controller [2/2] : ipnzi-qw4qr-7j5xf lxngm-3qe"
+    ]
+  },
+  {
+    "name": "Spawn",
+    "valid": true,
+    "index": 1008,
+    "blob": "d9d9f7a167636f6e74656e74a66361726758280a0310d20922210a1f0a1d1ae9690fa70da5046b84210162105d0f6e510b7211fa7b72aeed3337026b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc142544e82c06b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+    "output": [
+      "0 | Transaction type : Spawn Neuron",
+      "1 | Neuron ID : 1234",
+      "2 | Controller [1/2] : l62rd-4y25f-uq7jy nuucg-xbbba-frbax",
+      "2 | Controller [2/2] : ipnzi-qw4qr-7j5xf lxngm-3qe"
+    ],
+    "output_expert": [
+      "0 | Transaction type : Spawn Neuron",
+      "1 | Neuron ID : 1234",
+      "2 | Controller [1/2] : l62rd-4y25f-uq7jy nuucg-xbbba-frbax",
+      "2 | Controller [2/2] : ipnzi-qw4qr-7j5xf lxngm-3qe"
+    ]
+  },
+  {
+    "name": "Spawn",
+    "valid": true,
+    "index": 1009,
+    "blob": "d9d9f7a167636f6e74656e74a6636172674f620b10f5c88584a9f98ded910122006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc108342f99006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+    "output": [
+      "0 | Transaction type : Spawn Neuron",
+      "1 | Neuron ID : 10509774023569794165",
+      "2 | Controller  : Self"
+    ],
+    "output_expert": [
+      "0 | Transaction type : Spawn Neuron",
+      "1 | Neuron ID : 10509774023569794165",
+      "2 | Controller  : Self"
+    ]
+},
+{
+  "name": "Disburse",
+  "index": 1010,
+  "blob": "d9d9f7a167636f6e74656e74a6636172675839620a10a7d18aaad3a2a2c6131a2b0a0508959aef3a12220a2068d518e2fd2be6566e62c36611b9794dfcbc04eb4227eefb73ab3c7a2d0ae5776b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc8985c330d006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+  "output": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 1.23456789"
+  ],
+  "output_expert": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 1.23456789"
+  ]
+},
+{
+  "name": "Disburse",
+  "index": 1011,
+  "blob": "d9d9f7a167636f6e74656e74a66361726758390a0a10a7d18aaad3a2a2c6131a2b0a0508959aef3a12220a2068d518e2fd2be6566e62c36611b9794dfcbc04eb4227eefb73ab3c7a2d0ae5776b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc8b46c2b1ec06b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+  "output": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 1.23456789"
+  ],
+  "output_expert": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 1.23456789"
+  ]
+},
+{
+  "name": "Disburse",
+  "index": 1014,
+  "blob": "d9d9f7a167636f6e74656e74a663617267560a0a10a7d18aaad3a2a2c6131a080a0608ff93ebdc036b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bbfe20d3a39806b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+  "output": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To  : Self",
+    "3 | Amount (ICP) : 9.99999999"
+  ],
+  "output_expert": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To  : Self",
+    "3 | Amount (ICP) : 9.99999999"
+  ]
+},{
+  "name": "Disburse",
+  "index": 1015,
+  "blob" : "d9d9f7a167636f6e74656e74a6636172675834620a10a7d18aaad3a2a2c6131a260a0012220a2068d518e2fd2be6566e62c36611b9794dfcbc04eb4227eefb73ab3c7a2d0ae5776b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bcadbc87007806b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+  "output": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 0.00"
+  ],
+  "output_expert": [
+    "0 | Transaction type : Disburse Neuron",
+    "1 | Neuron ID : 1408651507641002151",
+    "2 | Disburse To [1/2] : 68d518e2 fd2be656 6e62c366 11b9794d",
+    "2 | Disburse To [2/2] : fcbc04eb 4227eefb 73ab3c7a 2d0ae577",
+    "3 | Amount (ICP) : 0.00"
+  ]
+},
+{
+  "name": "List Neurons",
+  "index" : 1016,
+  "blob": "d9d9f7a167636f6e74656e74a6636172674210016b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc0d5904b7e806b6d6574686f645f6e616d656f6c6973745f6e6575726f6e735f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
+  "output": [
+    "0 | Transaction type : List Own Neurons"
+  ],
+  "output_expert": [
+    "0 | Transaction type : List Own Neurons"
+  ]
+}
 
 ]

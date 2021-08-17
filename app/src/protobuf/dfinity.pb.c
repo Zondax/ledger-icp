@@ -33,4 +33,7 @@ PB_BIND(SendRequest, SendRequest, AUTO)
 PB_BIND(ManageNeuronPb, ManageNeuronPb, AUTO)
 
 
+PB_BIND(ListNeurons, ListNeurons, AUTO)
+
+
 

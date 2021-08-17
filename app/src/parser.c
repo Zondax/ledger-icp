@@ -370,6 +370,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 2) {
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_to, parser_unexpected_number_items)
         snprintf(outKey, outKeyLen, "To account ");
 
         char buffer[100];
@@ -384,6 +385,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Payment (ICP)");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.payment.has_receiver_gets, parser_unexpected_number_items)
         return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
                          outVal, outValLen,
                          pageIdx, pageCount);
@@ -391,6 +393,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (displayIdx == 4) {
         snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_max_fee, parser_unexpected_number_items)
         return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
                          outVal, outValLen,
                          pageIdx, pageCount);
@@ -398,6 +401,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
 
     if (displayIdx == 5) {
         snprintf(outKey, outKeyLen, "Memo");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_memo, parser_unexpected_number_items)
         return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
     }
 
@@ -440,21 +444,30 @@ parser_error_t parser_getItemSpawn(uint8_t displayIdx,
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Spawn");
+        snprintf(outVal, outValLen, "Spawn Neuron");
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "New Controller");
+        snprintf(outKey, outKeyLen, "Controller ");
+        if(!fields->command.spawn.has_new_controller){
+
+            snprintf(outVal, outValLen, "Self");
+            return parser_ok;
+        }
 
         PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size == 29, parser_value_out_of_range);
 
-        return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
+        return print_textual(fields->command.spawn.new_controller.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -489,10 +502,19 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Principal ");
-
-        PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29, parser_value_out_of_range);
-
-        return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
+        if (parser_tx_obj.tx_fields.call.manage_neuron_type == AddHotKey) {
+            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.has_new_hot_key, parser_unexpected_number_items);
+            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29,
+                                   parser_value_out_of_range);
+            return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
+                                 outVal, outValLen, pageIdx, pageCount);
+        }else{
+            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.has_hot_key_to_remove, parser_unexpected_number_items);
+            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size == 29,
+                                   parser_value_out_of_range);
+            return print_textual(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.bytes, 29,
+                                 outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     return parser_no_data;
@@ -506,17 +528,25 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Disburse");
+        snprintf(outVal, outValLen, "Disburse Neuron");
         return parser_ok;
     }
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Account");
+        snprintf(outKey, outKeyLen, "Disburse To ");
+        if(!fields->command.disburse.has_to_account){
+            snprintf(outVal, outValLen, "Self");
+            return parser_ok;
+        }
         char buffer[80];
         zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *)fields->command.disburse.to_account.hash.bytes, 32);
         if (err != zxerr_ok) {
@@ -529,7 +559,11 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Amount (ICP)");
-        return print_u64(fields->command.disburse.amount.e8s, outVal, outValLen, pageIdx, pageCount);
+        if(!fields->command.disburse.has_amount){
+            snprintf(outVal, outValLen, "All");
+            return parser_ok;
+        }
+        return print_ICP(fields->command.disburse.amount.e8s, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -559,12 +593,28 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Additional Delay");
+        if(fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds == 0){
+            snprintf(outVal, outValLen, "0s");
+            return parser_ok;
+        }
         char buffer[100];
         MEMZERO(buffer,sizeof(buffer));
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds,4);
         CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
+parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
+                                         char *outKey, uint16_t outKeyLen,
+                                         char *outVal, uint16_t outValLen) {
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "List Own Neurons");
         return parser_ok;
     }
     return parser_no_data;
@@ -624,6 +674,12 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                                                       outKey, outKeyLen,
                                                       outVal, outValLen,
                                                       pageIdx, pageCount);
+                }
+
+                case pb_listneurons : {
+                    return parser_getItemListNeurons(displayIdx,
+                                                      outKey, outKeyLen,
+                                                      outVal, outValLen);
                 }
 
                 default : {

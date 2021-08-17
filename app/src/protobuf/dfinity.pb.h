@@ -24,6 +24,11 @@ typedef struct _ICPTs {
     uint64_t e8s; 
 } ICPTs;
 
+typedef struct _ListNeurons { 
+    pb_callback_t neuron_ids; 
+    bool caller_neuron_ids; 
+} ListNeurons;
+
 typedef struct _ManageNeuronPb { 
     bool has_manage_neuron;
     ic_nns_governance_pb_v1_ManageNeuron manage_neuron; 
@@ -78,6 +83,7 @@ extern "C" {
 #define BlockHeight_init_default                 {0}
 #define SendRequest_init_default                 {false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default, false, TimeStamp_init_default}
 #define ManageNeuronPb_init_default              {false, ic_nns_governance_pb_v1_ManageNeuron_init_default}
+#define ListNeurons_init_default                 {{{NULL}, NULL}, 0}
 #define TimeStamp_init_zero                      {0}
 #define Memo_init_zero                           {0}
 #define ICPTs_init_zero                          {0}
@@ -87,11 +93,14 @@ extern "C" {
 #define BlockHeight_init_zero                    {0}
 #define SendRequest_init_zero                    {false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero, false, TimeStamp_init_zero}
 #define ManageNeuronPb_init_zero                 {false, ic_nns_governance_pb_v1_ManageNeuron_init_zero}
+#define ListNeurons_init_zero                    {{{NULL}, NULL}, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define AccountIdentifier_hash_tag               1
 #define BlockHeight_height_tag                   1
 #define ICPTs_e8s_tag                            1
+#define ListNeurons_neuron_ids_tag               1
+#define ListNeurons_caller_neuron_ids_tag        2
 #define ManageNeuronPb_manage_neuron_tag         1
 #define Memo_memo_tag                            1
 #define Subaccount_sub_account_tag               1
@@ -166,6 +175,12 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  manage_neuron,     1)
 #define ManageNeuronPb_DEFAULT NULL
 #define ManageNeuronPb_manage_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron
 
+#define ListNeurons_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, FIXED64,  neuron_ids,        1) \
+X(a, STATIC,   SINGULAR, BOOL,     caller_neuron_ids,   2)
+#define ListNeurons_CALLBACK pb_default_field_callback
+#define ListNeurons_DEFAULT NULL
+
 extern const pb_msgdesc_t TimeStamp_msg;
 extern const pb_msgdesc_t Memo_msg;
 extern const pb_msgdesc_t ICPTs_msg;
@@ -175,6 +190,7 @@ extern const pb_msgdesc_t AccountIdentifier_msg;
 extern const pb_msgdesc_t BlockHeight_msg;
 extern const pb_msgdesc_t SendRequest_msg;
 extern const pb_msgdesc_t ManageNeuronPb_msg;
+extern const pb_msgdesc_t ListNeurons_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define TimeStamp_fields &TimeStamp_msg
@@ -186,8 +202,10 @@ extern const pb_msgdesc_t ManageNeuronPb_msg;
 #define BlockHeight_fields &BlockHeight_msg
 #define SendRequest_fields &SendRequest_msg
 #define ManageNeuronPb_fields &ManageNeuronPb_msg
+#define ListNeurons_fields &ListNeurons_msg
 
 /* Maximum encoded size of messages (where known) */
+/* ListNeurons_size depends on runtime parameters */
 #define AccountIdentifier_size                   34
 #define BlockHeight_size                         11
 #define ICPTs_size                               11

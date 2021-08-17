@@ -43,3 +43,8 @@ message SendRequest {
 message ManageNeuronPb {
     ic_nns_governance.pb.v1.ManageNeuron manage_neuron = 1;
 }
+
+message ListNeurons {
+    repeated fixed64 neuron_ids = 1;
+    bool caller_neuron_ids = 2;
+}
