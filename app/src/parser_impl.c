@@ -502,6 +502,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
 
     if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+        zemu_log_stack("wrong prinpipal");
         return parser_unexpected_value;
     }
 
