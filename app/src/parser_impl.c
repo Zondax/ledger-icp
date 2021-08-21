@@ -237,19 +237,16 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
 }
 
 #define GEN_PARSER_PB(OBJ) parser_error_t _parser_pb_ ## OBJ(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) \
-{                                                                                            \
-    bool status;                                                                             \
+{                                                                                           \
     OBJ request = OBJ ##_init_zero;                                                         \
-    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);                \
-    CHECK_APP_CANARY()                                                                        \
-    status = pb_decode(&stream, OBJ ##_fields, &request);                                   \
-    if (!status) {                                                                          \
-        return parser_unexepected_error;                                                      \
-    }                                                                                         \
-    MEMCPY(&v->tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));         \
-    CHECK_APP_CANARY()                                                                                         \
-    return parser_ok;                                                                        \
-}                                                                                               \
+    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);                        \
+    CHECK_APP_CANARY()                                                                      \
+    const bool status = pb_decode(&stream, OBJ ##_fields, &request);                        \
+    if (!status) { return parser_unexepected_error; }                                       \
+    MEMCPY(&v->tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));                        \
+    CHECK_APP_CANARY()                                                                      \
+    return parser_ok;                                                                       \
+}                                                                                           \
 
 GEN_PARSER_PB(SendRequest)
 GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)

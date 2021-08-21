@@ -175,44 +175,61 @@ bool pb_field_iter_next(pb_field_iter_t *iter) {
 }
 
 bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag) {
+    ZEMU_TRACE()
+
     if (iter->tag == tag) {
+        ZEMU_TRACE()
         return true; /* Nothing to do, correct field already. */
-    } else if (tag > iter->descriptor->largest_tag) {
-        return false;
-    } else {
-        pb_size_t start = iter->index;
-        uint32_t fieldinfo;
-
-        if (tag < iter->tag) {
-            /* Fields are in tag number order, so we know that tag is between
-             * 0 and our start position. Setting index to end forces
-             * advance_iterator() call below to restart from beginning. */
-            iter->index = iter->descriptor->field_count;
-        }
-
-        do {
-            /* Advance iterator but don't load values yet */
-            advance_iterator(iter);
-
-            /* Do fast check for tag number match */
-            fieldinfo = PB_PROGMEM_READU32(iter->descriptor->field_info, iter->field_info_index);
-
-            if (((fieldinfo >> 2) & 0x3F) == (tag & 0x3F)) {
-                /* Good candidate, check further */
-                (void) load_descriptor_values(iter);
-
-                if (iter->tag == tag &&
-                    PB_LTYPE(iter->type) != PB_LTYPE_EXTENSION) {
-                    /* Found it */
-                    return true;
-                }
-            }
-        } while (iter->index != start);
-
-        /* Searched all the way back to start, and found nothing. */
-        (void) load_descriptor_values(iter);
-        return false;
     }
+
+    {
+        const pb_msgdesc_t *descriptor = (const pb_msgdesc_t *) PIC(iter->descriptor);
+        if (tag > descriptor->largest_tag) {
+            ZEMU_TRACE()
+            return false;
+        }
+    }
+
+    ZEMU_TRACE()
+    pb_size_t start = iter->index;
+    ZEMU_TRACE()
+
+    uint32_t fieldinfo;
+
+    if (tag < iter->tag) {
+        ZEMU_TRACE()
+        /* Fields are in tag number order, so we know that tag is between
+         * 0 and our start position. Setting index to end forces
+         * advance_iterator() call below to restart from beginning. */
+        const pb_msgdesc_t *descriptor = (const pb_msgdesc_t *) PIC(iter->descriptor);
+        iter->index = descriptor->field_count;
+    }
+
+    do {
+        ZEMU_TRACE()
+        /* Advance iterator but don't load values yet */
+        advance_iterator(iter);
+        const pb_msgdesc_t *descriptor = (const pb_msgdesc_t *) PIC(iter->descriptor);
+
+        ZEMU_TRACE()
+        /* Do fast check for tag number match */
+        fieldinfo = PB_PROGMEM_READU32(descriptor->field_info, iter->field_info_index);
+
+        if (((fieldinfo >> 2) & 0x3F) == (tag & 0x3F)) {
+            /* Good candidate, check further */
+            (void) load_descriptor_values(iter);
+
+            if (iter->tag == tag &&
+                PB_LTYPE(iter->type) != PB_LTYPE_EXTENSION) {
+                /* Found it */
+                return true;
+            }
+        }
+    } while (iter->index != start);
+
+    /* Searched all the way back to start, and found nothing. */
+    (void) load_descriptor_values(iter);
+    return false;
 }
 
 bool pb_field_iter_find_extension(pb_field_iter_t *iter) {
