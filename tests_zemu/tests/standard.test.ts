@@ -457,6 +457,7 @@ describe('Standard', function () {
       await sim.close()
     }
   })
+
   test.each(models)('sign normal -- add hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
@@ -473,7 +474,7 @@ describe('Standard', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_addHotkey`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_addHotkey`, m.name === 'nanos' ? 4 : 5)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
