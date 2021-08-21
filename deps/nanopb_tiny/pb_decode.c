@@ -995,8 +995,14 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
         }
 
         ZEMU_TRACE()
+        const bool tag_found = pb_field_iter_find(&iter, tag);
+        ZEMU_TRACE()
+        const bool type_is_extension = PB_LTYPE(iter.type) == PB_LTYPE_EXTENSION;
+        ZEMU_TRACE()
 
-        if (!pb_field_iter_find(&iter, tag) || PB_LTYPE(iter.type) == PB_LTYPE_EXTENSION) {
+        if (!tag_found || type_is_extension) {
+            ZEMU_TRACE()
+
             /* No match found, check if it matches an extension. */
             if (extension_range_start == 0) {
                 if (pb_field_iter_find_extension(&iter)) {
