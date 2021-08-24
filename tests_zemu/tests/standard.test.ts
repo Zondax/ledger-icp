@@ -487,6 +487,123 @@ describe('Standard', function () {
     }
   })
 
+  test.each(models)('sign normal -- remove hotkey', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+          'd9d9f7a167636f6e74656e74a6636172675832620b10b98488e0c7a8cec9bd0112232a210a1f0a1d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e3026b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b1698b5366ada7f006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
+
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_removeHotkey`, m.name === 'nanos' ? 4 : 5)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+    } finally {
+      await sim.close()
+    }
+  })
+
+
+  test.each(models)('sign normal -- start dissolve', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+          'd9d9f7a167636f6e74656e74a66361726751620b10e387b497ee96e3a8f201120212006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b1698b7b6ae33de406b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
+
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_startdissolve`, m.name === 'nanos' ? 2 : 3)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.each(models)('sign normal -- stop dissolve', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+          'd9d9f7a167636f6e74656e74a66361726751620b10e387b497ee96e3a8f20112021a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b1698b7bc219b61006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
+
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_stopdissolve`, m.name === 'nanos' ? 2 : 3)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.each(models)('sign normal -- disburse', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+          'd9d9f7a167636f6e74656e74a6636172675839620a10a7d18aaad3a2a2c6131a2b0a0508959aef3a12220a2068d518e2fd2be6566e62c36611b9794dfcbc04eb4227eefb73ab3c7a2d0ae5776b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b169bc8985c330d006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
+
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_disburse`, m.name === 'nanos' ? 5 : 6)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+    } finally {
+      await sim.close()
+    }
+  })
+
   test.each(models)('sign normal -- list neurons', async function (m) {
     const sim = new Zemu(m.path)
     try {
