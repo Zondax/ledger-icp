@@ -135,6 +135,18 @@ describe('Addresses', function () {
                 const expected_returncode = TEST.valid ? 0x9000 : 0x6984;
                 expect(resp.returnCode).toEqual(expected_returncode)
             }
+            // Enable expert mode
+            console.log('Set expert mode')
+            await sim.clickRight()
+            await sim.clickBoth()
+            await sim.clickLeft()
+
+            for (const TEST of TEST_CASES_BIP32) {
+                const resp = await app.getAddressAndPubKey(TEST.path)
+                console.log(resp)
+                expect(resp.returnCode).toEqual(0x9000)
+            }
+
         } finally {
             await sim.close()
         }
