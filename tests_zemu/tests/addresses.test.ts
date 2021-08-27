@@ -21,6 +21,15 @@ const Resolve = require('path').resolve
 const APP_PATH_S = Resolve('../app/output/app_s.elf')
 const APP_PATH_X = Resolve('../app/output/app_x.elf')
 
+const APP_SEED = 'equip will roof matter pink blind book anxiety banner elbow sun young'
+
+const defaultOptions = {
+    ...DEFAULT_START_OPTIONS,
+    logging: true,
+    custom: `-s "${APP_SEED}"`,
+    X11: false,
+}
+
 const TEST_CASES = [
     {
         seed: 'drip bus mind armor hole ice glory manage speed busy hobby cup',
@@ -42,6 +51,33 @@ const TEST_CASES = [
         prinipal: 'zr3yz-g22dq-ehyjt-df2gr-c5b3b-ohxkv-gs2nf-3vxxs-bgnta-5a7h3-uae',
         address: '6b7c45475fb87912b495d902cdccaded20784d82e45d28e5ecaa3f889d816c98',
     }
+]
+
+const TEST_CASES_BIP32 = [
+    {
+        path: "m/44'/223'/0'/0/0",
+        valid: true,
+    },
+    {
+        path: "m/44'/223'/255'/0/0",
+        valid: true,
+    },
+    {
+        path: "m/44'/223'/0'/0/255",
+        valid: true,
+    },
+    {
+        path: "m/44'/223'/256'/0/0",
+        valid: false,
+    },
+    {
+        path: "m/44'/223'/0'/1/0",
+        valid: false,
+    },
+    {
+        path: "m/44'/223'/0'/0/256",
+        valid: false,
+    },
 ]
 
 jest.setTimeout(60000)
@@ -87,4 +123,32 @@ describe('Addresses', function () {
         }
     })
 
+    test.each(models)('test derivation paths', async function (m) {
+        const sim = new Zemu(m.path)
+        try {
+            await sim.start({ ...defaultOptions, model: m.name })
+            const app = new InternetComputerApp(sim.getTransport())
+
+            for (const TEST of TEST_CASES_BIP32) {
+                const resp = await app.getAddressAndPubKey(TEST.path)
+                console.log(resp)
+                const expected_returncode = TEST.valid ? 0x9000 : 0x6984;
+                expect(resp.returnCode).toEqual(expected_returncode)
+            }
+            // Enable expert mode
+            console.log('Set expert mode')
+            await sim.clickRight()
+            await sim.clickBoth()
+            await sim.clickLeft()
+
+            for (const TEST of TEST_CASES_BIP32) {
+                const resp = await app.getAddressAndPubKey(TEST.path)
+                console.log(resp)
+                expect(resp.returnCode).toEqual(0x9000)
+            }
+
+        } finally {
+            await sim.close()
+        }
+    })
 })

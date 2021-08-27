@@ -114,6 +114,14 @@ void extractHDPath(uint32_t rx, uint32_t offset) {
     if (!mainnet && !testnet) {
         THROW(APDU_CODE_DATA_INVALID);
     }
+
+    const bool is_valid = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) &&
+                        (hdPath[3] == 0x00000000u) &&
+                        ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
+
+    if (!is_valid && !app_mode_expert()){
+        THROW(APDU_CODE_DATA_INVALID);
+    }
 }
 
 bool process_chunk(volatile uint32_t *tx, uint32_t rx) {

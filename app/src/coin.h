@@ -35,6 +35,8 @@ extern "C" {
 #define HDPATH_0_TESTNET     (0x80000000u | 0x2cu)
 #define HDPATH_1_TESTNET     (0x80000000u | 0xdfu)
 
+#define HDPATH_RESTRICTED_MASK  0xFFFFFF00u
+
 #define SECP256K1_PK_LEN            65u
 #define DFINITY_ADDR_LEN            32u
 #define DFINITY_SUBACCOUNT_LEN      32u
