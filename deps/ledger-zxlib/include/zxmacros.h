@@ -82,15 +82,15 @@ void zemu_log_stack(const char *ctx);
 
 __Z_INLINE void zemu_log(const char *buf)
 {
-#if defined(ZEMU_LOGGING)
-    #if defined (TARGET_NANOS) || defined(TARGET_NANOX)
+#if defined(ZEMU_LOGGING) && (defined (TARGET_NANOS) || defined(TARGET_NANOX))
     asm volatile (
     "movs r0, #0x04\n"
     "movs r1, %0\n"
     "svc      0xab\n"
     :: "r"(buf) : "r0", "r1"
     );
-    #endif
+#else
+    UNUSED(buf);
 #endif
 }
 

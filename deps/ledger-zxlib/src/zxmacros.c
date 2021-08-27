@@ -51,5 +51,8 @@ void zemu_trace(const char *file, uint32_t line) {
     char buf[200];
     snprintf(buf, sizeof(buf), "|TRACE| %s:%d\n", file, line);
     zemu_log(buf);
+#else
+    UNUSED(file);
+    UNUSED(line);
 #endif
 }
