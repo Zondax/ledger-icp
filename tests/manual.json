@@ -9075,13 +9075,13 @@
     "blob": "d9d9f7a167636f6e74656e74a6636172674e620310a46012070a0508a0c4870f6b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16a283a5add809c06b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02",
     "additional_delay_secs": 31580704,
     "output": [
-      "0 | Transaction type : Increase Dissolve Delay",
-      "1 | Neuron ID : 1234",
+      "0 | Transaction type : Increase Dissolve  Delay",
+      "1 | Neuron ID : 12324",
       "2 | Additional Delay : 1y, 6h, 25m, 4s"
     ],
     "output_expert": [
-      "0 | Transaction type : Increase Dissolve Delay",
-      "1 | Neuron ID : 1234",
+      "0 | Transaction type : Increase Dissolve  Delay",
+      "1 | Neuron ID : 12324",
       "2 | Additional Delay : 1y, 6h, 25m, 4s"
     ]
   }
