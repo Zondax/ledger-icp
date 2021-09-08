@@ -181,17 +181,20 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     return parser_ok;
 }
 
+// 365.25 * 24*60*60 = 31557600
+#define ICP_YEAR_IN_SECONDS ((uint64_t)31557600)
+
 parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize){
     MEMZERO(buffer,bufferSize);
     uint16_t index = 0;
-    uint64_t years = value / (uint64_t)(365.25 * 24*60*60);
-    if(years > 1){
+    uint64_t years = value / ICP_YEAR_IN_SECONDS;
+    if(years >= 1){
         index += fpuint64_to_str(buffer, bufferSize, years, 0);
         PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end);
         MEMCPY(buffer + index, (char *)"y", 1);
         index += 1;
     }
-    value %= (uint64_t)(365.25 *60*60*24);
+    value %= ICP_YEAR_IN_SECONDS;
 
     uint64_t days = value / (uint64_t)(60*60*24);
     if(days > 0){
