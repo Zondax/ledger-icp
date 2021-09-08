@@ -15,7 +15,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 import Transport from '@ledgerhq/hw-transport';
-import {ResponseAddress, ResponseAppInfo, ResponseSign, ResponseVersion} from './types';
+import {ResponseAddress, ResponseAppInfo, ResponseDeviceInfo, ResponseSign, ResponseVersion} from './types';
 import {
   ADDRLEN,
   CHUNK_SIZE,
@@ -151,6 +151,53 @@ export default class InternetComputerApp {
         flagPINValidated: (flagsValue & 128) !== 0,
       };
     }, processErrorResponse);
+  }
+
+  async deviceInfo(): Promise<ResponseDeviceInfo> {
+    return this.transport.send(0xe0, 0x01, 0, 0, Buffer.from([]), [0x6e00])
+      .then(response => {
+        const errorCodeData = response.slice(-2);
+        const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
+
+        if (returnCode === 0x6e00) {
+          return {
+            return_code: returnCode,
+            error_message: "This command is only available in the Dashboard",
+          };
+        }
+
+        const targetId = response.slice(0, 4).toString("hex");
+
+        let pos = 4;
+        const secureElementVersionLen = response[pos];
+        pos += 1;
+        const seVersion = response.slice(pos, pos + secureElementVersionLen).toString();
+        pos += secureElementVersionLen;
+
+        const flagsLen = response[pos];
+        pos += 1;
+        const flag = response.slice(pos, pos + flagsLen).toString("hex");
+        pos += flagsLen;
+
+        const mcuVersionLen = response[pos];
+        pos += 1;
+        // Patch issue in mcu version
+        let tmp = response.slice(pos, pos + mcuVersionLen);
+        if (tmp[mcuVersionLen - 1] === 0) {
+          tmp = response.slice(pos, pos + mcuVersionLen - 1);
+        }
+        const mcuVersion = tmp.toString();
+
+        return {
+          returnCode: returnCode,
+          errorMessage: errorCodeToString(returnCode),
+          // //
+          targetId,
+          seVersion,
+          flag,
+          mcuVersion,
+        };
+      }, processErrorResponse);
   }
 
   async getAddressAndPubKey(path: string): Promise<ResponseAddress> {
