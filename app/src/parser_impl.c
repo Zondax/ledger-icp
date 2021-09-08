@@ -527,10 +527,13 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
         case call: {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
-                    if (!app_mode_expert()) {
-                        return 6;
+                    const bool is_stake_tx = v->tx_fields.call.special_transfer_type == neuron_stake_transaction;
+
+                    if (is_stake_tx) {
+                        return app_mode_expert() ? 7 : 5;
                     }
-                    return 8;
+
+                    return app_mode_expert() ? 8 : 6;
                 }
 
                 case pb_listneurons : {

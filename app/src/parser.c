@@ -330,14 +330,14 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if (is_stake_tx) {
+        return parser_unexepected_error;
+    }
+
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        if(is_stake_tx){
-            snprintf(outVal, outValLen, "Stake Neuron");
-        }else {
-            snprintf(outVal, outValLen, "Send ICP");
-        }
+        snprintf(outVal, outValLen, "Send ICP");
         return parser_ok;
     }
 
@@ -403,6 +403,94 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     }
 
     if (displayIdx == 5) {
+        snprintf(outKey, outKeyLen, "Memo");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_memo, parser_unexpected_number_items)
+        return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
+parser_error_t parser_getItemStakeNeuron(const parser_context_t *ctx,
+                                           uint8_t displayIdx,
+                                           char *outKey, uint16_t outKeyLen,
+                                           char *outVal, uint16_t outValLen,
+                                           uint8_t pageIdx, uint8_t *pageCount) {
+    MEMZERO(outKey, outKeyLen);
+    MEMZERO(outVal, outValLen);
+    snprintf(outKey, outKeyLen, "?");
+    snprintf(outVal, outValLen, "?");
+    *pageCount = 1;
+
+    uint8_t numItems = 0;
+    CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
+    CHECK_APP_CANARY()
+
+    call_t *fields = &parser_tx_obj.tx_fields.call;
+
+    if (displayIdx < 0 || displayIdx >= numItems) {
+        return parser_no_data;
+    }
+
+    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if (!is_stake_tx) {
+        return parser_unexepected_error;
+    }
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Stake Neuron");
+        return parser_ok;
+    }
+
+    if(app_mode_expert()){
+        if (displayIdx == 1) {
+            snprintf(outKey, outKeyLen, "Sender ");
+            return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (displayIdx == 2) {
+            snprintf(outKey, outKeyLen, "Subaccount ");
+            snprintf(outVal, outValLen, "Not set");
+
+            if (fields->pb_fields.SendRequest.has_from_subaccount) {
+                char buffer[100];
+                zxerr_t err = print_hexstring(buffer, sizeof(buffer), fields->pb_fields.SendRequest.from_subaccount.sub_account, 32);
+                if (err != zxerr_ok) {
+                    return parser_unexepected_error;
+                }
+                pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            }
+
+            return parser_ok;
+        }
+        displayIdx -= 2;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "From account");
+        return print_accountBytes(fields->sender, &fields->pb_fields.SendRequest,
+                                  outVal, outValLen,
+                                  pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Payment (ICP)");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.payment.has_receiver_gets, parser_unexpected_number_items)
+        return print_ICP(fields->pb_fields.SendRequest.payment.receiver_gets.e8s,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_max_fee, parser_unexpected_number_items)
+        return print_ICP(fields->pb_fields.SendRequest.max_fee.e8s,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
+
+    if (displayIdx == 4) {
         snprintf(outKey, outKeyLen, "Memo");
         PARSER_ASSERT_OR_ERROR(fields->pb_fields.SendRequest.has_memo, parser_unexpected_number_items)
         return print_u64(fields->pb_fields.SendRequest.memo.memo, outVal, outValLen, pageIdx, pageCount);
@@ -666,6 +754,15 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
         case call: {
             switch(parser_tx_obj.tx_fields.call.pbtype) {
                 case pb_sendrequest : {
+                    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+
+                    if (is_stake_tx) {
+                        return parser_getItemStakeNeuron(ctx, displayIdx,
+                                                           outKey, outKeyLen,
+                                                           outVal, outValLen,
+                                                           pageIdx, pageCount);
+                    }
+
                     return parser_getItemTokenTransfer(ctx, displayIdx,
                                                        outKey, outKeyLen,
                                                        outVal, outValLen,
