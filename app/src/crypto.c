@@ -37,6 +37,8 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #define SIGN_PREHASH_SIZE (SIGN_PREFIX_SIZE + CX_SHA256_SIZE)
 
 #define SUBACCOUNT_PREFIX_SIZE 11u
+#define STAKEACCOUNT_PREFIX_SIZE 12u
+#define STAKEACCOUNT_PRINCIPAL_SIZE 10u
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
@@ -60,6 +62,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
         return zxerr_invalid_crypto_settings;
     }
 
+    zxerr_t err = zxerr_ok;
     BEGIN_TRY
     {
         TRY {
@@ -71,12 +74,10 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
             cx_ecfp_init_private_key(CX_CURVE_256K1, privateKeyData, 32, &cx_privateKey);
             cx_ecfp_init_public_key(CX_CURVE_256K1, NULL, 0, &cx_publicKey);
             cx_ecfp_generate_pair(CX_CURVE_256K1, &cx_publicKey, &cx_privateKey, 1);
+            memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
         }
-        CATCH_OTHER(e) {
-            CLOSE_TRY;
-            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-            MEMZERO(privateKeyData, 32);
-            return zxerr_ledger_api_error;
+        CATCH_ALL {
+            err = zxerr_ledger_api_error;
         }
         FINALLY {
             MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
@@ -85,8 +86,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t
     }
     END_TRY;
 
-    memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
-    return zxerr_ok;
+    return err;
 }
 
 typedef struct {
@@ -153,7 +153,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
     MEMZERO(tmpdigest,sizeof(tmpdigest));
 
     switch(txtype){
-        case token_transfer: {
+        case call: {
             call_t *fields = &parser_tx_obj.tx_fields.call;
             HASH_BYTES_INTERMEDIATE("sender", fields->sender, tmpdigest);
             HASH_BYTES_INTERMEDIATE("canister_id", fields->canister_id, tmpdigest);
@@ -218,6 +218,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
 
     signature_t *const signature = (signature_t *) (signatureBuffer + SIGN_PREHASH_SIZE);
 
+    zxerr_t err = zxerr_ok;
     BEGIN_TRY
     {
         TRY
@@ -239,12 +240,17 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
                                             signature->der_signature,
                                             sizeof_field(signature_t, der_signature),
                                             &info);
+
+            err_convert_e err_c = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
+            if (err_c != no_error) {
+                MEMZERO(signatureBuffer, signatureMaxlen);
+                err = zxerr_unknown;
+            }else{
+                *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
+            }
         }
-        CATCH_OTHER(e) {
-            CLOSE_TRY;
-            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-            MEMZERO(privateKeyData, 32);
-            return zxerr_ledger_api_error;
+        CATCH_ALL {
+            err = zxerr_ledger_api_error;
         }
         FINALLY {
             MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
@@ -253,20 +259,26 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     }
     END_TRY;
 
-    err_convert_e err = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
-    if (err != no_error) {
-        // Error while converting so return length 0
-        return zxerr_unknown;
-    }
-    *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
-
-    return zxerr_ok;
+    return err;
 }
+
 
 #else
 
 #include <hexutils.h>
 #include "picohash.h"
+
+zxerr_t cx_hash_sha256(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen) {
+    if (outputLen < 32) {
+        return zxerr_invalid_crypto_settings;
+    }
+    picohash_ctx_t ctx;
+
+    picohash_init_sha256(&ctx);
+    picohash_update(&ctx, input, inputLen);
+    picohash_final(&ctx, output);
+    return zxerr_ok;
+}
 
 zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen) {
     if (outputLen < 28) {
@@ -282,6 +294,84 @@ zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t
 
 #endif
 
+/*
+ * neuron_sub_account =
+     sha256(0x0c | “neuron-stake” | neuron_holder_principal | neuron_creation_memo)
+to.hash = account_identifier(
+             “rrkah-fqaaa-aaaaa-aaaaq-cai”,
+             neuron_sub_account)
+
+ */
+typedef struct {
+    uint8_t prefix_byte;
+    uint8_t prefix_string[STAKEACCOUNT_PREFIX_SIZE];
+    uint8_t principal[DFINITY_PRINCIPAL_LEN];
+    uint64_t memo_be;
+} __attribute__((packed)) stake_account_pre_hash;
+
+
+typedef struct {
+    uint8_t prefix_byte;
+    uint8_t prefix_string[SUBACCOUNT_PREFIX_SIZE-1];
+    uint8_t principal[STAKEACCOUNT_PRINCIPAL_SIZE];
+    uint8_t pre_hash[32];
+} __attribute__((packed)) stake_account_hash;
+
+typedef struct {
+    union {
+        stake_account_pre_hash pre_hash;
+        stake_account_hash stake_hash;
+    } hash_fields;
+} stake_account;
+
+
+uint64_t change_endianness(uint64_t value){
+    uint64_t result = 0;
+    for(uint8_t i = 0; i < 7; i++){
+        result += ((value >> i * 8u) & 0xFFu);
+        result <<= 8u;
+    }
+    result += ((value >> 56u) & 0xFFu);
+    return result;
+}
+
+zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
+                                       const uint64_t neuron_creation_memo,
+                                       uint8_t *address, uint16_t maxoutLen){
+    if (principalLen != DFINITY_PRINCIPAL_LEN ||
+        maxoutLen < DFINITY_ADDR_LEN) {
+        return zxerr_invalid_crypto_settings;
+    }
+    stake_account account;
+    MEMZERO(&account, sizeof(stake_account));
+
+    stake_account_pre_hash *pre_hash = &account.hash_fields.pre_hash;
+    pre_hash->prefix_byte = 0x0C;
+    MEMCPY(pre_hash->prefix_string, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
+    MEMCPY(pre_hash->principal, principal, DFINITY_PRINCIPAL_LEN);
+    pre_hash->memo_be = change_endianness(neuron_creation_memo);
+
+    stake_account_hash *final_hash = &account.hash_fields.stake_hash;
+
+    cx_hash_sha256((uint8_t*)pre_hash, sizeof(stake_account_pre_hash), final_hash->pre_hash, 32);
+
+    final_hash->prefix_byte = 0x0A;
+    MEMCPY(final_hash->prefix_string, (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE-1);
+    uint8_t stake_principal[STAKEACCOUNT_PRINCIPAL_SIZE] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01};
+    MEMCPY(final_hash->principal,stake_principal,STAKEACCOUNT_PRINCIPAL_SIZE);
+
+    CHECK_ZXERR(
+            hash_sha224((uint8_t*)final_hash, sizeof(stake_account_hash), address + 4,
+                        (maxoutLen - 4)));
+
+    uint32_t crc = 0;
+    crc32_small(address + 4, DFINITY_ADDR_LEN - 4, &crc);
+    address[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
+    address[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
+    address[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
+    address[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
+    return zxerr_ok;
+}
 
 //DER encoding:
 //3056 // SEQUENCE

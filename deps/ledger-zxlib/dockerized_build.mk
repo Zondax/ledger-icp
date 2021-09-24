@@ -40,7 +40,7 @@ $(info EXAMPLE_VUE_DIR       : $(EXAMPLE_VUE_DIR))
 $(info TESTS_JS_DIR          : $(TESTS_JS_DIR))
 $(info TESTS_JS_PACKAGE      : $(TESTS_JS_PACKAGE))
 
-DOCKER_IMAGE=zondax/builder-bolos:e7a7395770addca0583dc7401a7284b805b41149
+DOCKER_IMAGE=zondax/builder-bolos:latest
 
 ifdef INTERACTIVE
 INTERACTIVE_SETTING:="-i"

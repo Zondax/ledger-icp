@@ -30,7 +30,11 @@
 #include "zxmacros.h"
 #include "app_mode.h"
 
+#include "parser_impl.h"
+
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+
+static bool tx_initialized = false;
 
 unsigned char io_event(unsigned char channel) {
     UNUSED(channel);
@@ -110,19 +114,29 @@ void extractHDPath(uint32_t rx, uint32_t offset) {
     if (!mainnet && !testnet) {
         THROW(APDU_CODE_DATA_INVALID);
     }
+
+    const bool is_valid = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) &&
+                        (hdPath[3] == 0x00000000u) &&
+                        ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
+
+    if (!is_valid && !app_mode_expert()){
+        THROW(APDU_CODE_DATA_INVALID);
+    }
 }
 
 bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
     UNUSED(tx);
     const uint8_t payloadType = G_io_apdu_buffer[OFFSET_PAYLOAD_TYPE];
 
-    if (G_io_apdu_buffer[OFFSET_P2] != 0) {
-        THROW(APDU_CODE_INVALIDP1P2);
-    }
-
     if (rx < OFFSET_DATA) {
         THROW(APDU_CODE_WRONG_LENGTH);
     }
+
+    if(G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1){
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
 
     uint32_t added;
     switch (payloadType) {
@@ -130,21 +144,40 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             tx_initialize();
             tx_reset();
             extractHDPath(rx, OFFSET_DATA);
+            MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
+            if(G_io_apdu_buffer[OFFSET_P2] == 1){
+                parser_tx_obj.tx_fields.call.special_transfer_type = neuron_stake_transaction;
+            }
+            tx_initialized = true;
             return false;
         case 1:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+                THROW(APDU_CODE_DATA_INVALID);
+            }
+            if (!tx_initialized) {
+                THROW(APDU_CODE_TX_NOT_INITIALIZED);
+            }
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
             if (added != rx - OFFSET_DATA) {
+                tx_initialized = false;
                 THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
             }
             return false;
         case 2:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+                THROW(APDU_CODE_DATA_INVALID);
+            }
+            if (!tx_initialized) {
+                THROW(APDU_CODE_TX_NOT_INITIALIZED);
+            }
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
             if (added != rx - OFFSET_DATA) {
+                tx_initialized = false;
                 THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
             }
             return true;
     }
-
+    tx_initialized = false;
     THROW(APDU_CODE_INVALIDP1P2);
 }
 

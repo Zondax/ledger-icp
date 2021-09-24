@@ -21,6 +21,7 @@
 #include "app_mode.h"
 #include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
+#include "protobuf/governance.pb.h"
 
 parser_tx_t parser_tx_obj;
 
@@ -29,8 +30,6 @@ __Z_INLINE parser_error_t parser_mapCborError(CborError err);
 #define CHECK_CBOR_MAP_ERR(CALL) { \
     CborError err = CALL;  \
     if (err!=CborNoError) return parser_mapCborError(err);}
-
-#define PARSER_ASSERT_OR_ERROR(CALL, ERROR) if (!(CALL)) return ERROR;
 
 #define CHECK_CBOR_TYPE(TYPE, EXPECTED) {if ( (TYPE)!= (EXPECTED) ) return parser_unexpected_type;}
 
@@ -237,32 +236,72 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     return parser_ok;
 }
 
-parser_error_t readProtobuf(uint8_t *buffer, size_t bufferLen) {
-    bool status;
+#define GEN_PARSER_PB(OBJ) parser_error_t _parser_pb_ ## OBJ(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) \
+{                                                                                           \
+    OBJ request = OBJ ##_init_zero;                                                         \
+    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);                        \
+    CHECK_APP_CANARY()                                                                      \
+    const bool status = pb_decode(&stream, OBJ ##_fields, &request);                        \
+    if (!status) { return parser_unexepected_error; }                                       \
+    MEMCPY(&v->tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));                        \
+    CHECK_APP_CANARY()                                                                      \
+    return parser_ok;                                                                       \
+}                                                                                           \
 
-    CHECK_APP_CANARY()
-    /* Allocate space for the decoded message. */
-    SendRequest request = SendRequest_init_zero;
-    CHECK_APP_CANARY()
+GEN_PARSER_PB(SendRequest)
+GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
+GEN_PARSER_PB(ListNeurons)
 
-    /* Create a stream that reads from the buffer. */
-    pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);
-    CHECK_APP_CANARY()
+parser_error_t getManageNeuronType(parser_tx_t *v){
+    pb_size_t command = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
+    manageNeuron_e *mn_type = &v->tx_fields.call.manage_neuron_type;
+    switch(command){
+        case 2: {
+            pb_size_t operation = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
+            if(1 <= operation && operation <= 6){
+                *mn_type = (manageNeuron_e)operation;
+                return parser_ok;
+            }else{
+                return parser_unexpected_type;
+            }
+        }
 
-    ZEMU_TRACE()
+        case 3: {
+            *mn_type = Disburse;
+            return parser_ok;
+        }
 
-    /* Now we are ready to decode the message. */
-    status = pb_decode(&stream, SendRequest_fields, &request);
+        case 4: {
+            *mn_type = Spawn;
+            return parser_ok;
+        }
 
-    zemu_log(stream.errmsg);
-    MEMCPY(&parser_tx_obj.tx_fields.call.pb_fields.sendrequest, &request, sizeof(SendRequest));
-    CHECK_APP_CANARY()
-    /* Check for errors... */
-    if (!status) {
-        return parser_unexepected_error;
+        default: {
+            return parser_unexpected_type;
+        }
+    }
+}
+
+parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
+    char *method = v->tx_fields.call.method_name.data;
+    if (strcmp(method, "send_pb") == 0 || v->tx_fields.call.special_transfer_type == neuron_stake_transaction) {
+        v->tx_fields.call.pbtype = pb_sendrequest;
+        return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
 
-    return parser_ok;
+    if(strcmp(method, "manage_neuron_pb") == 0) {
+        v->tx_fields.call.pbtype = pb_manageneuron;
+        CHECK_PARSER_ERR(_parser_pb_ic_nns_governance_pb_v1_ManageNeuron(v, buffer, bufferLen))
+        return getManageNeuronType(v);
+    }
+
+    if(strcmp(method, "list_neurons_pb") == 0) {
+        v->tx_fields.call.pbtype = pb_listneurons;
+        return _parser_pb_ListNeurons(v, buffer, bufferLen);
+    }
+
+
+    return parser_unexpected_type;
 }
 
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
@@ -288,7 +327,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
             return parser_context_unexpected_size;
         }
 
-        v->txtype = token_transfer;
+        v->txtype = call;
         // READ CALL
         call_t *fields = &v->tx_fields.call;
         READ_STRING(content_map, "sender", fields->sender)
@@ -299,7 +338,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
         READ_STRING(content_map, "arg", fields->arg)
-        CHECK_PARSER_ERR(readProtobuf(fields->arg.data, fields->arg.len));
+        CHECK_PARSER_ERR(readProtobuf(v, fields->arg.data, fields->arg.len));
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
         state_read_t *fields = &v->tx_fields.stateRead;
@@ -324,6 +363,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 }
 
 parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
+    zemu_log_stack("read envelope");
     CborValue it;
     INIT_CBOR_PARSER(c, it)
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
@@ -373,16 +413,47 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     return parser_ok;
 }
 
+#define CHECK_METHOD_WITH_CANISTER(CANISTER_ID){                           \
+        if (strcmp(canister_textual, (CANISTER_ID)) != 0) {                     \
+            zemu_log_stack("invalid canister");                                 \
+            return parser_unexpected_value;                                     \
+        } else {                                                                \
+            return parser_ok;                                                   \
+        }                                                                       \
+}
+
+parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual){
+    switch(v->tx_fields.call.pbtype) {
+        case pb_sendrequest : {
+            CHECK_METHOD_WITH_CANISTER("ryjl3tyaaaaaaaaaaabacai")
+        }
+
+        case pb_listneurons :
+        case pb_manageneuron : {
+            CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
+        }
+
+        default: {
+            return parser_unexpected_type;
+        }
+    }
+}
+
 parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
     const uint8_t *sender = NULL;
 
     switch (v->txtype) {
-        case token_transfer: {
-            zemu_log_stack("token_transfer");
+        case call: {
+            zemu_log_stack("Call type");
             if (strcmp(v->request_type.data, "call") != 0) {
                 zemu_log_stack("call not found");
                 return parser_unexpected_value;
+            }
+
+            if (v->tx_fields.call.pbtype == pb_manageneuron){
+                ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0), parser_unexepected_error);
             }
 
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
@@ -395,16 +466,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                                               v->tx_fields.call.canister_id.len,
                                               canister_textual,
                                               &outLen) == zxerr_ok, parser_unexepected_error)
-
-            if (strcmp((char *) canister_textual, "ryjl3tyaaaaaaaaaaabacai") != 0) {
-                zemu_log_stack("invalid canister");
-                return parser_unexpected_value;
-            }
-
-            if (strcmp(v->tx_fields.call.method_name.data, "send_pb") != 0) {
-                zemu_log_stack("send_pb missing");
-                return parser_unexpected_value;
-            }
+            CHECK_PARSER_ERR(checkPossibleCanisters(v, (char *) canister_textual))
 
             sender = v->tx_fields.call.sender.data;
             break;
@@ -439,36 +501,82 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
         return parser_unexpected_value;
     }
+
 #endif
 
+    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    if(is_stake_tx){
+        uint8_t to_hash[32];
+        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                                          v->tx_fields.call.pb_fields.SendRequest.memo.memo,
+                                                                          to_hash,sizeof(to_hash)), parser_unexepected_error);
+
+        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
+
+        if(memcmp(to_hash, to, 32) != 0){
+            zemu_log_stack("wrong data");
+            return parser_invalid_address;
+        }
+    }
     return parser_ok;
 }
 
 uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
     UNUSED(c);
-
-    uint8_t itemCount = 0;
     switch (v->txtype) {
-        case token_transfer: {
-            if (!app_mode_expert()) {
-                return 6;
+        case call: {
+            switch(v->tx_fields.call.pbtype) {
+                case pb_sendrequest: {
+                    const bool is_stake_tx = v->tx_fields.call.special_transfer_type == neuron_stake_transaction;
+
+                    if (is_stake_tx) {
+                        return app_mode_expert() ? 7 : 5;
+                    }
+
+                    return app_mode_expert() ? 8 : 6;
+                }
+
+                case pb_listneurons : {
+                    return 1;
+                }
+
+                case pb_manageneuron : {
+                    switch(v->tx_fields.call.manage_neuron_type){
+                        case StopDissolving :
+                        case StartDissolving : {
+                            return 2;
+                        }
+                        case Spawn :
+                        case RemoveHotKey :
+                        case AddHotKey :
+                        case IncreaseDissolveDelay : {
+                            return 3;
+                        }
+
+                        case Disburse : {
+                            return 4;
+                        }
+
+                        default: {
+                            return 0;
+                        }
+                    }
+                }
+                default :{
+                    return 0;
+                }
             }
-            itemCount = 8;
-            break;
         }
         case state_transaction_read : {
             // based on https://github.com/Zondax/ledger-dfinity/issues/48
             if (!app_mode_expert()) {
                 return 1;               // only check status
             }
-
-            itemCount = 3;
-            break;
+            return 3;
         }
         default : {
-            break;
+            return 0;
         }
     }
 
-    return itemCount;
 }

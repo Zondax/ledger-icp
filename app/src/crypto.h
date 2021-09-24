@@ -54,6 +54,10 @@ zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
                     uint16_t *sigSize);
 
+zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
+                                       const uint64_t neuron_creation_memo,
+                                       uint8_t *address, uint16_t maxoutLen);
+
 #ifdef __cplusplus
 }
 #endif

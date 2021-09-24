@@ -32,6 +32,13 @@ export interface ResponseAppInfo extends ResponseBase {
   flagPINValidated: boolean;
 }
 
+export interface ResponseDeviceInfo extends ResponseBase {
+  targetId: string;
+  seVersion: string;
+  flag: string;
+  mcuVersion: string;
+}
+
 export interface ResponseSign extends ResponseBase {
   preSignHash: Buffer,
   signatureRS: Buffer,

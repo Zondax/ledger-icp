@@ -54,9 +54,9 @@ ifndef COIN
 COIN=ICP
 endif
 
-APPVERSION_M=0
-APPVERSION_N=6
-APPVERSION_P=1
+APPVERSION_M=1
+APPVERSION_N=0
+APPVERSION_P=2
 
 $(info COIN  = [$(COIN)])
 
@@ -82,7 +82,7 @@ APP_LOAD_PARAMS = --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path ${APPPA
 DEFINES += HAVE_PENDING_REVIEW_SCREEN
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-APP_STACK_SIZE:=1892
+APP_STACK_SIZE:=2500
 ICONNAME:=$(CURDIR)/nanos_icon.gif
 OUTPUT_ELF ?= $(CURDIR)/output/app_s.elf
 OUTPUT_INSTALLER := $(CURDIR)/pkg/installer_s.sh
@@ -90,8 +90,8 @@ DEFINES += CBOR_PARSER_MAX_RECURSIONS=4
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-ICONNAME:=$(CURDIR)/nanox_icon.gif
 SCRIPT_LD:=$(CURDIR)/script_x.ld
+ICONNAME:=$(CURDIR)/nanox_icon.gif
 OUTPUT_ELF ?= $(CURDIR)/output/app_x.elf
 OUTPUT_INSTALLER:= $(CURDIR)/pkg/installer_x.sh
 DEFINES += CBOR_PARSER_MAX_RECURSIONS=16
@@ -173,7 +173,7 @@ endif
 #########################
 
 CC := $(CLANGPATH)clang
-CFLAGS += -O3 -Os -Wno-unknown-pragmas -Wno-implicit-fallthrough
+CFLAGS += -O3 -Os -Wno-unknown-pragmas -Wvla  -Wno-implicit-fallthrough
 
 AS := $(GCCPATH)arm-none-eabi-gcc
 AFLAGS +=
@@ -188,12 +188,12 @@ GLYPH_SRC_DIR = glyphs
 INCLUDES_PATH += $(MY_DIR)/glyphs
 include $(BOLOS_SDK)/Makefile.glyphs
 
+APP_SOURCE_PATH += $(MY_DIR)/../deps/picohash/
 APP_SOURCE_PATH += $(MY_DIR)/src
 APP_SOURCE_PATH += $(MY_DIR)/glyphs
 APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/include
 APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/ledger-zxlib/app/common
-APP_SOURCE_PATH += $(MY_DIR)/../deps/picohash/
 
 SDK_SOURCE_PATH += lib_stusb lib_stusb_impl
 SDK_SOURCE_PATH  += lib_ux

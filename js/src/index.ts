@@ -15,7 +15,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 import Transport from '@ledgerhq/hw-transport';
-import {ResponseAddress, ResponseAppInfo, ResponseSign, ResponseVersion} from './types';
+import {ResponseAddress, ResponseAppInfo, ResponseDeviceInfo, ResponseSign, ResponseVersion} from './types';
 import {
   ADDRLEN,
   CHUNK_SIZE,
@@ -153,6 +153,53 @@ export default class InternetComputerApp {
     }, processErrorResponse);
   }
 
+  async deviceInfo(): Promise<ResponseDeviceInfo> {
+    return this.transport.send(0xe0, 0x01, 0, 0, Buffer.from([]), [0x6e00])
+      .then(response => {
+        const errorCodeData = response.slice(-2);
+        const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
+
+        if (returnCode === 0x6e00) {
+          return {
+            return_code: returnCode,
+            error_message: "This command is only available in the Dashboard",
+          };
+        }
+
+        const targetId = response.slice(0, 4).toString("hex");
+
+        let pos = 4;
+        const secureElementVersionLen = response[pos];
+        pos += 1;
+        const seVersion = response.slice(pos, pos + secureElementVersionLen).toString();
+        pos += secureElementVersionLen;
+
+        const flagsLen = response[pos];
+        pos += 1;
+        const flag = response.slice(pos, pos + flagsLen).toString("hex");
+        pos += flagsLen;
+
+        const mcuVersionLen = response[pos];
+        pos += 1;
+        // Patch issue in mcu version
+        let tmp = response.slice(pos, pos + mcuVersionLen);
+        if (tmp[mcuVersionLen - 1] === 0) {
+          tmp = response.slice(pos, pos + mcuVersionLen - 1);
+        }
+        const mcuVersion = tmp.toString();
+
+        return {
+          returnCode: returnCode,
+          errorMessage: errorCodeToString(returnCode),
+          // //
+          targetId,
+          seVersion,
+          flag,
+          mcuVersion,
+        };
+      }, processErrorResponse);
+  }
+
   async getAddressAndPubKey(path: string): Promise<ResponseAddress> {
     const serializedPath = serializePath(path);
     return this.transport
@@ -170,7 +217,7 @@ export default class InternetComputerApp {
       .then(processGetAddrResponse, processErrorResponse);
   }
 
-  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer): Promise<ResponseSign> {
+  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number): Promise<ResponseSign> {
     let payloadType = PAYLOAD_TYPE.ADD;
     if (chunkIdx === 1) {
       payloadType = PAYLOAD_TYPE.INIT;
@@ -180,7 +227,7 @@ export default class InternetComputerApp {
     }
 
     return this.transport
-      .send(CLA, INS.SIGN_SECP256K1, payloadType, 0, chunk, [
+      .send(CLA, INS.SIGN_SECP256K1, payloadType, txtype, chunk, [
         LedgerError.NoErrors,
         LedgerError.DataIsInvalid,
         LedgerError.BadKeyHandle,
@@ -224,9 +271,9 @@ export default class InternetComputerApp {
       }, processErrorResponse);
   }
 
-  async sign(path: string, message: Buffer) {
+  async sign(path: string, message: Buffer, txtype: number) {
     return this.signGetChunks(path, message).then(chunks => {
-      return this.signSendChunk(1, chunks.length, chunks[0]).then(async response => {
+      return this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async response => {
         let result = {
           returnCode: response.returnCode,
           errorMessage: response.errorMessage,
@@ -237,7 +284,7 @@ export default class InternetComputerApp {
 
         for (let i = 1; i < chunks.length; i += 1) {
           // eslint-disable-next-line no-await-in-loop
-          result = await this.signSendChunk(1 + i, chunks.length, chunks[i]);
+          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256);
           if (result.returnCode !== LedgerError.NoErrors) {
             break;
           }

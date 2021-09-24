@@ -21,6 +21,7 @@
 #define ZX_NO_CPP
 
 #include "protobuf/dfinity.pb.h"
+#include "protobuf/governance.pb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,9 +41,38 @@ extern "C" {
 
 typedef enum {
     unknown = 0x00,                 // default is not accepted
-    token_transfer = 0x01,
+    call = 0x01,
     state_transaction_read = 0x02,
 } txtype_e;
+
+typedef enum {
+    pb_unknown = 0x00,          //default is not accepted
+    pb_sendrequest = 0x01,
+    pb_manageneuron = 0x02,
+    pb_listneurons = 0x03,
+} pbtype_e;
+
+typedef enum {
+    wrong_operation = 0,          //default is not accepted
+    IncreaseDissolveDelay = 1,
+    StartDissolving = 2,
+    StopDissolving = 3,
+    AddHotKey = 4,
+    RemoveHotKey = 5,
+    SetDissolveTimestamp = 6,
+    Disburse = 7,
+    Spawn = 8,
+//    Follow = 9,
+//    Register_Vote = 10,
+//    Split = 11,
+//    DisburseToNeuron = 12,
+//    ClaimOrRefresh = 13,
+} manageNeuron_e;
+
+typedef enum {
+    invalid = 0x00,
+    neuron_stake_transaction = 0x01,
+} special_transfer_e;
 
 typedef struct {
     uint8_t data[SENDER_MAX_LEN + 1];
@@ -89,15 +119,22 @@ typedef struct {
     bool has_nonce;
 
     uint64_t ingress_expiry;
+    uint64_t neuron_creation_memo;
+
+    special_transfer_e special_transfer_type;
 
     canister_t canister_id;
     sender_t sender;
 
     method_t method_name;
+    pbtype_e pbtype;
+    manageNeuron_e manage_neuron_type;
     arg_t arg;
 
     union {
-        SendRequest sendrequest;
+        SendRequest SendRequest;
+        ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
+        ListNeurons ListNeurons;
     } pb_fields;
 } call_t;
 
