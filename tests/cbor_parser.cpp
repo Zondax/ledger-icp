@@ -32,6 +32,22 @@
 // Basic CBOR test cases generated with http://cbor.me/
 
 namespace {
+    TEST(TxTest, one_byte_accountid) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "d9d9f7a167636f6e74656e74a6636172674c620210011a0612040a0211116b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16a2cd02c5b2d1006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02";
+
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        parser_context_t ctx;
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        EXPECT_EQ(err, parser_ok);
+
+        //SHOULD FAIL
+        err = parser_validate(&ctx);
+        EXPECT_EQ(err, parser_context_unexpected_size);
+
+    }
+
     TEST(NANOPBTEST, test) {
         uint8_t inBuffer[1000];
         const char *tmp = "0A0012050A0308E8071A0308890122220A2001010101010101010101010101010101010101010101010101010101010101012A220A2035548EC29E9D85305850E87A2D2642FE7214FF4BB36334070DEAFC3345C3B127";
