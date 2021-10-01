@@ -639,6 +639,9 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
             return parser_ok;
         }
         char buffer[80];
+
+        PARSER_ASSERT_OR_ERROR(fields->command.disburse.to_account.hash.size == 32, parser_context_unexpected_size);
+
         zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *)fields->command.disburse.to_account.hash.bytes, 32);
         if (err != zxerr_ok) {
             return parser_unexepected_error;
