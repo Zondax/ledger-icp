@@ -276,6 +276,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             return parser_ok;
         }
 
+        case 13: {
+            *mn_type = MergeMaturity;
+            return parser_ok;
+        }
+
         default: {
             return parser_unexpected_type;
         }
@@ -549,6 +554,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                         case Spawn :
                         case RemoveHotKey :
                         case AddHotKey :
+                        case MergeMaturity :
                         case IncreaseDissolveDelay : {
                             return 3;
                         }

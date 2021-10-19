@@ -48,6 +48,29 @@ namespace {
 
     }
 
+    TEST(NANOPBTEST, mergeMaturity) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "620210016A02080E";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.which_command, 13);
+        EXPECT_EQ(request.has_id, false);
+        EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id,1);
+        EXPECT_EQ(request.command.merge_maturity.percentage_to_merge, 14);
+    }
+
     TEST(NANOPBTEST, test) {
         uint8_t inBuffer[1000];
         const char *tmp = "0A0012050A0308E8071A0308890122220A2001010101010101010101010101010101010101010101010101010101010101012A220A2035548EC29E9D85305850E87A2D2642FE7214FF4BB36334070DEAFC3345C3B127";

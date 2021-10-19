@@ -62,6 +62,7 @@ typedef enum {
     SetDissolveTimestamp = 6,
     Disburse = 7,
     Spawn = 8,
+    MergeMaturity = 13,
 //    Follow = 9,
 //    Register_Vote = 10,
 //    Split = 11,

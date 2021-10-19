@@ -702,6 +702,45 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
     return parser_no_data;
 }
 
+parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
+                                                 char *outKey, uint16_t outKeyLen,
+                                                 char *outVal, uint16_t outValLen,
+                                                 uint8_t pageIdx, uint8_t *pageCount) {
+
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Merge Maturity");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Percentage");
+        if(fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds == 0){
+            snprintf(outVal, outValLen, "0s");
+            return parser_ok;
+        }
+        char buffer[100];
+        MEMZERO(buffer,sizeof(buffer));
+        uint64_t value = 0;
+        MEMCPY(&value, &fields->command.merge_maturity.percentage_to_merge,4);
+        CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
                                          char *outKey, uint16_t outKeyLen,
                                          char *outVal, uint16_t outValLen) {
