@@ -726,17 +726,14 @@ parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Percentage");
-        if(fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds == 0){
-            snprintf(outVal, outValLen, "0s");
-            return parser_ok;
-        }
         char buffer[100];
         MEMZERO(buffer,sizeof(buffer));
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.merge_maturity.percentage_to_merge,4);
-        CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        if (value > 100){
+            return parser_unexpected_value;
+        }
+        return print_u64(value, outVal, outValLen, pageIdx, pageCount);
     }
     return parser_no_data;
 }
@@ -782,7 +779,7 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
         case AddHotKey: return parser_getItemAddRemoveHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
         case Disburse : return parser_getItemDisburse(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
+        case MergeMaturity : return parser_getItemMergeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         default: return parser_no_data;
     }
 }
