@@ -276,6 +276,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             return parser_ok;
         }
 
+        case 7: {
+            *mn_type = RegisterVote;
+            return parser_ok;
+        }
+
         case 13: {
             *mn_type = MergeMaturity;
             return parser_ok;
@@ -558,7 +563,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                         case IncreaseDissolveDelay : {
                             return 3;
                         }
-
+                        case RegisterVote :
                         case Disburse : {
                             return 4;
                         }
