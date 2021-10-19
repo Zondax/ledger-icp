@@ -808,9 +808,6 @@ parser_error_t parser_getItemFollow(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Topic");
-        char buffer[100];
-        MEMZERO(buffer,sizeof(buffer));
-        uint64_t value = 0;
         ic_nns_governance_pb_v1_Topic topic = fields->command.follow.topic;
         switch (topic) {
             case ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED : {
