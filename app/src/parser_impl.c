@@ -276,6 +276,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             return parser_ok;
         }
 
+        case 5: {
+            *mn_type = Follow;
+            return parser_ok;
+        }
+
         case 7: {
             *mn_type = RegisterVote;
             return parser_ok;
@@ -566,6 +571,11 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                         case RegisterVote :
                         case Disburse : {
                             return 4;
+                        }
+
+                        case Follow : {
+                            pb_size_t follow_count = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
+                            return follow_count > 0 ? 3 + follow_count : 4;
                         }
 
                         default: {

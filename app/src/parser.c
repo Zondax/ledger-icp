@@ -784,6 +784,125 @@ parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
     return parser_no_data;
 }
 
+parser_error_t parser_getItemFollow(uint8_t displayIdx,
+                                          char *outKey, uint16_t outKeyLen,
+                                          char *outVal, uint16_t outValLen,
+                                          uint8_t pageIdx, uint8_t *pageCount) {
+
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Follow");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        if(fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Topic");
+        char buffer[100];
+        MEMZERO(buffer,sizeof(buffer));
+        uint64_t value = 0;
+        ic_nns_governance_pb_v1_Topic topic = fields->command.follow.topic;
+        switch (topic) {
+            case ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED : {
+                snprintf(outVal, outValLen, "Default");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_NEURON_MANAGEMENT :{
+                snprintf(outVal, outValLen, "Neuron Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_EXCHANGE_RATE :{
+                snprintf(outVal, outValLen, "Exchange Rate");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_ECONOMICS :{
+                snprintf(outVal, outValLen, "Network Economics");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_GOVERNANCE :{
+                snprintf(outVal, outValLen, "Governance");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_NODE_ADMIN :{
+                snprintf(outVal, outValLen, "Node Admin");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_PARTICIPANT_MANAGEMENT :{
+                snprintf(outVal, outValLen, "Participant Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_MANAGEMENT :{
+                snprintf(outVal, outValLen, "Subnet Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_CANISTER_MANAGEMENT :{
+                snprintf(outVal, outValLen, "Network Canister Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_KYC :{
+                snprintf(outVal, outValLen, "KYC");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS :{
+                snprintf(outVal, outValLen, "Node Provider Rewards");
+                return parser_ok;
+            }
+            default:{
+                return parser_unexpected_type;
+            }
+        }
+    }
+
+    uint8_t new_displayIdx = displayIdx - 3;
+    pb_size_t follow_count = fields->command.follow.followees_count;
+    if (follow_count > 99){
+        //check for number of chars, but the real limit is lower
+        return parser_unexpected_number_items;
+    }
+    if (follow_count == 0){
+        if(new_displayIdx == 0) {
+            snprintf(outKey, outKeyLen, "Followees");
+            snprintf(outVal, outValLen, "None");
+            return parser_ok;
+        }else{
+            return parser_unexpected_number_items;
+        }
+    }
+    if (new_displayIdx < follow_count){
+        uint64_t id = fields->command.follow.followees[new_displayIdx].id;
+        new_displayIdx ++; //higher by 1
+        char buffer[100];
+        MEMZERO(buffer,sizeof(buffer));
+        uint16_t index = 0;
+        MEMCPY(buffer, (char *)"Followees (", 11);
+        index += 11;
+        uint8_t tens = new_displayIdx / 10;
+        if(tens > 0){
+            char ten = (char) ('0' + tens);
+            MEMCPY(buffer + index, &ten, 1);
+            index ++;
+        }
+        uint8_t ones = new_displayIdx % 10;
+        char one = (char) ('0' + ones);
+        MEMCPY(buffer + index, &one, 1);
+        index ++;
+        MEMCPY(buffer + index, ")", 1);
+        snprintf(outKey, outKeyLen, "%s",buffer);
+        return print_u64(id,outVal, outValLen, pageIdx, pageCount);
+    }
+    return parser_no_data;
+}
+
 
 parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
                                          char *outKey, uint16_t outKeyLen,
@@ -828,6 +947,7 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
         case Disburse : return parser_getItemDisburse(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case MergeMaturity : return parser_getItemMergeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case RegisterVote : return parser_getItemRegisterVote(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case Follow: return parser_getItemFollow(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         default: return parser_no_data;
     }
 }
