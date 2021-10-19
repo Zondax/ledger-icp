@@ -125,7 +125,8 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount {
 
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Follow { 
     ic_nns_governance_pb_v1_Topic topic; 
-    pb_callback_t followees; 
+    pb_size_t followees_count;
+    ic_base_types_pb_v1_NeuronId followees[20]; 
 } ic_nns_governance_pb_v1_ManageNeuron_Follow;
 
 /* The response of the ManageNeuron command
@@ -300,7 +301,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_default {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_default {_ic_nns_governance_pb_v1_Topic_MIN, {{NULL}, NULL}}
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_default {_ic_nns_governance_pb_v1_Topic_MIN, 0, {ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default}}
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_default {false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_init_default {0, {ic_nns_governance_pb_v1_GovernanceError_init_default}}
@@ -330,7 +331,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_zero {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_zero {_ic_nns_governance_pb_v1_Topic_MIN, {{NULL}, NULL}}
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_zero {_ic_nns_governance_pb_v1_Topic_MIN, 0, {ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero}}
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_zero {false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_init_zero {0, {ic_nns_governance_pb_v1_GovernanceError_init_zero}}
@@ -516,8 +517,8 @@ X(a, STATIC,   SINGULAR, UINT64,   e8s,               1)
 
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    topic,             1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,         2)
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_CALLBACK pb_default_field_callback
+X(a, STATIC,   REPEATED, MESSAGE,  followees,         2)
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_followees_MSGTYPE ic_base_types_pb_v1_NeuronId
 
@@ -744,7 +745,6 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 
 /* Maximum encoded size of messages (where known) */
 /* ic_nns_governance_pb_v1_ManageNeuron_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ManageNeuron_Follow_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ManageNeuronResponse_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_GovernanceError_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ListNeurons_size depends on runtime parameters */
@@ -766,6 +766,7 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_size 36
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size 50
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_size 262
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_size 6
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_size 6
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_size 15

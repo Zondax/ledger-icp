@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+import "nanopb.proto";
 package ic_nns_governance.pb.v1;
 
 import "types.proto";
@@ -68,7 +68,7 @@ message ManageNeuron {
 
   message Follow {
     Topic topic = 1;
-    repeated ic_base_types.pb.v1.NeuronId followees = 2;
+    repeated ic_base_types.pb.v1.NeuronId followees = 2  [(nanopb).max_count = 20];
   }
 
   message RegisterVote {
