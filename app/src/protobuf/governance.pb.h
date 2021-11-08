@@ -4,7 +4,6 @@
 #ifndef PB_IC_NNS_GOVERNANCE_PB_V1_GOVERNANCE_PB_H_INCLUDED
 #define PB_IC_NNS_GOVERNANCE_PB_V1_GOVERNANCE_PB_H_INCLUDED
 #include <pb.h>
-#include "common_types.pb.h"
 #include "types.pb.h"
 #include "base_types.pb.h"
 
@@ -13,314 +12,37 @@
 #endif
 
 /* Enum definitions */
-/* Proposal types are organized into topics. Neurons can automatically
- vote based on following other neurons, and these follow
- relationships are defined per topic. */
-typedef enum _ic_nns_governance_pb_v1_Topic { 
-    /* The `Unspecified` topic is used as a fallback when
- following. That is, if no followees are specified for a given
- topic, the followees for this topic are used instead. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED = 0, 
-    /* A special topic by means of which a neuron can be managed by the
- followees for this topic (in this case, there is no fallback to
- 'unspecified'). Votes on this topic are not included in the
- voting history of the neuron (cf., `recent_ballots` in `Neuron`).
-
- For proposals on this topic, only followees on the 'neuron
- management' topic of the neuron that the proposals pertains to
- are allowed to vote.
-
- As the set of eligible voters on this topic is restricted,
- proposals on this topic have a *short voting period*. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_NEURON_MANAGEMENT = 1, 
-    /* All proposals that provide “real time” information about the
- value of ICP, as measured by an IMF SDR, which allows the NNS to
- convert ICP to cycles (which power computation) at a rate which
- keeps their real world cost constant. Votes on this topic are not
- included in the voting history of the neuron (cf.,
- `recent_ballots` in `Neuron`).
-
- Proposals on this topic have a *short voting period* due to their
- frequency. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_EXCHANGE_RATE = 2, 
-    /* All proposals that administer network economics, for example,
- determining what rewards should be paid to node operators. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_ECONOMICS = 3, 
-    /* All proposals that administer governance, for example to freeze
- malicious canisters that are harming the network. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_GOVERNANCE = 4, 
-    /* All proposals that administer node machines, including, but not
- limited to, upgrading or configuring the OS, upgrading or
- configuring the virtual machine framework and upgrading or
- configuring the node replica software. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_ADMIN = 5, 
-    /* All proposals that administer network participants, for example,
- granting and revoking DCIDs (data center identities) or NOIDs
- (node operator identities). */
-    ic_nns_governance_pb_v1_Topic_TOPIC_PARTICIPANT_MANAGEMENT = 6, 
-    /* All proposals that administer network subnets, for example
- creating new subnets, adding and removing subnet nodes, and
- splitting subnets. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_MANAGEMENT = 7, 
-    /* Installing and upgrading “system” canisters that belong to the network.
- For example, upgrading the NNS. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8, 
-    /* Proposals that update KYC information for regulatory purposes,
- for example during the initial Genesis distribution of ICP in the
- form of neurons. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_KYC = 9, 
-    /* Topic for proposals to reward node providers. */
-    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS = 10 
-} ic_nns_governance_pb_v1_Topic;
-
-/* Every neuron is in one of three states.
-
- Note that `Disbursed` is not a state of a neuron, as the neuron is
- consumed throught the act disbursement (using the method
- [Governance::disburse]).
-
- See [neuron::DissolveState] for detail on how the different states
- are represented. */
-typedef enum _ic_nns_governance_pb_v1_NeuronState { 
-    /* Not a valid state. Required by Protobufs. */
-    ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_UNSPECIFIED = 0, 
-    /* In this state, the neuron is not dissolving and has a specific
- `dissolve_delay`. It accrues `age` by the passge of time and it
- can vote if `dissolve_delay` is at least six months. The method
- [Neuron::start_dissolving] can be called to transfer the neuron
- to the `Dissolving` state. The method
- [Neuron::increase_dissolve_delay] can be used to increase the
- dissolve delay without affecting the state or the age of the
- neuron. */
-    ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_NOT_DISSOLVING = 1, 
-    /* In this state, the neuron's `dissolve_delay` decreases with the
- passage of time. While dissolving, the neuron's age is considered
- zero. Eventually it will reach the `Dissolved` state. The method
- [Neuron::stop_dissolving] can be called to transfer the neuron to
- the `NotDissolving` state, and the neuron will start aging again. The
- method [Neuron::increase_dissolve_delay] can be used to increase
- the dissolve delay, but this will not stop the timer or affect
- the age of the neuron. */
-    ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_DISSOLVING = 2, 
-    /* In the dissolved state, the neuron's stake can be disbursed using
- the [Governance::disburse] method. It cannot vote as its
- `dissolve_delay` is considered to be zero.
-
- If the method [Neuron::increase_dissolve_delay] is called in this
- state, the neuron will no longer be dissolving, with the specified
- dissolve delay, and will start aging again.
-
- Neuron holders have an incentive not to keep neurons in the
- 'dissolved' state for a long time: if the holders wants to make
- their tokens liquid, they disburse the neuron's stake, and if
- they want to earn voting rewards, they increase the dissolve
- delay. If these incentives turn out to be insufficient, the NNS
- may decide to impose further restrictions on dissolved neurons. */
-    ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_DISSOLVED = 3 
-} ic_nns_governance_pb_v1_NeuronState;
-
-/* The types of votes the Neuron can issue. */
 typedef enum _ic_nns_governance_pb_v1_Vote { 
-    /* This exists because proto3 defaults to the 0 value on enums.
- This is not a valid choice, i.e., a vote with this choice will
- not be counted. */
     ic_nns_governance_pb_v1_Vote_VOTE_UNSPECIFIED = 0, 
-    /* Vote for the proposal to be adopted. */
     ic_nns_governance_pb_v1_Vote_VOTE_YES = 1, 
-    /* Vote for the proposal to be rejected. */
     ic_nns_governance_pb_v1_Vote_VOTE_NO = 2 
 } ic_nns_governance_pb_v1_Vote;
 
-/* List of NNS functions that can be called by proposals. */
-typedef enum _ic_nns_governance_pb_v1_NnsFunction { 
-    /* This exists because proto3 defaults to the 0 value on enums. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UNSPECIFIED = 0, 
-    /* Combine a specified set of nodes, typically drawn from data centers and
- operators in such a way as to guarantee their independence, into a new
- decentralized subnet.
- The execution of this NNS function first initiates a new instance of
- the distributed key generation protocol. The transcript of that protocol
- is written to a new subnet record in the registry, together with initial
- configuration information for the subnet, from where the nodes comprising
- the subnet pick it up. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_CREATE_SUBNET = 1, 
-    /* Add a new node to a subnet. The node cannot be currently assigned to a
- subnet.
- The execution of this proposal changes an existing subnet record to add
- a node. From the perspective of the NNS, this update is a simple update
- of the subnet record in the registry. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_ADD_NODE_TO_SUBNET = 2, 
-    /* A proposal to add a new canister to be installed and executed in the
- NNS subnetwork.
- The root canister, which controls all canisters on the NNS except for
- itself, handles this proposal type. The call also expects the Wasm module
- that shall be installed. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_NNS_CANISTER_INSTALL = 3, 
-    /* A proposal to upgrade an existing canister in the NNS subnetwork.
- This proposal type is executed by the root canister. Beyond upgrading
- the Wasm module of the target canister, the proposal can also set the
- authorization information and the allocations. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_NNS_CANISTER_UPGRADE = 4, 
-    /* A proposal to bless a new version to which the replicas can be
- upgraded.
- The proposal registers a replica version (identified by the hash of the
- installation image) in the registry. Besides creating a record for that
- version, the proposal also appends that version to the list of "blessed
- versions" that can be installed on a subnet. By itself, this proposal
- does not effect any upgrade. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_BLESS_REPLICA_VERSION = 5, 
-    /* Update a subnet's recovery CUP (used to recover subnets that have stalled).
- Nodes that find a recovery CUP for their subnet will load that CUP from
- the registry and restart the replica from that CUP. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_RECOVER_SUBNET = 6, 
-    /* Update a subnet's configuration.
- This proposal updates the subnet record in the registry, with the changes
- being picked up by the nodes on the subnet when they reference the
- respective registry version. Subnet configuration comprises protocol
- parameters that must be consistent across the subnet (e.g. message sizes). */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UPDATE_CONFIG_OF_SUBNET = 7, 
-    /* Assign an identity to a node operator, such as a funding partner,
- associating key information regarding its ownership, the jurisdiction
- in which it is located, and other information.
- The node operator is stored as a record in the registry. It contains
- the remaining node allowance for that node operator, that is the number
- of nodes the node operator can still add to the IC. When an additional
- node is added by the node operator, the remaining allowance is decreased. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_ASSIGN_NOID = 8, 
-    /* A proposal to upgrade the root canister in the NNS subnetwork.
- The proposal is processed by the Lifeline canister, which controls the
- root canister. The proposal updates the Wasm module as well as the
- authorization settings. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_NNS_ROOT_UPGRADE = 9, 
-    /* Update the ICP/XDR conversion rate.
- Changes the ICP-to-XDR conversion rate in the governance canister. This
- setting affects cycles pricing (as the value of cycles shall be constant
- with respect to IMF SDRs) as well as the rewards paid for nodes, which
- are expected to be specified in terms of IMF SDRs as well. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_ICP_XDR_CONVERSION_RATE = 10, 
-    /* Update the replica version running on a given subnet.
- The proposal changes the replica version that is used on the specified
- subnet. The version must be contained in the list of blessed replica
- versions. The upgrade is performed when the subnet creates the next
- regular CUP. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UPDATE_SUBNET_REPLICA_VERSION = 11, 
-    /* / Clear the provisional whitelist.
-/ The proposal changes the provisional whitelist to the empty list. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_CLEAR_PROVISIONAL_WHITELIST = 12, 
-    /* Removes a node from a subnet. The node must be currently assigned to a
- subnet.
- The execution of this proposal changes an existing subnet record to remove
- a node. From the perspective of the NNS, this update is a simple update
- of the subnet record in the registry. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_REMOVE_NODES_FROM_SUBNET = 13, 
-    /* Informs the cycles minting canister that a certain principal is
- authorized to use certain subnetworks (from a list). Can also be
- used to set the "default" list of subnetworks that principals
- without special authorization are allowed to use. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_SET_AUTHORIZED_SUBNETWORKS = 14, 
-    /* Change the Firewall configuration in the registry. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_SET_FIREWALL_CONFIG = 15, 
-    /* Change a Node Operator's allowance in the registry. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UPDATE_NODE_OPERATOR_CONFIG = 16, 
-    /* Stop or start an NNS canister. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_STOP_OR_START_NNS_CANISTER = 17, 
-    /* Remove unassigned nodes from the registry. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_REMOVE_NODES = 18, 
-    /* Uninstall code of a canister. */
-    ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UNINSTALL_CODE = 19 
-} ic_nns_governance_pb_v1_NnsFunction;
+typedef enum _ic_nns_governance_pb_v1_Topic { 
+    ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED = 0, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_NEURON_MANAGEMENT = 1, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_EXCHANGE_RATE = 2, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_ECONOMICS = 3, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_GOVERNANCE = 4, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_ADMIN = 5, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_PARTICIPANT_MANAGEMENT = 6, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_MANAGEMENT = 7, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_KYC = 9, 
+    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS = 10 
+} ic_nns_governance_pb_v1_Topic;
 
-/* The proposal status, with respect to decision making and execution.
- See also ProposalRewardStatus. */
-typedef enum _ic_nns_governance_pb_v1_ProposalStatus { 
-    ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED = 0, 
-    /* A decision (adopt/reject) has yet to be made. */
-    ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_OPEN = 1, 
-    /* The proposal has been rejected. */
-    ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_REJECTED = 2, 
-    /* The proposal has been adopted (sometimes also called
- "accepted"). At this time, either execution as not yet started,
- or it has but the outcome is not yet known. */
-    ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_ADOPTED = 3, 
-    /* The proposal was adopted and successfully executed. */
-    ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_EXECUTED = 4, 
-    /* The proposal was adopted, but execution failed. */
-    ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_FAILED = 5 
-} ic_nns_governance_pb_v1_ProposalStatus;
-
-/* The proposal status, with respect to reward distribution.
- See also ProposalStatus. */
-typedef enum _ic_nns_governance_pb_v1_ProposalRewardStatus { 
-    ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_UNSPECIFIED = 0, 
-    /* The proposal still accept votes, for the purpose of
- vote rewards. This implies nothing on the ProposalStatus. */
-    ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_ACCEPT_VOTES = 1, 
-    /* The proposal no longer accepts votes. It is due to settle
- at the next reward event. */
-    ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_READY_TO_SETTLE = 2, 
-    /* The proposal has been taken into account in a reward event. */
-    ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_SETTLED = 3, 
-    /* The proposal is not eligible to be taken into account in a reward event. */
-    ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_INELIGIBLE = 4 
-} ic_nns_governance_pb_v1_ProposalRewardStatus;
-
-/* Proposal types are organized into topics. Neurons can automatically
- vote based on following other neurons, and these follow
- relationships are defined per topic. */
 typedef enum _ic_nns_governance_pb_v1_GovernanceError_ErrorType { 
-    /* The `Unspecified` topic is used as a fallback when
- following. That is, if no followees are specified for a given
- topic, the followees for this topic are used instead. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNSPECIFIED = 0, 
-    /* A special topic by means of which a neuron can be managed by the
- followees for this topic (in this case, there is no fallback to
- 'unspecified'). Votes on this topic are not included in the
- voting history of the neuron (cf., `recent_ballots` in `Neuron`).
-
- For proposals on this topic, only followees on the 'neuron
- management' topic of the neuron that the proposals pertains to
- are allowed to vote.
-
- As the set of eligible voters on this topic is restricted,
- proposals on this topic have a *short voting period*. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_OK = 1, 
-    /* All proposals that provide “real time” information about the
- value of ICP, as measured by an IMF SDR, which allows the NNS to
- convert ICP to cycles (which power computation) at a rate which
- keeps their real world cost constant. Votes on this topic are not
- included in the voting history of the neuron (cf.,
- `recent_ballots` in `Neuron`).
-
- Proposals on this topic have a *short voting period* due to their
- frequency. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNAVAILABLE = 2, 
-    /* All proposals that administer network economics, for example,
- determining what rewards should be paid to node operators. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_NOT_AUTHORIZED = 3, 
-    /* All proposals that administer governance, for example to freeze
- malicious canisters that are harming the network. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_NOT_FOUND = 4, 
-    /* All proposals that administer node machines, including, but not
- limited to, upgrading or configuring the OS, upgrading or
- configuring the virtual machine framework and upgrading or
- configuring the node replica software. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_COMMAND = 5, 
-    /* All proposals that administer network participants, for example,
- granting and revoking DCIDs (data center identities) or NOIDs
- (node operator identities). */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_NOT_DISSOLVING = 6, 
-    /* All proposals that administer network subnets, for example
- creating new subnets, adding and removing subnet nodes, and
- splitting subnets. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_DISSOLVING = 7, 
-    /* Installing and upgrading “system” canisters that belong to the network.
- For example, upgrading the NNS. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_DISSOLVED = 8, 
-    /* Proposals that update KYC information for regulatory purposes,
- for example during the initial Genesis distribution of ICP in the
- form of neurons. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_HOT_KEY = 9, 
-    /* Topic for proposals to reward node providers. */
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_RESOURCE_EXHAUSTED = 10, 
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_PRECONDITION_FAILED = 11, 
     ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_EXTERNAL = 12, 
@@ -331,22 +53,10 @@ typedef enum _ic_nns_governance_pb_v1_GovernanceError_ErrorType {
 } ic_nns_governance_pb_v1_GovernanceError_ErrorType;
 
 /* Struct definitions */
-/* This proposal payload is used to reward a node provider by minting
- ICPTs directly to the node provider's ledger account, or into a new
- neuron created on behalf of the node provider. */
-typedef struct _ic_nns_governance_pb_v1_ApproveGenesisKYC { 
-    /* The NodeProvider to reward. */
-    pb_callback_t principals; 
-} ic_nns_governance_pb_v1_ApproveGenesisKYC;
-
 typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse { 
-    pb_callback_t neuron_infos; 
+    pb_callback_t neuron_ids; 
     pb_callback_t full_neurons; 
 } ic_nns_governance_pb_v1_ListNeuronsResponse;
-
-typedef struct _ic_nns_governance_pb_v1_ListProposalInfoResponse { 
-    pb_callback_t proposal_info; 
-} ic_nns_governance_pb_v1_ListProposalInfoResponse;
 
 typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse { 
     char dummy_field;
@@ -360,169 +70,79 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteRespons
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse;
 
-/* A reward event is an event at which neuron maturity is increased */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StartDissolving { 
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuron_StartDissolving;
 
-/* This represents the whole NNS governance system. It contains all
- information about the NNS governance system that must be kept
- across upgrades of the NNS governance system. */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StopDissolving { 
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuron_StopDissolving;
 
-/* Adds and/or removes NodeProviders from the list of current
- node providers. */
-typedef struct _ic_nns_governance_pb_v1_Motion { 
-    pb_callback_t motion_text; 
-} ic_nns_governance_pb_v1_Motion;
-
-/* Payload of a proposal that calls a function on another NNS
- canister. The canister and function to call is derived from the
- `nns_function`. */
 typedef struct _ic_nns_governance_pb_v1_Neuron_Followees { 
-    /* This enum value determines what canister to call and what NNS
- function to call on that canister. */
     pb_callback_t followees; 
 } ic_nns_governance_pb_v1_Neuron_Followees;
 
-typedef struct _ic_nns_governance_pb_v1_SetDefaultFollowees { 
-    pb_callback_t default_followees; 
-} ic_nns_governance_pb_v1_SetDefaultFollowees;
-
-typedef struct _ic_nns_governance_pb_v1_Ballot { 
-    ic_nns_governance_pb_v1_Vote vote; 
-    uint64_t voting_power; 
-} ic_nns_governance_pb_v1_Ballot;
-
-/* How did a neuron vote in the recent past? This data is used by
- other neurons to determine what neurons to follow. */
 typedef struct _ic_nns_governance_pb_v1_BallotInfo { 
     bool has_proposal_id;
-    ic_nns_common_pb_v1_ProposalId proposal_id; 
+    ic_base_types_pb_v1_ProposalId proposal_id; 
     ic_nns_governance_pb_v1_Vote vote; 
 } ic_nns_governance_pb_v1_BallotInfo;
-
-typedef struct _ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount { 
-    bool has_controller;
-    ic_base_types_pb_v1_PrincipalId controller; 
-    uint64_t memo; 
-} ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount;
-
-/* For all Neurons controlled by the given principals, set their
- KYC status to `kyc_verified=true`. */
-typedef struct _ic_nns_governance_pb_v1_ExecuteNnsFunction { 
-    ic_nns_governance_pb_v1_NnsFunction nns_function; 
-    pb_callback_t payload; 
-} ic_nns_governance_pb_v1_ExecuteNnsFunction;
 
 typedef struct _ic_nns_governance_pb_v1_GovernanceError { 
     ic_nns_governance_pb_v1_GovernanceError_ErrorType error_type; 
     pb_callback_t error_message; 
 } ic_nns_governance_pb_v1_GovernanceError;
 
-typedef struct _ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry { 
-    int32_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_Neuron_Followees value; 
-} ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry;
-
 typedef struct _ic_nns_governance_pb_v1_ListNeurons { 
     pb_callback_t neuron_ids; 
     bool include_neurons_readable_by_caller; 
 } ic_nns_governance_pb_v1_ListNeurons;
 
-typedef struct _ic_nns_governance_pb_v1_ListProposalInfo { 
-    uint32_t limit; 
-    bool has_before_proposal;
-    ic_nns_common_pb_v1_ProposalId before_proposal; 
-    pb_callback_t exclude_topic; 
-    pb_callback_t include_reward_status; 
-    pb_callback_t include_status; 
-} ic_nns_governance_pb_v1_ListProposalInfo;
-
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse { 
-    bool has_refreshed_neuron_id;
-    ic_nns_common_pb_v1_NeuronId refreshed_neuron_id; 
-} ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse;
-
 typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse { 
     uint64_t transfer_block_height; 
 } ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse { 
-    bool has_created_neuron_id;
-    ic_nns_common_pb_v1_NeuronId created_neuron_id; 
-} ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse;
-
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse { 
-    bool has_proposal_id;
-    ic_nns_common_pb_v1_ProposalId proposal_id; 
-} ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse;
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse { 
+    uint64_t merged_maturity_e8s; 
+    uint64_t new_stake_e8s; 
+} ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse;
 
 typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse { 
     bool has_created_neuron_id;
-    ic_nns_common_pb_v1_NeuronId created_neuron_id; 
+    ic_base_types_pb_v1_NeuronId created_neuron_id; 
 } ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse { 
-    bool has_created_neuron_id;
-    ic_nns_common_pb_v1_NeuronId created_neuron_id; 
-} ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse;
-
-/* Proposals with restricted voting are not included unless the caller
- is allowed to vote on them.
-
- The actual ballots of the proposal are restricted to ballots cast
- by the caller. */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_AddHotKey { 
-    /* Limit on the number of [ProposalInfo] to return. If no value is
- specified, or if a value greater than 100 is specified, 100
- will be used. */
+    /* Was originally `map<fixed64, NeuronInfo> neuron_infos = 1`
+ It had to be modified to this form to annotate the key with js_type. */
     bool has_new_hot_key;
     ic_base_types_pb_v1_PrincipalId new_hot_key; 
 } ic_nns_governance_pb_v1_ManageNeuron_AddHotKey;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh { 
-    pb_size_t which_by;
-    union {
-        uint64_t memo;
-    } by; 
-} ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh;
-
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron { 
-    bool has_new_controller;
-    ic_base_types_pb_v1_PrincipalId new_controller; 
-    uint64_t amount_e8s; 
-    uint64_t dissolve_delay_seconds; 
-    bool kyc_verified; 
-    uint64_t nonce; 
-} ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron;
-
-/* The arguments to the method `claim_or_refresh_neuron_from_account`. */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount { 
-    /* The principal for which to refresh the account. If not specified,
- defaults to the caller. */
     uint64_t e8s; 
 } ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount;
 
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Follow { 
     ic_nns_governance_pb_v1_Topic topic; 
-    pb_callback_t followees; 
+    pb_size_t followees_count;
+    ic_base_types_pb_v1_NeuronId followees[15]; 
 } ic_nns_governance_pb_v1_ManageNeuron_Follow;
 
-/* This is a view of the ProposalData returned by API queries and is NOT used
- for storage. The ballots are restricted to those of the caller's neurons and
- additionally it has the computed fields, topic, status, and reward_status. */
+/* The response of the ManageNeuron command
+
+ There is a dedicated response type for each `ManageNeuron.command` field */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay { 
-    /* The unique id for this proposal. */
     uint32_t additional_dissolve_delay_seconds; 
 } ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay;
 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity { 
+    uint32_t percentage_to_merge; 
+} ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity;
+
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_RegisterVote { 
     bool has_proposal;
-    ic_nns_common_pb_v1_ProposalId proposal; 
+    ic_base_types_pb_v1_ProposalId proposal; 
     ic_nns_governance_pb_v1_Vote vote; 
 } ic_nns_governance_pb_v1_ManageNeuron_RegisterVote;
 
@@ -531,196 +151,42 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey {
     ic_base_types_pb_v1_PrincipalId hot_key_to_remove; 
 } ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey;
 
-/* Network economics contains the parameters for several operations related
- to the economy of the network. When submitting a NetworkEconomics proposal
- default values (0) are considered unchanged, so a valid proposal only needs
- to set the parameters that it wishes to change.
- In other words, it's not possible to set any of the values of
- NetworkEconomics to 0.
-
- NOTE: If adding a value to this proto, make sure there is a corresponding
- `if` in Governance::perform_action(). */
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp { 
-    /* The number of E8s (10E-8 of an ICP token) that a rejected
- proposal will cost.
-
- This fee should be controlled by an #Economic proposal type.
- The fee does not apply for ManageNeuron proposals. */
-    uint64_t dissolve_timestamp_seconds; 
-} ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp;
-
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Spawn { 
     bool has_new_controller;
     ic_base_types_pb_v1_PrincipalId new_controller; 
 } ic_nns_governance_pb_v1_ManageNeuron_Spawn;
 
-/* Response to claim_or_refresh_neuron_from_account. */
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Split { 
-    /* Specified in case of error. */
-    uint64_t amount_e8s; 
-} ic_nns_governance_pb_v1_ManageNeuron_Split;
-
-typedef struct _ic_nns_governance_pb_v1_NetworkEconomics { 
-    uint64_t reject_cost_e8s; 
-    uint64_t neuron_minimum_stake_e8s; 
-    uint64_t neuron_management_fee_per_proposal_e8s; 
-    uint64_t minimum_icp_xdr_rate; 
-    uint64_t neuron_spawn_dissolve_delay_seconds; 
-    uint64_t maximum_node_provider_rewards_e8s; 
-    uint64_t transaction_fee_e8s; 
-    uint32_t max_proposals_to_keep_per_topic; 
-} ic_nns_governance_pb_v1_NetworkEconomics;
-
-/* The result of querying for the state of a single neuron. */
 typedef struct _ic_nns_governance_pb_v1_NeuronInfo { 
-    /* The exact time at which this data was computed. This means, for
- example, that the exact time that this neuron will enter the
- dissolved state, assuming it is currently dissolving, is given
- by `retrieved_at_timestamp_seconds+dissolve_delay_seconds`. */
     uint64_t retrieved_at_timestamp_seconds; 
-    /* The current state of the neuron. See [NeuronState] for a
- description of the different states. */
-    ic_nns_governance_pb_v1_NeuronState state; 
-    /* The current age of the neuron. See [Neuron::age_seconds]
- for details on how it is computed. */
     uint64_t age_seconds; 
-    /* The current dissolve delay of the neuron. See
- [Neuron::dissolve_delay_seconds] for details on how it is
- computed. */
     uint64_t dissolve_delay_seconds; 
-    /* See [Neuron::recent_ballots] for a description. */
     pb_callback_t recent_ballots; 
-    /* Current voting power of the neuron. */
     uint64_t voting_power; 
-    /* When the Neuron was created. A neuron can only vote on proposals
- submitted after its creation date. */
     uint64_t created_timestamp_seconds; 
 } ic_nns_governance_pb_v1_NeuronInfo;
 
-/* A transfer performed from some account to stake a new neuron. */
 typedef struct _ic_nns_governance_pb_v1_NeuronStakeTransfer { 
-    /* When the transfer arrived at the governance canister. */
     uint64_t transfer_timestamp; 
-    /* The principal that made the transfer. */
     bool has_from;
     ic_base_types_pb_v1_PrincipalId from; 
-    /* The (optional) subaccount from which the transfer was made. */
     pb_callback_t from_subaccount; 
-    /* The subaccount to which the transfer was made. */
     pb_callback_t to_subaccount; 
-    /* The amount of stake that was transfered. */
     uint64_t neuron_stake_e8s; 
-    /* The block height at which the transfer occurred. */
     uint64_t block_height; 
-    /* The memo sent with the transfer. */
     uint64_t memo; 
 } ic_nns_governance_pb_v1_NeuronStakeTransfer;
 
-/* If adopted, a motion should guide the future strategy of the
- Internet Computer ecosystem. */
 typedef struct _ic_nns_governance_pb_v1_Neuron_FolloweesEntry { 
-    /* The text of the motion. Maximum 100kib. */
     int32_t key; 
     bool has_value;
     ic_nns_governance_pb_v1_Neuron_Followees value; 
 } ic_nns_governance_pb_v1_Neuron_FolloweesEntry;
 
-/* The entity that owns the nodes that run the network.
-
- Note that this is different from a node operator, the entity that
- operates the nodes. In terms of responsibilities, the node operator
- is responsible for adding/removing and generally making sure that
- the nodes are working, while the NodeProvider is the entity that
- is compensated.
-
- Note: The NodeOperatorRecord is defined in:
- rs/protobuf/def/registry/node_operator/v1/node_operator.proto. */
-typedef struct _ic_nns_governance_pb_v1_NodeProvider { 
-    /* The ID of the node provider. */
-    bool has_id;
-    ic_base_types_pb_v1_PrincipalId id; 
-} ic_nns_governance_pb_v1_NodeProvider;
-
-typedef struct _ic_nns_governance_pb_v1_RewardEvent { 
-    uint64_t day_after_genesis; 
-    uint64_t actual_timestamp_seconds; 
-    pb_callback_t settled_proposals; 
-    uint64_t distributed_e8s_equivalent; 
-} ic_nns_governance_pb_v1_RewardEvent;
-
-/* The response of the ManageNeuron command
-
- There is a dedicated response type for each `ManageNeuron.command` field */
-typedef struct _ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount { 
-    bool has_to_account;
-    ic_ledger_pb_v1_AccountIdentifier to_account; 
-} ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount;
-
-/* All operations that modify the state of an existing neuron are
- represented by instances of `ManageNeuron`.
-
- All commands are available to the `controller` of the neuron. In
- addition, commands related to voting, i.g., [manage_neuron::Follow]
- and [manage_neuron::RegisterVote], are also available to the
- registered hot keys of the neuron. */
-typedef struct _ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron { 
-    /* This is the legacy way to specify neuron IDs that is now discouraged. */
-    uint64_t dissolve_delay_seconds; 
-} ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron;
-
-typedef struct _ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry { 
-    int32_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_Neuron_Followees value; 
-} ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry;
-
-typedef struct _ic_nns_governance_pb_v1_Tally { 
-    uint64_t timestamp_seconds; 
-    uint64_t yes; 
-    uint64_t no; 
-    uint64_t total; 
-} ic_nns_governance_pb_v1_Tally;
-
-/* Changes the default followees to match the one provided.
- This completely replaces the default followees so entries for all
- Topics (except ManageNeuron) must be provided on each proposal. */
-typedef struct _ic_nns_governance_pb_v1_AddOrRemoveNodeProvider { 
-    pb_size_t which_change;
-    union {
-        ic_nns_governance_pb_v1_NodeProvider to_add;
-        ic_nns_governance_pb_v1_NodeProvider to_remove;
-    } change; 
-} ic_nns_governance_pb_v1_AddOrRemoveNodeProvider;
-
-typedef struct _ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse { 
-    pb_size_t which_result;
-    union {
-        ic_nns_governance_pb_v1_GovernanceError error;
-        ic_nns_common_pb_v1_NeuronId neuron_id;
-    } result; 
-} ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse;
-
-typedef struct _ic_nns_governance_pb_v1_Governance { 
-    pb_callback_t neurons; 
-    pb_callback_t proposals; 
-    pb_callback_t to_claim_transfers; 
-    uint64_t wait_for_quiet_threshold_seconds; 
-    bool has_economics;
-    ic_nns_governance_pb_v1_NetworkEconomics economics; 
-    bool has_latest_reward_event;
-    ic_nns_governance_pb_v1_RewardEvent latest_reward_event; 
-    pb_callback_t in_flight_commands; 
-    uint64_t genesis_timestamp_seconds; 
-    pb_callback_t node_providers; 
-    pb_callback_t default_followees; 
-    uint64_t short_voting_period_seconds; 
-} ic_nns_governance_pb_v1_Governance;
-
-typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry { 
+typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry { 
     uint64_t key; 
     bool has_value;
     ic_nns_governance_pb_v1_NeuronInfo value; 
-} ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry;
+} ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry;
 
 typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse { 
     pb_size_t which_command;
@@ -730,22 +196,12 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse {
         ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse disburse;
         ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse spawn;
         ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse follow;
-        ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse make_proposal;
         ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse register_vote;
-        ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse split;
-        ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse disburse_to_neuron;
-        ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse claim_or_refresh;
+        ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse merge_maturity;
     } command; 
 } ic_nns_governance_pb_v1_ManageNeuronResponse;
 
-/* A request to list neurons. The "requested list", i.e., the list of
- neuron IDs to retrieve information about, is the union of the list
- of neurons listed in `neuron_ids` and, if `caller_neurons` is true,
- the list of neuron IDs of neurons for which the caller is the
- controller or one of the hot keys. */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Configure { 
-    /* The neurons to get information about. The "requested list"
- contains all of these neuron IDs. */
     pb_size_t which_operation;
     union {
         ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay increase_dissolve_delay;
@@ -753,217 +209,52 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Configure {
         ic_nns_governance_pb_v1_ManageNeuron_StopDissolving stop_dissolving;
         ic_nns_governance_pb_v1_ManageNeuron_AddHotKey add_hot_key;
         ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey remove_hot_key;
-        ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp set_dissolve_timestamp;
     } operation; 
 } ic_nns_governance_pb_v1_ManageNeuron_Configure;
 
-/* A response to a `ListNeurons` request.
-
- The "requested list" is described in `ListNeurons`. */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse { 
-    /* For each neuron ID in the "requested list", if this neuron exists,
- its `NeuronInfo` at the time of the call will be in this map. */
     bool has_amount;
     ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount amount; 
-    /* For each neuron ID in the "requested list", if the neuron exists,
- and the caller is authorized to read the full neuron (controller,
- hot key, or controller or hot key of some followee on the
- `ManageNeuron` topic). */
     bool has_to_account;
     ic_ledger_pb_v1_AccountIdentifier to_account; 
 } ic_nns_governance_pb_v1_ManageNeuron_Disburse;
 
-/* This structure represents a neuron "at rest" in governance system of
- the Internet Computer IC. */
 typedef struct _ic_nns_governance_pb_v1_Neuron { 
-    /* The id of the neuron.
-
- This is stored here temporarily, since its also stored on the map
- that contains neurons.
-
- Initialization uses ids for the following graph. We need neurons
- to come into existence at genesis with pre-chosen ids, so a
- neuron needs to have an id. We could alternatively choose a
- unique naming scheme instead and chose the ids on the
- initialization of the canister. */
     bool has_id;
-    ic_nns_common_pb_v1_NeuronId id; 
-    /* The principal of the ICP ledger account where the locked ICP
- balance resides. This principal is indistinguishable from one
- identifying a public key pair, such that those browsing the ICP
- ledger cannot tell which balances belong to neurons. */
+    ic_base_types_pb_v1_NeuronId id; 
     pb_callback_t account; 
-    /* The principal that actually controls the neuron. The principal
- must identify a public key pair, which acts as a “master key”,
- such that the corresponding secret key should be kept very
- secure. The principal may control many neurons. */
     bool has_controller;
     ic_base_types_pb_v1_PrincipalId controller; 
-    /* Keys that can be used to perform actions with limited privileges
- without exposing the secret key corresponding to the principal
- e.g. could be a WebAuthn key. */
     pb_callback_t hot_keys; 
-    /* The amount of staked ICP tokens, measured in fractions of 10E-8
- of an ICP.
-
- Cached record of the locked ICP balance on the ICP ledger.
-
- For neuron creation: has to contain some minimum amount. A
- spawned neuron with less stake cannot increase its dissolve
- delay. */
     uint64_t cached_neuron_stake_e8s; 
-    /* The amount of ICP that this neuron has forfeited due to making
- proposals that were subsequently rejected or from using the
- 'manage neurons through proposals' functionality. Must be smaller
- than 'neuron_stake_e8s'. When a neuron is disbursed, these ICP
- will be burned. */
     uint64_t neuron_fees_e8s; 
-    /* When the Neuron was created. A neuron can only vote on proposals
- submitted after its creation date. */
     uint64_t created_timestamp_seconds; 
-    /* The timestamp, in seconds from the Unix epoch, corresponding to
- the time this neuron has started aging. This is either the
- creation time or the last time at which the neuron has stopped
- dissolving.
-
- This value is meaningless when the neuron is dissolving, since a
- dissolving neurons always has age zero. The canonical value of
- this field for a dissolving neuron is `u64::MAX`. */
     uint64_t aging_since_timestamp_seconds; 
-    /* When the dissolve timer is running, this stores the timestamp,
- in seconds from the Unix epoch, at which the neuron becomes
- dissolved.
-
- At any time while the neuron is dissolving, the neuron owner
- may pause dissolving, in which case `dissolve_delay_seconds`
- will get assigned to: `when_dissolved_timestamp_seconds -
- <timestamp when the action is taken>`. */
     pb_size_t which_dissolve_state;
     union {
         uint64_t when_dissolved_timestamp_seconds;
         uint64_t dissolve_delay_seconds;
     } dissolve_state; 
-    /* When the dissolve timer is stopped, this stores how much time,
- in seconds, the dissolve timer will be started with. Can be at
- most 8 years.
-
- At any time while in this state, the neuron owner may (re)start
- dissolving, in which case `when_dissolved_timestamp_seconds`
- will get assigned to: `<timestamp when the action is taken> +
- dissolve_delay_seconds`. */
     pb_callback_t followees; 
-    /* Map `Topic` to followees. The key is represented by an integer as
- Protobuf does not support enum keys in maps. */
     pb_callback_t recent_ballots; 
-    /* Information about how this neuron voted in the recent past. It
- only contains proposals that the neuron voted yes or no on. */
     bool kyc_verified; 
-    /* `true` if this neuron has passed KYC, `false` otherwise */
     bool has_transfer;
     ic_nns_governance_pb_v1_NeuronStakeTransfer transfer; 
-    /* The record of the transfer that was made to create this neuron. */
     uint64_t maturity_e8s_equivalent; 
-    /* The accumulated maturity of the neuron, in "e8s equivalent".
-
- The unit is "e8s equivalent" to insist that, while this quantity is on
- the same scale as ICPs, maturity is not directly convertible to ICPs:
- conversion requires a minting event to spawn a new neuron. */
     bool not_for_profit; 
 } ic_nns_governance_pb_v1_Neuron;
 
-typedef struct _ic_nns_governance_pb_v1_ProposalData_BallotsEntry { 
-    uint64_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_Ballot value; 
-} ic_nns_governance_pb_v1_ProposalData_BallotsEntry;
+/* All operations that modify the state of an existing neuron are
+ represented by instances of `ManageNeuron`.
 
-typedef struct _ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry { 
-    uint64_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_Ballot value; 
-} ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry;
-
-/* A proposal is the immutable input of a proposal submission. This contains
- all the information from the original proposal submission.
-
- Making a proposal implicitly votes yes. */
-typedef struct _ic_nns_governance_pb_v1_RewardNodeProvider { 
-    /* Text providing a short description of the proposal, composed
- using a maximum of 280 bytes of characters. */
-    bool has_node_provider;
-    ic_nns_governance_pb_v1_NodeProvider node_provider; 
-    /* The Web address of additional content required to evaluate the
- proposal, specified using HTTPS. For example, the address might
- describe content supporting the assignment of a DCID (data center
- id) to a new data center. The URL string must not be longer than
- 2000 bytes. */
-    uint64_t amount_e8s; 
-    /* This type of proposal calls a major function on a specified
- target neuron. Only the followees of the target neuron (on the
- topic [Topic::ManageNeuron]) may vote on these proposals,
- which effectively provides the followees with control over the
- target neuron. This can provide a convenient and highly secure
- means for a team of individuals to manage an important
- neuron. For example, a neuron might hold a large balance, or
- belong to an organization of high repute, and be publicized so
- that many other neurons can follow its vote. In both cases,
- managing the private key of the principal securely could be
- problematic (either a single copy is held, which is very
- insecure and provides for a single party to take control, or a
- group of individuals must divide responsibility, for example
- using threshold cryptography, which is complex and time
- consuming). To address this, using this proposal type, the
- important neuron can be configured to follow the neurons
- controlled by individual members of a team. Now they can submit
- proposals to make the important neuron perform actions, which
- are adopted if and only if a majority of them vote to
- adopt. Nearly any command on the target neuron can be executed,
- including commands that change the follow rules, allowing the
- set of team members to be dynamic. Only the final step of
- dissolving the neuron once its dissolve delay reaches zero
- cannot be performed using this type of proposal (since this
- would allow control/“ownership” over the locked balances to be
- transferred). To prevent a neuron falling under the malign
- control of the principal’s private key by accident, the private
- key can be destroyed so that the neuron can only be controlled
- by its followees, although this makes it impossible to
- subsequently unlock the balance. */
-    pb_size_t which_reward_mode;
-    union {
-        ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron reward_to_neuron;
-        ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount reward_to_account;
-    } reward_mode; 
-} ic_nns_governance_pb_v1_RewardNodeProvider;
-
-typedef struct _ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand { 
-    uint64_t timestamp; 
-    pb_size_t which_command;
-    union {
-        ic_nns_governance_pb_v1_ManageNeuron_Disburse disburse;
-        ic_nns_governance_pb_v1_ManageNeuron_Split split;
-        ic_nns_governance_pb_v1_ManageNeuron_Spawn spawn;
-        ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron disburse_to_neuron;
-        ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount claim_or_refresh;
-    } command; 
-} ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand;
-
-typedef struct _ic_nns_governance_pb_v1_Governance_NeuronsEntry { 
-    uint64_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_Neuron value; 
-} ic_nns_governance_pb_v1_Governance_NeuronsEntry;
-
-/* A ProposalData contains everything related to an open proposal:
- the proposal itself (immutable), as well as mutable data such as
- ballots. */
+ All commands are available to the `controller` of the neuron. In
+ addition, commands related to voting, i.g., [manage_neuron::Follow]
+ and [manage_neuron::RegisterVote], are also available to the
+ registered hot keys of the neuron. */
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron { 
-    /* This is stored here temporarily. It is also stored on the map
- that contains proposals.
-
- Immutable: The unique id for this proposal. */
+    /* This is the legacy way to specify neuron IDs that is now discouraged. */
     bool has_id;
-    ic_nns_common_pb_v1_NeuronId id; 
-    /* Immutable: The ID of the neuron that made this proposal. */
+    ic_base_types_pb_v1_NeuronId id; 
     pb_size_t which_command;
     union {
         ic_nns_governance_pb_v1_ManageNeuron_Configure configure;
@@ -971,119 +262,24 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron {
         ic_nns_governance_pb_v1_ManageNeuron_Spawn spawn;
         ic_nns_governance_pb_v1_ManageNeuron_Follow follow;
         ic_nns_governance_pb_v1_ManageNeuron_RegisterVote register_vote;
-        ic_nns_governance_pb_v1_ManageNeuron_Split split;
-        ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron disburse_to_neuron;
-        ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh claim_or_refresh;
+        ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity merge_maturity;
     } command; 
-    /* Immutable: The amount of ICP in E8s to be charged to the proposer if the
- proposal is rejected. */
     pb_size_t which_neuron_id_or_subaccount;
     union {
         pb_callback_t subaccount;
-        ic_nns_common_pb_v1_NeuronId neuron_id;
+        ic_base_types_pb_v1_NeuronId neuron_id;
     } neuron_id_or_subaccount; 
 } ic_nns_governance_pb_v1_ManageNeuron;
 
-typedef struct _ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry { 
-    uint64_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand value; 
-} ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry;
-
-/* A tally of votes. */
-typedef struct _ic_nns_governance_pb_v1_Proposal { 
-    /* When was this tally made */
-    pb_callback_t summary; 
-    /* Yeses, in voting power unit. */
-    pb_callback_t url; 
-    /* Noes, in voting power unit. */
-    pb_size_t which_action;
-    union {
-        ic_nns_governance_pb_v1_ManageNeuron manage_neuron;
-        ic_nns_governance_pb_v1_NetworkEconomics manage_network_economics;
-        ic_nns_governance_pb_v1_Motion motion;
-        ic_nns_governance_pb_v1_ExecuteNnsFunction execute_nns_function;
-        ic_nns_governance_pb_v1_ApproveGenesisKYC approve_genesis_kyc;
-        ic_nns_governance_pb_v1_AddOrRemoveNodeProvider add_or_remove_node_provider;
-        ic_nns_governance_pb_v1_RewardNodeProvider reward_node_provider;
-        ic_nns_governance_pb_v1_SetDefaultFollowees set_default_followees;
-    } action; 
-} ic_nns_governance_pb_v1_Proposal;
-
-typedef struct _ic_nns_governance_pb_v1_ProposalData { 
-    bool has_id;
-    ic_nns_common_pb_v1_ProposalId id; 
-    bool has_proposer;
-    ic_nns_common_pb_v1_NeuronId proposer; 
-    uint64_t reject_cost_e8s; 
-    bool has_proposal;
-    ic_nns_governance_pb_v1_Proposal proposal; 
-    uint64_t proposal_timestamp_seconds; 
-    pb_callback_t ballots; 
-    bool has_latest_tally;
-    ic_nns_governance_pb_v1_Tally latest_tally; 
-    uint64_t decided_timestamp_seconds; 
-    uint64_t executed_timestamp_seconds; 
-    uint64_t failed_timestamp_seconds; 
-    uint64_t reward_event_round; 
-    bool has_failure_reason;
-    ic_nns_governance_pb_v1_GovernanceError failure_reason; 
-} ic_nns_governance_pb_v1_ProposalData;
-
-typedef struct _ic_nns_governance_pb_v1_ProposalInfo { 
-    bool has_id;
-    ic_nns_common_pb_v1_ProposalId id; 
-    bool has_proposer;
-    ic_nns_common_pb_v1_NeuronId proposer; 
-    uint64_t reject_cost_e8s; 
-    bool has_proposal;
-    ic_nns_governance_pb_v1_Proposal proposal; 
-    uint64_t proposal_timestamp_seconds; 
-    pb_callback_t ballots; 
-    bool has_latest_tally;
-    ic_nns_governance_pb_v1_Tally latest_tally; 
-    uint64_t decided_timestamp_seconds; 
-    uint64_t executed_timestamp_seconds; 
-    uint64_t failed_timestamp_seconds; 
-    uint64_t reward_event_round; 
-    ic_nns_governance_pb_v1_Topic topic; 
-    ic_nns_governance_pb_v1_ProposalStatus status; 
-    ic_nns_governance_pb_v1_ProposalRewardStatus reward_status; 
-    bool has_failure_reason;
-    ic_nns_governance_pb_v1_GovernanceError failure_reason; 
-} ic_nns_governance_pb_v1_ProposalInfo;
-
-typedef struct _ic_nns_governance_pb_v1_Governance_ProposalsEntry { 
-    uint64_t key; 
-    bool has_value;
-    ic_nns_governance_pb_v1_ProposalData value; 
-} ic_nns_governance_pb_v1_Governance_ProposalsEntry;
-
 
 /* Helper constants for enums */
-#define _ic_nns_governance_pb_v1_Topic_MIN ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED
-#define _ic_nns_governance_pb_v1_Topic_MAX ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS
-#define _ic_nns_governance_pb_v1_Topic_ARRAYSIZE ((ic_nns_governance_pb_v1_Topic)(ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS+1))
-
-#define _ic_nns_governance_pb_v1_NeuronState_MIN ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_UNSPECIFIED
-#define _ic_nns_governance_pb_v1_NeuronState_MAX ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_DISSOLVED
-#define _ic_nns_governance_pb_v1_NeuronState_ARRAYSIZE ((ic_nns_governance_pb_v1_NeuronState)(ic_nns_governance_pb_v1_NeuronState_NEURON_STATE_DISSOLVED+1))
-
 #define _ic_nns_governance_pb_v1_Vote_MIN ic_nns_governance_pb_v1_Vote_VOTE_UNSPECIFIED
 #define _ic_nns_governance_pb_v1_Vote_MAX ic_nns_governance_pb_v1_Vote_VOTE_NO
 #define _ic_nns_governance_pb_v1_Vote_ARRAYSIZE ((ic_nns_governance_pb_v1_Vote)(ic_nns_governance_pb_v1_Vote_VOTE_NO+1))
 
-#define _ic_nns_governance_pb_v1_NnsFunction_MIN ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UNSPECIFIED
-#define _ic_nns_governance_pb_v1_NnsFunction_MAX ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UNINSTALL_CODE
-#define _ic_nns_governance_pb_v1_NnsFunction_ARRAYSIZE ((ic_nns_governance_pb_v1_NnsFunction)(ic_nns_governance_pb_v1_NnsFunction_NNS_FUNCTION_UNINSTALL_CODE+1))
-
-#define _ic_nns_governance_pb_v1_ProposalStatus_MIN ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_UNSPECIFIED
-#define _ic_nns_governance_pb_v1_ProposalStatus_MAX ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_FAILED
-#define _ic_nns_governance_pb_v1_ProposalStatus_ARRAYSIZE ((ic_nns_governance_pb_v1_ProposalStatus)(ic_nns_governance_pb_v1_ProposalStatus_PROPOSAL_STATUS_FAILED+1))
-
-#define _ic_nns_governance_pb_v1_ProposalRewardStatus_MIN ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_UNSPECIFIED
-#define _ic_nns_governance_pb_v1_ProposalRewardStatus_MAX ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_INELIGIBLE
-#define _ic_nns_governance_pb_v1_ProposalRewardStatus_ARRAYSIZE ((ic_nns_governance_pb_v1_ProposalRewardStatus)(ic_nns_governance_pb_v1_ProposalRewardStatus_PROPOSAL_REWARD_STATUS_INELIGIBLE+1))
+#define _ic_nns_governance_pb_v1_Topic_MIN ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED
+#define _ic_nns_governance_pb_v1_Topic_MAX ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS
+#define _ic_nns_governance_pb_v1_Topic_ARRAYSIZE ((ic_nns_governance_pb_v1_Topic)(ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS+1))
 
 #define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNSPECIFIED
 #define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MAX ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL
@@ -1095,197 +291,92 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ic_nns_governance_pb_v1_NodeProvider_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ic_nns_governance_pb_v1_BallotInfo_init_default {false, ic_nns_common_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_NeuronInfo_init_default {0, _ic_nns_governance_pb_v1_NeuronState_MIN, 0, 0, {{NULL}, NULL}, 0, 0}
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default {0, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_init_default {false, ic_nns_common_pb_v1_NeuronId_init_default, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_Followees_init_default {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default}
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_init_default {_ic_nns_governance_pb_v1_NnsFunction_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Motion_init_default {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_init_default {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_init_default {0, {ic_nns_governance_pb_v1_NodeProvider_init_default}}
-#define ic_nns_governance_pb_v1_RewardNodeProvider_init_default {false, ic_nns_governance_pb_v1_NodeProvider_init_default, 0, 0, {ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_init_default}}
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_init_default {0}
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_init_default {false, ic_ledger_pb_v1_AccountIdentifier_init_default}
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_init_default {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default}
-#define ic_nns_governance_pb_v1_Proposal_init_default {{{NULL}, NULL}, {{NULL}, NULL}, 0, {ic_nns_governance_pb_v1_ManageNeuron_init_default}}
-#define ic_nns_governance_pb_v1_ManageNeuron_init_default {false, ic_nns_common_pb_v1_NeuronId_init_default, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default}, 0, {{{NULL}, NULL}}}
+#define ic_nns_governance_pb_v1_ManageNeuron_init_default {false, ic_base_types_pb_v1_NeuronId_init_default, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default}, 0, {{{NULL}, NULL}}}
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default {0, {ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default}}
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_default {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default, 0, 0, 0, 0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_default {_ic_nns_governance_pb_v1_Topic_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_default {false, ic_nns_common_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_init_default {0, {0}}
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_default {_ic_nns_governance_pb_v1_Topic_MIN, 0, {ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default}}
+#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_default {false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_init_default {0, {ic_nns_governance_pb_v1_GovernanceError_init_default}}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_default {false, ic_nns_common_pb_v1_NeuronId_init_default}
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_default {false, ic_base_types_pb_v1_NeuronId_init_default}
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_init_default {0, 0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_init_default {false, ic_nns_common_pb_v1_ProposalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_init_default {false, ic_nns_common_pb_v1_NeuronId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_init_default {false, ic_nns_common_pb_v1_NeuronId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_init_default {false, ic_nns_common_pb_v1_NeuronId_init_default}
 #define ic_nns_governance_pb_v1_GovernanceError_init_default {_ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Ballot_init_default {_ic_nns_governance_pb_v1_Vote_MIN, 0}
-#define ic_nns_governance_pb_v1_Tally_init_default {0, 0, 0, 0}
-#define ic_nns_governance_pb_v1_ProposalData_init_default {false, ic_nns_common_pb_v1_ProposalId_init_default, false, ic_nns_common_pb_v1_NeuronId_init_default, 0, false, ic_nns_governance_pb_v1_Proposal_init_default, 0, {{NULL}, NULL}, false, ic_nns_governance_pb_v1_Tally_init_default, 0, 0, 0, 0, false, ic_nns_governance_pb_v1_GovernanceError_init_default}
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_init_default {0, false, ic_nns_governance_pb_v1_Ballot_init_default}
-#define ic_nns_governance_pb_v1_ProposalInfo_init_default {false, ic_nns_common_pb_v1_ProposalId_init_default, false, ic_nns_common_pb_v1_NeuronId_init_default, 0, false, ic_nns_governance_pb_v1_Proposal_init_default, 0, {{NULL}, NULL}, false, ic_nns_governance_pb_v1_Tally_init_default, 0, 0, 0, 0, _ic_nns_governance_pb_v1_Topic_MIN, _ic_nns_governance_pb_v1_ProposalStatus_MIN, _ic_nns_governance_pb_v1_ProposalRewardStatus_MIN, false, ic_nns_governance_pb_v1_GovernanceError_init_default}
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_init_default {0, false, ic_nns_governance_pb_v1_Ballot_init_default}
-#define ic_nns_governance_pb_v1_NetworkEconomics_init_default {0, 0, 0, 0, 0, 0, 0, 0}
-#define ic_nns_governance_pb_v1_RewardEvent_init_default {0, 0, {{NULL}, NULL}, 0}
-#define ic_nns_governance_pb_v1_Governance_init_default {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NetworkEconomics_init_default, false, ic_nns_governance_pb_v1_RewardEvent_init_default, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, 0}
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_init_default}
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_init_default {0, false, ic_nns_governance_pb_v1_ProposalData_init_default}
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_init_default {0, 0, {ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_default}}
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_init_default {0, false, ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_init_default}
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default}
-#define ic_nns_governance_pb_v1_ListProposalInfo_init_default {0, false, ic_nns_common_pb_v1_ProposalId_init_default, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_init_default {{{NULL}, NULL}}
 #define ic_nns_governance_pb_v1_ListNeurons_init_default {{{NULL}, NULL}, 0}
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_init_default {{{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_init_default {0, false, ic_nns_governance_pb_v1_NeuronInfo_init_default}
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default, 0}
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_init_default {0, {ic_nns_governance_pb_v1_GovernanceError_init_default}}
-#define ic_nns_governance_pb_v1_NodeProvider_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ic_nns_governance_pb_v1_BallotInfo_init_zero {false, ic_nns_common_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_NeuronInfo_init_zero {0, _ic_nns_governance_pb_v1_NeuronState_MIN, 0, 0, {{NULL}, NULL}, 0, 0}
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero {0, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_init_zero {false, ic_nns_common_pb_v1_NeuronId_init_zero, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_Followees_init_zero {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_zero {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_zero}
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_init_zero {_ic_nns_governance_pb_v1_NnsFunction_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Motion_init_zero {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_init_zero {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_init_zero {0, {ic_nns_governance_pb_v1_NodeProvider_init_zero}}
-#define ic_nns_governance_pb_v1_RewardNodeProvider_init_zero {false, ic_nns_governance_pb_v1_NodeProvider_init_zero, 0, 0, {ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_init_zero}}
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_init_zero {0}
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_init_zero {false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_init_zero {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_init_zero {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_zero}
-#define ic_nns_governance_pb_v1_Proposal_init_zero {{{NULL}, NULL}, {{NULL}, NULL}, 0, {ic_nns_governance_pb_v1_ManageNeuron_init_zero}}
-#define ic_nns_governance_pb_v1_ManageNeuron_init_zero {false, ic_nns_common_pb_v1_NeuronId_init_zero, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero}, 0, {{{NULL}, NULL}}}
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_init_default {0, false, ic_nns_governance_pb_v1_NeuronInfo_init_default}
+#define ic_nns_governance_pb_v1_BallotInfo_init_default {false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
+#define ic_nns_governance_pb_v1_NeuronInfo_init_default {0, 0, 0, {{NULL}, NULL}, 0, 0}
+#define ic_nns_governance_pb_v1_Neuron_init_default {false, ic_base_types_pb_v1_NeuronId_init_default, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default, 0, 0}
+#define ic_nns_governance_pb_v1_Neuron_Followees_init_default {{{NULL}, NULL}}
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default}
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default {0, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
+#define ic_nns_governance_pb_v1_ManageNeuron_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero}, 0, {{{NULL}, NULL}}}
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero {0, {ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero}}
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_zero {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero, 0, 0, 0, 0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_zero {_ic_nns_governance_pb_v1_Topic_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_zero {false, ic_nns_common_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_init_zero {0, {0}}
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_zero {_ic_nns_governance_pb_v1_Topic_MIN, 0, {ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero}}
+#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_zero {false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_init_zero {0, {ic_nns_governance_pb_v1_GovernanceError_init_zero}}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_zero {false, ic_nns_common_pb_v1_NeuronId_init_zero}
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero}
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_init_zero {0, 0}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_init_zero {false, ic_nns_common_pb_v1_ProposalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_init_zero {false, ic_nns_common_pb_v1_NeuronId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_init_zero {false, ic_nns_common_pb_v1_NeuronId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_init_zero {false, ic_nns_common_pb_v1_NeuronId_init_zero}
 #define ic_nns_governance_pb_v1_GovernanceError_init_zero {_ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Ballot_init_zero {_ic_nns_governance_pb_v1_Vote_MIN, 0}
-#define ic_nns_governance_pb_v1_Tally_init_zero  {0, 0, 0, 0}
-#define ic_nns_governance_pb_v1_ProposalData_init_zero {false, ic_nns_common_pb_v1_ProposalId_init_zero, false, ic_nns_common_pb_v1_NeuronId_init_zero, 0, false, ic_nns_governance_pb_v1_Proposal_init_zero, 0, {{NULL}, NULL}, false, ic_nns_governance_pb_v1_Tally_init_zero, 0, 0, 0, 0, false, ic_nns_governance_pb_v1_GovernanceError_init_zero}
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_init_zero {0, false, ic_nns_governance_pb_v1_Ballot_init_zero}
-#define ic_nns_governance_pb_v1_ProposalInfo_init_zero {false, ic_nns_common_pb_v1_ProposalId_init_zero, false, ic_nns_common_pb_v1_NeuronId_init_zero, 0, false, ic_nns_governance_pb_v1_Proposal_init_zero, 0, {{NULL}, NULL}, false, ic_nns_governance_pb_v1_Tally_init_zero, 0, 0, 0, 0, _ic_nns_governance_pb_v1_Topic_MIN, _ic_nns_governance_pb_v1_ProposalStatus_MIN, _ic_nns_governance_pb_v1_ProposalRewardStatus_MIN, false, ic_nns_governance_pb_v1_GovernanceError_init_zero}
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_init_zero {0, false, ic_nns_governance_pb_v1_Ballot_init_zero}
-#define ic_nns_governance_pb_v1_NetworkEconomics_init_zero {0, 0, 0, 0, 0, 0, 0, 0}
-#define ic_nns_governance_pb_v1_RewardEvent_init_zero {0, 0, {{NULL}, NULL}, 0}
-#define ic_nns_governance_pb_v1_Governance_init_zero {{{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NetworkEconomics_init_zero, false, ic_nns_governance_pb_v1_RewardEvent_init_zero, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, 0}
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_init_zero {0, false, ic_nns_governance_pb_v1_Neuron_init_zero}
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_init_zero {0, false, ic_nns_governance_pb_v1_ProposalData_init_zero}
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_init_zero {0, 0, {ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_zero}}
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_init_zero {0, false, ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_init_zero}
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_init_zero {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_zero}
-#define ic_nns_governance_pb_v1_ListProposalInfo_init_zero {0, false, ic_nns_common_pb_v1_ProposalId_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_init_zero {{{NULL}, NULL}}
 #define ic_nns_governance_pb_v1_ListNeurons_init_zero {{{NULL}, NULL}, 0}
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_init_zero {{{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_init_zero {0, false, ic_nns_governance_pb_v1_NeuronInfo_init_zero}
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero, 0}
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_init_zero {0, {ic_nns_governance_pb_v1_GovernanceError_init_zero}}
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_init_zero {0, false, ic_nns_governance_pb_v1_NeuronInfo_init_zero}
+#define ic_nns_governance_pb_v1_BallotInfo_init_zero {false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
+#define ic_nns_governance_pb_v1_NeuronInfo_init_zero {0, 0, 0, {{NULL}, NULL}, 0, 0}
+#define ic_nns_governance_pb_v1_Neuron_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero, 0, 0}
+#define ic_nns_governance_pb_v1_Neuron_Followees_init_zero {{{NULL}, NULL}}
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_zero {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_zero}
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero {0, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_principals_tag 1
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_infos_tag 1
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_ids_tag 1
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_full_neurons_tag 2
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_proposal_info_tag 1
-#define ic_nns_governance_pb_v1_Motion_motion_text_tag 1
 #define ic_nns_governance_pb_v1_Neuron_Followees_followees_tag 1
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_default_followees_tag 1
-#define ic_nns_governance_pb_v1_Ballot_vote_tag  1
-#define ic_nns_governance_pb_v1_Ballot_voting_power_tag 2
 #define ic_nns_governance_pb_v1_BallotInfo_proposal_id_tag 1
 #define ic_nns_governance_pb_v1_BallotInfo_vote_tag 2
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_controller_tag 1
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_memo_tag 2
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_nns_function_tag 1
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_payload_tag 2
 #define ic_nns_governance_pb_v1_GovernanceError_error_type_tag 1
 #define ic_nns_governance_pb_v1_GovernanceError_error_message_tag 2
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_key_tag 1
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_value_tag 2
 #define ic_nns_governance_pb_v1_ListNeurons_neuron_ids_tag 1
 #define ic_nns_governance_pb_v1_ListNeurons_include_neurons_readable_by_caller_tag 2
-#define ic_nns_governance_pb_v1_ListProposalInfo_limit_tag 1
-#define ic_nns_governance_pb_v1_ListProposalInfo_before_proposal_tag 2
-#define ic_nns_governance_pb_v1_ListProposalInfo_exclude_topic_tag 3
-#define ic_nns_governance_pb_v1_ListProposalInfo_include_reward_status_tag 4
-#define ic_nns_governance_pb_v1_ListProposalInfo_include_status_tag 5
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_refreshed_neuron_id_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_transfer_block_height_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_created_neuron_id_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_proposal_id_tag 1
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_merged_maturity_e8s_tag 1
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_new_stake_e8s_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_created_neuron_id_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_created_neuron_id_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_new_hot_key_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_memo_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_new_controller_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_amount_e8s_tag 2
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_dissolve_delay_seconds_tag 3
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_kyc_verified_tag 4
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_nonce_tag 5
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_e8s_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_topic_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_followees_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_additional_dissolve_delay_seconds_tag 1
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_percentage_to_merge_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_proposal_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_vote_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_hot_key_to_remove_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_dissolve_timestamp_seconds_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_new_controller_tag 1
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_amount_e8s_tag 1
-#define ic_nns_governance_pb_v1_NetworkEconomics_reject_cost_e8s_tag 1
-#define ic_nns_governance_pb_v1_NetworkEconomics_neuron_minimum_stake_e8s_tag 2
-#define ic_nns_governance_pb_v1_NetworkEconomics_neuron_management_fee_per_proposal_e8s_tag 4
-#define ic_nns_governance_pb_v1_NetworkEconomics_minimum_icp_xdr_rate_tag 5
-#define ic_nns_governance_pb_v1_NetworkEconomics_neuron_spawn_dissolve_delay_seconds_tag 6
-#define ic_nns_governance_pb_v1_NetworkEconomics_maximum_node_provider_rewards_e8s_tag 8
-#define ic_nns_governance_pb_v1_NetworkEconomics_transaction_fee_e8s_tag 9
-#define ic_nns_governance_pb_v1_NetworkEconomics_max_proposals_to_keep_per_topic_tag 10
 #define ic_nns_governance_pb_v1_NeuronInfo_retrieved_at_timestamp_seconds_tag 1
-#define ic_nns_governance_pb_v1_NeuronInfo_state_tag 2
 #define ic_nns_governance_pb_v1_NeuronInfo_age_seconds_tag 3
 #define ic_nns_governance_pb_v1_NeuronInfo_dissolve_delay_seconds_tag 4
 #define ic_nns_governance_pb_v1_NeuronInfo_recent_ballots_tag 5
@@ -1300,52 +391,20 @@ extern "C" {
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_memo_tag 7
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_key_tag 1
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_value_tag 2
-#define ic_nns_governance_pb_v1_NodeProvider_id_tag 1
-#define ic_nns_governance_pb_v1_RewardEvent_day_after_genesis_tag 1
-#define ic_nns_governance_pb_v1_RewardEvent_actual_timestamp_seconds_tag 2
-#define ic_nns_governance_pb_v1_RewardEvent_settled_proposals_tag 3
-#define ic_nns_governance_pb_v1_RewardEvent_distributed_e8s_equivalent_tag 4
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_to_account_tag 1
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_dissolve_delay_seconds_tag 1
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_key_tag 1
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_value_tag 2
-#define ic_nns_governance_pb_v1_Tally_timestamp_seconds_tag 1
-#define ic_nns_governance_pb_v1_Tally_yes_tag    2
-#define ic_nns_governance_pb_v1_Tally_no_tag     3
-#define ic_nns_governance_pb_v1_Tally_total_tag  4
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_to_add_tag 1
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_to_remove_tag 2
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_error_tag 1
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_neuron_id_tag 2
-#define ic_nns_governance_pb_v1_Governance_neurons_tag 1
-#define ic_nns_governance_pb_v1_Governance_proposals_tag 2
-#define ic_nns_governance_pb_v1_Governance_to_claim_transfers_tag 3
-#define ic_nns_governance_pb_v1_Governance_wait_for_quiet_threshold_seconds_tag 5
-#define ic_nns_governance_pb_v1_Governance_economics_tag 8
-#define ic_nns_governance_pb_v1_Governance_latest_reward_event_tag 9
-#define ic_nns_governance_pb_v1_Governance_in_flight_commands_tag 10
-#define ic_nns_governance_pb_v1_Governance_genesis_timestamp_seconds_tag 11
-#define ic_nns_governance_pb_v1_Governance_node_providers_tag 12
-#define ic_nns_governance_pb_v1_Governance_default_followees_tag 13
-#define ic_nns_governance_pb_v1_Governance_short_voting_period_seconds_tag 14
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_key_tag 1
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_value_tag 2
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_key_tag 1
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_value_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_error_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_configure_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_disburse_tag 3
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_spawn_tag 4
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_follow_tag 5
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_make_proposal_tag 6
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_register_vote_tag 7
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_split_tag 8
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_disburse_to_neuron_tag 9
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_claim_or_refresh_tag 10
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_merge_maturity_tag 11
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_increase_dissolve_delay_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_start_dissolving_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_stop_dissolving_tag 3
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_add_hot_key_tag 4
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_remove_hot_key_tag 5
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_set_dissolve_timestamp_tag 6
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_amount_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_to_account_tag 2
 #define ic_nns_governance_pb_v1_Neuron_id_tag    1
@@ -1364,234 +423,17 @@ extern "C" {
 #define ic_nns_governance_pb_v1_Neuron_transfer_tag 14
 #define ic_nns_governance_pb_v1_Neuron_maturity_e8s_equivalent_tag 15
 #define ic_nns_governance_pb_v1_Neuron_not_for_profit_tag 16
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_key_tag 1
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_value_tag 2
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_key_tag 1
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_value_tag 2
-#define ic_nns_governance_pb_v1_RewardNodeProvider_node_provider_tag 1
-#define ic_nns_governance_pb_v1_RewardNodeProvider_amount_e8s_tag 2
-#define ic_nns_governance_pb_v1_RewardNodeProvider_reward_to_neuron_tag 4
-#define ic_nns_governance_pb_v1_RewardNodeProvider_reward_to_account_tag 5
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_timestamp_tag 1
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_disburse_tag 2
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_split_tag 3
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_spawn_tag 4
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_disburse_to_neuron_tag 5
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_claim_or_refresh_tag 6
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_key_tag 1
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_value_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuron_id_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_configure_tag 2
 #define ic_nns_governance_pb_v1_ManageNeuron_disburse_tag 3
 #define ic_nns_governance_pb_v1_ManageNeuron_spawn_tag 4
 #define ic_nns_governance_pb_v1_ManageNeuron_follow_tag 5
 #define ic_nns_governance_pb_v1_ManageNeuron_register_vote_tag 7
-#define ic_nns_governance_pb_v1_ManageNeuron_split_tag 8
-#define ic_nns_governance_pb_v1_ManageNeuron_disburse_to_neuron_tag 9
-#define ic_nns_governance_pb_v1_ManageNeuron_claim_or_refresh_tag 10
+#define ic_nns_governance_pb_v1_ManageNeuron_merge_maturity_tag 13
 #define ic_nns_governance_pb_v1_ManageNeuron_subaccount_tag 11
 #define ic_nns_governance_pb_v1_ManageNeuron_neuron_id_tag 12
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_key_tag 1
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_value_tag 2
-#define ic_nns_governance_pb_v1_Proposal_summary_tag 1
-#define ic_nns_governance_pb_v1_Proposal_url_tag 2
-#define ic_nns_governance_pb_v1_Proposal_manage_neuron_tag 10
-#define ic_nns_governance_pb_v1_Proposal_manage_network_economics_tag 12
-#define ic_nns_governance_pb_v1_Proposal_motion_tag 13
-#define ic_nns_governance_pb_v1_Proposal_execute_nns_function_tag 14
-#define ic_nns_governance_pb_v1_Proposal_approve_genesis_kyc_tag 15
-#define ic_nns_governance_pb_v1_Proposal_add_or_remove_node_provider_tag 16
-#define ic_nns_governance_pb_v1_Proposal_reward_node_provider_tag 17
-#define ic_nns_governance_pb_v1_Proposal_set_default_followees_tag 18
-#define ic_nns_governance_pb_v1_ProposalData_id_tag 1
-#define ic_nns_governance_pb_v1_ProposalData_proposer_tag 2
-#define ic_nns_governance_pb_v1_ProposalData_reject_cost_e8s_tag 3
-#define ic_nns_governance_pb_v1_ProposalData_proposal_tag 4
-#define ic_nns_governance_pb_v1_ProposalData_proposal_timestamp_seconds_tag 5
-#define ic_nns_governance_pb_v1_ProposalData_ballots_tag 6
-#define ic_nns_governance_pb_v1_ProposalData_latest_tally_tag 7
-#define ic_nns_governance_pb_v1_ProposalData_decided_timestamp_seconds_tag 8
-#define ic_nns_governance_pb_v1_ProposalData_executed_timestamp_seconds_tag 12
-#define ic_nns_governance_pb_v1_ProposalData_failed_timestamp_seconds_tag 13
-#define ic_nns_governance_pb_v1_ProposalData_reward_event_round_tag 14
-#define ic_nns_governance_pb_v1_ProposalData_failure_reason_tag 15
-#define ic_nns_governance_pb_v1_ProposalInfo_id_tag 1
-#define ic_nns_governance_pb_v1_ProposalInfo_proposer_tag 2
-#define ic_nns_governance_pb_v1_ProposalInfo_reject_cost_e8s_tag 3
-#define ic_nns_governance_pb_v1_ProposalInfo_proposal_tag 4
-#define ic_nns_governance_pb_v1_ProposalInfo_proposal_timestamp_seconds_tag 5
-#define ic_nns_governance_pb_v1_ProposalInfo_ballots_tag 6
-#define ic_nns_governance_pb_v1_ProposalInfo_latest_tally_tag 7
-#define ic_nns_governance_pb_v1_ProposalInfo_decided_timestamp_seconds_tag 8
-#define ic_nns_governance_pb_v1_ProposalInfo_executed_timestamp_seconds_tag 12
-#define ic_nns_governance_pb_v1_ProposalInfo_failed_timestamp_seconds_tag 13
-#define ic_nns_governance_pb_v1_ProposalInfo_reward_event_round_tag 14
-#define ic_nns_governance_pb_v1_ProposalInfo_topic_tag 15
-#define ic_nns_governance_pb_v1_ProposalInfo_status_tag 16
-#define ic_nns_governance_pb_v1_ProposalInfo_reward_status_tag 17
-#define ic_nns_governance_pb_v1_ProposalInfo_failure_reason_tag 18
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_key_tag 1
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_value_tag 2
 
 /* Struct field encoding specification for nanopb */
-#define ic_nns_governance_pb_v1_NodeProvider_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1)
-#define ic_nns_governance_pb_v1_NodeProvider_CALLBACK NULL
-#define ic_nns_governance_pb_v1_NodeProvider_DEFAULT NULL
-#define ic_nns_governance_pb_v1_NodeProvider_id_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ic_nns_governance_pb_v1_BallotInfo_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal_id,       1) \
-X(a, STATIC,   SINGULAR, UENUM,    vote,              2)
-#define ic_nns_governance_pb_v1_BallotInfo_CALLBACK NULL
-#define ic_nns_governance_pb_v1_BallotInfo_DEFAULT NULL
-#define ic_nns_governance_pb_v1_BallotInfo_proposal_id_MSGTYPE ic_nns_common_pb_v1_ProposalId
-
-#define ic_nns_governance_pb_v1_NeuronInfo_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   retrieved_at_timestamp_seconds,   1) \
-X(a, STATIC,   SINGULAR, UENUM,    state,             2) \
-X(a, STATIC,   SINGULAR, UINT64,   age_seconds,       3) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_delay_seconds,   4) \
-X(a, CALLBACK, REPEATED, MESSAGE,  recent_ballots,    5) \
-X(a, STATIC,   SINGULAR, UINT64,   voting_power,      6) \
-X(a, STATIC,   SINGULAR, UINT64,   created_timestamp_seconds,   7)
-#define ic_nns_governance_pb_v1_NeuronInfo_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_NeuronInfo_DEFAULT NULL
-#define ic_nns_governance_pb_v1_NeuronInfo_recent_ballots_MSGTYPE ic_nns_governance_pb_v1_BallotInfo
-
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   transfer_timestamp,   1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from,              2) \
-X(a, CALLBACK, SINGULAR, BYTES,    from_subaccount,   3) \
-X(a, CALLBACK, SINGULAR, BYTES,    to_subaccount,     4) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_stake_e8s,   5) \
-X(a, STATIC,   SINGULAR, UINT64,   block_height,      6) \
-X(a, STATIC,   SINGULAR, UINT64,   memo,              7)
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_DEFAULT NULL
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_from_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ic_nns_governance_pb_v1_Neuron_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
-X(a, CALLBACK, SINGULAR, BYTES,    account,           2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  controller,        3) \
-X(a, CALLBACK, REPEATED, MESSAGE,  hot_keys,          4) \
-X(a, STATIC,   SINGULAR, UINT64,   cached_neuron_stake_e8s,   5) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_fees_e8s,   6) \
-X(a, STATIC,   SINGULAR, UINT64,   created_timestamp_seconds,   7) \
-X(a, STATIC,   SINGULAR, UINT64,   aging_since_timestamp_seconds,   8) \
-X(a, STATIC,   ONEOF,    UINT64,   (dissolve_state,when_dissolved_timestamp_seconds,dissolve_state.when_dissolved_timestamp_seconds),   9) \
-X(a, STATIC,   ONEOF,    UINT64,   (dissolve_state,dissolve_delay_seconds,dissolve_state.dissolve_delay_seconds),  10) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,        11) \
-X(a, CALLBACK, REPEATED, MESSAGE,  recent_ballots,   12) \
-X(a, STATIC,   SINGULAR, BOOL,     kyc_verified,     13) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  transfer,         14) \
-X(a, STATIC,   SINGULAR, UINT64,   maturity_e8s_equivalent,  15) \
-X(a, STATIC,   SINGULAR, BOOL,     not_for_profit,   16)
-#define ic_nns_governance_pb_v1_Neuron_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_Neuron_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
-#define ic_nns_governance_pb_v1_Neuron_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
-#define ic_nns_governance_pb_v1_Neuron_hot_keys_MSGTYPE ic_base_types_pb_v1_PrincipalId
-#define ic_nns_governance_pb_v1_Neuron_followees_MSGTYPE ic_nns_governance_pb_v1_Neuron_FolloweesEntry
-#define ic_nns_governance_pb_v1_Neuron_recent_ballots_MSGTYPE ic_nns_governance_pb_v1_BallotInfo
-#define ic_nns_governance_pb_v1_Neuron_transfer_MSGTYPE ic_nns_governance_pb_v1_NeuronStakeTransfer
-
-#define ic_nns_governance_pb_v1_Neuron_Followees_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,         1)
-#define ic_nns_governance_pb_v1_Neuron_Followees_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_Neuron_Followees_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Neuron_Followees_followees_MSGTYPE ic_nns_common_pb_v1_NeuronId
-
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT32,    key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_value_MSGTYPE ic_nns_governance_pb_v1_Neuron_Followees
-
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    nns_function,      1) \
-X(a, CALLBACK, SINGULAR, BYTES,    payload,           2)
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_Motion_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   motion_text,       1)
-#define ic_nns_governance_pb_v1_Motion_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_Motion_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  principals,        1)
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_principals_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (change,to_add,change.to_add),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (change,to_remove,change.to_remove),   2)
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_CALLBACK NULL
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_DEFAULT NULL
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_change_to_add_MSGTYPE ic_nns_governance_pb_v1_NodeProvider
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_change_to_remove_MSGTYPE ic_nns_governance_pb_v1_NodeProvider
-
-#define ic_nns_governance_pb_v1_RewardNodeProvider_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  node_provider,     1) \
-X(a, STATIC,   SINGULAR, UINT64,   amount_e8s,        2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (reward_mode,reward_to_neuron,reward_mode.reward_to_neuron),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (reward_mode,reward_to_account,reward_mode.reward_to_account),   5)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_CALLBACK NULL
-#define ic_nns_governance_pb_v1_RewardNodeProvider_DEFAULT NULL
-#define ic_nns_governance_pb_v1_RewardNodeProvider_node_provider_MSGTYPE ic_nns_governance_pb_v1_NodeProvider
-#define ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_reward_to_neuron_MSGTYPE ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron
-#define ic_nns_governance_pb_v1_RewardNodeProvider_reward_mode_reward_to_account_MSGTYPE ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount
-
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_delay_seconds,   1)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_CALLBACK NULL
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to_account,        1)
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_CALLBACK NULL
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_DEFAULT NULL
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_to_account_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
-
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  default_followees,   1)
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DEFAULT NULL
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_default_followees_MSGTYPE ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry
-
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT32,    key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_value_MSGTYPE ic_nns_governance_pb_v1_Neuron_Followees
-
-#define ic_nns_governance_pb_v1_Proposal_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   summary,           1) \
-X(a, CALLBACK, SINGULAR, STRING,   url,               2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,manage_neuron,action.manage_neuron),  10) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,manage_network_economics,action.manage_network_economics),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,motion,action.motion),  13) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,execute_nns_function,action.execute_nns_function),  14) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,approve_genesis_kyc,action.approve_genesis_kyc),  15) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,add_or_remove_node_provider,action.add_or_remove_node_provider),  16) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,reward_node_provider,action.reward_node_provider),  17) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (action,set_default_followees,action.set_default_followees),  18)
-#define ic_nns_governance_pb_v1_Proposal_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_Proposal_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Proposal_action_manage_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron
-#define ic_nns_governance_pb_v1_Proposal_action_manage_network_economics_MSGTYPE ic_nns_governance_pb_v1_NetworkEconomics
-#define ic_nns_governance_pb_v1_Proposal_action_motion_MSGTYPE ic_nns_governance_pb_v1_Motion
-#define ic_nns_governance_pb_v1_Proposal_action_execute_nns_function_MSGTYPE ic_nns_governance_pb_v1_ExecuteNnsFunction
-#define ic_nns_governance_pb_v1_Proposal_action_approve_genesis_kyc_MSGTYPE ic_nns_governance_pb_v1_ApproveGenesisKYC
-#define ic_nns_governance_pb_v1_Proposal_action_add_or_remove_node_provider_MSGTYPE ic_nns_governance_pb_v1_AddOrRemoveNodeProvider
-#define ic_nns_governance_pb_v1_Proposal_action_reward_node_provider_MSGTYPE ic_nns_governance_pb_v1_RewardNodeProvider
-#define ic_nns_governance_pb_v1_Proposal_action_set_default_followees_MSGTYPE ic_nns_governance_pb_v1_SetDefaultFollowees
-
 #define ic_nns_governance_pb_v1_ManageNeuron_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,configure,command.configure),   2) \
@@ -1599,33 +441,24 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,follow,command.follow),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,register_vote,command.register_vote),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,split,command.split),   8) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse_to_neuron,command.disburse_to_neuron),   9) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,claim_or_refresh,command.claim_or_refresh),  10) \
 X(a, CALLBACK, ONEOF,    BYTES,    (neuron_id_or_subaccount,subaccount,neuron_id_or_subaccount.subaccount),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (neuron_id_or_subaccount,neuron_id,neuron_id_or_subaccount.neuron_id),  12)
+X(a, STATIC,   ONEOF,    MESSAGE,  (neuron_id_or_subaccount,neuron_id,neuron_id_or_subaccount.neuron_id),  12) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,merge_maturity,command.merge_maturity),  13)
 #define ic_nns_governance_pb_v1_ManageNeuron_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_ManageNeuron_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_ManageNeuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
 #define ic_nns_governance_pb_v1_ManageNeuron_command_configure_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Configure
 #define ic_nns_governance_pb_v1_ManageNeuron_command_disburse_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Disburse
 #define ic_nns_governance_pb_v1_ManageNeuron_command_spawn_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Spawn
 #define ic_nns_governance_pb_v1_ManageNeuron_command_follow_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Follow
 #define ic_nns_governance_pb_v1_ManageNeuron_command_register_vote_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_RegisterVote
-#define ic_nns_governance_pb_v1_ManageNeuron_command_split_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Split
-#define ic_nns_governance_pb_v1_ManageNeuron_command_disburse_to_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron
-#define ic_nns_governance_pb_v1_ManageNeuron_command_claim_or_refresh_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh
-#define ic_nns_governance_pb_v1_ManageNeuron_neuron_id_or_subaccount_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_ManageNeuron_neuron_id_or_subaccount_neuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_ManageNeuron_command_merge_maturity_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity
 
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   additional_dissolve_delay_seconds,   1)
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_timestamp_seconds,   1)
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_FIELDLIST(X, a) \
 
@@ -1654,8 +487,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (operation,increase_dissolve_delay,operation.
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,start_dissolving,operation.start_dissolving),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,stop_dissolving,operation.stop_dissolving),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,add_hot_key,operation.add_hot_key),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_hot_key),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,set_dissolve_timestamp,operation.set_dissolve_timestamp),   6)
+X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_hot_key),   5)
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_increase_dissolve_delay_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay
@@ -1663,7 +495,12 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (operation,set_dissolve_timestamp,operation.s
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_stop_dissolving_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_StopDissolving
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_add_hot_key_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_AddHotKey
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_remove_hot_key_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_set_dissolve_timestamp_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp
+
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1)
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_CALLBACK NULL
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_DEFAULT NULL
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_new_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            1) \
@@ -1678,45 +515,24 @@ X(a, STATIC,   SINGULAR, UINT64,   e8s,               1)
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   amount_e8s,        1)
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1)
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_new_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1) \
-X(a, STATIC,   SINGULAR, UINT64,   amount_e8s,        2) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_delay_seconds,   3) \
-X(a, STATIC,   SINGULAR, BOOL,     kyc_verified,      4) \
-X(a, STATIC,   SINGULAR, UINT64,   nonce,             5)
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_new_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
-
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    topic,             1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,         2)
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_CALLBACK pb_default_field_callback
+X(a, STATIC,   REPEATED, MESSAGE,  followees,         2)
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_followees_MSGTYPE ic_nns_common_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_followees_MSGTYPE ic_base_types_pb_v1_NeuronId
 
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  proposal,          1) \
 X(a, STATIC,   SINGULAR, UENUM,    vote,              2)
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_proposal_MSGTYPE ic_nns_common_pb_v1_ProposalId
+#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_proposal_MSGTYPE ic_base_types_pb_v1_ProposalId
 
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    UINT64,   (by,memo,by.memo),   1)
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_DEFAULT NULL
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   percentage_to_merge,   1)
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_CALLBACK NULL
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,error,command.error),   1) \
@@ -1724,11 +540,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (command,configure,command.configure),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,follow,command.follow),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,make_proposal,command.make_proposal),   6) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,register_vote,command.register_vote),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,split,command.split),   8) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse_to_neuron,command.disburse_to_neuron),   9) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,claim_or_refresh,command.claim_or_refresh),  10)
+X(a, STATIC,   ONEOF,    MESSAGE,  (command,merge_maturity,command.merge_maturity),  11)
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_command_error_MSGTYPE ic_nns_governance_pb_v1_GovernanceError
@@ -1736,11 +549,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (command,claim_or_refresh,command.claim_or_re
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_command_disburse_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_command_spawn_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_command_follow_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_make_proposal_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_command_register_vote_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_split_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_disburse_to_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_claim_or_refresh_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_merge_maturity_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_FIELDLIST(X, a) \
 
@@ -1756,225 +566,29 @@ X(a, STATIC,   SINGULAR, UINT64,   transfer_block_height,   1)
 X(a, STATIC,   OPTIONAL, MESSAGE,  created_neuron_id,   1)
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_created_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_created_neuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
+
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   merged_maturity_e8s,   1) \
+X(a, STATIC,   SINGULAR, UINT64,   new_stake_e8s,     2)
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_CALLBACK NULL
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_FIELDLIST(X, a) \
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal_id,       1)
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_proposal_id_MSGTYPE ic_nns_common_pb_v1_ProposalId
-
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_FIELDLIST(X, a) \
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_neuron_id,   1)
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_created_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
-
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_neuron_id,   1)
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_created_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
-
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  refreshed_neuron_id,   1)
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_refreshed_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
 
 #define ic_nns_governance_pb_v1_GovernanceError_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    error_type,        1) \
 X(a, CALLBACK, SINGULAR, STRING,   error_message,     2)
 #define ic_nns_governance_pb_v1_GovernanceError_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_GovernanceError_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_Ballot_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    vote,              1) \
-X(a, STATIC,   SINGULAR, UINT64,   voting_power,      2)
-#define ic_nns_governance_pb_v1_Ballot_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Ballot_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_Tally_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   timestamp_seconds,   1) \
-X(a, STATIC,   SINGULAR, UINT64,   yes,               2) \
-X(a, STATIC,   SINGULAR, UINT64,   no,                3) \
-X(a, STATIC,   SINGULAR, UINT64,   total,             4)
-#define ic_nns_governance_pb_v1_Tally_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Tally_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_ProposalData_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposer,          2) \
-X(a, STATIC,   SINGULAR, UINT64,   reject_cost_e8s,   3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal,          4) \
-X(a, STATIC,   SINGULAR, UINT64,   proposal_timestamp_seconds,   5) \
-X(a, CALLBACK, REPEATED, MESSAGE,  ballots,           6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  latest_tally,      7) \
-X(a, STATIC,   SINGULAR, UINT64,   decided_timestamp_seconds,   8) \
-X(a, STATIC,   SINGULAR, UINT64,   executed_timestamp_seconds,  12) \
-X(a, STATIC,   SINGULAR, UINT64,   failed_timestamp_seconds,  13) \
-X(a, STATIC,   SINGULAR, UINT64,   reward_event_round,  14) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  failure_reason,   15)
-#define ic_nns_governance_pb_v1_ProposalData_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_ProposalData_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ProposalData_id_MSGTYPE ic_nns_common_pb_v1_ProposalId
-#define ic_nns_governance_pb_v1_ProposalData_proposer_MSGTYPE ic_nns_common_pb_v1_NeuronId
-#define ic_nns_governance_pb_v1_ProposalData_proposal_MSGTYPE ic_nns_governance_pb_v1_Proposal
-#define ic_nns_governance_pb_v1_ProposalData_ballots_MSGTYPE ic_nns_governance_pb_v1_ProposalData_BallotsEntry
-#define ic_nns_governance_pb_v1_ProposalData_latest_tally_MSGTYPE ic_nns_governance_pb_v1_Tally
-#define ic_nns_governance_pb_v1_ProposalData_failure_reason_MSGTYPE ic_nns_governance_pb_v1_GovernanceError
-
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED64,  key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_value_MSGTYPE ic_nns_governance_pb_v1_Ballot
-
-#define ic_nns_governance_pb_v1_ProposalInfo_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposer,          2) \
-X(a, STATIC,   SINGULAR, UINT64,   reject_cost_e8s,   3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal,          4) \
-X(a, STATIC,   SINGULAR, UINT64,   proposal_timestamp_seconds,   5) \
-X(a, CALLBACK, REPEATED, MESSAGE,  ballots,           6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  latest_tally,      7) \
-X(a, STATIC,   SINGULAR, UINT64,   decided_timestamp_seconds,   8) \
-X(a, STATIC,   SINGULAR, UINT64,   executed_timestamp_seconds,  12) \
-X(a, STATIC,   SINGULAR, UINT64,   failed_timestamp_seconds,  13) \
-X(a, STATIC,   SINGULAR, UINT64,   reward_event_round,  14) \
-X(a, STATIC,   SINGULAR, UENUM,    topic,            15) \
-X(a, STATIC,   SINGULAR, UENUM,    status,           16) \
-X(a, STATIC,   SINGULAR, UENUM,    reward_status,    17) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  failure_reason,   18)
-#define ic_nns_governance_pb_v1_ProposalInfo_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_ProposalInfo_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ProposalInfo_id_MSGTYPE ic_nns_common_pb_v1_ProposalId
-#define ic_nns_governance_pb_v1_ProposalInfo_proposer_MSGTYPE ic_nns_common_pb_v1_NeuronId
-#define ic_nns_governance_pb_v1_ProposalInfo_proposal_MSGTYPE ic_nns_governance_pb_v1_Proposal
-#define ic_nns_governance_pb_v1_ProposalInfo_ballots_MSGTYPE ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry
-#define ic_nns_governance_pb_v1_ProposalInfo_latest_tally_MSGTYPE ic_nns_governance_pb_v1_Tally
-#define ic_nns_governance_pb_v1_ProposalInfo_failure_reason_MSGTYPE ic_nns_governance_pb_v1_GovernanceError
-
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED64,  key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_value_MSGTYPE ic_nns_governance_pb_v1_Ballot
-
-#define ic_nns_governance_pb_v1_NetworkEconomics_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   reject_cost_e8s,   1) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_minimum_stake_e8s,   2) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_management_fee_per_proposal_e8s,   4) \
-X(a, STATIC,   SINGULAR, UINT64,   minimum_icp_xdr_rate,   5) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_spawn_dissolve_delay_seconds,   6) \
-X(a, STATIC,   SINGULAR, UINT64,   maximum_node_provider_rewards_e8s,   8) \
-X(a, STATIC,   SINGULAR, UINT64,   transaction_fee_e8s,   9) \
-X(a, STATIC,   SINGULAR, UINT32,   max_proposals_to_keep_per_topic,  10)
-#define ic_nns_governance_pb_v1_NetworkEconomics_CALLBACK NULL
-#define ic_nns_governance_pb_v1_NetworkEconomics_DEFAULT NULL
-
-#define ic_nns_governance_pb_v1_RewardEvent_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   day_after_genesis,   1) \
-X(a, STATIC,   SINGULAR, UINT64,   actual_timestamp_seconds,   2) \
-X(a, CALLBACK, REPEATED, MESSAGE,  settled_proposals,   3) \
-X(a, STATIC,   SINGULAR, UINT64,   distributed_e8s_equivalent,   4)
-#define ic_nns_governance_pb_v1_RewardEvent_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_RewardEvent_DEFAULT NULL
-#define ic_nns_governance_pb_v1_RewardEvent_settled_proposals_MSGTYPE ic_nns_common_pb_v1_ProposalId
-
-#define ic_nns_governance_pb_v1_Governance_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  neurons,           1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  proposals,         2) \
-X(a, CALLBACK, REPEATED, MESSAGE,  to_claim_transfers,   3) \
-X(a, STATIC,   SINGULAR, UINT64,   wait_for_quiet_threshold_seconds,   5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  economics,         8) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  latest_reward_event,   9) \
-X(a, CALLBACK, REPEATED, MESSAGE,  in_flight_commands,  10) \
-X(a, STATIC,   SINGULAR, UINT64,   genesis_timestamp_seconds,  11) \
-X(a, CALLBACK, REPEATED, MESSAGE,  node_providers,   12) \
-X(a, CALLBACK, REPEATED, MESSAGE,  default_followees,  13) \
-X(a, STATIC,   SINGULAR, UINT64,   short_voting_period_seconds,  14)
-#define ic_nns_governance_pb_v1_Governance_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_Governance_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Governance_neurons_MSGTYPE ic_nns_governance_pb_v1_Governance_NeuronsEntry
-#define ic_nns_governance_pb_v1_Governance_proposals_MSGTYPE ic_nns_governance_pb_v1_Governance_ProposalsEntry
-#define ic_nns_governance_pb_v1_Governance_to_claim_transfers_MSGTYPE ic_nns_governance_pb_v1_NeuronStakeTransfer
-#define ic_nns_governance_pb_v1_Governance_economics_MSGTYPE ic_nns_governance_pb_v1_NetworkEconomics
-#define ic_nns_governance_pb_v1_Governance_latest_reward_event_MSGTYPE ic_nns_governance_pb_v1_RewardEvent
-#define ic_nns_governance_pb_v1_Governance_in_flight_commands_MSGTYPE ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry
-#define ic_nns_governance_pb_v1_Governance_node_providers_MSGTYPE ic_nns_governance_pb_v1_NodeProvider
-#define ic_nns_governance_pb_v1_Governance_default_followees_MSGTYPE ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry
-
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED64,  key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_value_MSGTYPE ic_nns_governance_pb_v1_Neuron
-
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_value_MSGTYPE ic_nns_governance_pb_v1_ProposalData
-
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   timestamp,         1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,split,command.split),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse_to_neuron,command.disburse_to_neuron),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,claim_or_refresh,command.claim_or_refresh),   6)
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_disburse_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Disburse
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_split_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Split
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_spawn_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Spawn
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_disburse_to_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_command_claim_or_refresh_MSGTYPE ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount
-
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED64,  key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_value_MSGTYPE ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand
-
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT32,    key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_value_MSGTYPE ic_nns_governance_pb_v1_Neuron_Followees
-
-#define ic_nns_governance_pb_v1_ListProposalInfo_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   limit,             1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  before_proposal,   2) \
-X(a, CALLBACK, REPEATED, UENUM,    exclude_topic,     3) \
-X(a, CALLBACK, REPEATED, UENUM,    include_reward_status,   4) \
-X(a, CALLBACK, REPEATED, UENUM,    include_status,    5)
-#define ic_nns_governance_pb_v1_ListProposalInfo_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_ListProposalInfo_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ListProposalInfo_before_proposal_MSGTYPE ic_nns_common_pb_v1_ProposalId
-
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  proposal_info,     1)
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_CALLBACK pb_default_field_callback
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_proposal_info_MSGTYPE ic_nns_governance_pb_v1_ProposalInfo
 
 #define ic_nns_governance_pb_v1_ListNeurons_FIELDLIST(X, a) \
 X(a, CALLBACK, REPEATED, FIXED64,  neuron_ids,        1) \
@@ -1983,234 +597,183 @@ X(a, STATIC,   SINGULAR, BOOL,     include_neurons_readable_by_caller,   2)
 #define ic_nns_governance_pb_v1_ListNeurons_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  neuron_infos,      1) \
+X(a, CALLBACK, REPEATED, MESSAGE,  neuron_ids,        1) \
 X(a, CALLBACK, REPEATED, MESSAGE,  full_neurons,      2)
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_infos_MSGTYPE ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_ids_MSGTYPE ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_full_neurons_MSGTYPE ic_nns_governance_pb_v1_Neuron
 
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, FIXED64,  key,               1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_value_MSGTYPE ic_nns_governance_pb_v1_NeuronInfo
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_CALLBACK NULL
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_DEFAULT NULL
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_value_MSGTYPE ic_nns_governance_pb_v1_NeuronInfo
 
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  controller,        1) \
-X(a, STATIC,   SINGULAR, UINT64,   memo,              2)
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
+#define ic_nns_governance_pb_v1_BallotInfo_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  proposal_id,       1) \
+X(a, STATIC,   SINGULAR, UENUM,    vote,              2)
+#define ic_nns_governance_pb_v1_BallotInfo_CALLBACK NULL
+#define ic_nns_governance_pb_v1_BallotInfo_DEFAULT NULL
+#define ic_nns_governance_pb_v1_BallotInfo_proposal_id_MSGTYPE ic_base_types_pb_v1_ProposalId
 
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (result,error,result.error),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (result,neuron_id,result.neuron_id),   2)
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_CALLBACK NULL
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_result_error_MSGTYPE ic_nns_governance_pb_v1_GovernanceError
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_result_neuron_id_MSGTYPE ic_nns_common_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_NeuronInfo_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   retrieved_at_timestamp_seconds,   1) \
+X(a, STATIC,   SINGULAR, UINT64,   age_seconds,       3) \
+X(a, STATIC,   SINGULAR, UINT64,   dissolve_delay_seconds,   4) \
+X(a, CALLBACK, REPEATED, MESSAGE,  recent_ballots,    5) \
+X(a, STATIC,   SINGULAR, UINT64,   voting_power,      6) \
+X(a, STATIC,   SINGULAR, UINT64,   created_timestamp_seconds,   7)
+#define ic_nns_governance_pb_v1_NeuronInfo_CALLBACK pb_default_field_callback
+#define ic_nns_governance_pb_v1_NeuronInfo_DEFAULT NULL
+#define ic_nns_governance_pb_v1_NeuronInfo_recent_ballots_MSGTYPE ic_nns_governance_pb_v1_BallotInfo
 
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_NodeProvider_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_BallotInfo_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronInfo_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Neuron_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Neuron_Followees_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Neuron_FolloweesEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ExecuteNnsFunction_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Motion_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ApproveGenesisKYC_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_RewardNodeProvider_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_SetDefaultFollowees_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Proposal_msg;
+#define ic_nns_governance_pb_v1_Neuron_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
+X(a, CALLBACK, SINGULAR, BYTES,    account,           2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  controller,        3) \
+X(a, CALLBACK, REPEATED, MESSAGE,  hot_keys,          4) \
+X(a, STATIC,   SINGULAR, UINT64,   cached_neuron_stake_e8s,   5) \
+X(a, STATIC,   SINGULAR, UINT64,   neuron_fees_e8s,   6) \
+X(a, STATIC,   SINGULAR, UINT64,   created_timestamp_seconds,   7) \
+X(a, STATIC,   SINGULAR, UINT64,   aging_since_timestamp_seconds,   8) \
+X(a, STATIC,   ONEOF,    UINT64,   (dissolve_state,when_dissolved_timestamp_seconds,dissolve_state.when_dissolved_timestamp_seconds),   9) \
+X(a, STATIC,   ONEOF,    UINT64,   (dissolve_state,dissolve_delay_seconds,dissolve_state.dissolve_delay_seconds),  10) \
+X(a, CALLBACK, REPEATED, MESSAGE,  followees,        11) \
+X(a, CALLBACK, REPEATED, MESSAGE,  recent_ballots,   12) \
+X(a, STATIC,   SINGULAR, BOOL,     kyc_verified,     13) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  transfer,         14) \
+X(a, STATIC,   SINGULAR, UINT64,   maturity_e8s_equivalent,  15) \
+X(a, STATIC,   SINGULAR, BOOL,     not_for_profit,   16)
+#define ic_nns_governance_pb_v1_Neuron_CALLBACK pb_default_field_callback
+#define ic_nns_governance_pb_v1_Neuron_DEFAULT NULL
+#define ic_nns_governance_pb_v1_Neuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
+#define ic_nns_governance_pb_v1_Neuron_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
+#define ic_nns_governance_pb_v1_Neuron_hot_keys_MSGTYPE ic_base_types_pb_v1_PrincipalId
+#define ic_nns_governance_pb_v1_Neuron_followees_MSGTYPE ic_nns_governance_pb_v1_Neuron_FolloweesEntry
+#define ic_nns_governance_pb_v1_Neuron_recent_ballots_MSGTYPE ic_nns_governance_pb_v1_BallotInfo
+#define ic_nns_governance_pb_v1_Neuron_transfer_MSGTYPE ic_nns_governance_pb_v1_NeuronStakeTransfer
+
+#define ic_nns_governance_pb_v1_Neuron_Followees_FIELDLIST(X, a) \
+X(a, CALLBACK, REPEATED, MESSAGE,  followees,         1)
+#define ic_nns_governance_pb_v1_Neuron_Followees_CALLBACK pb_default_field_callback
+#define ic_nns_governance_pb_v1_Neuron_Followees_DEFAULT NULL
+#define ic_nns_governance_pb_v1_Neuron_Followees_followees_MSGTYPE ic_base_types_pb_v1_NeuronId
+
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, INT32,    key,               1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_CALLBACK NULL
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_DEFAULT NULL
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_value_MSGTYPE ic_nns_governance_pb_v1_Neuron_Followees
+
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   transfer_timestamp,   1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  from,              2) \
+X(a, CALLBACK, SINGULAR, BYTES,    from_subaccount,   3) \
+X(a, CALLBACK, SINGULAR, BYTES,    to_subaccount,     4) \
+X(a, STATIC,   SINGULAR, UINT64,   neuron_stake_e8s,   5) \
+X(a, STATIC,   SINGULAR, UINT64,   block_height,      6) \
+X(a, STATIC,   SINGULAR, UINT64,   memo,              7)
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_CALLBACK pb_default_field_callback
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_DEFAULT NULL
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_from_MSGTYPE ic_base_types_pb_v1_PrincipalId
+
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Configure_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Disburse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Split_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Follow_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_GovernanceError_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Ballot_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Tally_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ProposalData_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ProposalData_BallotsEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ProposalInfo_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_NetworkEconomics_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_RewardEvent_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Governance_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Governance_NeuronsEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Governance_ProposalsEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ListProposalInfo_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ListProposalInfoResponse_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ListNeurons_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ListNeuronsResponse_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_msg;
-extern const pb_msgdesc_t ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_BallotInfo_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronInfo_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_Neuron_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_Neuron_Followees_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_Neuron_FolloweesEntry_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define ic_nns_governance_pb_v1_NodeProvider_fields &ic_nns_governance_pb_v1_NodeProvider_msg
-#define ic_nns_governance_pb_v1_BallotInfo_fields &ic_nns_governance_pb_v1_BallotInfo_msg
-#define ic_nns_governance_pb_v1_NeuronInfo_fields &ic_nns_governance_pb_v1_NeuronInfo_msg
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_fields &ic_nns_governance_pb_v1_NeuronStakeTransfer_msg
-#define ic_nns_governance_pb_v1_Neuron_fields &ic_nns_governance_pb_v1_Neuron_msg
-#define ic_nns_governance_pb_v1_Neuron_Followees_fields &ic_nns_governance_pb_v1_Neuron_Followees_msg
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_fields &ic_nns_governance_pb_v1_Neuron_FolloweesEntry_msg
-#define ic_nns_governance_pb_v1_ExecuteNnsFunction_fields &ic_nns_governance_pb_v1_ExecuteNnsFunction_msg
-#define ic_nns_governance_pb_v1_Motion_fields &ic_nns_governance_pb_v1_Motion_msg
-#define ic_nns_governance_pb_v1_ApproveGenesisKYC_fields &ic_nns_governance_pb_v1_ApproveGenesisKYC_msg
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_fields &ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_msg
-#define ic_nns_governance_pb_v1_RewardNodeProvider_fields &ic_nns_governance_pb_v1_RewardNodeProvider_msg
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_fields &ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_msg
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_fields &ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_msg
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_fields &ic_nns_governance_pb_v1_SetDefaultFollowees_msg
-#define ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_fields &ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_msg
-#define ic_nns_governance_pb_v1_Proposal_fields &ic_nns_governance_pb_v1_Proposal_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_fields &ic_nns_governance_pb_v1_ManageNeuron_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_fields &ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_fields &ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_fields &ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_fields &ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_fields &ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_fields &ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_fields &ic_nns_governance_pb_v1_ManageNeuron_Configure_msg
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_fields &ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_fields &ic_nns_governance_pb_v1_ManageNeuron_Disburse_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_fields &ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_fields &ic_nns_governance_pb_v1_ManageNeuron_Split_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_fields &ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_fields &ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_fields &ic_nns_governance_pb_v1_ManageNeuron_Follow_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_fields &ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_fields &ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_msg
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_fields &ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_msg
 #define ic_nns_governance_pb_v1_GovernanceError_fields &ic_nns_governance_pb_v1_GovernanceError_msg
-#define ic_nns_governance_pb_v1_Ballot_fields &ic_nns_governance_pb_v1_Ballot_msg
-#define ic_nns_governance_pb_v1_Tally_fields &ic_nns_governance_pb_v1_Tally_msg
-#define ic_nns_governance_pb_v1_ProposalData_fields &ic_nns_governance_pb_v1_ProposalData_msg
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_fields &ic_nns_governance_pb_v1_ProposalData_BallotsEntry_msg
-#define ic_nns_governance_pb_v1_ProposalInfo_fields &ic_nns_governance_pb_v1_ProposalInfo_msg
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_fields &ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_msg
-#define ic_nns_governance_pb_v1_NetworkEconomics_fields &ic_nns_governance_pb_v1_NetworkEconomics_msg
-#define ic_nns_governance_pb_v1_RewardEvent_fields &ic_nns_governance_pb_v1_RewardEvent_msg
-#define ic_nns_governance_pb_v1_Governance_fields &ic_nns_governance_pb_v1_Governance_msg
-#define ic_nns_governance_pb_v1_Governance_NeuronsEntry_fields &ic_nns_governance_pb_v1_Governance_NeuronsEntry_msg
-#define ic_nns_governance_pb_v1_Governance_ProposalsEntry_fields &ic_nns_governance_pb_v1_Governance_ProposalsEntry_msg
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_fields &ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_msg
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_fields &ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_msg
-#define ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_fields &ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_msg
-#define ic_nns_governance_pb_v1_ListProposalInfo_fields &ic_nns_governance_pb_v1_ListProposalInfo_msg
-#define ic_nns_governance_pb_v1_ListProposalInfoResponse_fields &ic_nns_governance_pb_v1_ListProposalInfoResponse_msg
 #define ic_nns_governance_pb_v1_ListNeurons_fields &ic_nns_governance_pb_v1_ListNeurons_msg
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_fields &ic_nns_governance_pb_v1_ListNeuronsResponse_msg
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_fields &ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_msg
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_fields &ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_msg
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_fields &ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_msg
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_fields &ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_msg
+#define ic_nns_governance_pb_v1_BallotInfo_fields &ic_nns_governance_pb_v1_BallotInfo_msg
+#define ic_nns_governance_pb_v1_NeuronInfo_fields &ic_nns_governance_pb_v1_NeuronInfo_msg
+#define ic_nns_governance_pb_v1_Neuron_fields &ic_nns_governance_pb_v1_Neuron_msg
+#define ic_nns_governance_pb_v1_Neuron_Followees_fields &ic_nns_governance_pb_v1_Neuron_Followees_msg
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_fields &ic_nns_governance_pb_v1_Neuron_FolloweesEntry_msg
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_fields &ic_nns_governance_pb_v1_NeuronStakeTransfer_msg
 
 /* Maximum encoded size of messages (where known) */
+/* ic_nns_governance_pb_v1_ManageNeuron_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_ManageNeuronResponse_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_GovernanceError_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_ListNeurons_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_ListNeuronsResponse_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_NeuronInfo_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_NeuronStakeTransfer_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_Neuron_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_Neuron_Followees_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_Neuron_FolloweesEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ExecuteNnsFunction_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Motion_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ApproveGenesisKYC_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_SetDefaultFollowees_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_SetDefaultFollowees_DefaultFolloweesEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Proposal_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ManageNeuron_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ManageNeuron_Follow_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ManageNeuronResponse_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_GovernanceError_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ProposalData_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ProposalInfo_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_RewardEvent_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Governance_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Governance_NeuronsEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Governance_ProposalsEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Governance_DefaultFolloweesEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListProposalInfo_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListProposalInfoResponse_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListNeurons_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListNeuronsResponse_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronInfosEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccountResponse_size depends on runtime parameters */
-#define ic_nns_governance_pb_v1_AddOrRemoveNodeProvider_size 36
+/* ic_nns_governance_pb_v1_NeuronStakeTransfer_size depends on runtime parameters */
 #define ic_nns_governance_pb_v1_BallotInfo_size  15
-#define ic_nns_governance_pb_v1_Ballot_size      13
-#define ic_nns_governance_pb_v1_ClaimOrRefreshNeuronFromAccount_size 45
-#define ic_nns_governance_pb_v1_Governance_InFlightCommandsEntry_size 93
-#define ic_nns_governance_pb_v1_Governance_NeuronInFlightCommand_size 82
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ClaimOrRefreshResponse_size 13
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_size 0
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_size 11
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseToNeuronResponse_size 13
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_size 0
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MakeProposalResponse_size 13
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_size 22
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_size 0
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_size 13
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SplitResponse_size 13
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_size 34
-#define ic_nns_governance_pb_v1_ManageNeuron_ClaimOrRefresh_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_size 36
-#define ic_nns_governance_pb_v1_ManageNeuron_DisburseToNeuron_size 69
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size 50
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_size 197
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_size 6
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_size 6
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_size 15
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_size 34
-#define ic_nns_governance_pb_v1_ManageNeuron_SetDissolveTimestamp_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_size 34
-#define ic_nns_governance_pb_v1_ManageNeuron_Split_size 11
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_size 0
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_size 0
-#define ic_nns_governance_pb_v1_NetworkEconomics_size 83
-#define ic_nns_governance_pb_v1_NodeProvider_size 34
-#define ic_nns_governance_pb_v1_ProposalData_BallotsEntry_size 24
-#define ic_nns_governance_pb_v1_ProposalInfo_BallotsEntry_size 24
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToAccount_size 37
-#define ic_nns_governance_pb_v1_RewardNodeProvider_RewardToNeuron_size 11
-#define ic_nns_governance_pb_v1_RewardNodeProvider_size 86
-#define ic_nns_governance_pb_v1_Tally_size       44
 
 #ifdef __cplusplus
 } /* extern "C" */
