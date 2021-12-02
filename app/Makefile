@@ -56,7 +56,7 @@ endif
 
 APPVERSION_M=1
 APPVERSION_N=0
-APPVERSION_P=2
+APPVERSION_P=3
 
 $(info COIN  = [$(COIN)])
 
@@ -78,8 +78,7 @@ endef
 $(error "$(error_message)")
 endif
 
-APP_LOAD_PARAMS = --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path ${APPPATH} --path "44'/1'" --tlvraw 9F:01
-DEFINES += HAVE_PENDING_REVIEW_SCREEN
+APP_LOAD_PARAMS = --appFlags 0x200 --delete $(COMMON_LOAD_PARAMS) --path ${APPPATH} --path "44'/1'"
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
 APP_STACK_SIZE:=2500
