@@ -261,7 +261,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             if(1 <= operation && operation <= 6){
                 *mn_type = (manageNeuron_e)operation;
                 return parser_ok;
-            }else{
+            }else if (operation == 7){
+                *mn_type = JoinCommunityFund;
+                return parser_ok;
+            }
+            else{
                 return parser_unexpected_type;
             }
         }
@@ -568,6 +572,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                 case pb_manageneuron : {
                     switch(v->tx_fields.call.manage_neuron_type){
                         case StopDissolving :
+                        case JoinCommunityFund :
                         case StartDissolving : {
                             return 2;
                         }

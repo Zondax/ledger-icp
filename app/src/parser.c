@@ -738,6 +738,31 @@ parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
     return parser_no_data;
 }
 
+parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
+                                                 char *outKey, uint16_t outKeyLen,
+                                                 char *outVal, uint16_t outValLen,
+                                                 uint8_t pageIdx, uint8_t *pageCount) {
+
+    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Join Community Fund");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        } else {
+            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+    }
+
+    return parser_no_data;
+}
+
 parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
                                            char *outKey, uint16_t outKeyLen,
                                            char *outVal, uint16_t outValLen,
@@ -941,7 +966,7 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
 
     switch(parser_tx_obj.tx_fields.call.manage_neuron_type){
         case IncreaseDissolveDelay: return parser_getItemIncreaseNeuronTimer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
+        case JoinCommunityFund : return parser_getItemJoinCommunityFund(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case StopDissolving :
         case StartDissolving : {
             return parser_getItemStartStopDissolve(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
