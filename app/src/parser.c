@@ -747,7 +747,7 @@ parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Join Community Fund");
+        snprintf(outVal, outValLen, "Join Community     Fund");
         return parser_ok;
     }
 

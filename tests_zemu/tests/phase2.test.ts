@@ -442,4 +442,32 @@ describe('Phase2', function () {
     }
   })
 
+  test.each(models)('sign normal -- join community fund', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+          'd9d9f7a167636f6e74656e74a663617267486202107b12023a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16ba67d2b864bf406b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d19AA3D42C048DD7D14F0CFA0DF69A1C1381780F6E9A137ABAA6A82E302'
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-join_community_fund`, m.name === 'nanos' ? 2 : 3)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+    } finally {
+      await sim.close()
+    }
+  })
+
 })
