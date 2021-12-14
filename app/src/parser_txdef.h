@@ -50,6 +50,7 @@ typedef enum {
     pb_sendrequest = 0x01,
     pb_manageneuron = 0x02,
     pb_listneurons = 0x03,
+    pb_claimneurons = 0x04,
 } pbtype_e;
 
 typedef enum {

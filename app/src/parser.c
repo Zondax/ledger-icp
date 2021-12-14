@@ -901,6 +901,17 @@ parser_error_t parser_getItemFollow(uint8_t displayIdx,
 }
 
 
+parser_error_t parser_getItemClaimNeuron(uint8_t displayIdx,
+                                         char *outKey, uint16_t outKeyLen,
+                                         char *outVal, uint16_t outValLen) {
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Claim Neurons");
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
                                          char *outKey, uint16_t outKeyLen,
                                          char *outVal, uint16_t outValLen) {
@@ -984,6 +995,12 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                     return parser_getItemListNeurons(displayIdx,
                                                       outKey, outKeyLen,
                                                       outVal, outValLen);
+                }
+
+                case pb_claimneurons : {
+                    return parser_getItemClaimNeuron(displayIdx,
+                                                     outKey, outKeyLen,
+                                                     outVal, outValLen);
                 }
 
                 default : {
