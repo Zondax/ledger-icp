@@ -70,6 +70,10 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteRespons
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse;
 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund { 
+    char dummy_field;
+} ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund;
+
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StartDissolving { 
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuron_StartDissolving;
@@ -209,6 +213,7 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Configure {
         ic_nns_governance_pb_v1_ManageNeuron_StopDissolving stop_dissolving;
         ic_nns_governance_pb_v1_ManageNeuron_AddHotKey add_hot_key;
         ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey remove_hot_key;
+        ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund join_community_fund;
     } operation; 
 } ic_nns_governance_pb_v1_ManageNeuron_Configure;
 
@@ -297,6 +302,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default {0, {ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default}}
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_default {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default}
@@ -327,6 +333,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero {0, {ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero}}
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_zero {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
@@ -405,6 +412,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_stop_dissolving_tag 3
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_add_hot_key_tag 4
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_remove_hot_key_tag 5
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_join_community_fund_tag 7
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_amount_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_to_account_tag 2
 #define ic_nns_governance_pb_v1_Neuron_id_tag    1
@@ -482,12 +490,18 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  hot_key_to_remove,   1)
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_hot_key_to_remove_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_FIELDLIST(X, a) \
+
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_CALLBACK NULL
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_DEFAULT NULL
+
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,increase_dissolve_delay,operation.increase_dissolve_delay),   1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,start_dissolving,operation.start_dissolving),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,stop_dissolving,operation.stop_dissolving),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (operation,add_hot_key,operation.add_hot_key),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_hot_key),   5)
+X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_hot_key),   5) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (operation,join_community_fund,operation.join_community_fund),   7)
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_increase_dissolve_delay_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay
@@ -495,6 +509,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_ho
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_stop_dissolving_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_StopDissolving
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_add_hot_key_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_AddHotKey
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_remove_hot_key_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_join_community_fund_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund
 
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1)
@@ -686,6 +701,7 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_m
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_msg;
+extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Configure_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg;
 extern const pb_msgdesc_t ic_nns_governance_pb_v1_ManageNeuron_Disburse_msg;
@@ -718,6 +734,7 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_fields &ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_fields &ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_fields &ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_msg
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_fields &ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_fields &ic_nns_governance_pb_v1_ManageNeuron_Configure_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_fields &ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_fields &ic_nns_governance_pb_v1_ManageNeuron_Disburse_msg
@@ -768,6 +785,7 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_size 50
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_size 197
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_size 6
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_size 0
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_size 6
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_size 15
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_size 34
