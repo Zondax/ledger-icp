@@ -44,6 +44,9 @@ uint8_t *tx_get_buffer();
 /// \return It returns NULL if data is valid or error message otherwise.
 const char *tx_parse();
 
+///Parses combined transaction message in transaction buffer
+const char *tx_parse_combined();
+
 /// Return the number of items in the transaction
 zxerr_t tx_getNumItems(uint8_t *num_items);
 

@@ -127,8 +127,6 @@ typedef struct {
     uint64_t ingress_expiry;
     uint64_t neuron_creation_memo;
 
-    special_transfer_e special_transfer_type;
-
     canister_t canister_id;
     sender_t sender;
 
@@ -161,6 +159,8 @@ typedef struct {
         call_t call;
         state_read_t stateRead;
     } tx_fields;
+
+    special_transfer_e special_transfer_type;
 } parser_tx_t;
 
 #ifdef __cplusplus

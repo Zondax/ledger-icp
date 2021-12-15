@@ -303,7 +303,7 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
 
 parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
-    if (strcmp(method, "send_pb") == 0 || v->tx_fields.call.special_transfer_type == neuron_stake_transaction) {
+    if (strcmp(method, "send_pb") == 0 ||v->special_transfer_type == neuron_stake_transaction) {
         v->tx_fields.call.pbtype = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
@@ -479,7 +479,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                 return parser_unexpected_value;
             }
 
-            if (v->tx_fields.call.special_transfer_type == invalid){
+            if (v->special_transfer_type == invalid){
                 zemu_log_stack("invalid transfer type");
                 return parser_unexpected_value;
             }
@@ -537,7 +537,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 #endif
 
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if(is_stake_tx){
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
@@ -560,7 +560,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
         case call: {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
-                    const bool is_stake_tx = v->tx_fields.call.special_transfer_type == neuron_stake_transaction;
+                    const bool is_stake_tx =v->special_transfer_type == neuron_stake_transaction;
 
                     if (is_stake_tx) {
                         return app_mode_expert() ? 7 : 5;

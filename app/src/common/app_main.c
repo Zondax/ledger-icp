@@ -136,7 +136,7 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
     uint32_t added;
     switch (payloadType) {
@@ -145,10 +145,10 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             tx_reset();
             extractHDPath(rx, OFFSET_DATA);
             MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
-            if((G_io_apdu_buffer[OFFSET_P2] & 0x01) == 1){
-                parser_tx_obj.tx_fields.call.special_transfer_type = neuron_stake_transaction;
+            if(G_io_apdu_buffer[OFFSET_P2] == 1){
+                parser_tx_obj.special_transfer_type = neuron_stake_transaction;
             }else{
-                parser_tx_obj.tx_fields.call.special_transfer_type = normal_transaction;
+                parser_tx_obj.special_transfer_type = normal_transaction;
             }
             tx_initialized = true;
             return false;

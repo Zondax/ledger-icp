@@ -50,6 +50,30 @@ GEN_DEC_READFIX_UNSIGNED(32);
 
 GEN_DEC_READFIX_UNSIGNED(64);
 
+parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
+    if (dataLen < 1) {
+        return parser_no_data;
+    }
+    zemu_log_stack("parser parse");
+    //if combined_tx:
+    //split data in two transactions
+    //should start with checking status
+    //add one more check in validate
+    //define txtype
+    const size_t dataLen_state_read = (uint32_t *)&data;
+    const uint8_t *start_state_read_data = data + 4;
+    CHECK_PARSER_ERR(parser_init(ctx, start_state_read_data, dataLen_state_read))
+    CHECK_PARSER_ERR(_readEnvelope(ctx, &parser_tx_obj))
+    uint8_t state_read_digest[32];
+    PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(state_read_digest, state_transaction_read), parser_unexepected_error)
+
+    data += 4 + dataLen_state_read;
+    const size_t dataLen_request = (uint32_t *)&data;
+    const uint8_t *start_request_data = data + 4;
+    PARSER_ASSERT_OR_ERROR(dataLen == dataLen_request + dataLen_state_read + 8, parser_context_unexpected_size)
+    CHECK_PARSER_ERR(parser_init(ctx, start_request_data, dataLen_request))
+    return _readEnvelope(ctx, &parser_tx_obj);
+}
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
     if (dataLen < 1) {
@@ -330,7 +354,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (is_stake_tx) {
         return parser_unexepected_error;
     }
@@ -432,7 +456,7 @@ parser_error_t parser_getItemStakeNeuron(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (!is_stake_tx) {
         return parser_unexepected_error;
     }
@@ -994,7 +1018,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
         case call: {
             switch(parser_tx_obj.tx_fields.call.pbtype) {
                 case pb_sendrequest : {
-                    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+                    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
                     if (is_stake_tx) {
                         return parser_getItemStakeNeuron(ctx, displayIdx,

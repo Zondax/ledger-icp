@@ -26,6 +26,8 @@ extern "C" {
 #include <sigutils.h>
 #include <zxerror.h>
 
+#include "parser_txdef.h"
+
 extern uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
 bool isTestnet();
@@ -53,6 +55,8 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
 zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
                     uint16_t *sigSize);
+
+zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype);
 
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
                                        const uint64_t neuron_creation_memo,
