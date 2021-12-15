@@ -15,7 +15,14 @@
  *  limitations under the License.
  ******************************************************************************* */
 import Transport from '@ledgerhq/hw-transport';
-import {ResponseAddress, ResponseAppInfo, ResponseDeviceInfo, ResponseSign, ResponseVersion} from './types';
+import {
+  ResponseAddress,
+  ResponseAppInfo,
+  ResponseDeviceInfo,
+  ResponseSign,
+  ResponseSignUpdateCall,
+  ResponseVersion
+} from './types';
 import {
   ADDRLEN,
   CHUNK_SIZE,
@@ -285,6 +292,92 @@ export default class InternetComputerApp {
         for (let i = 1; i < chunks.length; i += 1) {
           // eslint-disable-next-line no-await-in-loop
           result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256);
+          if (result.returnCode !== LedgerError.NoErrors) {
+            break;
+          }
+        }
+        return result;
+      }, processErrorResponse);
+    }, processErrorResponse);
+  }
+
+  async signSendChunkUpdateCall(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number): Promise<ResponseSignUpdateCall> {
+    let payloadType = PAYLOAD_TYPE.ADD;
+    if (chunkIdx === 1) {
+      payloadType = PAYLOAD_TYPE.INIT;
+    }
+    if (chunkIdx === chunkNum) {
+      payloadType = PAYLOAD_TYPE.LAST;
+    }
+
+    return this.transport
+        .send(CLA, INS.SIGN_SECP256K1, payloadType, txtype, chunk, [
+          LedgerError.NoErrors,
+          LedgerError.DataIsInvalid,
+          LedgerError.BadKeyHandle,
+          LedgerError.SignVerifyError
+        ])
+        .then((response: Buffer) => {
+          const errorCodeData = response.slice(-2);
+          const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
+          let errorMessage = errorCodeToString(returnCode);
+
+          let RequestHash = Buffer.alloc(0);
+          let RequestSignatureRS = Buffer.alloc(0);
+          let StatusReadHash = Buffer.alloc(0);
+          let StatusReadSignatureRS = Buffer.alloc(0);
+
+          if (returnCode === LedgerError.BadKeyHandle ||
+              returnCode === LedgerError.DataIsInvalid ||
+              returnCode === LedgerError.SignVerifyError) {
+            errorMessage = `${errorMessage} : ${response
+                .slice(0, response.length - 2)
+                .toString('ascii')}`;
+          }
+
+          if (returnCode === LedgerError.NoErrors && response.length > 2) {
+            RequestHash = response.slice(0, 32);
+            RequestSignatureRS = response.slice(32, 96);
+            StatusReadHash = response.slice(96, 128);
+            StatusReadSignatureRS = response.slice(128, 192);
+            return {
+              RequestHash,
+              RequestSignatureRS,
+              StatusReadHash,
+              StatusReadSignatureRS,
+              returnCode: returnCode,
+              errorMessage: errorMessage,
+            };
+          }
+
+          return {
+            returnCode: returnCode,
+            errorMessage: errorMessage,
+          } as ResponseSignUpdateCall;
+
+        }, processErrorResponse);
+  }
+
+  async signUpdateCall(path: string, request: Buffer, checkStatus: Buffer, txtype: number) {
+    const message = Buffer.alloc(8 + request.byteLength + checkStatus.byteLength);
+    message.writeUInt32LE(checkStatus.byteLength, 0);
+    checkStatus.copy(message, 4);
+    message.writeUInt32LE(request.byteLength, 4 + checkStatus.byteLength);
+    request.copy(message, 8 + checkStatus.byteLength);
+    return this.signGetChunks(path, message).then(chunks => {
+      return this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async response => {
+        let result = {
+          returnCode: response.returnCode,
+          errorMessage: response.errorMessage,
+          RequestHash: null as null | Buffer,
+          RequestSignatureRS: null as null | Buffer,
+          StatusReadHash: null as null | Buffer,
+          StatusReadSignatureRS: null as null | Buffer,
+        } as ResponseSignUpdateCall;
+
+        for (let i = 1; i < chunks.length; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          result = await this.signSendChunkUpdateCall(1 + i, chunks.length, chunks[i], txtype % 256);
           if (result.returnCode !== LedgerError.NoErrors) {
             break;
           }
