@@ -497,6 +497,22 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
+      const pk = Uint8Array.from(Buffer.from("0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835", 'hex'))
+
+      const digest_request = Uint8Array.from(signatureResponse.RequestHash)
+      const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS)
+      expect(signature_request.byteLength).toEqual(64)
+
+      const signatureOk = secp256k1.ecdsaVerify(signature_request, digest_request, pk)
+      expect(signatureOk).toEqual(true)
+
+      const digest_statusread = Uint8Array.from(signatureResponse.StatusReadHash)
+      const signature_statusread = Uint8Array.from(signatureResponse.StatusReadSignatureRS)
+      expect(signature_request.byteLength).toEqual(64)
+
+      const signatureOk_statusread = secp256k1.ecdsaVerify(signature_statusread, digest_statusread, pk)
+      expect(signatureOk_statusread).toEqual(true)
+
     } finally {
       await sim.close()
     }
