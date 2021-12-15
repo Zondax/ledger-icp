@@ -40,6 +40,10 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #define STAKEACCOUNT_PREFIX_SIZE 12u
 #define STAKEACCOUNT_PRINCIPAL_SIZE 10u
 
+#define SIGNATURE_SIZE_R 32
+#define SIGNATURE_SIZE_S 32
+#define SIGNATURE_SIZE_RS 64
+
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
 
@@ -272,7 +276,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
                     uint8_t *predigest_request,
                     uint8_t *predigest_stateread,
                     uint16_t *sigSize) {
-    if (signatureMaxlen < SIGN_PREHASH_SIZE + CX_SHA256_SIZE + 2*64){
+    if (signatureMaxlen < 2*(CX_SHA256_SIZE + SIGNATURE_SIZE_RS)){
         return zxerr_buffer_too_small;
     }
 
@@ -290,7 +294,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
     CHECK_APP_CANARY()
 
     cx_hash_sha256(message_buffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
-    MEMCPY(signatureBuffer + 32 + 64, message_digest, CX_SHA256_SIZE);
+    MEMCPY(signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_RS, message_digest, CX_SHA256_SIZE);
 
 
     MEMCPY(message_buffer + SIGN_PREFIX_SIZE, predigest_request, CX_SHA256_SIZE);
@@ -335,15 +339,15 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
                 MEMZERO(signatureBuffer, signatureMaxlen);
                 err = zxerr_unknown;
             }else{
-                MEMCPY(signatureBuffer + 32, sigma.r, 32);
-                MEMCPY(signatureBuffer + 64, sigma.s, 32);
+                MEMCPY(signatureBuffer + CX_SHA256_SIZE, sigma.r, SIGNATURE_SIZE_R);
+                MEMCPY(signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_R, sigma.s, SIGNATURE_SIZE_S);
 
                 MEMZERO(&sigma, sizeof(signature_t));
                 // Sign stateread
                 signatureLength = cx_ecdsa_sign(&cx_privateKey,
                                                 CX_RND_RFC6979 | CX_LAST,
                                                 CX_SHA256,
-                                                signatureBuffer + 32 + 64,
+                                                signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_RS,
                                                 CX_SHA256_SIZE,
                                                 sigma.der_signature,
                                                 sizeof_field(signature_t, der_signature),
@@ -354,9 +358,9 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
                     MEMZERO(signatureBuffer, signatureMaxlen);
                     err = zxerr_unknown;
                 }else{
-                    MEMCPY(signatureBuffer + 32 + 64 + 32, sigma.r, 32);
-                    MEMCPY(signatureBuffer + 32 + 64 + 64, sigma.s, 32);
-                    *sigSize = 32 + 64 + 32 + 64;
+                    MEMCPY(signatureBuffer + 2*CX_SHA256_SIZE + SIGNATURE_SIZE_RS, sigma.r, SIGNATURE_SIZE_R);
+                    MEMCPY(signatureBuffer + 2*CX_SHA256_SIZE + SIGNATURE_SIZE_RS + SIGNATURE_SIZE_R, sigma.s, SIGNATURE_SIZE_S);
+                    *sigSize = 2*(CX_SHA256_SIZE + SIGNATURE_SIZE_RS);
                 }
             }
         }
