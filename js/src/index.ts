@@ -311,7 +311,7 @@ export default class InternetComputerApp {
     }
 
     return this.transport
-        .send(CLA, INS.SIGN_SECP256K1, payloadType, txtype, chunk, [
+        .send(CLA, INS.SIGN_COMBINED, payloadType, txtype, chunk, [
           LedgerError.NoErrors,
           LedgerError.DataIsInvalid,
           LedgerError.BadKeyHandle,
@@ -364,6 +364,7 @@ export default class InternetComputerApp {
     checkStatus.copy(message, 4);
     message.writeUInt32LE(request.byteLength, 4 + checkStatus.byteLength);
     request.copy(message, 8 + checkStatus.byteLength);
+    console.log(message.toString('hex'))
     return this.signGetChunks(path, message).then(chunks => {
       return this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async response => {
         let result = {
