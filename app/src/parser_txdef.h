@@ -76,7 +76,8 @@ typedef enum {
 
 typedef enum {
     invalid = 0x00,
-    neuron_stake_transaction = 0x01,
+    normal_transaction = 0x01,
+    neuron_stake_transaction = 0x02,
 } special_transfer_e;
 
 typedef struct {

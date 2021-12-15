@@ -479,6 +479,11 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                 return parser_unexpected_value;
             }
 
+            if (v->tx_fields.call.special_transfer_type == invalid){
+                zemu_log_stack("invalid transfer type");
+                return parser_unexpected_value;
+            }
+
             if (v->tx_fields.call.pbtype == pb_manageneuron){
                 ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
                 PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0), parser_unexepected_error);

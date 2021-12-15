@@ -122,7 +122,7 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
         ASSERT_NE(err, parser_ok) << parser_getErrorDescription(err);
         return;
     }
-
+    parser_tx_obj.tx_fields.call.special_transfer_type = normal_transaction;
     err = parser_validate(&ctx);
     ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
 
