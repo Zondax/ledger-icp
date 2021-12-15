@@ -60,19 +60,33 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     //should start with checking status
     //add one more check in validate
     //define txtype
-    const size_t dataLen_state_read = (uint32_t *)&data;
-    const uint8_t *start_state_read_data = data + 4;
-    CHECK_PARSER_ERR(parser_init(ctx, start_state_read_data, dataLen_state_read))
+    const uint8_t *start_state_read_data = data;
+    CHECK_PARSER_ERR(parser_init(ctx, start_state_read_data, dataLen))
+    uint32_t dataLen_state_read;
+    CHECK_PARSER_ERR(_readUInt32(ctx, &dataLen_state_read))
+    ctx->bufferLen = dataLen_state_read;
+
     CHECK_PARSER_ERR(_readEnvelope(ctx, &parser_tx_obj))
-    uint8_t state_read_digest[32];
-    PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(state_read_digest, state_transaction_read), parser_unexepected_error)
+    PARSER_ASSERT_OR_ERROR(parser_tx_obj.txtype == state_transaction_read, parser_unexpected_type)
+
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(G_io_apdu_buffer, state_transaction_read), parser_unexepected_error)
 
     data += 4 + dataLen_state_read;
-    const size_t dataLen_request = (uint32_t *)&data;
-    const uint8_t *start_request_data = data + 4;
+    const uint8_t *start_request_data = data;
+    CHECK_PARSER_ERR(parser_init(ctx, start_request_data, dataLen - 4 - dataLen_state_read))
+    uint32_t dataLen_request;
+    CHECK_PARSER_ERR(_readUInt32(ctx, &dataLen_request))
+    ctx->bufferLen = dataLen_request;
+
     PARSER_ASSERT_OR_ERROR(dataLen == dataLen_request + dataLen_state_read + 8, parser_context_unexpected_size)
+
     CHECK_PARSER_ERR(parser_init(ctx, start_request_data, dataLen_request))
-    return _readEnvelope(ctx, &parser_tx_obj);
+    CHECK_PARSER_ERR(_readEnvelope(ctx, &parser_tx_obj))
+    PARSER_ASSERT_OR_ERROR(parser_tx_obj.txtype == call, parser_unexpected_type)
+
+    PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(G_io_apdu_buffer+32, call), parser_unexepected_error)
+    return parser_ok;
 }
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {

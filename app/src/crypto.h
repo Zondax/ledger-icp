@@ -56,6 +56,12 @@ zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
                     uint16_t *sigSize);
 
+zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
+                             uint16_t signatureMaxlen,
+                             uint8_t *predigest_request,
+                             uint8_t *predigest_stateread,
+                             uint16_t *sigSize);
+
 zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype);
 
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
