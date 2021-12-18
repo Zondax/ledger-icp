@@ -533,4 +533,54 @@ namespace {
         parser_tx_obj.tx_fields.call.special_transfer_type = invalid;
     }
 
+    TEST(CBORParserTest, ClaimNeuron) {
+        uint8_t inBuffer[1000];
+
+        const char *tmp = "d9d9f7a167636f6e74656e74a76c726571756573745f747970656463616c6c656e6f6e6365505833a6590c6d2b601e3a24557cfbb4336e696e67726573735f6578706972791b16bad506bb4ca0f06673656e646572581d2594dccb73ca0226c58299d4e21badbcee00d153deccb38fa20cd46e026b63616e69737465725f69644a000000000000000601016b6d6574686f645f6e616d656d636c61696d5f6e6575726f6e7363617267588b4449444c000171820130343139623066656363356639613164353162393033643262363234346430356531326134386661386233353731396538313262623635643966393035613365613965356137323362363537616665393136313236396431663134633164383034376530323230616461633434653731313630323531656364616662613064636535";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        parser_context_t ctx;
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        EXPECT_EQ(err, parser_ok);
+
+        err = parser_validate(&ctx);
+        EXPECT_EQ(err, parser_ok);
+    }
+
+    TEST(CBORParserTest, JoinCommunityFund) {
+        uint8_t inBuffer[1000];
+
+        const char *tmp = "d9d9f7a167636f6e74656e74a663617267486202107b12023a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16ba67d2b864bf406b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581dd899978f029508f4fa5fce3d2539de5aade6d229efcc458233deee7502";
+        auto inBufferLen = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+
+        parser_context_t ctx;
+        auto err = parser_parse(&ctx, inBuffer, inBufferLen);
+        EXPECT_EQ(err, parser_ok);
+
+        err = parser_validate(&ctx);
+        EXPECT_EQ(err, parser_ok);
+    }
+
+    TEST(NANOPBTEST, JoinCommunity) {
+        uint8_t inBuffer[1000];
+        const char *tmp = "6202107B12023A00";
+        size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);
+        bool status;
+
+        /* Allocate space for the decoded message. */
+        ic_nns_governance_pb_v1_ManageNeuron request = ic_nns_governance_pb_v1_ManageNeuron_init_zero;
+
+        /* Create a stream that reads from the buffer. */
+        pb_istream_t stream = pb_istream_from_buffer(inBuffer, len);
+
+        /* Now we are ready to decode the message. */
+        status = pb_decode(&stream, ic_nns_governance_pb_v1_ManageNeuron_fields, &request);
+
+        EXPECT_EQ(status, true);
+
+        EXPECT_EQ(request.command.configure.which_operation, 7);
+
+        EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id, 123);
+
+    }
 }

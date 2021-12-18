@@ -39,6 +39,10 @@ message ManageNeuron {
     ic_base_types.pb.v1.PrincipalId hot_key_to_remove = 1 [(ic_base_types.pb.v1.tui_signed_display_q2_2021) = true];
   }
 
+  // Join the Internet Computer's community fund with this neuron's
+  // entire stake. Caution: this operation is not reversible.
+  message JoinCommunityFund {}
+
   // Commands that only configure a given neuron, but do not interact
   // with the outside world. They all require the caller to be the
   // controller of the neuron.
@@ -49,6 +53,7 @@ message ManageNeuron {
       StopDissolving stop_dissolving = 3;
       AddHotKey add_hot_key = 4;
       RemoveHotKey remove_hot_key = 5;
+      JoinCommunityFund join_community_fund = 7;
     }
   }
 

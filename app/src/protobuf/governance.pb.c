@@ -24,6 +24,9 @@ PB_BIND(ic_nns_governance_pb_v1_ManageNeuron_AddHotKey, ic_nns_governance_pb_v1_
 PB_BIND(ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey, ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey, AUTO)
 
 
+PB_BIND(ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund, ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund, AUTO)
+
+
 PB_BIND(ic_nns_governance_pb_v1_ManageNeuron_Configure, ic_nns_governance_pb_v1_ManageNeuron_Configure, AUTO)
 
 

@@ -261,7 +261,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             if(1 <= operation && operation <= 6){
                 *mn_type = (manageNeuron_e)operation;
                 return parser_ok;
-            }else{
+            }else if (operation == 7){
+                *mn_type = JoinCommunityFund;
+                return parser_ok;
+            }
+            else{
                 return parser_unexpected_type;
             }
         }
@@ -315,7 +319,12 @@ parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return _parser_pb_ListNeurons(v, buffer, bufferLen);
     }
 
-
+    if(strcmp(method, "claim_neurons") == 0) {
+        if (130 <= bufferLen && bufferLen <= 150) {
+            v->tx_fields.call.pbtype = pb_claimneurons;
+            return parser_ok;
+        }
+    }
     return parser_unexpected_type;
 }
 
@@ -448,6 +457,10 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
 
+        case pb_claimneurons : {
+            CHECK_METHOD_WITH_CANISTER("renrkeyaaaaaaaaaaadacai")
+        }
+
         default: {
             return parser_unexpected_type;
         }
@@ -551,6 +564,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                     return app_mode_expert() ? 8 : 6;
                 }
 
+                case pb_claimneurons :
                 case pb_listneurons : {
                     return 1;
                 }
@@ -558,6 +572,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                 case pb_manageneuron : {
                     switch(v->tx_fields.call.manage_neuron_type){
                         case StopDissolving :
+                        case JoinCommunityFund :
                         case StartDissolving : {
                             return 2;
                         }
