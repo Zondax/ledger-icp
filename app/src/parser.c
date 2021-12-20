@@ -50,6 +50,62 @@ GEN_DEC_READFIX_UNSIGNED(32);
 
 GEN_DEC_READFIX_UNSIGNED(64);
 
+parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
+    if (dataLen < 1) {
+        return parser_no_data;
+    }
+    zemu_log_stack("parser parse combined");
+    //if combined_tx:
+    //split data in two transactions
+    //should start with checking status
+    //add one more check in validate
+    //define txtype
+    const uint8_t *start_state_read_data = data;
+    CHECK_PARSER_ERR(parser_init(ctx, start_state_read_data, dataLen))
+    uint32_t dataLen_state_read = 0;
+    CHECK_PARSER_ERR(_readUInt32(ctx, &dataLen_state_read))
+    ctx->bufferLen = 4 + dataLen_state_read;
+
+    CHECK_PARSER_ERR(_readEnvelope(ctx, &parser_tx_obj))
+    PARSER_ASSERT_OR_ERROR(parser_tx_obj.txtype == state_transaction_read, parser_unexpected_type)
+    CHECK_PARSER_ERR(_validateTx(ctx, &parser_tx_obj))
+    uint8_t state_hash[32];
+    MEMZERO(state_hash, sizeof(state_hash));
+    PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(state_hash, state_transaction_read), parser_unexepected_error)
+
+    uint8_t request_id_stateread[32];
+    MEMZERO(request_id_stateread, 32);
+    PARSER_ASSERT_OR_ERROR(32 == parser_tx_obj.tx_fields.stateRead.paths.paths[1].len, parser_unexepected_error)
+
+    MEMCPY(request_id_stateread, parser_tx_obj.tx_fields.stateRead.paths.paths[1].data, 32);
+
+    data += 4 + dataLen_state_read;
+    const uint8_t *start_request_data = data;
+    CHECK_PARSER_ERR(parser_init(ctx, start_request_data, dataLen - 4 - dataLen_state_read))
+    uint32_t dataLen_request = 0;
+    CHECK_PARSER_ERR(_readUInt32(ctx, &dataLen_request))
+    ctx->bufferLen = 4 + dataLen_request;
+
+    PARSER_ASSERT_OR_ERROR(dataLen == dataLen_request + dataLen_state_read + 8, parser_context_unexpected_size)
+
+    CHECK_PARSER_ERR(_readEnvelope(ctx, &parser_tx_obj))
+    PARSER_ASSERT_OR_ERROR(parser_tx_obj.txtype == call, parser_unexpected_type)
+    CHECK_PARSER_ERR(_validateTx(ctx, &parser_tx_obj))
+
+    uint8_t request_hash[32];
+    MEMZERO(request_hash, sizeof(request_hash));
+    PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(request_hash, call), parser_unexepected_error)
+
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    PARSER_ASSERT_OR_ERROR(memcmp(request_hash, request_id_stateread, 32) == 0, parser_context_invalid_chars)
+    MEMCPY(G_io_apdu_buffer, request_hash, 32);
+    MEMCPY(G_io_apdu_buffer + 32, state_hash, 32);
+#endif
+
+
+    return parser_ok;
+}
 
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen) {
     if (dataLen < 1) {
@@ -330,7 +386,7 @@ parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (is_stake_tx) {
         return parser_unexepected_error;
     }
@@ -432,7 +488,7 @@ parser_error_t parser_getItemStakeNeuron(const parser_context_t *ctx,
         return parser_no_data;
     }
 
-    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (!is_stake_tx) {
         return parser_unexepected_error;
     }
@@ -994,7 +1050,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
         case call: {
             switch(parser_tx_obj.tx_fields.call.pbtype) {
                 case pb_sendrequest : {
-                    const bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+                    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
                     if (is_stake_tx) {
                         return parser_getItemStakeNeuron(ctx, displayIdx,

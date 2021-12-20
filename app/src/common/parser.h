@@ -27,6 +27,9 @@ const char *parser_getErrorDescription(parser_error_t err);
 //// parses a tx buffer
 parser_error_t parser_parse(parser_context_t *ctx, const uint8_t *data, size_t dataLen);
 
+/// parses a tx buffer of a combined transaction
+parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data, size_t dataLen);
+
 //// verifies tx fields
 parser_error_t parser_validate(const parser_context_t *ctx);
 

@@ -40,6 +40,20 @@ __Z_INLINE void app_sign() {
     }
 }
 
+__Z_INLINE void app_sign_combined() {
+    uint16_t replyLen = 0;
+
+    zxerr_t err = crypto_sign_combined(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3,&G_io_apdu_buffer[0], &G_io_apdu_buffer[32], &replyLen);
+
+    if (err != zxerr_ok || replyLen == 0) {
+        set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+    } else {
+        set_code(G_io_apdu_buffer, replyLen, APDU_CODE_OK);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, replyLen + 2);
+    }
+}
+
 __Z_INLINE zxerr_t app_fill_address() {
     // Put data directly in the apdu buffer
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);

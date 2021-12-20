@@ -303,7 +303,7 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
 
 parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
-    if (strcmp(method, "send_pb") == 0 || v->tx_fields.call.special_transfer_type == neuron_stake_transaction) {
+    if (strcmp(method, "send_pb") == 0 ||v->special_transfer_type == neuron_stake_transaction) {
         v->tx_fields.call.pbtype = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
@@ -330,7 +330,7 @@ parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
 
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     CborValue content_it;
-
+    zemu_log_stack("read content");
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(content_map), parser_unexpected_type)
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(content_map, &content_it))
     CHECK_CBOR_TYPE(cbor_value_get_type(content_map), CborMapType)
@@ -389,14 +389,16 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     zemu_log_stack("read envelope");
     CborValue it;
+    CHECK_APP_CANARY()
     INIT_CBOR_PARSER(c, it)
+    CHECK_APP_CANARY()
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
-
     // Verify tag
     CHECK_CBOR_TYPE(cbor_value_get_type(&it), CborTagType)
     CborTag tag;
     CHECK_CBOR_MAP_ERR(cbor_value_get_tag(&it, &tag))
     if (tag != 55799) {
+        zemu_log_stack("wrong tag");
         return parser_unexpected_value;
     }
     cbor_value_advance(&it);
@@ -414,7 +416,6 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
         }
         CborValue envelope;
         CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &envelope))
-
         {
             // Enter content
             CborValue content_item;
@@ -479,6 +480,11 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
                 return parser_unexpected_value;
             }
 
+            if (v->special_transfer_type == invalid){
+                zemu_log_stack("invalid transfer type");
+                return parser_unexpected_value;
+            }
+
             if (v->tx_fields.call.pbtype == pb_manageneuron){
                 ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
                 PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0), parser_unexepected_error);
@@ -532,7 +538,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 #endif
 
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if(is_stake_tx){
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
@@ -555,7 +561,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
         case call: {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
-                    const bool is_stake_tx = v->tx_fields.call.special_transfer_type == neuron_stake_transaction;
+                    const bool is_stake_tx =v->special_transfer_type == neuron_stake_transaction;
 
                     if (is_stake_tx) {
                         return app_mode_expert() ? 7 : 5;

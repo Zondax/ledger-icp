@@ -470,4 +470,51 @@ describe('Phase2', function () {
     }
   })
 
+  test.each(models)('sign normal -- combined_tx', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...defaultOptions, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr_read =
+          'd9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16bc685267142b8065706174687381824e726571756573745f73746174757358208d304d294d3f611f992b3f2b184d32b9b3c058d918d7a7ab1946614b13ba0a496c726571756573745f747970656a726561645f73746174656673656e646572581d19AA3D42C048DD7D14F0CFA0DF69A1C1381780F6E9A137ABAA6A82E302'
+      const txBlob_read = Buffer.from(txBlobStr_read, 'hex')
+
+      const txBlobStr_request =
+          'd9d9f7a167636f6e74656e74a66361726758320a0012050a0308904e1a0308904e2a220a20a2a794c66495083317e4be5197eb655b1e63015469d769e2338af3d3e3f3aa866b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b16bc685084d14ec06b6d6574686f645f6e616d656773656e645f70626c726571756573745f747970656463616c6c6673656e646572581d19AA3D42C048DD7D14F0CFA0DF69A1C1381780F6E9A137ABAA6A82E302'
+      const txBlob_request = Buffer.from(txBlobStr_request, 'hex')
+
+      const respRequest = app.signUpdateCall("m/44'/223'/0'/0/0", txBlob_request, txBlob_read, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_updateCall`, m.name === 'nanos' ? 8 : 9)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+
+      const pk = Uint8Array.from(Buffer.from("0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835", 'hex'))
+
+      const digest_request = Uint8Array.from(signatureResponse.RequestHash)
+      const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS)
+      expect(signature_request.byteLength).toEqual(64)
+
+      const signatureOk = secp256k1.ecdsaVerify(signature_request, digest_request, pk)
+      expect(signatureOk).toEqual(true)
+
+      const digest_statusread = Uint8Array.from(signatureResponse.StatusReadHash)
+      const signature_statusread = Uint8Array.from(signatureResponse.StatusReadSignatureRS)
+      expect(signature_request.byteLength).toEqual(64)
+
+      const signatureOk_statusread = secp256k1.ecdsaVerify(signature_statusread, digest_statusread, pk)
+      expect(signatureOk_statusread).toEqual(true)
+
+    } finally {
+      await sim.close()
+    }
+  })
 })
