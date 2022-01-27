@@ -573,6 +573,8 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -600,6 +602,8 @@ parser_error_t parser_getItemSpawn(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -645,6 +649,7 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -690,6 +695,7 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -746,6 +752,7 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -788,6 +795,8 @@ parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -827,6 +836,8 @@ parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if (fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         } else if(fields->which_neuron_id_or_subaccount == 12){
@@ -855,6 +866,8 @@ parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
@@ -904,6 +917,8 @@ parser_error_t parser_getItemFollow(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
         }else if(fields->which_neuron_id_or_subaccount == 12){
