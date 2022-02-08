@@ -1,5 +1,9 @@
 name: "Test/Build"
-on: [push]
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    branches: [ master ]
 
 jobs:
   configure:
@@ -26,7 +30,7 @@ jobs:
       - run: cmake -DCMAKE_BUILD_TYPE=Debug . && make
       - run: GTEST_COLOR=1 ASAN_OPTIONS=detect_leaks=0 ctest -VV
 
-  build_ledger:
+  build_ledger_nano_S:
     needs: configure
     runs-on: ubuntu-latest
     container:
@@ -34,6 +38,27 @@ jobs:
       options: --user ${{ needs.configure.outputs.uid_gid }}
     env:
       BOLOS_SDK: ${{ github.workspace }}/deps/nanos-secure-sdk
+      BOLOS_ENV: /opt/bolos
+      HOME: /home/zondax_circle
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Build Standard app
+        shell: bash -l {0}
+        run: |
+          source $HOME/.cargo/env
+          make
+
+  build_ledger_nano_X:
+    needs: configure
+    runs-on: ubuntu-latest
+    container:
+      image: zondax/builder-bolos:latest
+      options: --user ${{ needs.configure.outputs.uid_gid }}
+    env:
+      BOLOS_SDK: ${{ github.workspace }}/deps/nanox-secure-sdk
       BOLOS_ENV: /opt/bolos
       HOME: /home/zondax_circle
     steps:
@@ -80,7 +105,7 @@ jobs:
           make zemu_test
 
   build_package:
-    needs: [ configure, build, build_ledger, test_zemu ]
+    needs: [ configure, build, build_ledger_nano_S, build_ledger_nano_X, test_zemu ]
     if: ${{ github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     container:
