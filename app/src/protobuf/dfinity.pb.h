@@ -209,14 +209,12 @@ extern const pb_msgdesc_t ListNeurons_msg;
 #define AccountIdentifier_size                   34
 #define BlockHeight_size                         11
 #define ICPTs_size                               11
+#define ManageNeuronPb_size                      250
 #define Memo_size                                11
 #define Payment_size                             13
 #define SendRequest_size                         139
 #define Subaccount_size                          34
 #define TimeStamp_size                           11
-#if defined(ic_nns_governance_pb_v1_ManageNeuron_size)
-#define ManageNeuronPb_size                      (6 + ic_nns_governance_pb_v1_ManageNeuron_size)
-#endif
 
 #ifdef __cplusplus
 } /* extern "C" */
