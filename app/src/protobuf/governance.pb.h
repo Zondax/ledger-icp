@@ -249,6 +249,7 @@ typedef struct _ic_nns_governance_pb_v1_Neuron {
     bool not_for_profit; 
 } ic_nns_governance_pb_v1_Neuron;
 
+typedef PB_BYTES_ARRAY_T(32) ic_nns_governance_pb_v1_ManageNeuron_subaccount_t;
 /* All operations that modify the state of an existing neuron are
  represented by instances of `ManageNeuron`.
 
@@ -271,7 +272,7 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron {
     } command; 
     pb_size_t which_neuron_id_or_subaccount;
     union {
-        pb_callback_t subaccount;
+        ic_nns_governance_pb_v1_ManageNeuron_subaccount_t subaccount;
         ic_base_types_pb_v1_NeuronId neuron_id;
     } neuron_id_or_subaccount; 
 } ic_nns_governance_pb_v1_ManageNeuron;
@@ -296,7 +297,7 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ic_nns_governance_pb_v1_ManageNeuron_init_default {false, ic_base_types_pb_v1_NeuronId_init_default, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default}, 0, {{{NULL}, NULL}}}
+#define ic_nns_governance_pb_v1_ManageNeuron_init_default {false, ic_base_types_pb_v1_NeuronId_init_default, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default}, 0, {{0, {0}}}}
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_default {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_default {0}
@@ -327,7 +328,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_Neuron_Followees_init_default {{{NULL}, NULL}}
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default}
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default {0, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
-#define ic_nns_governance_pb_v1_ManageNeuron_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero}, 0, {{{NULL}, NULL}}}
+#define ic_nns_governance_pb_v1_ManageNeuron_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero}, 0, {{0, {0}}}}
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_zero {0}
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_zero {0}
@@ -449,10 +450,10 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,follow,command.follow),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,register_vote,command.register_vote),   7) \
-X(a, CALLBACK, ONEOF,    BYTES,    (neuron_id_or_subaccount,subaccount,neuron_id_or_subaccount.subaccount),  11) \
+X(a, STATIC,   ONEOF,    BYTES,    (neuron_id_or_subaccount,subaccount,neuron_id_or_subaccount.subaccount),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (neuron_id_or_subaccount,neuron_id,neuron_id_or_subaccount.neuron_id),  12) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (command,merge_maturity,command.merge_maturity),  13)
-#define ic_nns_governance_pb_v1_ManageNeuron_CALLBACK pb_default_field_callback
+#define ic_nns_governance_pb_v1_ManageNeuron_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
 #define ic_nns_governance_pb_v1_ManageNeuron_command_configure_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Configure
@@ -761,7 +762,6 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_fields &ic_nns_governance_pb_v1_NeuronStakeTransfer_msg
 
 /* Maximum encoded size of messages (where known) */
-/* ic_nns_governance_pb_v1_ManageNeuron_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ManageNeuronResponse_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_GovernanceError_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ListNeurons_size depends on runtime parameters */
@@ -792,6 +792,7 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_size 34
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_size 0
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_size 0
+#define ic_nns_governance_pb_v1_ManageNeuron_size 247
 
 #ifdef __cplusplus
 } /* extern "C" */

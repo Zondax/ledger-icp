@@ -573,10 +573,15 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -597,10 +602,15 @@ parser_error_t parser_getItemSpawn(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -612,7 +622,7 @@ parser_error_t parser_getItemSpawn(uint8_t displayIdx,
             return parser_ok;
         }
 
-        PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size == 29, parser_value_out_of_range);
+        PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size <= 29, parser_value_out_of_range);
 
         return print_textual(fields->command.spawn.new_controller.serialized_id.bytes, 29, outVal, outValLen, pageIdx, pageCount);
     }
@@ -639,10 +649,14 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -651,13 +665,13 @@ parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Principal ");
         if (parser_tx_obj.tx_fields.call.manage_neuron_type == AddHotKey) {
             PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.has_new_hot_key, parser_unexpected_number_items);
-            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size == 29,
+            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size <= 29,
                                    parser_value_out_of_range);
             return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
                                  outVal, outValLen, pageIdx, pageCount);
         }else{
             PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.has_hot_key_to_remove, parser_unexpected_number_items);
-            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size == 29,
+            PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size <= 29,
                                    parser_value_out_of_range);
             return print_textual(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.bytes, 29,
                                  outVal, outValLen, pageIdx, pageCount);
@@ -681,10 +695,14 @@ parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -734,10 +752,14 @@ parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -773,10 +795,15 @@ parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -809,10 +836,15 @@ parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if (fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        } else {
+        } else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -834,10 +866,15 @@ parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 
@@ -880,10 +917,15 @@ parser_error_t parser_getItemFollow(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
+        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 || fields->which_neuron_id_or_subaccount == 11)), parser_unexpected_number_items)
+
         if(fields->has_id) {
             return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }else{
+        }else if(fields->which_neuron_id_or_subaccount == 12){
             return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
+        }else{
+            //Only accept neuron_id
+            return parser_unexpected_type;
         }
     }
 

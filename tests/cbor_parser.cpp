@@ -69,6 +69,7 @@ namespace {
         EXPECT_EQ(request.which_command, 13);
         EXPECT_EQ(request.has_id, false);
         EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id,1);
+        EXPECT_EQ(request.which_neuron_id_or_subaccount,12);
         EXPECT_EQ(request.command.merge_maturity.percentage_to_merge, 14);
     }
 
@@ -92,6 +93,7 @@ namespace {
         EXPECT_EQ(request.which_command, 7);
         EXPECT_EQ(request.has_id, false);
         EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id,456);
+        EXPECT_EQ(request.which_neuron_id_or_subaccount,12);
         EXPECT_EQ(request.command.register_vote.proposal.id, 123);
         EXPECT_EQ(request.command.register_vote.vote, 1);
     }
@@ -118,6 +120,7 @@ namespace {
         EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id,123);
         EXPECT_EQ(request.command.follow.topic, 0);
         EXPECT_EQ(request.command.follow.followees_count, 15);
+        EXPECT_EQ(request.which_neuron_id_or_subaccount,12);
         EXPECT_EQ(request.command.follow.followees[0].id,1);
         EXPECT_EQ(request.command.follow.followees[14].id,15);
     }
@@ -586,6 +589,8 @@ namespace {
         EXPECT_EQ(request.command.configure.which_operation, 7);
 
         EXPECT_EQ(request.neuron_id_or_subaccount.neuron_id.id, 123);
+
+        EXPECT_EQ(request.which_neuron_id_or_subaccount,12);
 
     }
     
