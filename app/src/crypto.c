@@ -306,7 +306,6 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
     cx_ecfp_private_key_t cx_privateKey;
     uint8_t privateKeyData[32];
     unsigned int info = 0;
-    int signatureLength = 0;
 
     signature_t sigma;
     MEMZERO(&sigma, sizeof(signature_t));
@@ -325,14 +324,14 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
             cx_ecfp_init_private_key(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey);
 
             // Sign request
-            signatureLength = cx_ecdsa_sign(&cx_privateKey,
-                                            CX_RND_RFC6979 | CX_LAST,
-                                            CX_SHA256,
-                                            signatureBuffer,
-                                            CX_SHA256_SIZE,
-                                            sigma.der_signature,
-                                            sizeof_field(signature_t, der_signature),
-                                            &info);
+            cx_ecdsa_sign(&cx_privateKey,
+                          CX_RND_RFC6979 | CX_LAST,
+                          CX_SHA256,
+                          signatureBuffer,
+                          CX_SHA256_SIZE,
+                          sigma.der_signature,
+                          sizeof_field(signature_t, der_signature),
+                          &info);
 
             err_convert_e err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
             if (err_c != no_error) {
@@ -344,14 +343,14 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
 
                 MEMZERO(&sigma, sizeof(signature_t));
                 // Sign stateread
-                signatureLength = cx_ecdsa_sign(&cx_privateKey,
-                                                CX_RND_RFC6979 | CX_LAST,
-                                                CX_SHA256,
-                                                signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_RS,
-                                                CX_SHA256_SIZE,
-                                                sigma.der_signature,
-                                                sizeof_field(signature_t, der_signature),
-                                                &info);
+                cx_ecdsa_sign(&cx_privateKey,
+                              CX_RND_RFC6979 | CX_LAST,
+                              CX_SHA256,
+                              signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_RS,
+                              CX_SHA256_SIZE,
+                              sigma.der_signature,
+                              sizeof_field(signature_t, der_signature),
+                              &info);
 
                 err_convert_e err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
                 if (err_c != no_error) {
