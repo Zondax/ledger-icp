@@ -23,6 +23,7 @@
 #include "parser_txdef.h"
 #include "crypto.h"
 #include "formatting.h"
+#include "zxformat.h"
 
 #if defined(TARGET_NANOX)
 // For some reason NanoX requires this function

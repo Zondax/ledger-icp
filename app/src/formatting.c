@@ -14,6 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 #include "formatting.h"
+#include "zxformat.h"
 
 zxerr_t inplace_insert_char(char *s, uint16_t sMaxLen, uint16_t pos, char separator) {
     const size_t len = strlen(s);
