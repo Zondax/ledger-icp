@@ -468,8 +468,7 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
     }
 }
 
-parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
-    UNUSED(c);
+parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     const uint8_t *sender = NULL;
 
     switch (v->txtype) {
@@ -555,8 +554,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     return parser_ok;
 }
 
-uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
-    UNUSED(c);
+uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype) {
         case call: {
             switch(v->tx_fields.call.pbtype) {

@@ -25,25 +25,25 @@
     "url": "https://github.com/zondax/ledger-icp/issues"
   },
   "dependencies": {
-    "@ledgerhq/hw-transport": "^6.3.0"
+    "@ledgerhq/hw-transport": "^6.24.1"
   },
   "devDependencies": {
     "@types/ledgerhq__hw-transport": "^4.21.4",
-    "@typescript-eslint/eslint-plugin": "^4.31.0",
-    "@typescript-eslint/parser": "^4.31.0",
-    "bip32": "^2.0.5",
+    "@typescript-eslint/eslint-plugin": "^5.11.0",
+    "@typescript-eslint/parser": "^5.11.0",
+    "bip32": "^3.0.1",
     "bip39": "^3.0.4",
-    "core-js": "^3.17.2",
+    "core-js": "^3.21.0",
     "crypto-js": "4.1.1",
-    "eslint": "^7.32.0",
+    "eslint": "^8.9.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-import": "^2.24.2",
-    "eslint-plugin-jest": "^24.4.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-jest": "^26.1.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "jest": "^27.1.1",
-    "prettier": "^2.3.2",
-    "secp256k1": "^4.0.0",
-    "typescript": "^4.4.2"
+    "jest": "^27.5.1",
+    "prettier": "^2.5.1",
+    "secp256k1": "^4.0.3",
+    "typescript": "^4.5.5"
   },
   "moduleDirectories": [
     "node_modules",
