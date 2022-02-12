@@ -43,6 +43,8 @@ extern "C" {
 #define DFINITY_PRINCIPAL_LEN       29u
 #define DFINITY_TEXTUAL_SIZE        100u
 
+#define MAX_CHARS_PER_VALUE_LINE    (18)
+
 typedef enum {
     addr_secp256k1 = 0,
 } address_kind_e;

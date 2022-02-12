@@ -24,13 +24,15 @@
 
 #define CUR_FLOW G_ux.flow_stack[G_ux.stack_count-1]
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 #define MAX_CHARS_PER_KEY_LINE      64
 #define MAX_CHARS_PER_VALUE1_LINE   4096
 #define MAX_CHARS_HEXMESSAGE        160
 #else
-#define MAX_CHARS_PER_KEY_LINE      (17+1)
-#define MAX_CHARS_PER_VALUE_LINE    (18)
+#ifndef MAX_CHARS_PER_VALUE_LINE
+#define MAX_CHARS_PER_VALUE_LINE    (17)
+#endif
+#define MAX_CHARS_PER_KEY_LINE      (MAX_CHARS_PER_VALUE_LINE+1)
 #define MAX_CHARS_PER_VALUE1_LINE   (2*MAX_CHARS_PER_VALUE_LINE+1)
 #define MAX_CHARS_PER_VALUE2_LINE   (MAX_CHARS_PER_VALUE_LINE+1)
 #define MAX_CHARS_HEXMESSAGE        40
@@ -44,8 +46,10 @@
 #if defined(TARGET_NANOS)
 #define INCLUDE_ACTIONS_AS_ITEMS 2
 #define INCLUDE_ACTIONS_COUNT (INCLUDE_ACTIONS_AS_ITEMS-1)
+typedef uint8_t max_char_display;
 #else
 #define INCLUDE_ACTIONS_COUNT 0
+typedef int max_char_display;
 #endif
 
 typedef struct {
@@ -86,6 +90,8 @@ extern view_t viewdata;
 #endif
 
 void splitValueField();
+void splitValueAddress();
+max_char_display get_max_char_per_line();
 
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////

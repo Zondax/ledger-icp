@@ -15,7 +15,6 @@
 ********************************************************************************/
 
 #include "gtest/gtest.h"
-#include <string>
 #include <cbor.h>
 #include <hexutils.h>
 #include <zxmacros.h>
@@ -28,6 +27,7 @@
 #include "protobuf/dfinity.pb.h"
 #include "protobuf/governance.pb.h"
 #include "protobuf/base_types.pb.h"
+#include "zxformat.h"
 
 // Basic CBOR test cases generated with http://cbor.me/
 
@@ -593,7 +593,7 @@ namespace {
         EXPECT_EQ(request.which_neuron_id_or_subaccount,12);
 
     }
-    
+
     TEST(CBORParserTest, CombinedTX) {
         uint8_t inBuffer[1000];
 

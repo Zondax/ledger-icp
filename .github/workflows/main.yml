@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   configure:
@@ -83,7 +83,7 @@ jobs:
       - name: Install rust
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake binutils-dev libiberty-dev libelf-dev libdw-dev
+          sudo apt-get install -y cmake binutils-dev libcurl4-openssl-dev libiberty-dev libelf-dev libdw-dev
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --no-modify-path --default-toolchain none -y;
       - name: Install node
         uses: actions/setup-node@v2
@@ -106,7 +106,7 @@ jobs:
 
   build_package:
     needs: [ configure, build, build_ledger_nano_S, build_ledger_nano_X, test_zemu ]
-    if: ${{ github.ref == 'refs/heads/master' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: zondax/builder-bolos:latest
@@ -120,6 +120,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
+      - name: Install deps
+        run: pip install ledgerblue
       - name: Build
         shell: bash -l {0}
         run: |

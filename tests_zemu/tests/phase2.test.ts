@@ -14,42 +14,25 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
+import Zemu from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
 import {SIGN_VALUES_P2} from "@zondax/ledger-icp/dist/common";
+import {DEFAULT_OPTIONS, DEVICE_MODELS} from "./common";
 
 const sha256 = require('js-sha256')
 
-const Resolve = require('path').resolve
-const APP_PATH_S = Resolve('../app/output/app_s.elf')
-const APP_PATH_X = Resolve('../app/output/app_x.elf')
-
-const APP_SEED = 'equip will roof matter pink blind book anxiety banner elbow sun young'
-
-const defaultOptions = {
-  ...DEFAULT_START_OPTIONS,
-  logging: true,
-  custom: `-s "${APP_SEED}"`,
-  X11: false,
-}
-
 jest.setTimeout(60000)
-
-const models: DeviceModel[] = [
-  { name: 'nanos', prefix: 'S', path: APP_PATH_S },
-  { name: 'nanox', prefix: 'X', path: APP_PATH_X },
-]
 
 beforeAll(async () => {
   await Zemu.checkAndPullImage()
 })
 
 describe('Phase2', function () {
-  test.each(models)('sign normal -- Increase Neuron Timer', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const pkhex =
@@ -88,10 +71,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- stake transfer', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- stake transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const expected_pk =
@@ -129,10 +112,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- add hotkey', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- add hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -158,10 +141,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- remove hotkey', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- remove hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -188,10 +171,10 @@ describe('Phase2', function () {
   })
 
 
-  test.each(models)('sign normal -- start dissolve', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- start dissolve', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -217,10 +200,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- stop dissolve', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- stop dissolve', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -246,10 +229,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- disburse', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- disburse', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -275,10 +258,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- list neurons', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- list neurons', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -303,10 +286,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- spawn', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- spawn', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -331,10 +314,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- Merge Mature', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- Merge Mature', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -359,10 +342,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- Register Vote', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- Register Vote', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -386,10 +369,10 @@ describe('Phase2', function () {
       await sim.close()
     }
   })
-  test.each(models)('sign normal -- follow', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- follow', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -414,10 +397,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- claimneuron', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- claimneuron', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -442,10 +425,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- join community fund', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- join community fund', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr =
@@ -470,10 +453,10 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(models)('sign normal -- combined_tx', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- combined_tx', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const txBlobStr_read =

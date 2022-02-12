@@ -14,11 +14,11 @@
     "Ledger"
   ],
   "scripts": {
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@zondax/ledger-icp": "link:../js",
-    "@zondax/zemu": "^0.16.5"
+    "@zondax/zemu": "^0.24.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.24",

@@ -22,6 +22,7 @@
 #include "crypto.h"
 #include "actions.h"
 #include "formatting.h"
+#include "zxformat.h"
 
 zxerr_t addr_getNumItems(uint8_t *num_items) {
     zemu_log_stack("addr_getNumItems");

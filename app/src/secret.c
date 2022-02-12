@@ -36,17 +36,10 @@ zxerr_t secret_getNumItems(uint8_t *num_items) {
     return zxerr_no_data;
 }
 
-zxerr_t secret_getItem(int8_t displayIdx,
-                       char *outKey, uint16_t outKeyLen,
-                       char *outVal, uint16_t outValLen,
-                       uint8_t pageIdx, uint8_t *pageCount) {
-    UNUSED(displayIdx);
-    UNUSED(outKey);
-    UNUSED(outKeyLen);
-    UNUSED(outVal);
-    UNUSED(outValLen);
-    UNUSED(pageIdx);
-    UNUSED(pageCount);
+zxerr_t secret_getItem(__Z_UNUSED int8_t displayIdx,
+                       __Z_UNUSED char *outKey, __Z_UNUSED uint16_t outKeyLen,
+                       __Z_UNUSED char *outVal, __Z_UNUSED uint16_t outValLen,
+                       __Z_UNUSED uint8_t pageIdx, __Z_UNUSED uint8_t *pageCount) {
     return zxerr_no_data;
 }
 

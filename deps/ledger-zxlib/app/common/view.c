@@ -16,7 +16,6 @@
 ********************************************************************************/
 
 #include "view.h"
-#include "coin.h"
 #include "view_internal.h"
 #include "crypto.h"
 
@@ -37,10 +36,9 @@
 
 view_t viewdata;
 
-void h_approve(unsigned int _) {
+void h_approve(__Z_UNUSED unsigned int _) {
     zemu_log_stack("h_approve");
 
-    UNUSED(_);
     view_idle_show(0, NULL);
     UX_WAIT();
     if (viewdata.viewfuncAccept != NULL) {
@@ -48,17 +46,15 @@ void h_approve(unsigned int _) {
     }
 }
 
-void h_reject(unsigned int _) {
+void h_reject(__Z_UNUSED unsigned int _) {
     zemu_log_stack("h_reject");
 
-    UNUSED(_);
     view_idle_show(0, NULL);
     UX_WAIT();
     app_reject();
 }
 
-void h_error_accept(unsigned int _) {
-    UNUSED(_);
+void h_error_accept(__Z_UNUSED unsigned int _) {
     view_idle_show(0, NULL);
     UX_WAIT();
     app_reply_error();
@@ -181,14 +177,18 @@ void h_review_action() {
         return;
     }
 #endif
-};
+}
 
 zxerr_t h_review_update_data() {
     if (viewdata.viewfuncGetNumItems == NULL) {
         zemu_log_stack("h_review_update_data - GetNumItems==NULL");
         return zxerr_no_data;
     }
-    
+    if (viewdata.viewfuncGetItem == NULL) {
+        zemu_log_stack("h_review_update_data - GetItem==NULL");
+        return zxerr_no_data;
+    }
+
     if (viewdata.viewfuncGetItem == NULL) {
         zemu_log_stack("h_review_update_data - GetItem==NULL");
         return zxerr_no_data;
@@ -226,14 +226,22 @@ zxerr_t h_review_update_data() {
 #endif
 
     do {
-        viewdata.pageCount = 1;
         CHECK_ZXERR(viewdata.viewfuncGetNumItems(&viewdata.itemCount))
+
+        //Verify how many chars fit in display (nanos)
+        CHECK_ZXERR(viewdata.viewfuncGetItem(
+                viewdata.itemIdx,
+                viewdata.key, MAX_CHARS_PER_KEY_LINE,
+                viewdata.value, MAX_CHARS_PER_VALUE1_LINE,
+                0, &viewdata.pageCount))
+        viewdata.pageCount = 1;
+        const max_char_display dyn_max_char_per_line1 = get_max_char_per_line();
 
         // be sure we are not out of bounds
         CHECK_ZXERR(viewdata.viewfuncGetItem(
                 viewdata.itemIdx,
                 viewdata.key, MAX_CHARS_PER_KEY_LINE,
-                viewdata.value, MAX_CHARS_PER_VALUE1_LINE,
+                viewdata.value, dyn_max_char_per_line1,
                 0, &viewdata.pageCount))
         if (viewdata.pageCount != 0 && viewdata.pageIdx > viewdata.pageCount) {
             // try again and get last page
@@ -242,7 +250,7 @@ zxerr_t h_review_update_data() {
         CHECK_ZXERR(viewdata.viewfuncGetItem(
                 viewdata.itemIdx,
                 viewdata.key, MAX_CHARS_PER_KEY_LINE,
-                viewdata.value, MAX_CHARS_PER_VALUE1_LINE,
+                viewdata.value, dyn_max_char_per_line1,
                 viewdata.pageIdx, &viewdata.pageCount))
 
         viewdata.itemCount++;
@@ -252,7 +260,7 @@ zxerr_t h_review_update_data() {
             if (keyLen < MAX_CHARS_PER_KEY_LINE) {
                 snprintf(viewdata.key + keyLen,
                          MAX_CHARS_PER_KEY_LINE - keyLen,
-                         "[%d/%d]",
+                         " [%d/%d]",
                          viewdata.pageIdx + 1,
                          viewdata.pageCount);
             }
@@ -263,7 +271,7 @@ zxerr_t h_review_update_data() {
         }
     } while (viewdata.pageCount == 0);
 
-    splitValueField();
+    splitValueAddress();
     return zxerr_ok;
 }
 
