@@ -14,7 +14,7 @@
     "Ledger"
   ],
   "scripts": {
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@zondax/ledger-icp": "link:../js",
