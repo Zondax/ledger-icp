@@ -14,61 +14,44 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
+import Zemu from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
 import {SIGN_VALUES_P2} from "@zondax/ledger-icp/dist/common";
+import {DEFAULT_OPTIONS, DEVICE_MODELS} from "./common";
 
 const sha256 = require('js-sha256')
 
-const Resolve = require('path').resolve
-const APP_PATH_S = Resolve('../app/output/app_s.elf')
-const APP_PATH_X = Resolve('../app/output/app_x.elf')
-
-const APP_SEED = 'equip will roof matter pink blind book anxiety banner elbow sun young'
-
-const defaultOptions = {
-  ...DEFAULT_START_OPTIONS,
-  logging: true,
-  custom: `-s "${APP_SEED}"`,
-  X11: false,
-}
-
 jest.setTimeout(60000)
-
-const models: DeviceModel[] = [
-  { name: 'nanos', prefix: 'S', path: APP_PATH_S },
-  { name: 'nanox', prefix: 'X', path: APP_PATH_X },
-]
 
 beforeAll(async () => {
   await Zemu.checkAndPullImage()
 })
 
 describe('Standard', function () {
-  test.each(models)('can start and stop container', async function (m) {
+  test.each(DEVICE_MODELS)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
     } finally {
       await sim.close()
     }
   })
 
-  test.each(models)('main menu', async function (m) {
+  test.each(DEVICE_MODELS)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 5, -5])
     } finally {
       await sim.close()
     }
   })
 
-  test.each(models)('get app version', async function (m) {
+  test.each(DEVICE_MODELS)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
       const resp = await app.getVersion()
 
@@ -85,10 +68,10 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('get address', async function (m) {
+  test.each(DEVICE_MODELS)('get address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -113,10 +96,10 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('show address', async function (m) {
+  test.each(DEVICE_MODELS)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -147,10 +130,10 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign normal -- token transfer', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- token transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -202,10 +185,10 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign normal -- state transaction read', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- state transaction read', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -256,10 +239,10 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign expert -- token transfer', async function (m) {
+  test.each(DEVICE_MODELS)('sign expert -- token transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       // Enable expert mode
@@ -315,10 +298,10 @@ describe('Standard', function () {
     }
   })
 
-  test.each(models)('sign expert -- state transaction read', async function (m) {
+  test.each(DEVICE_MODELS)('sign expert -- state transaction read', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...defaultOptions, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
       const app = new InternetComputerApp(sim.getTransport())
 
       // Enable expert mode

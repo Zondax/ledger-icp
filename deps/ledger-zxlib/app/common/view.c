@@ -16,7 +16,6 @@
 ********************************************************************************/
 
 #include "view.h"
-#include "coin.h"
 #include "view_internal.h"
 #include "crypto.h"
 
