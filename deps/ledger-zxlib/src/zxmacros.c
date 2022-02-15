@@ -15,24 +15,29 @@
 ********************************************************************************/
 #include "zxmacros.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
+
 void handle_stack_overflow() {
     zemu_log("!!!!!!!!!!!!!!!!!!!!!! CANARY TRIGGERED!!! STACK OVERFLOW DETECTED\n");
-#if defined (TARGET_NANOS) || defined(TARGET_NANOX)
+#if defined (TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     io_seproxyhal_se_reset();
 #else
     while (1);
 #endif
 }
 
-void check_app_canary() {
-#if defined (TARGET_NANOS) || defined(TARGET_NANOX)
+#pragma clang diagnostic pop
+
+__Z_UNUSED void check_app_canary() {
+#if defined (TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     if (app_stack_canary != APP_STACK_CANARY_MAGIC) handle_stack_overflow();
 #endif
 }
 
+#if defined(ZEMU_LOGGING) && (defined (TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2))
 void zemu_log_stack(const char *ctx) {
-#if defined(ZEMU_LOGGING) && (defined (TARGET_NANOS) || defined(TARGET_NANOX))
-#define STACK_SHIFT 20
+    #define STACK_SHIFT 20
     void* p = NULL;
     char buf[70];
     snprintf(buf, sizeof(buf), "|SP| %p %p (%d) : %s\n",
@@ -41,18 +46,23 @@ void zemu_log_stack(const char *ctx) {
             (uint32_t)((void*)&p)+STACK_SHIFT - (uint32_t)&app_stack_canary,
             ctx);
     zemu_log(buf);
-#else
-    (void)ctx;
-#endif
+    (void) ctx;
 }
+#else
 
+void zemu_log_stack(__Z_UNUSED const char *ctx) {}
+
+#endif
+
+
+#if defined(ZEMU_LOGGING) && (defined (TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2))
 void zemu_trace(const char *file, uint32_t line) {
-#if defined(ZEMU_LOGGING) && (defined (TARGET_NANOS) || defined(TARGET_NANOX))
     char buf[200];
     snprintf(buf, sizeof(buf), "|TRACE| %s:%d\n", file, line);
     zemu_log(buf);
-#else
-    UNUSED(file);
-    UNUSED(line);
-#endif
 }
+#else
+
+void zemu_trace(__Z_UNUSED const char *file, __Z_UNUSED uint32_t line) {}
+
+#endif

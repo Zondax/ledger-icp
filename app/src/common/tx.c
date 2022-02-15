@@ -89,6 +89,26 @@ const char *tx_parse() {
     return NULL;
 }
 
+const char *tx_parse_combined() {
+    uint8_t err = parser_parse_combined(
+            &ctx_parsed_tx,
+            tx_get_buffer(),
+            tx_get_buffer_length());
+
+    if (err != parser_ok) {
+        return parser_getErrorDescription(err);
+    }
+
+    err = parser_validate(&ctx_parsed_tx);
+    CHECK_APP_CANARY()
+
+    if (err != parser_ok) {
+        return parser_getErrorDescription(err);
+    }
+
+    return NULL;
+}
+
 zxerr_t tx_getNumItems(uint8_t *num_items) {
     parser_error_t err = parser_getNumItems(&ctx_parsed_tx, num_items);
 

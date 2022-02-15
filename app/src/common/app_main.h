@@ -33,6 +33,7 @@
 #define INS_GET_VERSION                 0x00
 #define INS_GET_ADDR                    0x01
 #define INS_SIGN                        0x02
+#define INS_SIGN_COMBINED               0x03
 
 void app_init();
 
@@ -46,9 +47,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx);
 
 void handle_generic_apdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx);
 
-__Z_INLINE void handle_getversion(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    UNUSED(flags);
-    UNUSED(rx);
+__Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {
 #ifdef DEBUG
     G_io_apdu_buffer[0] = 0xFF;
 #else

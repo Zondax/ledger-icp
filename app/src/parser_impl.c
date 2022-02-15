@@ -261,7 +261,11 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             if(1 <= operation && operation <= 6){
                 *mn_type = (manageNeuron_e)operation;
                 return parser_ok;
-            }else{
+            }else if (operation == 7){
+                *mn_type = JoinCommunityFund;
+                return parser_ok;
+            }
+            else{
                 return parser_unexpected_type;
             }
         }
@@ -276,6 +280,21 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
             return parser_ok;
         }
 
+        case 5: {
+            *mn_type = Follow;
+            return parser_ok;
+        }
+
+        case 7: {
+            *mn_type = RegisterVote;
+            return parser_ok;
+        }
+
+        case 13: {
+            *mn_type = MergeMaturity;
+            return parser_ok;
+        }
+
         default: {
             return parser_unexpected_type;
         }
@@ -284,7 +303,7 @@ parser_error_t getManageNeuronType(parser_tx_t *v){
 
 parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
-    if (strcmp(method, "send_pb") == 0 || v->tx_fields.call.special_transfer_type == neuron_stake_transaction) {
+    if (strcmp(method, "send_pb") == 0 ||v->special_transfer_type == neuron_stake_transaction) {
         v->tx_fields.call.pbtype = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
@@ -300,13 +319,18 @@ parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return _parser_pb_ListNeurons(v, buffer, bufferLen);
     }
 
-
+    if(strcmp(method, "claim_neurons") == 0) {
+        if (130 <= bufferLen && bufferLen <= 150) {
+            v->tx_fields.call.pbtype = pb_claimneurons;
+            return parser_ok;
+        }
+    }
     return parser_unexpected_type;
 }
 
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     CborValue content_it;
-
+    zemu_log_stack("read content");
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(content_map), parser_unexpected_type)
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(content_map, &content_it))
     CHECK_CBOR_TYPE(cbor_value_get_type(content_map), CborMapType)
@@ -365,14 +389,16 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     zemu_log_stack("read envelope");
     CborValue it;
+    CHECK_APP_CANARY()
     INIT_CBOR_PARSER(c, it)
+    CHECK_APP_CANARY()
     PARSER_ASSERT_OR_ERROR(!cbor_value_at_end(&it), parser_unexpected_buffer_end)
-
     // Verify tag
     CHECK_CBOR_TYPE(cbor_value_get_type(&it), CborTagType)
     CborTag tag;
     CHECK_CBOR_MAP_ERR(cbor_value_get_tag(&it, &tag))
     if (tag != 55799) {
+        zemu_log_stack("wrong tag");
         return parser_unexpected_value;
     }
     cbor_value_advance(&it);
@@ -390,7 +416,6 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
         }
         CborValue envelope;
         CHECK_CBOR_MAP_ERR(cbor_value_enter_container(&it, &envelope))
-
         {
             // Enter content
             CborValue content_item;
@@ -433,14 +458,17 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
 
+        case pb_claimneurons : {
+            CHECK_METHOD_WITH_CANISTER("renrkeyaaaaaaaaaaadacai")
+        }
+
         default: {
             return parser_unexpected_type;
         }
     }
 }
 
-parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
-    UNUSED(c);
+parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     const uint8_t *sender = NULL;
 
     switch (v->txtype) {
@@ -448,6 +476,11 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
             zemu_log_stack("Call type");
             if (strcmp(v->request_type.data, "call") != 0) {
                 zemu_log_stack("call not found");
+                return parser_unexpected_value;
+            }
+
+            if (v->special_transfer_type == invalid){
+                zemu_log_stack("invalid transfer type");
                 return parser_unexpected_value;
             }
 
@@ -504,7 +537,7 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
 
 #endif
 
-    bool is_stake_tx = parser_tx_obj.tx_fields.call.special_transfer_type == neuron_stake_transaction;
+    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if(is_stake_tx){
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
@@ -521,13 +554,12 @@ parser_error_t _validateTx(const parser_context_t *c, const parser_tx_t *v) {
     return parser_ok;
 }
 
-uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
-    UNUSED(c);
+uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype) {
         case call: {
             switch(v->tx_fields.call.pbtype) {
                 case pb_sendrequest: {
-                    const bool is_stake_tx = v->tx_fields.call.special_transfer_type == neuron_stake_transaction;
+                    const bool is_stake_tx =v->special_transfer_type == neuron_stake_transaction;
 
                     if (is_stake_tx) {
                         return app_mode_expert() ? 7 : 5;
@@ -536,6 +568,7 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                     return app_mode_expert() ? 8 : 6;
                 }
 
+                case pb_claimneurons :
                 case pb_listneurons : {
                     return 1;
                 }
@@ -543,18 +576,25 @@ uint8_t _getNumItems(const parser_context_t *c, const parser_tx_t *v) {
                 case pb_manageneuron : {
                     switch(v->tx_fields.call.manage_neuron_type){
                         case StopDissolving :
+                        case JoinCommunityFund :
                         case StartDissolving : {
                             return 2;
                         }
                         case Spawn :
                         case RemoveHotKey :
                         case AddHotKey :
+                        case MergeMaturity :
                         case IncreaseDissolveDelay : {
                             return 3;
                         }
-
+                        case RegisterVote :
                         case Disburse : {
                             return 4;
+                        }
+
+                        case Follow : {
+                            pb_size_t follow_count = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
+                            return follow_count > 0 ? 3 + follow_count : 4;
                         }
 
                         default: {

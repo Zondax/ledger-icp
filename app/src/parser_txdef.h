@@ -50,6 +50,7 @@ typedef enum {
     pb_sendrequest = 0x01,
     pb_manageneuron = 0x02,
     pb_listneurons = 0x03,
+    pb_claimneurons = 0x04,
 } pbtype_e;
 
 typedef enum {
@@ -62,6 +63,10 @@ typedef enum {
     SetDissolveTimestamp = 6,
     Disburse = 7,
     Spawn = 8,
+    RegisterVote = 9,
+    MergeMaturity = 10,
+    Follow = 11,
+    JoinCommunityFund = 12,
 //    Follow = 9,
 //    Register_Vote = 10,
 //    Split = 11,
@@ -71,7 +76,8 @@ typedef enum {
 
 typedef enum {
     invalid = 0x00,
-    neuron_stake_transaction = 0x01,
+    normal_transaction = 0x01,
+    neuron_stake_transaction = 0x02,
 } special_transfer_e;
 
 typedef struct {
@@ -121,8 +127,6 @@ typedef struct {
     uint64_t ingress_expiry;
     uint64_t neuron_creation_memo;
 
-    special_transfer_e special_transfer_type;
-
     canister_t canister_id;
     sender_t sender;
 
@@ -155,6 +159,8 @@ typedef struct {
         call_t call;
         state_read_t stateRead;
     } tx_fields;
+
+    special_transfer_e special_transfer_type;
 } parser_tx_t;
 
 #ifdef __cplusplus

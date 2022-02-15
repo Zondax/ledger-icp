@@ -14,21 +14,9 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
+import Zemu, { DEFAULT_START_OPTIONS } from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
-
-const Resolve = require('path').resolve
-const APP_PATH_S = Resolve('../app/output/app_s.elf')
-const APP_PATH_X = Resolve('../app/output/app_x.elf')
-
-const APP_SEED = 'equip will roof matter pink blind book anxiety banner elbow sun young'
-
-const defaultOptions = {
-    ...DEFAULT_START_OPTIONS,
-    logging: true,
-    custom: `-s "${APP_SEED}"`,
-    X11: false,
-}
+import {DEFAULT_OPTIONS, DEVICE_MODELS} from "./common";
 
 const TEST_CASES = [
     {
@@ -82,26 +70,19 @@ const TEST_CASES_BIP32 = [
 
 jest.setTimeout(60000)
 
-const models: DeviceModel[] = [
-    { name: 'nanos', prefix: 'S', path: APP_PATH_S },
-    { name: 'nanox', prefix: 'X', path: APP_PATH_X },
-]
-
 beforeAll(async () => {
     await Zemu.checkAndPullImage()
 })
 
 describe('Addresses', function () {
 
-    test.each(models)('get address with seed', async function (m) {
+    test.each(DEVICE_MODELS)('get address with seed', async function (m) {
         const sim = new Zemu(m.path)
 
         for (const TEST of TEST_CASES) {
             const defaultOptions_withseed = {
-                ...DEFAULT_START_OPTIONS,
-                logging: true,
+                ...DEFAULT_OPTIONS,
                 custom: `-s "${TEST.seed}"`,
-                X11: false,
             }
 
             try {
@@ -123,10 +104,10 @@ describe('Addresses', function () {
         }
     })
 
-    test.each(models)('test derivation paths', async function (m) {
+    test.each(DEVICE_MODELS)('test derivation paths', async function (m) {
         const sim = new Zemu(m.path)
         try {
-            await sim.start({ ...defaultOptions, model: m.name })
+            await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
             const app = new InternetComputerApp(sim.getTransport())
 
             for (const TEST of TEST_CASES_BIP32) {

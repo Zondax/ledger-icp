@@ -44,3 +44,10 @@ export interface ResponseSign extends ResponseBase {
   signatureRS: Buffer,
   signatureDER: Buffer,
 }
+
+export interface ResponseSignUpdateCall extends ResponseBase {
+  RequestHash: Buffer,
+  RequestSignatureRS: Buffer,
+  StatusReadHash: Buffer,
+  StatusReadSignatureRS: Buffer,
+}

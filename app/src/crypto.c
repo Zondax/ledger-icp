@@ -40,6 +40,10 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #define STAKEACCOUNT_PREFIX_SIZE 12u
 #define STAKEACCOUNT_PRINCIPAL_SIZE 10u
 
+#define SIGNATURE_SIZE_R 32
+#define SIGNATURE_SIZE_S 32
+#define SIGNATURE_SIZE_RS 64
+
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
 #include "cx.h"
 
@@ -262,11 +266,125 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     return err;
 }
 
+//Start:
+//PREDIGEST_REQUEST || PREDIGEST_STATEREAD
+//END:
+//DIGEST_REQUEST || SIGNATURE_REQUEST || DIGEST_STATEREAD || SIGNATURE_STATEREAD
+
+zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
+                    uint16_t signatureMaxlen,
+                    uint8_t *predigest_request,
+                    uint8_t *predigest_stateread,
+                    uint16_t *sigSize) {
+    if (signatureMaxlen < 2*(CX_SHA256_SIZE + SIGNATURE_SIZE_RS)){
+        return zxerr_buffer_too_small;
+    }
+
+    uint8_t message_buffer[SIGN_PREFIX_SIZE + CX_SHA256_SIZE];
+    MEMZERO(message_buffer, sizeof(message_buffer));
+
+    uint8_t message_digest[CX_SHA256_SIZE];
+    MEMZERO(message_digest,sizeof(message_digest));
+
+    message_buffer[0] = 0x0a;
+    MEMCPY(&message_buffer[1], (uint8_t *)"ic-request",SIGN_PREFIX_SIZE - 1);
+
+    MEMCPY(message_buffer + SIGN_PREFIX_SIZE, predigest_stateread, CX_SHA256_SIZE);
+
+    CHECK_APP_CANARY()
+
+    cx_hash_sha256(message_buffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
+    MEMCPY(signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_RS, message_digest, CX_SHA256_SIZE);
+
+
+    MEMCPY(message_buffer + SIGN_PREFIX_SIZE, predigest_request, CX_SHA256_SIZE);
+    cx_hash_sha256(message_buffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
+    MEMCPY(signatureBuffer, message_digest, CX_SHA256_SIZE);
+
+    CHECK_APP_CANARY()
+
+    cx_ecfp_private_key_t cx_privateKey;
+    uint8_t privateKeyData[32];
+    unsigned int info = 0;
+
+    signature_t sigma;
+    MEMZERO(&sigma, sizeof(signature_t));
+
+    zxerr_t err = zxerr_ok;
+    BEGIN_TRY
+    {
+        TRY
+        {
+            // Generate keys
+            os_perso_derive_node_bip32(CX_CURVE_SECP256K1,
+                                       hdPath,
+                                       HDPATH_LEN_DEFAULT,
+                                       privateKeyData, NULL);
+
+            cx_ecfp_init_private_key(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey);
+
+            // Sign request
+            cx_ecdsa_sign(&cx_privateKey,
+                          CX_RND_RFC6979 | CX_LAST,
+                          CX_SHA256,
+                          signatureBuffer,
+                          CX_SHA256_SIZE,
+                          sigma.der_signature,
+                          sizeof_field(signature_t, der_signature),
+                          &info);
+
+            err_convert_e err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
+            if (err_c != no_error) {
+                MEMZERO(signatureBuffer, signatureMaxlen);
+                err = zxerr_unknown;
+            }else{
+                MEMCPY(signatureBuffer + CX_SHA256_SIZE, sigma.r, SIGNATURE_SIZE_R);
+                MEMCPY(signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_R, sigma.s, SIGNATURE_SIZE_S);
+
+                MEMZERO(&sigma, sizeof(signature_t));
+                // Sign stateread
+                cx_ecdsa_sign(&cx_privateKey,
+                              CX_RND_RFC6979 | CX_LAST,
+                              CX_SHA256,
+                              signatureBuffer + CX_SHA256_SIZE + SIGNATURE_SIZE_RS,
+                              CX_SHA256_SIZE,
+                              sigma.der_signature,
+                              sizeof_field(signature_t, der_signature),
+                              &info);
+
+                err_convert_e err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
+                if (err_c != no_error) {
+                    MEMZERO(signatureBuffer, signatureMaxlen);
+                    err = zxerr_unknown;
+                }else{
+                    MEMCPY(signatureBuffer + 2*CX_SHA256_SIZE + SIGNATURE_SIZE_RS, sigma.r, SIGNATURE_SIZE_R);
+                    MEMCPY(signatureBuffer + 2*CX_SHA256_SIZE + SIGNATURE_SIZE_RS + SIGNATURE_SIZE_R, sigma.s, SIGNATURE_SIZE_S);
+                    *sigSize = 2*(CX_SHA256_SIZE + SIGNATURE_SIZE_RS);
+                }
+            }
+        }
+        CATCH_ALL {
+            err = zxerr_ledger_api_error;
+        }
+        FINALLY {
+            MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+            MEMZERO(privateKeyData, 32);
+        }
+    }
+    END_TRY;
+
+    return err;
+}
+
 
 #else
 
 #include <hexutils.h>
 #include "picohash.h"
+
+zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
+    return zxerr_ok;
+}
 
 zxerr_t cx_hash_sha256(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen) {
     if (outputLen < 32) {

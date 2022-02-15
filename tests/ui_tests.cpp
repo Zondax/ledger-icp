@@ -122,7 +122,7 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
         ASSERT_NE(err, parser_ok) << parser_getErrorDescription(err);
         return;
     }
-
+    parser_tx_obj.special_transfer_type = normal_transaction;
     err = parser_validate(&ctx);
     ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
 
@@ -134,7 +134,7 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
     }
     std::cout << std::endl << std::endl;
 
-    std::vector<std::string> expected = app_mode_expert() ? tc.expected_expert : tc.expected;
+    std::vector<std::string> expected = app_mode_expert() && !tc.expected_expert.empty() ? tc.expected_expert : tc.expected;
     EXPECT_EQ(output.size(), expected.size());
     for (size_t i = 0; i < expected.size(); i++) {
         if (i < output.size()) {

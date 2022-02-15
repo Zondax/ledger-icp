@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 
 void h_expert_toggle();
 void h_expert_update();
@@ -182,8 +182,16 @@ void h_review_loop_end() {
 void splitValueField() {
     uint16_t vlen = strlen(viewdata.value);
     if (vlen == 0 ) {
-        strcpy(viewdata.value, " ");
+        snprintf(viewdata.value, MAX_CHARS_PER_VALUE1_LINE, " ");
     }
+}
+
+void splitValueAddress() {
+    splitValueField();
+}
+
+max_char_display get_max_char_per_line() {
+    return MAX_CHARS_PER_VALUE1_LINE;
 }
 
 void h_expert_toggle() {
@@ -227,7 +235,7 @@ void h_secret_click() {
 //////////////////////////
 //////////////////////////
 
-void view_idle_show_impl(uint8_t item_idx, char *statusString) {
+void view_idle_show_impl(__Z_UNUSED uint8_t item_idx, char *statusString) {
     if (statusString == NULL ) {
         if (app_mode_secret()) {
             snprintf(viewdata.key, MAX_CHARS_PER_KEY_LINE, "%s", MENU_MAIN_APP_LINE2_SECRET);

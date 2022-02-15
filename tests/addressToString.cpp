@@ -20,8 +20,8 @@
 #include <hexutils.h>
 #include <zxmacros.h>
 #include "crypto.h"
+#include "zxformat.h"
 #include <cstring>
-#include <cstdint>
 
 #include <iostream>
 #include <fstream>
@@ -33,15 +33,7 @@
                    y = tmp;\
 }
 
-#define SWAP_ENDIAN_U64(x) { \
-    uint8_t tmp = 0;                        \
-    SWAP_BYTES(*x, *(x + 7), tmp); \
-    SWAP_BYTES(*(x+1), *(x + 6), tmp);         \
-    SWAP_BYTES(*(x+2), *(x + 5), tmp);         \
-    SWAP_BYTES(*(x+3), *(x + 4), tmp);         \
-}
-
-zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
+zxerr_t crypto_extractPublicKey(__Z_UNUSED const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
     const char *tmp = "0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835";
     parseHexString(pubKey, pubKeyLen, tmp);
 

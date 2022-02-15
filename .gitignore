@@ -89,3 +89,5 @@ cmake-build-fuzz/
 
 node_modules/.yarn-integrity
 \.vscode
+scan-build/
+tests_zemu/yarn.lock
