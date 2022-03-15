@@ -519,7 +519,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         }
     }
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
     uint8_t publicKey[SECP256K1_PK_LEN];
     uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
