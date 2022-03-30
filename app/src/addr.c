@@ -65,7 +65,7 @@ zxerr_t addr_getItem(int8_t displayIdx,
             array_to_hexstr(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT,
                             DFINITY_SUBACCOUNT_LEN);
 
-            #if defined(TARGET_NANOS) || defined(TARGET_NANOX)
+            #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
                 // insert spaces to force alignment
                 inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
                 inplace_insert_char(buffer, sizeof(buffer), 17, ' ');

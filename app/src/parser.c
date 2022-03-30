@@ -25,7 +25,7 @@
 #include "formatting.h"
 #include "zxformat.h"
 
-#if defined(TARGET_NANOX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 // For some reason NanoX requires this function
 void __assert_fail(__Z_UNUSED const char * assertion, __Z_UNUSED const char * file, __Z_UNUSED unsigned int line, __Z_UNUSED const char * function){
     while(1) {};

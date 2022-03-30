@@ -42,7 +42,7 @@ describe('Standard', function () {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 5, -5])
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 4, -5])
     } finally {
       await sim.close()
     }
