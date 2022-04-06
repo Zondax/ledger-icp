@@ -56,7 +56,7 @@ endif
 
 APPVERSION_M=2
 APPVERSION_N=0
-APPVERSION_P=3
+APPVERSION_P=4
 
 $(info COIN  = [$(COIN)])
 
@@ -98,7 +98,7 @@ DEFINES += CBOR_PARSER_MAX_RECURSIONS=16
 endif
 
 ifeq ($(TARGET_NAME),TARGET_NANOS2)
-APP_LOAD_PARAMS += --appFlags 0x200
+APP_LOAD_PARAMS += --appFlags 0x000
 SCRIPT_LD:=$(CURDIR)/script_s2.ld
 ICONNAME:=$(CURDIR)/nanox_icon.gif
 OUTPUT_ELF ?= $(CURDIR)/output/app_s2.elf
