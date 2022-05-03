@@ -619,4 +619,30 @@ namespace {
         EXPECT_EQ(err, parser_ok);
     }
 
+    TEST(CBORParserTest, CombinedTXFail) {
+    uint8_t inBuffer[1000];
+
+    const char *tmp = "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16bc685267142b8065706174687381824e726571756573745f737461747573582038b344ba26f15444b4f989078c952ce99b559d3eb59e829c5a463a33812e32546c726571756573745f747970656a726561645f73746174656673656e646572581dd899978f029508f4fa5fce3d2539de5aade6d229efcc458233deee7502";
+    uint32_t inBufferLen = parseHexString(inBuffer + 4, sizeof(inBuffer) - 4, tmp);
+    EXPECT_EQ(inBufferLen, 156);
+    uint32_t badLength = 1000;
+    MEMCPY(&inBuffer[0], &badLength, 4);
+
+    const char *tmp2 = "d9d9f7a167636f6e74656e74a66361726758320a0012050a0308904e1a0308904e2a220a20a2a794c66495083317e4be5197eb655b1e63015469d769e2338af3d3e3f3aa866b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b16bc685084d14ec06b6d6574686f645f6e616d656773656e645f70626c726571756573745f747970656463616c6c6673656e646572581dd899978f029508f4fa5fce3d2539de5aade6d229efcc458233deee7502";
+    uint32_t inBufferLen2 = parseHexString(inBuffer + 8 + inBufferLen, sizeof(inBuffer) - 4 - inBufferLen, tmp2);
+    EXPECT_EQ(inBufferLen2, 192);
+    MEMCPY(&inBuffer[4 + inBufferLen], &inBufferLen2, 4);
+//        char array[2000];
+//        MEMZERO(array,2000);
+//        uint16_t total_len = 156 + 192 + 8;
+//        uint32_t strLen = array_to_hexstr(array, sizeof(array), inBuffer, 160);
+//        strLen += array_to_hexstr(array + strLen, sizeof(array) - strLen, inBuffer + 160, 200);
+//        EXPECT_EQ(strLen, 2*(156+192 + 8));
+//        std::cout << array << std::endl;
+    parser_context_t ctx;
+    parser_tx_obj.special_transfer_type = normal_transaction;
+    auto err = parser_parse_combined(&ctx, inBuffer, inBufferLen + inBufferLen2 + 8);
+    EXPECT_EQ(err, parser_value_out_of_range);
+    }
+
 }
