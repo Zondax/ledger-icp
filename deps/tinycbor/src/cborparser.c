@@ -391,6 +391,16 @@ uint64_t _cbor_value_decode_int64_internal(const CborValue *value)
  */
 CborError cbor_parser_init(const uint8_t *buffer, size_t size, uint32_t flags, CborParser *parser, CborValue *it)
 {
+    #ifdef __SIZEOF_INT128__
+        if ((UINT64_MAX - (uint64_t) buffer < (uint64_t) size)) {
+            return CborErrorUnknownLength;
+        }
+    #else
+        if (((uint64_t) size + (uint64_t) buffer) > UINT32_MAX) {
+            return CborErrorUnknownLength;
+        }
+    #endif
+
     memset(parser, 0, sizeof(*parser));
     parser->end = buffer + size;
     parser->flags = flags;
@@ -398,6 +408,7 @@ CborError cbor_parser_init(const uint8_t *buffer, size_t size, uint32_t flags, C
     it->ptr = buffer;
     it->remaining = 1;      /* there's one type altogether, usually an array or map */
     it->flags = 0;
+
     return preparse_value(it);
 }
 
