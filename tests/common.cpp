@@ -13,11 +13,18 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+#include "gmock/gmock.h"
+
 #include <parser.h>
 #include <sstream>
 #include <string>
 #include <fmt/core.h>
 #include "common.h"
+#include <iostream>
+#include <fstream>
+#include <json/json.h>
+#include <app_mode.h>
+#include <hexutils.h>
 
 std::vector<std::string> dumpUI(parser_context_t *ctx,
                                 uint16_t maxKeyLen,
@@ -70,4 +77,99 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
     }
 
     return answer;
+}
+
+std::string CleanTestname(std::string s) {
+    s.erase(remove_if(s.begin(), s.end(), [](char v) -> bool {
+        return v == ':' || v == ' ' || v == '/' || v == '-' || v == '.' || v == '_' || v == '#';
+    }), s.end());
+    return s;
+}
+
+std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
+    auto answer = std::vector<testcase_t>();
+
+    Json::CharReaderBuilder builder;
+    Json::Value obj;
+
+    std::string fullPathJsonFile = std::string(TESTVECTORS_DIR) + jsonFile;
+
+    std::ifstream inFile(fullPathJsonFile);
+    if (!inFile.is_open()) {
+        return answer;
+    }
+
+    // Retrieve all test cases
+    JSONCPP_STRING errs;
+    Json::parseFromStream(builder, inFile, &obj, &errs);
+    std::cout << "Number of testcases: " << obj.size() << std::endl;
+
+    for (auto &i : obj) {
+
+        auto outputs = std::vector<std::string>();
+        for (const auto &s : i["output"]) {
+            outputs.push_back(s.asString());
+        }
+
+        auto outputs_expert = std::vector<std::string>();
+        for (const auto &s : i["output_expert"]) {
+            outputs_expert.push_back(s.asString());
+        }
+
+        bool valid = true;
+        if (i.isMember("valid")) {
+            valid = i["valid"].asBool();
+        }
+
+        auto name = CleanTestname(i["name"].asString());
+
+        answer.push_back(testcase_t{
+                i["index"].asUInt64(),
+                name,
+                i["blob"].asString(),
+                valid,
+                outputs,
+                outputs_expert
+        });
+    }
+
+    return answer;
+}
+
+void check_testcase(const testcase_t &tc, bool expert_mode) {
+    app_mode_set_expert(expert_mode);
+
+    parser_context_t ctx;
+    parser_error_t err;
+
+    uint8_t buffer[10000];
+    uint16_t bufferLen = parseHexString(buffer, sizeof(buffer), tc.blob.c_str());
+
+    err = parser_parse(&ctx, buffer, bufferLen);
+
+    if (tc.valid) {
+        ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
+    } else {
+        ASSERT_NE(err, parser_ok) << parser_getErrorDescription(err);
+        return;
+    }
+    parser_tx_obj.special_transfer_type = normal_transaction;
+    err = parser_validate(&ctx);
+    ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
+
+    auto output = dumpUI(&ctx, 40, 37);
+
+    std::cout << std::endl;
+    for (const auto &i : output) {
+        std::cout << i << std::endl;
+    }
+    std::cout << std::endl << std::endl;
+
+    std::vector<std::string> expected = app_mode_expert() && !tc.expected_expert.empty() ? tc.expected_expert : tc.expected;
+    EXPECT_EQ(output.size(), expected.size());
+    for (size_t i = 0; i < expected.size(); i++) {
+        if (i < output.size()) {
+            EXPECT_THAT(output[i], testing::Eq(expected[i]));
+        }
+    }
 }

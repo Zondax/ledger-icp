@@ -3,6 +3,7 @@
 
 #ifndef PB_IC_LEDGER_PB_V1_TYPES_PB_H_INCLUDED
 #define PB_IC_LEDGER_PB_V1_TYPES_PB_H_INCLUDED
+
 #include <pb.h>
 #include "base_types.pb.h"
 
@@ -12,315 +13,315 @@
 
 /* Struct definitions */
 /* Add blocks to the archive canister */
-typedef struct _ic_ledger_pb_v1_ArchiveAddRequest { 
-    pb_callback_t blocks; 
+typedef struct _ic_ledger_pb_v1_ArchiveAddRequest {
+    pb_callback_t blocks;
 } ic_ledger_pb_v1_ArchiveAddRequest;
 
-typedef struct _ic_ledger_pb_v1_ArchiveAddResponse { 
+typedef struct _ic_ledger_pb_v1_ArchiveAddResponse {
     char dummy_field;
 } ic_ledger_pb_v1_ArchiveAddResponse;
 
-typedef struct _ic_ledger_pb_v1_ArchiveIndexResponse { 
-    pb_callback_t entries; 
+typedef struct _ic_ledger_pb_v1_ArchiveIndexResponse {
+    pb_callback_t entries;
 } ic_ledger_pb_v1_ArchiveIndexResponse;
 
-typedef struct _ic_ledger_pb_v1_Certification { 
-    pb_callback_t certification; 
+typedef struct _ic_ledger_pb_v1_Certification {
+    pb_callback_t certification;
 } ic_ledger_pb_v1_Certification;
 
-typedef struct _ic_ledger_pb_v1_EncodedBlock { 
-    pb_callback_t block; 
+typedef struct _ic_ledger_pb_v1_EncodedBlock {
+    pb_callback_t block;
 } ic_ledger_pb_v1_EncodedBlock;
 
-typedef struct _ic_ledger_pb_v1_EncodedBlocks { 
-    pb_callback_t blocks; 
+typedef struct _ic_ledger_pb_v1_EncodedBlocks {
+    pb_callback_t blocks;
 } ic_ledger_pb_v1_EncodedBlocks;
 
 /* Fetch a list of all of the archive nodes */
-typedef struct _ic_ledger_pb_v1_GetNodesRequest { 
+typedef struct _ic_ledger_pb_v1_GetNodesRequest {
     char dummy_field;
 } ic_ledger_pb_v1_GetNodesRequest;
 
-typedef struct _ic_ledger_pb_v1_GetNodesResponse { 
-    pb_callback_t nodes; 
+typedef struct _ic_ledger_pb_v1_GetNodesResponse {
+    pb_callback_t nodes;
 } ic_ledger_pb_v1_GetNodesResponse;
 
-typedef struct _ic_ledger_pb_v1_Hash { 
-    pb_callback_t hash; 
+typedef struct _ic_ledger_pb_v1_Hash {
+    pb_callback_t hash;
 } ic_ledger_pb_v1_Hash;
 
-typedef struct _ic_ledger_pb_v1_IterBlocksResponse { 
-    pb_callback_t blocks; 
+typedef struct _ic_ledger_pb_v1_IterBlocksResponse {
+    pb_callback_t blocks;
 } ic_ledger_pb_v1_IterBlocksResponse;
 
 /* The format of values serialized to/from the stable memory during and upgrade */
-typedef struct _ic_ledger_pb_v1_LedgerUpgrade { 
+typedef struct _ic_ledger_pb_v1_LedgerUpgrade {
     char dummy_field;
 } ic_ledger_pb_v1_LedgerUpgrade;
 
-typedef struct _ic_ledger_pb_v1_NotifyResponse { 
+typedef struct _ic_ledger_pb_v1_NotifyResponse {
     char dummy_field;
 } ic_ledger_pb_v1_NotifyResponse;
 
-typedef struct _ic_ledger_pb_v1_Subaccount { 
-    pb_callback_t sub_account; 
+typedef struct _ic_ledger_pb_v1_Subaccount {
+    pb_callback_t sub_account;
 } ic_ledger_pb_v1_Subaccount;
 
 /* Get the length of the chain with a certification */
-typedef struct _ic_ledger_pb_v1_TipOfChainRequest { 
+typedef struct _ic_ledger_pb_v1_TipOfChainRequest {
     char dummy_field;
 } ic_ledger_pb_v1_TipOfChainRequest;
 
-typedef struct _ic_ledger_pb_v1_ToppedUp { 
+typedef struct _ic_ledger_pb_v1_ToppedUp {
     char dummy_field;
 } ic_ledger_pb_v1_ToppedUp;
 
 /* How many ICPTs are there not in the minting account */
-typedef struct _ic_ledger_pb_v1_TotalSupplyRequest { 
+typedef struct _ic_ledger_pb_v1_TotalSupplyRequest {
     char dummy_field;
 } ic_ledger_pb_v1_TotalSupplyRequest;
 
-typedef struct _ic_ledger_pb_v1_TransactionNotificationResponse { 
-    pb_callback_t response; 
+typedef struct _ic_ledger_pb_v1_TransactionNotificationResponse {
+    pb_callback_t response;
 } ic_ledger_pb_v1_TransactionNotificationResponse;
 
 typedef PB_BYTES_ARRAY_T(33) ic_ledger_pb_v1_AccountIdentifier_hash_t;
-typedef struct _ic_ledger_pb_v1_AccountIdentifier { 
-    ic_ledger_pb_v1_AccountIdentifier_hash_t hash; 
+typedef struct _ic_ledger_pb_v1_AccountIdentifier {
+    ic_ledger_pb_v1_AccountIdentifier_hash_t hash;
 } ic_ledger_pb_v1_AccountIdentifier;
 
-typedef struct _ic_ledger_pb_v1_ArchiveIndexEntry { 
-    uint64_t height_from; 
-    uint64_t height_to; 
+typedef struct _ic_ledger_pb_v1_ArchiveIndexEntry {
+    uint64_t height_from;
+    uint64_t height_to;
     bool has_canister_id;
-    ic_base_types_pb_v1_PrincipalId canister_id; 
+    ic_base_types_pb_v1_PrincipalId canister_id;
 } ic_ledger_pb_v1_ArchiveIndexEntry;
 
 /* * Archive canister *
  Init the archive canister */
-typedef struct _ic_ledger_pb_v1_ArchiveInit { 
-    uint32_t node_max_memory_size_bytes; 
-    uint32_t max_message_size_bytes; 
+typedef struct _ic_ledger_pb_v1_ArchiveInit {
+    uint32_t node_max_memory_size_bytes;
+    uint32_t max_message_size_bytes;
 } ic_ledger_pb_v1_ArchiveInit;
 
-typedef struct _ic_ledger_pb_v1_BlockHeight { 
-    uint64_t height; 
+typedef struct _ic_ledger_pb_v1_BlockHeight {
+    uint64_t height;
 } ic_ledger_pb_v1_BlockHeight;
 
 /* Get a single block */
-typedef struct _ic_ledger_pb_v1_BlockRequest { 
-    uint64_t block_height; 
+typedef struct _ic_ledger_pb_v1_BlockRequest {
+    uint64_t block_height;
 } ic_ledger_pb_v1_BlockRequest;
 
-typedef struct _ic_ledger_pb_v1_BlockResponse { 
+typedef struct _ic_ledger_pb_v1_BlockResponse {
     pb_size_t which_block_content;
     union {
         ic_ledger_pb_v1_EncodedBlock block;
         ic_base_types_pb_v1_PrincipalId canister_id;
-    } block_content; 
+    } block_content;
 } ic_ledger_pb_v1_BlockResponse;
 
 /* Get a set of blocks */
-typedef struct _ic_ledger_pb_v1_GetBlocksRequest { 
-    uint64_t start; 
-    uint64_t length; 
+typedef struct _ic_ledger_pb_v1_GetBlocksRequest {
+    uint64_t start;
+    uint64_t length;
 } ic_ledger_pb_v1_GetBlocksRequest;
 
-typedef struct _ic_ledger_pb_v1_GetBlocksResponse { 
+typedef struct _ic_ledger_pb_v1_GetBlocksResponse {
     pb_size_t which_get_blocks_content;
     union {
         ic_ledger_pb_v1_EncodedBlocks blocks;
         pb_callback_t error;
-    } get_blocks_content; 
+    } get_blocks_content;
 } ic_ledger_pb_v1_GetBlocksResponse;
 
 /* ** BASIC TYPES ** */
-typedef struct _ic_ledger_pb_v1_ICPTs { 
-    uint64_t e8s; 
+typedef struct _ic_ledger_pb_v1_ICPTs {
+    uint64_t e8s;
 } ic_ledger_pb_v1_ICPTs;
 
 /* Iterate through blocks */
-typedef struct _ic_ledger_pb_v1_IterBlocksRequest { 
-    uint64_t start; 
-    uint64_t length; 
+typedef struct _ic_ledger_pb_v1_IterBlocksRequest {
+    uint64_t start;
+    uint64_t length;
 } ic_ledger_pb_v1_IterBlocksRequest;
 
-typedef struct _ic_ledger_pb_v1_Memo { 
-    uint64_t memo; 
+typedef struct _ic_ledger_pb_v1_Memo {
+    uint64_t memo;
 } ic_ledger_pb_v1_Memo;
 
-typedef struct _ic_ledger_pb_v1_TimeStamp { 
-    uint64_t timestamp_nanos; 
+typedef struct _ic_ledger_pb_v1_TimeStamp {
+    uint64_t timestamp_nanos;
 } ic_ledger_pb_v1_TimeStamp;
 
-typedef struct _ic_ledger_pb_v1_Account { 
+typedef struct _ic_ledger_pb_v1_Account {
     bool has_identifier;
-    ic_ledger_pb_v1_AccountIdentifier identifier; 
+    ic_ledger_pb_v1_AccountIdentifier identifier;
     bool has_balance;
-    ic_ledger_pb_v1_ICPTs balance; 
+    ic_ledger_pb_v1_ICPTs balance;
 } ic_ledger_pb_v1_Account;
 
 /* Get the balance of an account */
-typedef struct _ic_ledger_pb_v1_AccountBalanceRequest { 
+typedef struct _ic_ledger_pb_v1_AccountBalanceRequest {
     bool has_account;
-    ic_ledger_pb_v1_AccountIdentifier account; 
+    ic_ledger_pb_v1_AccountIdentifier account;
 } ic_ledger_pb_v1_AccountBalanceRequest;
 
-typedef struct _ic_ledger_pb_v1_AccountBalanceResponse { 
+typedef struct _ic_ledger_pb_v1_AccountBalanceResponse {
     bool has_balance;
-    ic_ledger_pb_v1_ICPTs balance; 
+    ic_ledger_pb_v1_ICPTs balance;
 } ic_ledger_pb_v1_AccountBalanceResponse;
 
-typedef struct _ic_ledger_pb_v1_Burn { 
+typedef struct _ic_ledger_pb_v1_Burn {
     bool has_from;
-    ic_ledger_pb_v1_AccountIdentifier from; 
+    ic_ledger_pb_v1_AccountIdentifier from;
     bool has_amount;
-    ic_ledger_pb_v1_ICPTs amount; 
+    ic_ledger_pb_v1_ICPTs amount;
 } ic_ledger_pb_v1_Burn;
 
 /* Archive any blocks older than this */
-typedef struct _ic_ledger_pb_v1_LedgerArchiveRequest { 
+typedef struct _ic_ledger_pb_v1_LedgerArchiveRequest {
     bool has_timestamp;
-    ic_ledger_pb_v1_TimeStamp timestamp; 
+    ic_ledger_pb_v1_TimeStamp timestamp;
 } ic_ledger_pb_v1_LedgerArchiveRequest;
 
 /* Initialise the ledger canister */
-typedef struct _ic_ledger_pb_v1_LedgerInit { 
+typedef struct _ic_ledger_pb_v1_LedgerInit {
     bool has_minting_account;
-    ic_ledger_pb_v1_AccountIdentifier minting_account; 
-    pb_callback_t initial_values; 
+    ic_ledger_pb_v1_AccountIdentifier minting_account;
+    pb_callback_t initial_values;
     bool has_archive_canister;
-    ic_base_types_pb_v1_PrincipalId archive_canister; 
-    uint32_t max_message_size_bytes; 
+    ic_base_types_pb_v1_PrincipalId archive_canister;
+    uint32_t max_message_size_bytes;
 } ic_ledger_pb_v1_LedgerInit;
 
-typedef struct _ic_ledger_pb_v1_Mint { 
+typedef struct _ic_ledger_pb_v1_Mint {
     bool has_to;
-    ic_ledger_pb_v1_AccountIdentifier to; 
+    ic_ledger_pb_v1_AccountIdentifier to;
     bool has_amount;
-    ic_ledger_pb_v1_ICPTs amount; 
+    ic_ledger_pb_v1_ICPTs amount;
 } ic_ledger_pb_v1_Mint;
 
 /* Notify a canister that it has received a payment */
-typedef struct _ic_ledger_pb_v1_NotifyRequest { 
+typedef struct _ic_ledger_pb_v1_NotifyRequest {
     bool has_block_height;
-    ic_ledger_pb_v1_BlockHeight block_height; 
+    ic_ledger_pb_v1_BlockHeight block_height;
     bool has_max_fee;
-    ic_ledger_pb_v1_ICPTs max_fee; 
+    ic_ledger_pb_v1_ICPTs max_fee;
     bool has_from_subaccount;
-    ic_ledger_pb_v1_Subaccount from_subaccount; 
+    ic_ledger_pb_v1_Subaccount from_subaccount;
     bool has_to_canister;
-    ic_base_types_pb_v1_PrincipalId to_canister; 
+    ic_base_types_pb_v1_PrincipalId to_canister;
     bool has_to_subaccount;
-    ic_ledger_pb_v1_Subaccount to_subaccount; 
+    ic_ledger_pb_v1_Subaccount to_subaccount;
 } ic_ledger_pb_v1_NotifyRequest;
 
-typedef struct _ic_ledger_pb_v1_Payment { 
+typedef struct _ic_ledger_pb_v1_Payment {
     bool has_receiver_gets;
-    ic_ledger_pb_v1_ICPTs receiver_gets; 
+    ic_ledger_pb_v1_ICPTs receiver_gets;
 } ic_ledger_pb_v1_Payment;
 
-typedef struct _ic_ledger_pb_v1_Refund { 
+typedef struct _ic_ledger_pb_v1_Refund {
     bool has_refund;
-    ic_ledger_pb_v1_BlockHeight refund; 
-    pb_callback_t error; 
+    ic_ledger_pb_v1_BlockHeight refund;
+    pb_callback_t error;
 } ic_ledger_pb_v1_Refund;
 
-typedef struct _ic_ledger_pb_v1_Send { 
+typedef struct _ic_ledger_pb_v1_Send {
     bool has_from;
-    ic_ledger_pb_v1_AccountIdentifier from; 
+    ic_ledger_pb_v1_AccountIdentifier from;
     bool has_to;
-    ic_ledger_pb_v1_AccountIdentifier to; 
+    ic_ledger_pb_v1_AccountIdentifier to;
     bool has_amount;
-    ic_ledger_pb_v1_ICPTs amount; 
+    ic_ledger_pb_v1_ICPTs amount;
     bool has_max_fee;
-    ic_ledger_pb_v1_ICPTs max_fee; 
+    ic_ledger_pb_v1_ICPTs max_fee;
 } ic_ledger_pb_v1_Send;
 
-typedef struct _ic_ledger_pb_v1_SendResponse { 
+typedef struct _ic_ledger_pb_v1_SendResponse {
     bool has_resulting_height;
-    ic_ledger_pb_v1_BlockHeight resulting_height; 
+    ic_ledger_pb_v1_BlockHeight resulting_height;
 } ic_ledger_pb_v1_SendResponse;
 
-typedef struct _ic_ledger_pb_v1_TipOfChainResponse { 
+typedef struct _ic_ledger_pb_v1_TipOfChainResponse {
     bool has_certification;
-    ic_ledger_pb_v1_Certification certification; 
+    ic_ledger_pb_v1_Certification certification;
     bool has_chain_length;
-    ic_ledger_pb_v1_BlockHeight chain_length; 
+    ic_ledger_pb_v1_BlockHeight chain_length;
 } ic_ledger_pb_v1_TipOfChainResponse;
 
-typedef struct _ic_ledger_pb_v1_TotalSupplyResponse { 
+typedef struct _ic_ledger_pb_v1_TotalSupplyResponse {
     bool has_total_supply;
-    ic_ledger_pb_v1_ICPTs total_supply; 
+    ic_ledger_pb_v1_ICPTs total_supply;
 } ic_ledger_pb_v1_TotalSupplyResponse;
 
-typedef struct _ic_ledger_pb_v1_TransactionNotificationRequest { 
+typedef struct _ic_ledger_pb_v1_TransactionNotificationRequest {
     bool has_from;
-    ic_base_types_pb_v1_PrincipalId from; 
+    ic_base_types_pb_v1_PrincipalId from;
     bool has_from_subaccount;
-    ic_ledger_pb_v1_Subaccount from_subaccount; 
+    ic_ledger_pb_v1_Subaccount from_subaccount;
     bool has_to;
-    ic_base_types_pb_v1_PrincipalId to; 
+    ic_base_types_pb_v1_PrincipalId to;
     bool has_to_subaccount;
-    ic_ledger_pb_v1_Subaccount to_subaccount; 
+    ic_ledger_pb_v1_Subaccount to_subaccount;
     bool has_block_height;
-    ic_ledger_pb_v1_BlockHeight block_height; 
+    ic_ledger_pb_v1_BlockHeight block_height;
     bool has_amount;
-    ic_ledger_pb_v1_ICPTs amount; 
+    ic_ledger_pb_v1_ICPTs amount;
     bool has_memo;
-    ic_ledger_pb_v1_Memo memo; 
+    ic_ledger_pb_v1_Memo memo;
 } ic_ledger_pb_v1_TransactionNotificationRequest;
 
-typedef struct _ic_ledger_pb_v1_CyclesNotificationResponse { 
+typedef struct _ic_ledger_pb_v1_CyclesNotificationResponse {
     pb_size_t which_response;
     union {
         ic_base_types_pb_v1_PrincipalId created_canister_id;
         ic_ledger_pb_v1_Refund refund;
         ic_ledger_pb_v1_ToppedUp topped_up;
-    } response; 
+    } response;
 } ic_ledger_pb_v1_CyclesNotificationResponse;
 
 /* Make a payment */
-typedef struct _ic_ledger_pb_v1_SendRequest { 
+typedef struct _ic_ledger_pb_v1_SendRequest {
     bool has_memo;
-    ic_ledger_pb_v1_Memo memo; 
+    ic_ledger_pb_v1_Memo memo;
     bool has_payment;
-    ic_ledger_pb_v1_Payment payment; 
+    ic_ledger_pb_v1_Payment payment;
     bool has_max_fee;
-    ic_ledger_pb_v1_ICPTs max_fee; 
+    ic_ledger_pb_v1_ICPTs max_fee;
     bool has_from_subaccount;
-    ic_ledger_pb_v1_Subaccount from_subaccount; 
+    ic_ledger_pb_v1_Subaccount from_subaccount;
     bool has_to;
-    ic_ledger_pb_v1_AccountIdentifier to; 
+    ic_ledger_pb_v1_AccountIdentifier to;
     bool has_created_at;
-    ic_ledger_pb_v1_BlockHeight created_at; 
+    ic_ledger_pb_v1_BlockHeight created_at;
     bool has_created_at_time;
-    ic_ledger_pb_v1_TimeStamp created_at_time; 
+    ic_ledger_pb_v1_TimeStamp created_at_time;
 } ic_ledger_pb_v1_SendRequest;
 
-typedef struct _ic_ledger_pb_v1_Transaction { 
+typedef struct _ic_ledger_pb_v1_Transaction {
     pb_size_t which_transfer;
     union {
         ic_ledger_pb_v1_Burn burn;
         ic_ledger_pb_v1_Mint mint;
         ic_ledger_pb_v1_Send send;
-    } transfer; 
+    } transfer;
     bool has_memo;
-    ic_ledger_pb_v1_Memo memo; 
+    ic_ledger_pb_v1_Memo memo;
     bool has_created_at;
-    ic_ledger_pb_v1_BlockHeight created_at; 
+    ic_ledger_pb_v1_BlockHeight created_at;
     bool has_created_at_time;
-    ic_ledger_pb_v1_TimeStamp created_at_time; 
+    ic_ledger_pb_v1_TimeStamp created_at_time;
 } ic_ledger_pb_v1_Transaction;
 
 /* This is the */
-typedef struct _ic_ledger_pb_v1_Block { 
+typedef struct _ic_ledger_pb_v1_Block {
     bool has_parent_hash;
-    ic_ledger_pb_v1_Hash parent_hash; 
+    ic_ledger_pb_v1_Hash parent_hash;
     bool has_timestamp;
-    ic_ledger_pb_v1_TimeStamp timestamp; 
+    ic_ledger_pb_v1_TimeStamp timestamp;
     bool has_transaction;
-    ic_ledger_pb_v1_Transaction transaction; 
+    ic_ledger_pb_v1_Transaction transaction;
 } ic_ledger_pb_v1_Block;
 
 

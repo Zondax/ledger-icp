@@ -40,9 +40,10 @@ zxerr_t addr_getItem(int8_t displayIdx,
     char buffer[300];
     snprintf(buffer, sizeof(buffer), "addr_getItem %d/%d", displayIdx, pageIdx);
     zemu_log_stack(buffer);
-    if(action_addrResponseLen < VIEW_PRINCIPAL_OFFSET_TEXT || IO_APDU_BUFFER_SIZE < action_addrResponseLen){
+    if (action_addrResponseLen < VIEW_PRINCIPAL_OFFSET_TEXT || IO_APDU_BUFFER_SIZE < action_addrResponseLen) {
         return zxerr_buffer_too_small;
     }
+
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Principal ");
@@ -65,16 +66,16 @@ zxerr_t addr_getItem(int8_t displayIdx,
             array_to_hexstr(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT,
                             DFINITY_SUBACCOUNT_LEN);
 
-            #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
-                // insert spaces to force alignment
-                inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
-                inplace_insert_char(buffer, sizeof(buffer), 17, ' ');
-                inplace_insert_char(buffer, sizeof(buffer), 26, ' ');
-                inplace_insert_char(buffer, sizeof(buffer), 35, ' ');
-                inplace_insert_char(buffer, sizeof(buffer), 44, ' ');
-                inplace_insert_char(buffer, sizeof(buffer), 53, ' ');
-                inplace_insert_char(buffer, sizeof(buffer), 62, ' ');
-            #endif
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+            // insert spaces to force alignment
+            inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
+            inplace_insert_char(buffer, sizeof(buffer), 17, ' ');
+            inplace_insert_char(buffer, sizeof(buffer), 26, ' ');
+            inplace_insert_char(buffer, sizeof(buffer), 35, ' ');
+            inplace_insert_char(buffer, sizeof(buffer), 44, ' ');
+            inplace_insert_char(buffer, sizeof(buffer), 53, ' ');
+            inplace_insert_char(buffer, sizeof(buffer), 62, ' ');
+#endif
 
             pageString(outVal, outValLen, buffer, pageIdx, pageCount);
             return zxerr_ok;

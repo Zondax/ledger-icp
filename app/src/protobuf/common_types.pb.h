@@ -3,6 +3,7 @@
 
 #ifndef PB_IC_NNS_COMMON_PB_V1_COMMON_TYPES_PB_H_INCLUDED
 #define PB_IC_NNS_COMMON_PB_V1_COMMON_TYPES_PB_H_INCLUDED
+
 #include <pb.h>
 #include "base_types.pb.h"
 
@@ -14,33 +15,33 @@
 /* A descriptor of the authorization of all the update methods in a
  canister that require authorization.
  Methods that should be accessible to anyone should not appear in this list */
-typedef struct _ic_nns_common_pb_v1_CanisterAuthzInfo { 
-    pb_callback_t methods_authz; 
+typedef struct _ic_nns_common_pb_v1_CanisterAuthzInfo {
+    pb_callback_t methods_authz;
 } ic_nns_common_pb_v1_CanisterAuthzInfo;
 
 /* A PB container for a CanisterId, which uniquely identifies
  a principal. */
-typedef struct _ic_nns_common_pb_v1_CanisterId { 
-    pb_callback_t serialized_id; 
+typedef struct _ic_nns_common_pb_v1_CanisterId {
+    pb_callback_t serialized_id;
 } ic_nns_common_pb_v1_CanisterId;
 
 /* A descriptor of the authorization of a single method.
  Any of the principals in the list are authorized to execute
  the method. */
-typedef struct _ic_nns_common_pb_v1_MethodAuthzInfo { 
-    pb_callback_t method_name; 
-    pb_callback_t principal_ids; 
+typedef struct _ic_nns_common_pb_v1_MethodAuthzInfo {
+    pb_callback_t method_name;
+    pb_callback_t principal_ids;
 } ic_nns_common_pb_v1_MethodAuthzInfo;
 
 /* A container for a NeuronId blob, which uniquely identifies
  a Neuron. */
-typedef struct _ic_nns_common_pb_v1_NeuronId { 
-    uint64_t id; 
+typedef struct _ic_nns_common_pb_v1_NeuronId {
+    uint64_t id;
 } ic_nns_common_pb_v1_NeuronId;
 
 /* The id of a specific proposal. */
-typedef struct _ic_nns_common_pb_v1_ProposalId { 
-    uint64_t id; 
+typedef struct _ic_nns_common_pb_v1_ProposalId {
+    uint64_t id;
 } ic_nns_common_pb_v1_ProposalId;
 
 

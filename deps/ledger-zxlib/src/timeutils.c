@@ -444,60 +444,62 @@ const uint32_t yearLookup[] = {
 // ARM does not implement gmtime. This is a simple alternative implementation
 // based on section 4.16
 // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap04.html
-zxerr_t printTime(char *out, uint16_t outLen, uint64_t t) {
-    uint8_t tm_sec;
-    uint8_t tm_min;
-    uint8_t tm_hour;
-    uint16_t tm_day;
-    uint8_t tm_mon;
-    uint16_t tm_year;
-
-    tm_sec = (uint8_t) (t % 60);
-    t -= tm_sec;
+zxerr_t decodeTime(timedata_t *timedata, uint64_t t) {
+    timedata->tm_sec = (uint8_t) (t % 60);
+    t -= timedata->tm_sec;
     t /= 60;
 
-    tm_min = (uint8_t) (t % 60);
-    t -= tm_min;
+    timedata->tm_min = (uint8_t) (t % 60);
+    t -= timedata->tm_min;
     t /= 60;
 
-    tm_hour = (uint8_t) (t % 24);
-    t -= tm_hour;
+    timedata->tm_hour = (uint8_t) (t % 24);
+    t -= timedata->tm_hour;
     t /= 24;
 
     // Look up tm_year
-    tm_year = 0;
+    timedata->tm_year = 0;
     const uint16_t yearLookupSize = sizeof(yearLookup)/sizeof(yearLookup[0]);
-    while (tm_year < yearLookupSize && yearLookup[tm_year] <= t) tm_year++;
+    while (timedata->tm_year < yearLookupSize && yearLookup[timedata->tm_year] <= t) {
+        timedata->tm_year++;
+    }
 
-    if (tm_year == 0 || tm_year == yearLookupSize) {
+    if (timedata->tm_year == 0 || timedata->tm_year == yearLookupSize) {
         return zxerr_out_of_bounds;
     }
-    tm_year--;
+    timedata->tm_year--;
 
-    tm_day = (uint16_t) (t - yearLookup[tm_year] + 1);
-    tm_year = (uint16_t) (1970 + tm_year);
+    timedata->tm_day = (uint16_t) (t - yearLookup[timedata->tm_year] + 1);
+    timedata->tm_year = (uint16_t) (1970 + timedata->tm_year);
 
     // Get day/month
-    uint8_t leap = (uint8_t) (tm_year % 4 == 0 && (tm_year % 100 != 0 || tm_year % 400 == 0) ? 1 : 0);
+    uint8_t leap = (uint8_t) (timedata->tm_year % 4 == 0 && (timedata->tm_year % 100 != 0 || timedata->tm_year % 400 == 0) ? 1 : 0);
 
-    for (tm_mon = 0; tm_mon < 12; tm_mon++) {
-        uint8_t tmp = monthDays[tm_mon];
-        tmp += (tm_mon == 1 ? leap : 0);
-        if (tm_day <= tmp) {
+    for (timedata->tm_mon = 0; timedata->tm_mon < 12; timedata->tm_mon++) {
+        uint8_t tmp = monthDays[timedata->tm_mon];
+        tmp += (timedata->tm_mon == 1 ? leap : 0);
+        if (timedata->tm_day <= tmp) {
             break;
         }
-        tm_day -= tmp;
+        timedata->tm_day -= tmp;
     }
-    tm_mon++;
+    timedata->tm_mon++;
 
-    const char *monthName = getMonth(tm_mon);
+    timedata->monthName = getMonth(timedata->tm_mon);
+
+    return zxerr_ok;
+}
+
+zxerr_t printTime(char *out, uint16_t outLen, uint64_t t) {
+    timedata_t timedata;
+    CHECK_ZXERR(decodeTime(&timedata, t));
 
     // YYYYmmdd HH:MM:SS
     snprintf(out, outLen, "%02d%s%04d %02d:%02d:%02dUTC",
-             tm_day,
-             monthName,
-             tm_year,
-             tm_hour, tm_min, tm_sec
+             timedata.tm_day,
+             timedata.monthName,
+             timedata.tm_year,
+             timedata.tm_hour, timedata.tm_min, timedata.tm_sec
     );
 
     return zxerr_ok;
