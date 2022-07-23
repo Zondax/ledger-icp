@@ -554,7 +554,7 @@ namespace {
         EXPECT_EQ(err, parser_ok);
     }
 
-    TEST(CBORParserTest, JoinCommunityFund) {
+    TEST(CBORParserTest, Configure_JoinCommunityFund) {
         parser_tx_obj.special_transfer_type = normal_transaction;
         uint8_t inBuffer[1000];
 

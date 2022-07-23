@@ -100,6 +100,8 @@ file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/zxmacros.c
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/src/zxformat.c
         ####
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/candid/*.c
+        ####
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/formatting.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
@@ -121,6 +123,7 @@ target_include_directories(app_lib PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/picohash/
         ${CMAKE_CURRENT_SOURCE_DIR}/deps/nanopb_tiny/
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/candid
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/common
         )

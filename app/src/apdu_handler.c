@@ -41,6 +41,7 @@ __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, u
         *tx = 0;
         THROW(APDU_CODE_DATA_INVALID);
     }
+
     if (requireConfirmation) {
         view_review_init(addr_getItem, addr_getNumItems, app_reply_address);
         view_review_show();

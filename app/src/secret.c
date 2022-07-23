@@ -39,8 +39,11 @@ zxerr_t secret_getNumItems(uint8_t *num_items) {
 zxerr_t secret_getItem(__Z_UNUSED int8_t displayIdx,
                        __Z_UNUSED char *outKey, __Z_UNUSED uint16_t outKeyLen,
                        __Z_UNUSED char *outVal, __Z_UNUSED uint16_t outValLen,
-                       __Z_UNUSED uint8_t pageIdx, __Z_UNUSED uint8_t *pageCount) {
-    return zxerr_no_data;
+                       __Z_UNUSED uint8_t pageIdx, __Z_UNUSED uint8_t
+
+*pageCount) {
+return
+zxerr_no_data;
 }
 
 zxerr_t secret_enabled() {

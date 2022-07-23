@@ -55,8 +55,8 @@ COIN=ICP
 endif
 
 APPVERSION_M=2
-APPVERSION_N=0
-APPVERSION_P=6
+APPVERSION_N=1
+APPVERSION_P=0
 
 $(info COIN  = [$(COIN)])
 
@@ -81,7 +81,7 @@ endif
 APP_LOAD_PARAMS = --delete $(COMMON_LOAD_PARAMS) --path ${APPPATH} --path "44'/1'"
 
 ifeq ($(TARGET_NAME),TARGET_NANOS)
-APP_STACK_SIZE:=2500
+APP_STACK_SIZE:=1740
 ICONNAME:=$(CURDIR)/nanos_icon.gif
 OUTPUT_ELF ?= $(CURDIR)/output/app_s.elf
 OUTPUT_INSTALLER := $(CURDIR)/pkg/installer_s.sh

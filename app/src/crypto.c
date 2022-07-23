@@ -168,7 +168,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             if(fields->has_nonce){
                 HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
             }
-            HASH_BYTES_END("arg", fields->arg, tmpdigest, digest);
+            HASH_BYTES_END("arg", fields->method_args, tmpdigest, digest);
             return zxerr_ok;
         }
         case state_transaction_read: {
@@ -382,7 +382,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
 #include <hexutils.h>
 #include "picohash.h"
 
-zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
+zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype) {
     return zxerr_ok;
 }
 
@@ -410,16 +410,17 @@ zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t
     return zxerr_ok;
 }
 
-zxerr_t crypto_extractPublicKey(__Z_UNUSED const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
+zxerr_t
+crypto_extractPublicKey(__Z_UNUSED const uint32_t path[HDPATH_LEN_DEFAULT], uint8_t *pubKey, uint16_t pubKeyLen) {
     const uint8_t publicKey[SECP256K1_PK_LEN] = {
-	    0x04, 0x10, 0xD3, 0x49, 0x80, 0xA5, 0x1A, 0xF8, 0x9D, 0x33, 0x31, 0xAD,
-	    0x5F, 0xA8, 0x0F, 0xE3, 0x0D, 0x88, 0x68, 0xAD, 0x87, 0x52, 0x64, 0x60,
-	    0xB3, 0xB3, 0xE1, 0x55, 0x96, 0xEE, 0x58, 0xE8, 0x12, 0x42, 0x29, 0x87,
-	    0xD8, 0x58, 0x9B, 0xA6, 0x10, 0x98, 0x26, 0x4D, 0xF5, 0xBB, 0x9C, 0x2D,
-	    0x3F, 0xF6, 0xFE, 0x06, 0x17, 0x46, 0xB4, 0xB3, 0x1A, 0x44, 0xEC, 0x26,
-	    0x63, 0x66, 0x32, 0xB8, 0x35
+            0x04, 0x10, 0xD3, 0x49, 0x80, 0xA5, 0x1A, 0xF8, 0x9D, 0x33, 0x31, 0xAD,
+            0x5F, 0xA8, 0x0F, 0xE3, 0x0D, 0x88, 0x68, 0xAD, 0x87, 0x52, 0x64, 0x60,
+            0xB3, 0xB3, 0xE1, 0x55, 0x96, 0xEE, 0x58, 0xE8, 0x12, 0x42, 0x29, 0x87,
+            0xD8, 0x58, 0x9B, 0xA6, 0x10, 0x98, 0x26, 0x4D, 0xF5, 0xBB, 0x9C, 0x2D,
+            0x3F, 0xF6, 0xFE, 0x06, 0x17, 0x46, 0xB4, 0xB3, 0x1A, 0x44, 0xEC, 0x26,
+            0x63, 0x66, 0x32, 0xB8, 0x35
     };
-    if (pubKeyLen !=  SECP256K1_PK_LEN) {
+    if (pubKeyLen != SECP256K1_PK_LEN) {
         return zxerr_unknown;
     }
     memcpy(pubKey, publicKey, SECP256K1_PK_LEN);
@@ -446,7 +447,7 @@ typedef struct {
 
 typedef struct {
     uint8_t prefix_byte;
-    uint8_t prefix_string[SUBACCOUNT_PREFIX_SIZE-1];
+    uint8_t prefix_string[SUBACCOUNT_PREFIX_SIZE - 1];
     uint8_t principal[STAKEACCOUNT_PRINCIPAL_SIZE];
     uint8_t pre_hash[32];
 } __attribute__((packed)) stake_account_hash;
@@ -459,9 +460,9 @@ typedef struct {
 } stake_account;
 
 
-uint64_t change_endianness(uint64_t value){
+uint64_t change_endianness(uint64_t value) {
     uint64_t result = 0;
-    for(uint8_t i = 0; i < 7; i++){
+    for (uint8_t i = 0; i < 7; i++) {
         result += ((value >> i * 8u) & 0xFFu);
         result <<= 8u;
     }
@@ -471,7 +472,7 @@ uint64_t change_endianness(uint64_t value){
 
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
                                        const uint64_t neuron_creation_memo,
-                                       uint8_t *address, uint16_t maxoutLen){
+                                       uint8_t *address, uint16_t maxoutLen) {
     if (principalLen != DFINITY_PRINCIPAL_LEN ||
         maxoutLen < DFINITY_ADDR_LEN) {
         return zxerr_invalid_crypto_settings;
@@ -481,21 +482,21 @@ zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t princi
 
     stake_account_pre_hash *pre_hash = &account.hash_fields.pre_hash;
     pre_hash->prefix_byte = 0x0C;
-    MEMCPY(pre_hash->prefix_string, (uint8_t *)"neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
+    MEMCPY(pre_hash->prefix_string, (uint8_t *) "neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
     MEMCPY(pre_hash->principal, principal, DFINITY_PRINCIPAL_LEN);
     pre_hash->memo_be = change_endianness(neuron_creation_memo);
 
     stake_account_hash *final_hash = &account.hash_fields.stake_hash;
 
-    cx_hash_sha256((uint8_t*)pre_hash, sizeof(stake_account_pre_hash), final_hash->pre_hash, 32);
+    cx_hash_sha256((uint8_t *) pre_hash, sizeof(stake_account_pre_hash), final_hash->pre_hash, 32);
 
     final_hash->prefix_byte = 0x0A;
-    MEMCPY(final_hash->prefix_string, (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE-1);
-    uint8_t stake_principal[STAKEACCOUNT_PRINCIPAL_SIZE] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01};
-    MEMCPY(final_hash->principal,stake_principal,STAKEACCOUNT_PRINCIPAL_SIZE);
+    MEMCPY(final_hash->prefix_string, (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE - 1);
+    uint8_t stake_principal[STAKEACCOUNT_PRINCIPAL_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+    MEMCPY(final_hash->principal, stake_principal, STAKEACCOUNT_PRINCIPAL_SIZE);
 
     CHECK_ZXERR(
-            hash_sha224((uint8_t*)final_hash, sizeof(stake_account_hash), address + 4,
+            hash_sha224((uint8_t *) final_hash, sizeof(stake_account_hash), address + 4,
                         (maxoutLen - 4)));
 
     uint32_t crc = 0;
