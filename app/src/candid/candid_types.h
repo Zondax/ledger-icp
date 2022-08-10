@@ -53,6 +53,8 @@ typedef enum {
 } IDLTypes_e;
 
 typedef enum {
+    command_Invalid = 0,
+
     command_Spawn = 0,
     command_Split = 1,
     command_Follow = 2,
@@ -63,13 +65,14 @@ typedef enum {
 } command_variant_e;
 
 typedef enum {
-    operation_RemoveHotKey = 0,
-    operation_AddHotKey = 1,
-    operation_StopDissolving = 2,
-    operation_StartDissolving = 3,
-    operation_IncreaseDissolveDelay = 4,
-    operation_SetDissolvedTimestamp = 5,
-    operation_JoinCommunityFund = 6,
+    operation_Invalid = 0,
+    operation_IncreaseDissolveDelay = 1,
+    operation_StartDissolving = 2,
+    operation_StopDissolving = 3,
+    operation_AddHotKey = 4,
+    operation_RemoveHotKey = 5,
+    operation_SetDissolvedTimestamp = 6,
+    operation_JoinCommunityFund = 7,
 } operation_variant_e;
 
 typedef struct {

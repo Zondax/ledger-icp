@@ -24,6 +24,7 @@
 #include "crypto.h"
 #include "formatting.h"
 #include "zxformat.h"
+#include "timeutils.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
 // For some reason NanoX requires this function
@@ -104,7 +105,6 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     MEMCPY(G_io_apdu_buffer, request_hash, 32);
     MEMCPY(G_io_apdu_buffer + 32, state_hash, 32);
 #endif
-
 
     return parser_ok;
 }
@@ -599,6 +599,62 @@ parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
     return parser_no_data;
 }
 
+parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
+                                                  char *outKey, uint16_t outKeyLen,
+                                                  char *outVal, uint16_t outValLen,
+                                                  uint8_t pageIdx, uint8_t *pageCount) {
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Configure, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.has_operation, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.which == operation_SetDissolvedTimestamp,
+                           parser_unexpected_value)
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Set Dissolve Delay");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Dissolve Time");
+        uint64_t dissolve_timestamp_seconds = fields->command.configure.operation.setDissolveTimestamp.dissolve_timestamp_seconds;
+
+        timedata_t td;
+        zxerr_t zxerr = decodeTime(&td, dissolve_timestamp_seconds);
+        if (zxerr != zxerr_ok) {
+            return parser_unexpected_value;
+        }
+
+        char tmpBuffer[100];
+        // YYYYmmdd HH:MM:SS
+        snprintf(tmpBuffer, sizeof(tmpBuffer), "%04d-%02d-%02d %02d:%02d:%02d UTC",
+                 td.tm_year, td.tm_mon, td.tm_day,
+                 td.tm_hour, td.tm_min, td.tm_sec
+        );
+
+        pageString(outVal, outValLen, tmpBuffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
 parser_error_t parser_getItemSpawn(uint8_t displayIdx,
                                    char *outKey, uint16_t outKeyLen,
                                    char *outVal, uint16_t outValLen,
@@ -657,7 +713,7 @@ parser_error_t parser_getItemSplit(uint8_t displayIdx,
                                    uint8_t pageIdx, uint8_t *pageCount) {
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Split, parser_unexpected_value);
+    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Split, parser_unexpected_value)
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -694,7 +750,7 @@ parser_error_t parser_getItemMerge(uint8_t displayIdx,
                                    uint8_t pageIdx, uint8_t *pageCount) {
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Merge, parser_unexpected_value);
+    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Merge, parser_unexpected_value)
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -1207,7 +1263,7 @@ parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
     return parser_no_data;
 }
 
-parser_error_t parser_getItemListUpdateNodeProvider(const parser_context_t *ctx,
+parser_error_t parser_getItemListUpdateNodeProvider(__Z_UNUSED const parser_context_t *_ctx,
                                                     uint8_t displayIdx,
                                                     char *outKey, uint16_t outKeyLen,
                                                     char *outVal, uint16_t outValLen,
@@ -1269,18 +1325,23 @@ parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
                                                    outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
 
-        case Spawn :
+        case Configure_SetDissolvedTimestamp: {
+            return parser_getItemSetDissolveTimestamp(displayIdx,
+                                                      outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        case Spawn : {
             return parser_getItemSpawn(displayIdx,
                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
-        case Split:
+        }
+        case Split: {
             return parser_getItemSplit(displayIdx,
                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
-        case Merge:
+        }
+        case Merge: {
             return parser_getItemMerge(displayIdx,
                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
+        }
         case Configure_RemoveHotKey:
         case Configure_AddHotKey:
             return parser_getItemAddRemoveHotkey(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);

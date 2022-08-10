@@ -67,6 +67,7 @@ typedef enum {
     Configure_StopDissolving = 2003,
     Configure_AddHotKey = 2004,
     Configure_RemoveHotKey = 2005,
+    Configure_SetDissolvedTimestamp = 2006,
     Configure_JoinCommunityFund = 2007,
 
 ////
@@ -75,13 +76,10 @@ typedef enum {
     Follow = 5,
     RegisterVote = 7,
     MergeMaturity = 13,
-
-//    Follow = 9,
 //    Register_Vote = 10,
     Split = 11,
 //    DisburseToNeuron = 12,
 //    ClaimOrRefresh = 13,
-
     Merge = 1000
 } manageNeuron_e;
 
@@ -164,11 +162,6 @@ typedef struct {
 ///
 
 typedef struct {
-    uint16_t typetableCurrent;
-    uint16_t typetableSize;
-} candid_state_t;
-
-typedef struct {
     txtype_e txtype;            // union selector
 
     request_t request_type;
@@ -179,7 +172,7 @@ typedef struct {
         state_read_t stateRead;
     } tx_fields;
 
-    candid_state_t candid_state;
+    uint64_t candid_typetableSize;
 } parser_tx_t;
 
 #ifdef __cplusplus

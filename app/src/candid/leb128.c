@@ -54,7 +54,7 @@ parser_error_t decompressSLEB128(const uint8_t *input, uint16_t inputSize, int64
     uint16_t shift = 0;
 
     while (i < 10u && i < inputSize) {
-        uint64_t b = input[i] & 0x7fu;
+        int64_t b = input[i] & 0x7fu;
 
         if (shift >= 63 && b > 1) {
             // This will overflow uint64_t
@@ -68,7 +68,7 @@ parser_error_t decompressSLEB128(const uint8_t *input, uint16_t inputSize, int64
 
             if (shift < inputSize * 8) {
                 if (input[i] & 0x40) {
-                    *v |= (~0 << shift);
+                    *v |= -(1 << shift);
                 }
             }
 

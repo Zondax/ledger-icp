@@ -13,8 +13,8 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-#define APP_TESTING 1
-#define CANDID_TESTING 1
+#define APP_TESTING 0
+#define CANDID_TESTING 0
 
 #include "candid_parser.h"
 #include "leb128.h"
@@ -170,7 +170,7 @@ parser_error_t readCandidType(parser_context_t *ctx, int64_t *t) {
         return parser_value_out_of_range;
     }
 
-    if (*t > ctx->tx_obj->candid_state.typetableSize) {
+    if (*t > (int64_t) ctx->tx_obj->candid_typetableSize) {
         return parser_value_out_of_range;
     }
 
@@ -211,7 +211,7 @@ parser_error_t readCandidTypeTable_VectorItem(parser_context_t *ctx) {
     if (t < 0) {
         ZEMU_LOGF(50, "          [item   ] %s", IDLTypeToString(t))
     } else {
-        ZEMU_LOGF(50, "          [item   ] %03ld", t)
+        ZEMU_LOGF(50, "          [item   ] %03lld", t)
     }
 #endif
     return parser_ok;
@@ -238,118 +238,126 @@ parser_error_t readCandidTypeTable_Variant(parser_context_t *ctx) {
         CHECK_PARSER_ERR(readCandidType(ctx, &t))
 #if CANDID_TESTING
         if (t < 0) {
-            ZEMU_LOGF(100, "          [idx %ld] %016ld %s -> %s", i, hash, CustomTypeToString(hash),
+            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %s", i, hash, CustomTypeToString(hash),
                       IDLTypeToString(t))
         } else {
-            ZEMU_LOGF(100, "          [idx %ld] %016ld %s -> %03ld", i, hash, CustomTypeToString(hash), t)
+            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %03lld", i, hash, CustomTypeToString(hash), t)
         }
 #endif
+    }
+
+    return parser_ok;
+}
+
+parser_error_t findCandidFieldHash(__Z_UNUSED parser_context_t *_ctx,
+                                   __Z_UNUSED uint64_t _type_idx,
+                                   __Z_UNUSED uint64_t _item_idx,
+                                   __Z_UNUSED uint64_t *_hash) {
+    return parser_not_implemented;
+}
+
+parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, __Z_UNUSED uint64_t typeIdx) {
+    int64_t ty;
+    CHECK_PARSER_ERR(readCandidType(ctx, &ty))
+
+    switch (ty) {
+        case Opt: {
+            zemu_log_stack("readCandidTypeTable::Opt");
+            CHECK_PARSER_ERR(readCandidTypeTable_Opt(ctx))
+#if CANDID_TESTING
+            ZEMU_LOGF(50, "[%03llu/%03llu] [opt    ]",
+                      typeIdx,
+                      ctx->tx_obj->candid_typetableSize - 1)
+#endif
+            break;
+        }
+        case Vector: {
+            zemu_log_stack("readCandidTypeTable::Vector");
+            CHECK_PARSER_ERR(readCandidTypeTable_VectorItem(ctx))
+#if CANDID_TESTING
+            ZEMU_LOGF(50, "[%03llu/%03llu] [vector ]",
+                      typeIdx,
+                      ctx->tx_obj->candid_typetableSize - 1)
+#endif
+            break;
+        }
+
+            ///////
+        case Record: {
+            zemu_log_stack("readCandidTypeTable::Record");
+            CHECK_PARSER_ERR(readCandidTypeTable_Variant(ctx))
+#if CANDID_TESTING
+            ZEMU_LOGF(50, "[%03llu/%03llu] [record ]",
+                      typeIdx,
+                      ctx->tx_obj->candid_typetableSize - 1)
+#endif
+            break;
+        }
+        case Variant: {
+            zemu_log_stack("readCandidTypeTable::Variant");
+            CHECK_PARSER_ERR(readCandidTypeTable_Variant(ctx))
+#if CANDID_TESTING
+            ZEMU_LOGF(50, "[%03llu/%03llu] [variant]",
+                      typeIdx,
+                      ctx->tx_obj->candid_typetableSize - 1)
+#endif
+            break;
+        }
+
+        case Func:
+        case Service:
+        default:
+            return parser_unexpected_type;
     }
 
     return parser_ok;
 }
 
 parser_error_t readCandidTypeTable(parser_context_t *ctx) {
-    uint64_t typeTableLen;
-    CHECK_PARSER_ERR(readCandidLEB128(ctx, &typeTableLen))
+    ctx->tx_obj->candid_typetableSize = 0;
+    CHECK_PARSER_ERR(readCandidLEB128(ctx, &ctx->tx_obj->candid_typetableSize))
 
-    if (typeTableLen >= 16384) {
+    if (ctx->tx_obj->candid_typetableSize >= 16384) {
         return parser_value_out_of_range;
     }
 
-    ctx->tx_obj->candid_state.typetableSize = typeTableLen;
-    ctx->tx_obj->candid_state.typetableCurrent = 0;
-
-    zemu_log_stack("readCandidTypeTable::loop");
-
-    for (uint64_t item = 0; item < typeTableLen; item++) {
-        int64_t ty;
-        CHECK_PARSER_ERR(readCandidType(ctx, &ty))
-        zemu_log_stack("readCandidTypeTable::read type");
-
-        switch (ty) {
-            case Opt: {
-                zemu_log_stack("readCandidTypeTable::Opt");
-                CHECK_PARSER_ERR(readCandidTypeTable_Opt(ctx))
-#if CANDID_TESTING
-                ZEMU_LOGF(50, "[%03d/%03d] [opt    ]",
-                          ctx->tx_obj->candid_state.typetableCurrent,
-                          ctx->tx_obj->candid_state.typetableSize - 1)
-#endif
-                break;
-            }
-            case Vector: {
-                zemu_log_stack("readCandidTypeTable::Vector");
-                CHECK_PARSER_ERR(readCandidTypeTable_VectorItem(ctx))
-#if CANDID_TESTING
-                ZEMU_LOGF(50, "[%03d/%03d] [vector ]",
-                          ctx->tx_obj->candid_state.typetableCurrent,
-                          ctx->tx_obj->candid_state.typetableSize - 1)
-#endif
-                break;
-            }
-
-                ///////
-            case Record: {
-                zemu_log_stack("readCandidTypeTable::Record");
-                CHECK_PARSER_ERR(readCandidTypeTable_Variant(ctx))
-#if CANDID_TESTING
-                ZEMU_LOGF(50, "[%03d/%03d] [record ]",
-                          ctx->tx_obj->candid_state.typetableCurrent,
-                          ctx->tx_obj->candid_state.typetableSize - 1)
-#endif
-                break;
-            }
-            case Variant: {
-                zemu_log_stack("readCandidTypeTable::Variant");
-                CHECK_PARSER_ERR(readCandidTypeTable_Variant(ctx))
-#if CANDID_TESTING
-                ZEMU_LOGF(50, "[%03d/%03d] [variant]",
-                          ctx->tx_obj->candid_state.typetableCurrent,
-                          ctx->tx_obj->candid_state.typetableSize - 1)
-#endif
-                break;
-            }
-
-            case Func:
-            case Service:
-            default:
-                return parser_unexpected_type;
-        }
-
-        ctx->tx_obj->candid_state.typetableCurrent++;
+    for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
+        CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, itemIdx))
     }
-
 
     return parser_ok;
 }
 
-parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
-    parser_context_t ctx;
-
-    // initialize context
-    ctx.buffer = input;
-    ctx.bufferLen = inputSize;
-    ctx.offset = 0;
-    ctx.tx_obj = tx;
-
+parser_error_t readCandidHeader(parser_context_t *ctx) {
     // Check DIDL magic bytes
-    CHECK_PARSER_ERR(checkCandidMAGIC(&ctx))
-
+    CHECK_PARSER_ERR(checkCandidMAGIC(ctx))
     // Read type table
-    CHECK_PARSER_ERR(readCandidTypeTable(&ctx))
-
+    CHECK_PARSER_ERR(readCandidTypeTable(ctx))
     // Read number of arguments
     uint64_t argsLen;
-    CHECK_PARSER_ERR(readCandidNat(&ctx, &argsLen))
+    CHECK_PARSER_ERR(readCandidNat(ctx, &argsLen))
     if (argsLen != 1) {
         return parser_value_out_of_range;
     }
+    return parser_ok;
+}
 
+#define CREATE_CTX(__CTX, __TX, __INPUT, __INPUT_SIZE) \
+    parser_context_t __CTX; \
+    ctx.buffer = __INPUT; \
+    ctx.bufferLen = __INPUT_SIZE; \
+    ctx.offset = 0; \
+    ctx.tx_obj = __TX;
+
+parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    CREATE_CTX(ctx, tx, input, inputSize)
+    CHECK_PARSER_ERR(readCandidHeader(&ctx))
+
+    ///
+    CHECK_PARSER_ERR(readAndCheckType(&ctx, 65))
     candid_ManageNeuron_t *val = &tx->tx_fields.call.data.candid_manageNeuron;
 
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, 65))
-
+    // Now read
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_id))
     if (val->has_id) {
         CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->id.id))
@@ -360,8 +368,10 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
         CHECK_PARSER_ERR(readCandidNat(&ctx, &val->command.variant))
 
         switch (val->command.variant) {
-            case command_Split: CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.split.amount_e8s))
+            case command_Split: {
+                CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.split.amount_e8s))
                 break;
+            }
             case command_Merge: {
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.merge.has_source))
                 if (!val->command.merge.has_source) {
@@ -377,14 +387,24 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 if (!val->command.configure.has_operation) {
                     return parser_unexpected_value;
                 }
-                CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->command.configure.operation.which))
+                candid_Operation_t *operation = &val->command.configure.operation;
+
+                CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &operation->which))
                 switch (val->command.configure.operation.which) {
-                    case operation_SetDissolvedTimestamp:
+                    case operation_SetDissolvedTimestamp: {
+                        CHECK_PARSER_ERR(readCandidNat64(&ctx,
+                                                         &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
+
+                        if (operation->setDissolveTimestamp.dissolve_timestamp_seconds >= 4102444800) {
+                            return parser_value_out_of_range;
+                        }
+
                         break;
+                    }
                     default:
                         return parser_unexpected_value;
                 }
-
+                break;
             }
             default:
                 return parser_unexpected_type;
@@ -396,11 +416,14 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
         CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->neuron_id_or_subaccount.which))
 
         switch (val->neuron_id_or_subaccount.which) {
-            case 0:
-                //CHECK_PARSER_ERR(readCandidText(&ctx, &val->neuron_id_or_subaccount.subaccount))
+            case 0: {
+                CHECK_PARSER_ERR(readCandidText(&ctx, &val->neuron_id_or_subaccount.subaccount))
                 break;
-            case 1: CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->neuron_id_or_subaccount.neuronId.id))
+            }
+            case 1: {
+                CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->neuron_id_or_subaccount.neuronId.id))
                 break;
+            }
             default:
                 return parser_value_out_of_range;
         }
@@ -411,32 +434,14 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 }
 
 parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
-    parser_context_t ctx;
+    CREATE_CTX(ctx, tx, input, inputSize)
+    CHECK_PARSER_ERR(readCandidHeader(&ctx))
 
-    // initialize context
-    ctx.buffer = input;
-    ctx.bufferLen = inputSize;
-    ctx.offset = 0;
-    ctx.tx_obj = tx;
-
-    // Check DIDL magic bytes
-    CHECK_PARSER_ERR(checkCandidMAGIC(&ctx))
-
-    // Read type table
-    CHECK_PARSER_ERR(readCandidTypeTable(&ctx))
-
-    // Read number of arguments
-    uint64_t argsLen;
-    CHECK_PARSER_ERR(readCandidLEB128(&ctx, &argsLen))
-
-    if (argsLen != 1) {
-        return parser_value_out_of_range;
-    }
-
+    ///
     CHECK_PARSER_ERR(readAndCheckType(&ctx, 3))
-
     candid_UpdateNodeProvider_t *val = &tx->tx_fields.call.data.candid_updateNodeProvider;
 
+    // Now read
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_reward_account))
     if (!val->has_reward_account) {
         return parser_unexpected_value;

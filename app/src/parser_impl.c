@@ -290,13 +290,31 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
             }
         }
         case candid_manageneuron: {
-            switch (v->tx_fields.call.data.candid_manageNeuron.command.variant) {
+            if (!v->tx_fields.call.data.candid_manageNeuron.has_command) {
+                return parser_unexpected_value;
+            }
+
+            const candid_Command_t *command = &v->tx_fields.call.data.candid_manageNeuron.command;
+            switch (command->variant) {
                 case command_Split:
                     *mn_type = Split;
                     return parser_ok;
                 case command_Merge:
                     *mn_type = Merge;
                     return parser_ok;
+                case command_Configure: {
+                    if (!command->configure.has_operation) {
+                        return parser_unexpected_value;
+                    }
+                    switch (command->configure.operation.which) {
+                        case operation_SetDissolvedTimestamp:
+                            *mn_type = Configure_SetDissolvedTimestamp;
+                            break;
+                        default:
+                            return parser_unexpected_value;
+                    }
+                    return parser_ok;
+                }
                 default:
                     break;
             }
@@ -390,7 +408,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
 
         READ_STRING(content_map, "arg", fields->method_args)
-        CHECK_PARSER_ERR(readPayload(v, fields->method_args.data, fields->method_args.len));
+        CHECK_PARSER_ERR(readPayload(v, fields->method_args.data, fields->method_args.len))
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
         state_read_t *fields = &v->tx_fields.stateRead;
@@ -604,7 +622,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_RemoveHotKey :
         case Configure_AddHotKey :
         case MergeMaturity :
-        case Configure_IncreaseDissolveDelay : {
+        case Configure_IncreaseDissolveDelay:
+        case Configure_SetDissolvedTimestamp: {
             return 3;
         }
         case RegisterVote :

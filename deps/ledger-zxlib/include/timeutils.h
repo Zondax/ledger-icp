@@ -55,6 +55,18 @@ __Z_INLINE const char *getMonth(uint8_t tm_mon) {
     }
 }
 
+typedef struct {
+    uint8_t tm_sec;
+    uint8_t tm_min;
+    uint8_t tm_hour;
+    uint16_t tm_day;
+    uint8_t tm_mon;
+    uint16_t tm_year;
+    const char *monthName;
+} timedata_t;
+
+zxerr_t decodeTime(timedata_t *timedata, uint64_t t);
+
 zxerr_t printTime(char *out, uint16_t outLen, uint64_t t);
 
 #ifdef __cplusplus
