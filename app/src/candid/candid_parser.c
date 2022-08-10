@@ -14,7 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 #define APP_TESTING 1
-#define CANDID_TESTING 0
+#define CANDID_TESTING 1
 
 #include "candid_parser.h"
 #include "leb128.h"
@@ -34,36 +34,6 @@ parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
     ctx->offset += 4;
     return parser_ok;
 }
-
-typedef enum {
-    Null = -1,
-    Bool = -2,
-    Nat = -3,
-    Int = -4,
-
-    Nat8 = -5,
-    Nat16 = -6,
-    Nat32 = -7,
-    Nat64 = -8,
-
-    Int8 = -9,
-    Int16 = -10,
-    Int32 = -11,
-    Int64 = -12,
-
-    Float32 = -13,
-    Float64 = -14,
-    Text = -15,
-    Reserved = -16,
-    Empty = -17,
-    Opt = -18,
-    Vector = -19,
-    Record = -20,
-    Variant = -21,
-    Func = -22,
-    Service = -23,
-    Principal = -24,
-} IDLTypes_e;
 
 const char *IDLTypeToString(IDLTypes_e t) {
     switch (t) {
@@ -405,7 +375,6 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
             case command_Configure: {
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.configure.has_operation))
                 if (!val->command.configure.has_operation) {
-                    // TODO: check, reject?
                     return parser_unexpected_value;
                 }
                 CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->command.configure.operation.which))

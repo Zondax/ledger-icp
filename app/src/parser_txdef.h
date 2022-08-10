@@ -70,7 +70,6 @@ typedef enum {
     Configure_JoinCommunityFund = 2007,
 
 ////
-    // FIXME: these are not manager neuron related
     Disburse = 3,
     Spawn = 4,
     Follow = 5,
@@ -83,7 +82,6 @@ typedef enum {
 //    DisburseToNeuron = 12,
 //    ClaimOrRefresh = 13,
 
-// TODO: verify value
     Merge = 1000
 } manageNeuron_e;
 

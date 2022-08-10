@@ -148,40 +148,5 @@ namespace {
         parser_tx_t tx;
         auto err = readCandidManageNeuron(&tx, inBuffer, inBufferLen);
         EXPECT_EQ(err, parser_ok);
-
     }
-
-//    TEST(CandidBLOBs, basicBlobUpdateNodeProvider) {
-//        parser_tx_obj.special_transfer_type = normal_transaction;
-//        uint8_t inBuffer[1000];
-//
-//        // based on https://github.com/aviate-labs/candid-go/blob/b8b641a7ea00fed75c96a513d764c03c0dcca370/candid_test.go#L63
-//        auto inBufferLen = parseHexString(inBuffer,
-//                                          sizeof(inBuffer),
-//                                          "4449444c046d7b6c01cedfa0a804006e016c019df1afe7070201030120b6a3539e69c6b75fe3c87b1ff82b1fc7f189a6113b77ba653b2e5eed67c956326b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16d26435198764006b6d6574686f645f6e616d65747570646174655f6e6f64655f70726f76696465726c726571756573745f747970656463616c6c6673656e6465724104");
-//
-////        type UpdateNodeProvider = record { reward_account : opt AccountIdentifier };
-////        type AccountIdentifier = record { hash : vec nat8 };
-////        [opt    ] Nat8
-////                  [000/003] [vector ]
-////        -----------------------
-////        [var    ] 0000001158164430 -> 000
-////                                      [001/003] [record ]
-////        -----------------------
-////        [opt    ] 001
-////                  [002/003] [opt    ]
-////        -----------------------
-////        [var    ] 0000002095839389 -> 002
-////        [003/003] [record ]
-////        read type 3
-////     Expected
-////        "0 | Transaction type : Set Node Provider : Reward Account",
-////        "1 | Reward Account [1/2] : b6a3539e 69c6b75f : e3c87b1f f82b1fc7",
-////        "1 | Reward Account [2/2] : f189a611 3b77ba65 : 3b2e5eed 67c95632"
-//
-//        parser_tx_t tx;
-//        auto err = readCandidUpdateNodeProvider(&tx, inBuffer, inBufferLen);
-//        EXPECT_EQ(err, parser_ok);
-//
-//    }
 }

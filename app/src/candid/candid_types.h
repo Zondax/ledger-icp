@@ -22,14 +22,35 @@ extern "C" {
 #include <zxmacros.h>
 #include <zxerror.h>
 
-typedef struct {
-    uint64_t len;
-    const uint8_t *p;
-} sizedBuffer_t;
+typedef enum {
+    Null = -1,
+    Bool = -2,
+    Nat = -3,
+    Int = -4,
 
-typedef struct {
-    uint64_t id;
-} candid_NeuronId;
+    Nat8 = -5,
+    Nat16 = -6,
+    Nat32 = -7,
+    Nat64 = -8,
+
+    Int8 = -9,
+    Int16 = -10,
+    Int32 = -11,
+    Int64 = -12,
+
+    Float32 = -13,
+    Float64 = -14,
+    Text = -15,
+    Reserved = -16,
+    Empty = -17,
+    Opt = -18,
+    Vector = -19,
+    Record = -20,
+    Variant = -21,
+    Func = -22,
+    Service = -23,
+    Principal = -24,
+} IDLTypes_e;
 
 typedef enum {
     command_Spawn = 0,
@@ -50,6 +71,15 @@ typedef enum {
     operation_SetDissolvedTimestamp = 5,
     operation_JoinCommunityFund = 6,
 } operation_variant_e;
+
+typedef struct {
+    uint64_t len;
+    const uint8_t *p;
+} sizedBuffer_t;
+
+typedef struct {
+    uint64_t id;
+} candid_NeuronId;
 
 typedef struct {
     uint64_t dissolve_timestamp_seconds;
