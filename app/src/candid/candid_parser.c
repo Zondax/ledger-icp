@@ -409,6 +409,13 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                     return parser_unexpected_value;
                 }
                 CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->command.configure.operation.which))
+                switch (val->command.configure.operation.which) {
+                    case operation_SetDissolvedTimestamp:
+                        break;
+                    default:
+                        return parser_unexpected_value;
+                }
+
             }
             default:
                 return parser_unexpected_type;

@@ -562,7 +562,6 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
 
     if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-        zemu_log_stack(sender);
         return parser_unexpected_value;
     }
 #endif

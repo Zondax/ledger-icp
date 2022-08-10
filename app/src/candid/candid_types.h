@@ -41,9 +41,24 @@ typedef enum {
     command_Merge = 6,
 } command_variant_e;
 
+typedef enum {
+    operation_RemoveHotKey = 0,
+    operation_AddHotKey = 1,
+    operation_StopDissolving = 2,
+    operation_StartDissolving = 3,
+    operation_IncreaseDissolveDelay = 4,
+    operation_SetDissolvedTimestamp = 5,
+    operation_JoinCommunityFund = 6,
+} operation_variant_e;
+
+typedef struct {
+    uint64_t dissolve_timestamp_seconds;
+} candid_SetDissolveTimestamp_t;
+
 typedef struct {
     uint64_t which;
     union {
+        candid_SetDissolveTimestamp_t setDissolveTimestamp;
     };
 } candid_Operation_t;
 
