@@ -141,7 +141,7 @@ message ToppedUp {
 }
 
 message EncodedBlocks {
-    repeated EncodedBlock blocks = 1;
+  repeated EncodedBlock blocks = 1;
 }
 
 message GetBlocksResponse {
