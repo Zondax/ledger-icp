@@ -40,8 +40,6 @@ all: bin/app.elf
 
 include $(BOLOS_SDK)/Makefile.defines
 
-#DEFINES += APP_SECRET_MODE_ENABLED
-
 $(info ************ TARGET_NAME  = [$(TARGET_NAME)])
 
 ifeq ($(APP_TESTING),1)
@@ -54,9 +52,7 @@ ifndef COIN
 COIN=ICP
 endif
 
-APPVERSION_M=2
-APPVERSION_N=1
-APPVERSION_P=0
+include $(CURDIR)/Makefile.version
 
 $(info COIN  = [$(COIN)])
 
