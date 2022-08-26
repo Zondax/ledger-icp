@@ -605,9 +605,9 @@ parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
                                                   uint8_t pageIdx, uint8_t *pageCount) {
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Configure, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Configure, parser_unexpected_value)
     PARSER_ASSERT_OR_ERROR(fields->command.configure.has_operation, parser_unexpected_value)
-    PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.which == operation_SetDissolvedTimestamp,
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.hash == hash_operation_SetDissolvedTimestamp,
                            parser_unexpected_value)
 
     if (displayIdx == 0) {
@@ -713,7 +713,7 @@ parser_error_t parser_getItemSplit(uint8_t displayIdx,
                                    uint8_t pageIdx, uint8_t *pageCount) {
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Split, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Split, parser_unexpected_value)
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -750,7 +750,7 @@ parser_error_t parser_getItemMerge(uint8_t displayIdx,
                                    uint8_t pageIdx, uint8_t *pageCount) {
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    PARSER_ASSERT_OR_ERROR(fields->command.variant == command_Merge, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Merge, parser_unexpected_value)
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
