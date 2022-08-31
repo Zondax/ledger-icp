@@ -295,19 +295,19 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
             }
 
             const candid_Command_t *command = &v->tx_fields.call.data.candid_manageNeuron.command;
-            switch (command->variant) {
-                case command_Split:
+            switch (command->hash) {
+                case hash_command_Split:
                     *mn_type = Split;
                     return parser_ok;
-                case command_Merge:
+                case hash_command_Merge:
                     *mn_type = Merge;
                     return parser_ok;
-                case command_Configure: {
+                case hash_command_Configure: {
                     if (!command->configure.has_operation) {
                         return parser_unexpected_value;
                     }
-                    switch (command->configure.operation.which) {
-                        case operation_SetDissolvedTimestamp:
+                    switch (command->configure.operation.hash) {
+                        case hash_operation_SetDissolvedTimestamp:
                             *mn_type = Configure_SetDissolvedTimestamp;
                             break;
                         default:

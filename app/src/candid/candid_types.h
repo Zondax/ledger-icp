@@ -53,27 +53,31 @@ typedef enum {
 } IDLTypes_e;
 
 typedef enum {
-    command_Invalid = 0,
-
-    command_Spawn = 0,
-    command_Split = 1,
-    command_Follow = 2,
-    command_ClaimOrRefresh = 3,
-    command_Configure = 4,
-    command_RegisterVote = 5,
-    command_Merge = 6,
-} command_variant_e;
+    hash_command_Spawn = 345247259,
+    hash_command_Split = 345791162,
+    hash_command_Follow = 774571409,
+    hash_command_ClaimOrRefresh = 1349619708,
+    hash_command_Configure = 1647237574,
+    hash_command_RegisterVote = 2455066893,
+    hash_command_Merge = 2566132376,
+    hash_command_DisburseToNeuron = 2803800337,
+    hash_command_MakeProposal = 3217030240,
+    hash_command_MergeMaturity = 3865893897,
+    hash_command_Disburse = 4121967011,
+  } command_variant_hash_e;
 
 typedef enum {
-    operation_Invalid = 0,
-    operation_IncreaseDissolveDelay = 1,
-    operation_StartDissolving = 2,
-    operation_StopDissolving = 3,
-    operation_AddHotKey = 4,
-    operation_RemoveHotKey = 5,
-    operation_SetDissolvedTimestamp = 6,
-    operation_JoinCommunityFund = 7,
-} operation_variant_e;
+    //Check these hashes
+    hash_operation_Invalid = 971299358,
+    hash_operation_IncreaseDissolveDelay = 628424947,
+    hash_operation_StartDissolving = 1954991536,
+    hash_operation_StopDissolving = 1977744848,
+    hash_operation_AddHotKey = 2143729936,
+    hash_operation_RemoveHotKey = 3248805476,
+    hash_operation_JoinCommunityFund = 45994902,
+
+    hash_operation_SetDissolvedTimestamp = 3913126211,
+} operation_variant_hash_e;
 
 typedef struct {
     uint64_t len;
@@ -90,6 +94,7 @@ typedef struct {
 
 typedef struct {
     uint64_t which;
+    uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
     };
@@ -111,6 +116,7 @@ typedef struct {
 
 typedef struct {
     uint64_t variant;
+    uint64_t hash;
     union {
         candid_Split_t split;
         candid_Merge_t merge;

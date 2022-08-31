@@ -60,6 +60,8 @@ typedef enum {
     // Required fields
     parser_required_nonce,
     parser_required_method,
+    // Special codes
+    parser_type_not_found,
 } parser_error_t;
 
 typedef struct {

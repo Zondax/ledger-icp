@@ -22,6 +22,55 @@
 // Good reference:  https://github.com/dfinity/agent-js/tree/main/packages/candid
 // https://github.com/dfinity/candid/blob/master/spec/Candid.md#deserialisation
 
+static uint16_t table_entry_point = 0;
+
+typedef parser_error_t (*check_hash)(const uint64_t *hash, bool *found);
+
+parser_error_t check_hash_method(const uint64_t *hash, bool *found) {
+    if(found == NULL || hash == NULL) {
+        return parser_unexpected_value;
+    }
+    *found = false;
+
+    switch (*hash)
+    {
+        case hash_command_Spawn:
+        case hash_command_Split:
+        case hash_command_Follow:
+        case hash_command_ClaimOrRefresh:
+        case hash_command_Configure:
+        case hash_command_RegisterVote:
+        case hash_command_Merge:
+            *found = true;
+            break;
+    }
+
+    return parser_ok;
+}
+
+parser_error_t check_hash_operation(const uint64_t *hash, bool *found) {
+    if(found == NULL || hash == NULL) {
+        return parser_unexpected_value;
+    }
+    *found = false;
+
+    switch (*hash)
+    {
+        // case hash_operation_Invalid:
+        // case hash_operation_IncreaseDissolveDelay:
+        // case hash_operation_StartDissolving:
+        // case hash_operation_StopDissolving:
+        // case hash_operation_AddHotKey:
+        // case hash_operation_RemoveHotKey:
+        // case hash_operation_JoinCommunityFund:
+        case hash_operation_SetDissolvedTimestamp:
+            *found = true;
+            break;
+    }
+
+    return parser_ok;
+}
+
 parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
     // Check DIDL magic bytes
     if (ctx->bufferLen < 4) {
@@ -256,11 +305,8 @@ parser_error_t findCandidFieldHash(__Z_UNUSED parser_context_t *_ctx,
     return parser_not_implemented;
 }
 
-parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, __Z_UNUSED uint64_t typeIdx) {
-    int64_t ty;
-    CHECK_PARSER_ERR(readCandidType(ctx, &ty))
-
-    switch (ty) {
+parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *type, __Z_UNUSED uint64_t typeIdx) {
+    switch (*type) {
         case Opt: {
             zemu_log_stack("readCandidTypeTable::Opt");
             CHECK_PARSER_ERR(readCandidTypeTable_Opt(ctx))
@@ -313,6 +359,19 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, __Z_UNUSED uint64
     return parser_ok;
 }
 
+parser_error_t getNextType(parser_context_t *ctx, const IDLTypes_e type, int64_t *ty, const uint64_t itemIdx) {
+    if(ty == NULL || ctx == NULL) {
+        return parser_unexpected_value;
+    }
+
+    CHECK_PARSER_ERR(readCandidType(ctx, ty))
+    if (type == *ty) {
+        return parser_ok;
+    }
+    CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, ty, itemIdx))
+    return parser_ok;
+}
+
 parser_error_t readCandidTypeTable(parser_context_t *ctx) {
     ctx->tx_obj->candid_typetableSize = 0;
     CHECK_PARSER_ERR(readCandidLEB128(ctx, &ctx->tx_obj->candid_typetableSize))
@@ -321,8 +380,11 @@ parser_error_t readCandidTypeTable(parser_context_t *ctx) {
         return parser_value_out_of_range;
     }
 
+    table_entry_point = ctx->offset;
+    int64_t type = 0;
     for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
-        CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, itemIdx))
+        CHECK_PARSER_ERR(readCandidType(ctx, &type))
+        CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, &type, itemIdx))
     }
 
     return parser_ok;
@@ -349,12 +411,54 @@ parser_error_t readCandidHeader(parser_context_t *ctx) {
     ctx.offset = 0; \
     ctx.tx_obj = __TX;
 
+
+parser_error_t findHash(parser_context_t *ctx, check_hash check_function,
+                          const uint8_t variant, uint64_t *hash) {
+    if(ctx == NULL || hash == NULL || check_function == NULL) {
+        return parser_unexpected_value;
+    }
+    ctx->offset = table_entry_point;
+
+    int64_t type = 0;
+    bool found = false;
+
+    for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
+        CHECK_PARSER_ERR(getNextType(ctx, Variant, &type, itemIdx))
+        if (type == Variant) {
+            uint64_t objectLength;
+            CHECK_PARSER_ERR(readCandidLEB128(ctx, &objectLength))
+
+            for (uint64_t i = 0; i < objectLength; i++) {
+                int64_t dummyType;
+                CHECK_PARSER_ERR(readCandidLEB128(ctx, hash))
+                if (i == variant) {
+                    CHECK_PARSER_ERR(check_function(hash, &found))
+                }
+                if(found) {
+                    return parser_ok;
+                }
+
+                CHECK_PARSER_ERR(readCandidType(ctx, &dummyType))
+            }
+        }
+    }
+    return parser_type_not_found;
+}
+
+parser_error_t getHash(parser_context_t *ctx, check_hash check_function,
+                          const uint8_t variant, uint64_t *hash) {
+    const uint16_t start = ctx->offset;
+    *hash = 0;
+    parser_error_t err = findHash(ctx, check_function, variant, hash);
+    ctx->offset = start;
+    return err;
+}
+
 parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
     CREATE_CTX(ctx, tx, input, inputSize)
     CHECK_PARSER_ERR(readCandidHeader(&ctx))
 
-    ///
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, 65))
+    CHECK_PARSER_ERR(readAndCheckType(&ctx, (tx->candid_typetableSize - 1)))
     candid_ManageNeuron_t *val = &tx->tx_fields.call.data.candid_manageNeuron;
 
     // Now read
@@ -366,13 +470,14 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_command))
     if (val->has_command) {
         CHECK_PARSER_ERR(readCandidNat(&ctx, &val->command.variant))
+        CHECK_PARSER_ERR(getHash(&ctx, check_hash_method, val->command.variant, &val->command.hash))
 
-        switch (val->command.variant) {
-            case command_Split: {
+        switch (val->command.hash) {
+            case hash_command_Split: {
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.split.amount_e8s))
                 break;
             }
-            case command_Merge: {
+            case hash_command_Merge: {
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.merge.has_source))
                 if (!val->command.merge.has_source) {
                     // https://github.com/Zondax/ledger-icp/issues/149
@@ -382,7 +487,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.merge.source.id))
                 break;
             }
-            case command_Configure: {
+            case hash_command_Configure: {
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.configure.has_operation))
                 if (!val->command.configure.has_operation) {
                     return parser_unexpected_value;
@@ -390,8 +495,10 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 candid_Operation_t *operation = &val->command.configure.operation;
 
                 CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &operation->which))
-                switch (val->command.configure.operation.which) {
-                    case operation_SetDissolvedTimestamp: {
+                CHECK_PARSER_ERR(getHash(&ctx, check_hash_operation, operation->which, &operation->hash))
+
+                switch (operation->hash) {
+                    case hash_operation_SetDissolvedTimestamp:{
                         CHECK_PARSER_ERR(readCandidNat64(&ctx,
                                                          &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
 
