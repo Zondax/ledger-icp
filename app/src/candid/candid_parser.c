@@ -27,6 +27,11 @@ static uint16_t table_entry_point = 0;
 typedef parser_error_t (*check_hash)(const uint64_t *hash, bool *found);
 
 parser_error_t check_hash_method(const uint64_t *hash, bool *found) {
+    if(found == NULL || hash == NULL) {
+        return parser_unexpected_value;
+    }
+    *found = false;
+
     switch (*hash)
     {
         case hash_command_Spawn:
@@ -44,6 +49,11 @@ parser_error_t check_hash_method(const uint64_t *hash, bool *found) {
 }
 
 parser_error_t check_hash_operation(const uint64_t *hash, bool *found) {
+    if(found == NULL || hash == NULL) {
+        return parser_unexpected_value;
+    }
+    *found = false;
+
     switch (*hash)
     {
         // case hash_operation_Invalid:
@@ -350,6 +360,10 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
 }
 
 parser_error_t getNextType(parser_context_t *ctx, const IDLTypes_e type, int64_t *ty, const uint64_t itemIdx) {
+    if(ty == NULL || ctx == NULL) {
+        return parser_unexpected_value;
+    }
+
     CHECK_PARSER_ERR(readCandidType(ctx, ty))
     if (type == *ty) {
         return parser_ok;
@@ -400,6 +414,9 @@ parser_error_t readCandidHeader(parser_context_t *ctx) {
 
 parser_error_t findHash(parser_context_t *ctx, check_hash check_function,
                           const uint8_t variant, uint64_t *hash) {
+    if(ctx == NULL || hash == NULL || check_function == NULL) {
+        return parser_unexpected_value;
+    }
     ctx->offset = table_entry_point;
 
     int64_t type = 0;
