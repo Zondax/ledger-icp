@@ -76,6 +76,7 @@ typedef enum {
     hash_operation_RemoveHotKey = 3248805476,
     hash_operation_JoinCommunityFund = 45994902,
 
+    hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
 

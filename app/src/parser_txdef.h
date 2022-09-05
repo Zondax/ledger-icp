@@ -69,6 +69,7 @@ typedef enum {
     Configure_RemoveHotKey = 2005,
     Configure_SetDissolvedTimestamp = 2006,
     Configure_JoinCommunityFund = 2007,
+    Configure_LeaveCommunityFund = 2008,
 
 ////
     Disburse = 3,
