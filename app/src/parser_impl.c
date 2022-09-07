@@ -310,6 +310,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_SetDissolvedTimestamp:
                             *mn_type = Configure_SetDissolvedTimestamp;
                             break;
+                        case hash_operation_LeaveCommunityFund:
+                            *mn_type = Configure_LeaveCommunityFund;
+                            break;
                         default:
                             return parser_unexpected_value;
                     }
@@ -613,6 +616,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
     switch (mn_type) {
         case Configure_StopDissolving :
         case Configure_JoinCommunityFund :
+        case Configure_LeaveCommunityFund :
         case Configure_StartDissolving : {
             return 2;
         }

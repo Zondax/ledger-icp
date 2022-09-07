@@ -57,12 +57,13 @@ parser_error_t check_hash_operation(const uint64_t *hash, bool *found) {
     switch (*hash)
     {
         // case hash_operation_Invalid:
-        // case hash_operation_IncreaseDissolveDelay:
-        // case hash_operation_StartDissolving:
-        // case hash_operation_StopDissolving:
-        // case hash_operation_AddHotKey:
         // case hash_operation_RemoveHotKey:
+        // case hash_operation_AddHotKey:
+        // case hash_operation_StopDissolving:
+        // case hash_operation_StartDissolving:
+        // case hash_operation_IncreaseDissolveDelay:
         // case hash_operation_JoinCommunityFund:
+        case hash_operation_LeaveCommunityFund:
         case hash_operation_SetDissolvedTimestamp:
             *found = true;
             break;
@@ -382,10 +383,12 @@ parser_error_t readCandidTypeTable(parser_context_t *ctx) {
 
     table_entry_point = ctx->offset;
     int64_t type = 0;
+    ZEMU_LOGF(50, "-------------------------------\n")
     for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
         CHECK_PARSER_ERR(readCandidType(ctx, &type))
         CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, &type, itemIdx))
     }
+    ZEMU_LOGF(50, "-------------------------------\n")
 
     return parser_ok;
 }
@@ -498,7 +501,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 CHECK_PARSER_ERR(getHash(&ctx, check_hash_operation, operation->which, &operation->hash))
 
                 switch (operation->hash) {
-                    case hash_operation_SetDissolvedTimestamp:{
+                    case hash_operation_SetDissolvedTimestamp: {
                         CHECK_PARSER_ERR(readCandidNat64(&ctx,
                                                          &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
 
@@ -506,6 +509,10 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                             return parser_value_out_of_range;
                         }
 
+                        break;
+                    }
+                    case hash_operation_LeaveCommunityFund: {
+                        // Empty record
                         break;
                     }
                     default:
