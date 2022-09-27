@@ -116,10 +116,10 @@ void extractHDPath(uint32_t rx, uint32_t offset) {
     }
 
     const bool is_valid = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) &&
-                        (hdPath[3] == 0x00000000u) &&
-                        ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
+                          (hdPath[3] == 0x00000000u) &&
+                          ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
 
-    if (!is_valid && !app_mode_expert()){
+    if (!is_valid && !app_mode_expert()) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 }
@@ -132,7 +132,7 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
         THROW(APDU_CODE_WRONG_LENGTH);
     }
 
-    if(G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1){
+    if (G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 
@@ -145,15 +145,16 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             tx_reset();
             extractHDPath(rx, OFFSET_DATA);
             MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
-            if(G_io_apdu_buffer[OFFSET_P2] == 1){
+
+            parser_tx_obj.special_transfer_type = normal_transaction;
+            if (G_io_apdu_buffer[OFFSET_P2] == 1) {
                 parser_tx_obj.special_transfer_type = neuron_stake_transaction;
-            }else{
-                parser_tx_obj.special_transfer_type = normal_transaction;
             }
+
             tx_initialized = true;
             return false;
         case 1:
-            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1) {
                 THROW(APDU_CODE_DATA_INVALID);
             }
             if (!tx_initialized) {
@@ -166,12 +167,13 @@ bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
             }
             return false;
         case 2:
-            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1){
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1) {
                 THROW(APDU_CODE_DATA_INVALID);
             }
             if (!tx_initialized) {
                 THROW(APDU_CODE_TX_NOT_INITIALIZED);
             }
+
             added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
             if (added != rx - OFFSET_DATA) {
                 tx_initialized = false;
@@ -251,8 +253,9 @@ void app_main() {
                 flags = 0;
                 CHECK_APP_CANARY()
 
-                if (rx == 0)
+                if (rx == 0) {
                     THROW(APDU_CODE_EMPTY_BUFFER);
+                }
 
                 handle_generic_apdu(&flags, &tx, rx);
                 CHECK_APP_CANARY()

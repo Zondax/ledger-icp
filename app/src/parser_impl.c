@@ -22,6 +22,7 @@
 #include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
 #include "protobuf/governance.pb.h"
+#include "candid_parser.h"
 
 parser_tx_t parser_tx_obj;
 
@@ -88,7 +89,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "display_idx_out_of_range";
         case parser_display_page_out_of_range:
             return "display_page_out_of_range";
-        case parser_unexepected_error:
+        case parser_unexpected_error:
             return "Unexepected internal error";
             // cbor
         case parser_cbor_unexpected:
@@ -166,7 +167,7 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
 }
 
-parser_error_t try_read_nonce(CborValue *content_map, parser_tx_t *v){
+parser_error_t try_read_nonce(CborValue *content_map, parser_tx_t *v) {
     size_t stringLen = 0;
     CborValue it;
 
@@ -174,7 +175,7 @@ parser_error_t try_read_nonce(CborValue *content_map, parser_tx_t *v){
 
     MEMZERO(&v->tx_fields.call.nonce.data, sizeof(v->tx_fields.call.nonce.data));
     CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(content_map, "nonce", &it))
-    if(!cbor_value_is_valid(&it)){
+    if (!cbor_value_is_valid(&it)) {
         v->tx_fields.call.has_nonce = false;
         return parser_ok;
     }
@@ -242,89 +243,136 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     pb_istream_t stream = pb_istream_from_buffer(buffer, bufferLen);                        \
     CHECK_APP_CANARY()                                                                      \
     const bool status = pb_decode(&stream, OBJ ##_fields, &request);                        \
-    if (!status) { return parser_unexepected_error; }                                       \
-    MEMCPY(&v->tx_fields.call.pb_fields.OBJ, &request, sizeof(OBJ));                        \
+    if (!status) { return parser_unexpected_error; }                                       \
+    MEMCPY(&v->tx_fields.call.data.OBJ, &request, sizeof(OBJ));                        \
     CHECK_APP_CANARY()                                                                      \
     return parser_ok;                                                                       \
 }                                                                                           \
 
+
 GEN_PARSER_PB(SendRequest)
+
 GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
+
 GEN_PARSER_PB(ListNeurons)
 
-parser_error_t getManageNeuronType(parser_tx_t *v){
-    pb_size_t command = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.which_command;
-    manageNeuron_e *mn_type = &v->tx_fields.call.manage_neuron_type;
-    switch(command){
-        case 2: {
-            pb_size_t operation = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.configure.which_operation;
-            if(1 <= operation && operation <= 6){
-                *mn_type = (manageNeuron_e)operation;
-                return parser_ok;
-            }else if (operation == 7){
-                *mn_type = JoinCommunityFund;
-                return parser_ok;
+parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type) {
+    switch (v->tx_fields.call.method_type) {
+        case pb_manageneuron: {
+            pb_size_t command = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.which_command;
+
+            switch (command) {
+                case Configure: {
+                    pb_size_t operation = v->tx_fields.call
+                            .data.ic_nns_governance_pb_v1_ManageNeuron
+                            .command.configure.which_operation;
+
+                    if (1 <= operation && operation <= 7 && operation != 6) {
+                        *mn_type = (manageNeuron_e) (2000 + operation);
+                        return parser_ok;
+                    }
+
+                    return parser_unexpected_type;
+                }
+
+                case Disburse:
+                case Spawn:
+                case Follow:
+                case RegisterVote:
+                case MergeMaturity: {
+                    *mn_type = command;
+                    return parser_ok;
+                }
+
+                default: {
+                    return parser_unexpected_type;
+                }
             }
-            else{
-                return parser_unexpected_type;
+        }
+        case candid_manageneuron: {
+            if (!v->tx_fields.call.data.candid_manageNeuron.has_command) {
+                return parser_unexpected_value;
             }
-        }
 
-        case 3: {
-            *mn_type = Disburse;
-            return parser_ok;
+            const candid_Command_t *command = &v->tx_fields.call.data.candid_manageNeuron.command;
+            switch (command->hash) {
+                case hash_command_Split:
+                    *mn_type = Split;
+                    return parser_ok;
+                case hash_command_Merge:
+                    *mn_type = Merge;
+                    return parser_ok;
+                case hash_command_Configure: {
+                    if (!command->configure.has_operation) {
+                        return parser_unexpected_value;
+                    }
+                    switch (command->configure.operation.hash) {
+                        case hash_operation_SetDissolvedTimestamp:
+                            *mn_type = Configure_SetDissolvedTimestamp;
+                            break;
+                        case hash_operation_LeaveCommunityFund:
+                            *mn_type = Configure_LeaveCommunityFund;
+                            break;
+                        default:
+                            return parser_unexpected_value;
+                    }
+                    return parser_ok;
+                }
+                default:
+                    break;
+            }
+            break;
         }
-
-        case 4: {
-            *mn_type = Spawn;
-            return parser_ok;
-        }
-
-        case 5: {
-            *mn_type = Follow;
-            return parser_ok;
-        }
-
-        case 7: {
-            *mn_type = RegisterVote;
-            return parser_ok;
-        }
-
-        case 13: {
-            *mn_type = MergeMaturity;
-            return parser_ok;
-        }
-
-        default: {
-            return parser_unexpected_type;
-        }
+        default:
+            break;
     }
+
+    return parser_unexpected_type;
 }
 
-parser_error_t readProtobuf(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
+parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
-    if (strcmp(method, "send_pb") == 0 ||v->special_transfer_type == neuron_stake_transaction) {
-        v->tx_fields.call.pbtype = pb_sendrequest;
+    manageNeuron_e mn_type;
+
+    // Depending on the method, we may try to read protobuf or candid
+
+    if (strcmp(method, "send_pb") == 0 || v->special_transfer_type == neuron_stake_transaction) {
+        v->tx_fields.call.method_type = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
 
-    if(strcmp(method, "manage_neuron_pb") == 0) {
-        v->tx_fields.call.pbtype = pb_manageneuron;
+    if (strcmp(method, "manage_neuron_pb") == 0) {
+        v->tx_fields.call.method_type = pb_manageneuron;
         CHECK_PARSER_ERR(_parser_pb_ic_nns_governance_pb_v1_ManageNeuron(v, buffer, bufferLen))
-        return getManageNeuronType(v);
+        return getManageNeuronType(v, &mn_type);
     }
 
-    if(strcmp(method, "list_neurons_pb") == 0) {
-        v->tx_fields.call.pbtype = pb_listneurons;
+    if (strcmp(method, "list_neurons_pb") == 0) {
+        v->tx_fields.call.method_type = pb_listneurons;
         return _parser_pb_ListNeurons(v, buffer, bufferLen);
     }
 
-    if(strcmp(method, "claim_neurons") == 0) {
+    if (strcmp(method, "claim_neurons") == 0) {
         if (130 <= bufferLen && bufferLen <= 150) {
-            v->tx_fields.call.pbtype = pb_claimneurons;
+            v->tx_fields.call.method_type = pb_claimneurons;
             return parser_ok;
         }
     }
+
+    // Candid
+
+    if (strcmp(method, "manage_neuron") == 0) {
+        v->tx_fields.call.method_type = candid_manageneuron;
+        CHECK_PARSER_ERR(readCandidManageNeuron(v, buffer, bufferLen))
+        return parser_ok;
+    }
+
+    if (strcmp(method, "update_node_provider") == 0) {
+        CHECK_PARSER_ERR(readCandidUpdateNodeProvider(v, buffer, bufferLen))
+        v->tx_fields.call.method_type = candid_updatenodeprovider;
+        return parser_ok;
+    }
+
     return parser_unexpected_type;
 }
 
@@ -347,7 +395,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     }
 
     if (strcmp(v->request_type.data, "call") == 0) {
-        if (fieldCount != 6*2 && fieldCount != 7*2) {
+        if (fieldCount != 6 * 2 && fieldCount != 7 * 2) {
             return parser_context_unexpected_size;
         }
 
@@ -361,8 +409,9 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
-        READ_STRING(content_map, "arg", fields->arg)
-        CHECK_PARSER_ERR(readProtobuf(v, fields->arg.data, fields->arg.len));
+
+        READ_STRING(content_map, "arg", fields->method_args)
+        CHECK_PARSER_ERR(readPayload(v, fields->method_args.data, fields->method_args.len))
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
         state_read_t *fields = &v->tx_fields.stateRead;
@@ -386,7 +435,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     return parser_ok;
 }
 
-parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
+parser_error_t readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     zemu_log_stack("read envelope");
     CborValue it;
     CHECK_APP_CANARY()
@@ -438,23 +487,24 @@ parser_error_t _readEnvelope(const parser_context_t *c, parser_tx_t *v) {
     return parser_ok;
 }
 
-#define CHECK_METHOD_WITH_CANISTER(CANISTER_ID){                           \
-        if (strcmp(canister_textual, (CANISTER_ID)) != 0) {                     \
-            zemu_log_stack("invalid canister");                                 \
-            return parser_unexpected_value;                                     \
-        } else {                                                                \
-            return parser_ok;                                                   \
-        }                                                                       \
+#define CHECK_METHOD_WITH_CANISTER(CANISTER_ID){                         \
+        if (strcmp(canister_textual, (CANISTER_ID)) != 0) {              \
+            zemu_log_stack("invalid canister");                          \
+            return parser_unexpected_value;                              \
+        }                                                                \
+        return parser_ok;                                                \
 }
 
-parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual){
-    switch(v->tx_fields.call.pbtype) {
+parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual) {
+    switch (v->tx_fields.call.method_type) {
         case pb_sendrequest : {
             CHECK_METHOD_WITH_CANISTER("ryjl3tyaaaaaaaaaaabacai")
         }
 
         case pb_listneurons :
-        case pb_manageneuron : {
+        case pb_manageneuron :
+        case candid_updatenodeprovider:
+        case candid_manageneuron: {
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
 
@@ -479,14 +529,15 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
                 return parser_unexpected_value;
             }
 
-            if (v->special_transfer_type == invalid){
+            if (v->special_transfer_type == invalid) {
                 zemu_log_stack("invalid transfer type");
                 return parser_unexpected_value;
             }
 
-            if (v->tx_fields.call.pbtype == pb_manageneuron){
-                ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron;
-                PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0), parser_unexepected_error);
+            if (v->tx_fields.call.method_type == pb_manageneuron) {
+                ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0),
+                                       parser_unexpected_error);
             }
 
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
@@ -498,7 +549,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
                     crypto_principalToTextual(canisterId,
                                               v->tx_fields.call.canister_id.len,
                                               canister_textual,
-                                              &outLen) == zxerr_ok, parser_unexepected_error)
+                                              &outLen) == zxerr_ok, parser_unexpected_error)
             CHECK_PARSER_ERR(checkPossibleCanisters(v, (char *) canister_textual))
 
             sender = v->tx_fields.call.sender.data;
@@ -527,26 +578,26 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     MEMZERO(principalBytes, sizeof(principalBytes));
 
     PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-                           parser_unexepected_error)
+                           parser_unexpected_error)
 
-    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexepected_error)
+    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
 
     if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
         return parser_unexpected_value;
     }
-
 #endif
 
     bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
-    if(is_stake_tx){
+    if (is_stake_tx) {
         uint8_t to_hash[32];
         PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-                                                                          v->tx_fields.call.pb_fields.SendRequest.memo.memo,
-                                                                          to_hash,sizeof(to_hash)), parser_unexepected_error);
+                                                                          v->tx_fields.call.data.SendRequest.memo.memo,
+                                                                          to_hash, sizeof(to_hash)),
+                               parser_unexpected_error);
 
-        const uint8_t *to = v->tx_fields.call.pb_fields.SendRequest.to.hash;
+        const uint8_t *to = v->tx_fields.call.data.SendRequest.to.hash;
 
-        if(memcmp(to_hash, to, 32) != 0){
+        if (memcmp(to_hash, to, 32) != 0) {
             zemu_log_stack("wrong data");
             return parser_invalid_address;
         }
@@ -554,18 +605,60 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     return parser_ok;
 }
 
+uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+    if (v->txtype != call || v->tx_fields.call.method_type != pb_manageneuron) {
+        assert("invalid context");
+    }
+
+    manageNeuron_e mn_type;
+    CHECK_PARSER_ERR(getManageNeuronType(v, &mn_type))
+
+    switch (mn_type) {
+        case Configure_StopDissolving :
+        case Configure_JoinCommunityFund :
+        case Configure_LeaveCommunityFund :
+        case Configure_StartDissolving : {
+            return 2;
+        }
+        case Spawn :
+        case Split:
+        case Merge:
+        case Configure_RemoveHotKey :
+        case Configure_AddHotKey :
+        case MergeMaturity :
+        case Configure_IncreaseDissolveDelay:
+        case Configure_SetDissolvedTimestamp: {
+            return 3;
+        }
+        case RegisterVote :
+        case Disburse : {
+            return 4;
+        }
+
+        case Follow : {
+            pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
+            return follow_count > 0 ? 3 + follow_count : 4;
+        }
+
+        default:
+            break;
+    }
+    return 0;
+}
+
 uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype) {
         case call: {
-            switch(v->tx_fields.call.pbtype) {
+            switch (v->tx_fields.call.method_type) {
                 case pb_sendrequest: {
-                    const bool is_stake_tx =v->special_transfer_type == neuron_stake_transaction;
+                    const bool is_stake_tx = v->special_transfer_type == neuron_stake_transaction;
 
-                    if (is_stake_tx) {
-                        return app_mode_expert() ? 7 : 5;
-                    }
+                    uint8_t itemCount = 6;
 
-                    return app_mode_expert() ? 8 : 6;
+                    if (is_stake_tx) itemCount--;
+                    if (app_mode_expert()) itemCount += 2;
+
+                    return itemCount;
                 }
 
                 case pb_claimneurons :
@@ -573,38 +666,16 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                     return 1;
                 }
 
-                case pb_manageneuron : {
-                    switch(v->tx_fields.call.manage_neuron_type){
-                        case StopDissolving :
-                        case JoinCommunityFund :
-                        case StartDissolving : {
-                            return 2;
-                        }
-                        case Spawn :
-                        case RemoveHotKey :
-                        case AddHotKey :
-                        case MergeMaturity :
-                        case IncreaseDissolveDelay : {
-                            return 3;
-                        }
-                        case RegisterVote :
-                        case Disburse : {
-                            return 4;
-                        }
-
-                        case Follow : {
-                            pb_size_t follow_count = v->tx_fields.call.pb_fields.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
-                            return follow_count > 0 ? 3 + follow_count : 4;
-                        }
-
-                        default: {
-                            return 0;
-                        }
-                    }
+                case candid_updatenodeprovider: {
+                    return 2;
                 }
-                default :{
-                    return 0;
+
+                case pb_manageneuron :
+                case candid_manageneuron: {
+                    return getNumItemsManageNeurons(c, v);
                 }
+                default:
+                    break;
             }
         }
         case state_transaction_read : {
@@ -614,9 +685,9 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
             }
             return 3;
         }
-        default : {
-            return 0;
-        }
+        default:
+            break;
     }
 
+    return 0;
 }

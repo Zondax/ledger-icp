@@ -3,6 +3,7 @@
 
 #ifndef PB_IC_NNS_GOVERNANCE_PB_V1_GOVERNANCE_PB_H_INCLUDED
 #define PB_IC_NNS_GOVERNANCE_PB_V1_GOVERNANCE_PB_H_INCLUDED
+
 #include <pb.h>
 #include "types.pb.h"
 #include "base_types.pb.h"
@@ -12,187 +13,187 @@
 #endif
 
 /* Enum definitions */
-typedef enum _ic_nns_governance_pb_v1_Vote { 
-    ic_nns_governance_pb_v1_Vote_VOTE_UNSPECIFIED = 0, 
-    ic_nns_governance_pb_v1_Vote_VOTE_YES = 1, 
-    ic_nns_governance_pb_v1_Vote_VOTE_NO = 2 
+typedef enum _ic_nns_governance_pb_v1_Vote {
+    ic_nns_governance_pb_v1_Vote_VOTE_UNSPECIFIED = 0,
+    ic_nns_governance_pb_v1_Vote_VOTE_YES = 1,
+    ic_nns_governance_pb_v1_Vote_VOTE_NO = 2
 } ic_nns_governance_pb_v1_Vote;
 
-typedef enum _ic_nns_governance_pb_v1_Topic { 
-    ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED = 0, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_NEURON_MANAGEMENT = 1, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_EXCHANGE_RATE = 2, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_ECONOMICS = 3, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_GOVERNANCE = 4, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_ADMIN = 5, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_PARTICIPANT_MANAGEMENT = 6, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_MANAGEMENT = 7, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_KYC = 9, 
-    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS = 10 
+typedef enum _ic_nns_governance_pb_v1_Topic {
+    ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED = 0,
+    ic_nns_governance_pb_v1_Topic_TOPIC_NEURON_MANAGEMENT = 1,
+    ic_nns_governance_pb_v1_Topic_TOPIC_EXCHANGE_RATE = 2,
+    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_ECONOMICS = 3,
+    ic_nns_governance_pb_v1_Topic_TOPIC_GOVERNANCE = 4,
+    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_ADMIN = 5,
+    ic_nns_governance_pb_v1_Topic_TOPIC_PARTICIPANT_MANAGEMENT = 6,
+    ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_MANAGEMENT = 7,
+    ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8,
+    ic_nns_governance_pb_v1_Topic_TOPIC_KYC = 9,
+    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS = 10
 } ic_nns_governance_pb_v1_Topic;
 
-typedef enum _ic_nns_governance_pb_v1_GovernanceError_ErrorType { 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNSPECIFIED = 0, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_OK = 1, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNAVAILABLE = 2, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_NOT_AUTHORIZED = 3, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_NOT_FOUND = 4, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_COMMAND = 5, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_NOT_DISSOLVING = 6, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_DISSOLVING = 7, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_DISSOLVED = 8, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_HOT_KEY = 9, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_RESOURCE_EXHAUSTED = 10, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_PRECONDITION_FAILED = 11, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_EXTERNAL = 12, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_LEDGER_UPDATE_ONGOING = 13, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INSUFFICIENT_FUNDS = 14, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PRINCIPAL = 15, 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL = 16 
+typedef enum _ic_nns_governance_pb_v1_GovernanceError_ErrorType {
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNSPECIFIED = 0,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_OK = 1,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNAVAILABLE = 2,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_NOT_AUTHORIZED = 3,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_NOT_FOUND = 4,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_COMMAND = 5,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_NOT_DISSOLVING = 6,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_DISSOLVING = 7,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_REQUIRES_DISSOLVED = 8,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_HOT_KEY = 9,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_RESOURCE_EXHAUSTED = 10,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_PRECONDITION_FAILED = 11,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_EXTERNAL = 12,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_LEDGER_UPDATE_ONGOING = 13,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INSUFFICIENT_FUNDS = 14,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PRINCIPAL = 15,
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL = 16
 } ic_nns_governance_pb_v1_GovernanceError_ErrorType;
 
 /* Struct definitions */
-typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse { 
-    pb_callback_t neuron_ids; 
-    pb_callback_t full_neurons; 
+typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse {
+    pb_callback_t neuron_ids;
+    pb_callback_t full_neurons;
 } ic_nns_governance_pb_v1_ListNeuronsResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse {
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse {
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse {
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund {
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StartDissolving { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StartDissolving {
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuron_StartDissolving;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StopDissolving { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_StopDissolving {
     char dummy_field;
 } ic_nns_governance_pb_v1_ManageNeuron_StopDissolving;
 
-typedef struct _ic_nns_governance_pb_v1_Neuron_Followees { 
-    pb_callback_t followees; 
+typedef struct _ic_nns_governance_pb_v1_Neuron_Followees {
+    pb_callback_t followees;
 } ic_nns_governance_pb_v1_Neuron_Followees;
 
-typedef struct _ic_nns_governance_pb_v1_BallotInfo { 
+typedef struct _ic_nns_governance_pb_v1_BallotInfo {
     bool has_proposal_id;
-    ic_base_types_pb_v1_ProposalId proposal_id; 
-    ic_nns_governance_pb_v1_Vote vote; 
+    ic_base_types_pb_v1_ProposalId proposal_id;
+    ic_nns_governance_pb_v1_Vote vote;
 } ic_nns_governance_pb_v1_BallotInfo;
 
-typedef struct _ic_nns_governance_pb_v1_GovernanceError { 
-    ic_nns_governance_pb_v1_GovernanceError_ErrorType error_type; 
-    pb_callback_t error_message; 
+typedef struct _ic_nns_governance_pb_v1_GovernanceError {
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType error_type;
+    pb_callback_t error_message;
 } ic_nns_governance_pb_v1_GovernanceError;
 
-typedef struct _ic_nns_governance_pb_v1_ListNeurons { 
-    pb_callback_t neuron_ids; 
-    bool include_neurons_readable_by_caller; 
+typedef struct _ic_nns_governance_pb_v1_ListNeurons {
+    pb_callback_t neuron_ids;
+    bool include_neurons_readable_by_caller;
 } ic_nns_governance_pb_v1_ListNeurons;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse { 
-    uint64_t transfer_block_height; 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse {
+    uint64_t transfer_block_height;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse { 
-    uint64_t merged_maturity_e8s; 
-    uint64_t new_stake_e8s; 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse {
+    uint64_t merged_maturity_e8s;
+    uint64_t new_stake_e8s;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse {
     bool has_created_neuron_id;
-    ic_base_types_pb_v1_NeuronId created_neuron_id; 
+    ic_base_types_pb_v1_NeuronId created_neuron_id;
 } ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_AddHotKey { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_AddHotKey {
     /* Was originally `map<fixed64, NeuronInfo> neuron_infos = 1`
  It had to be modified to this form to annotate the key with js_type. */
     bool has_new_hot_key;
-    ic_base_types_pb_v1_PrincipalId new_hot_key; 
+    ic_base_types_pb_v1_PrincipalId new_hot_key;
 } ic_nns_governance_pb_v1_ManageNeuron_AddHotKey;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount { 
-    uint64_t e8s; 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount {
+    uint64_t e8s;
 } ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Follow { 
-    ic_nns_governance_pb_v1_Topic topic; 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Follow {
+    ic_nns_governance_pb_v1_Topic topic;
     pb_size_t followees_count;
-    ic_base_types_pb_v1_NeuronId followees[15]; 
+    ic_base_types_pb_v1_NeuronId followees[15];
 } ic_nns_governance_pb_v1_ManageNeuron_Follow;
 
 /* The response of the ManageNeuron command
 
  There is a dedicated response type for each `ManageNeuron.command` field */
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay { 
-    uint32_t additional_dissolve_delay_seconds; 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay {
+    uint32_t additional_dissolve_delay_seconds;
 } ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity { 
-    uint32_t percentage_to_merge; 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity {
+    uint32_t percentage_to_merge;
 } ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_RegisterVote { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_RegisterVote {
     bool has_proposal;
-    ic_base_types_pb_v1_ProposalId proposal; 
-    ic_nns_governance_pb_v1_Vote vote; 
+    ic_base_types_pb_v1_ProposalId proposal;
+    ic_nns_governance_pb_v1_Vote vote;
 } ic_nns_governance_pb_v1_ManageNeuron_RegisterVote;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey {
     bool has_hot_key_to_remove;
-    ic_base_types_pb_v1_PrincipalId hot_key_to_remove; 
+    ic_base_types_pb_v1_PrincipalId hot_key_to_remove;
 } ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Spawn { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Spawn {
     bool has_new_controller;
-    ic_base_types_pb_v1_PrincipalId new_controller; 
+    ic_base_types_pb_v1_PrincipalId new_controller;
 } ic_nns_governance_pb_v1_ManageNeuron_Spawn;
 
-typedef struct _ic_nns_governance_pb_v1_NeuronInfo { 
-    uint64_t retrieved_at_timestamp_seconds; 
-    uint64_t age_seconds; 
-    uint64_t dissolve_delay_seconds; 
-    pb_callback_t recent_ballots; 
-    uint64_t voting_power; 
-    uint64_t created_timestamp_seconds; 
+typedef struct _ic_nns_governance_pb_v1_NeuronInfo {
+    uint64_t retrieved_at_timestamp_seconds;
+    uint64_t age_seconds;
+    uint64_t dissolve_delay_seconds;
+    pb_callback_t recent_ballots;
+    uint64_t voting_power;
+    uint64_t created_timestamp_seconds;
 } ic_nns_governance_pb_v1_NeuronInfo;
 
-typedef struct _ic_nns_governance_pb_v1_NeuronStakeTransfer { 
-    uint64_t transfer_timestamp; 
+typedef struct _ic_nns_governance_pb_v1_NeuronStakeTransfer {
+    uint64_t transfer_timestamp;
     bool has_from;
-    ic_base_types_pb_v1_PrincipalId from; 
-    pb_callback_t from_subaccount; 
-    pb_callback_t to_subaccount; 
-    uint64_t neuron_stake_e8s; 
-    uint64_t block_height; 
-    uint64_t memo; 
+    ic_base_types_pb_v1_PrincipalId from;
+    pb_callback_t from_subaccount;
+    pb_callback_t to_subaccount;
+    uint64_t neuron_stake_e8s;
+    uint64_t block_height;
+    uint64_t memo;
 } ic_nns_governance_pb_v1_NeuronStakeTransfer;
 
-typedef struct _ic_nns_governance_pb_v1_Neuron_FolloweesEntry { 
-    int32_t key; 
+typedef struct _ic_nns_governance_pb_v1_Neuron_FolloweesEntry {
+    int32_t key;
     bool has_value;
-    ic_nns_governance_pb_v1_Neuron_Followees value; 
+    ic_nns_governance_pb_v1_Neuron_Followees value;
 } ic_nns_governance_pb_v1_Neuron_FolloweesEntry;
 
-typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry { 
-    uint64_t key; 
+typedef struct _ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry {
+    uint64_t key;
     bool has_value;
-    ic_nns_governance_pb_v1_NeuronInfo value; 
+    ic_nns_governance_pb_v1_NeuronInfo value;
 } ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse {
     pb_size_t which_command;
     union {
         ic_nns_governance_pb_v1_GovernanceError error;
@@ -202,10 +203,10 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse {
         ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse follow;
         ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse register_vote;
         ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse merge_maturity;
-    } command; 
+    } command;
 } ic_nns_governance_pb_v1_ManageNeuronResponse;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Configure { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Configure {
     pb_size_t which_operation;
     union {
         ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay increase_dissolve_delay;
@@ -214,39 +215,39 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Configure {
         ic_nns_governance_pb_v1_ManageNeuron_AddHotKey add_hot_key;
         ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey remove_hot_key;
         ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund join_community_fund;
-    } operation; 
+    } operation;
 } ic_nns_governance_pb_v1_ManageNeuron_Configure;
 
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron_Disburse {
     bool has_amount;
-    ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount amount; 
+    ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount amount;
     bool has_to_account;
-    ic_ledger_pb_v1_AccountIdentifier to_account; 
+    ic_ledger_pb_v1_AccountIdentifier to_account;
 } ic_nns_governance_pb_v1_ManageNeuron_Disburse;
 
-typedef struct _ic_nns_governance_pb_v1_Neuron { 
+typedef struct _ic_nns_governance_pb_v1_Neuron {
     bool has_id;
-    ic_base_types_pb_v1_NeuronId id; 
-    pb_callback_t account; 
+    ic_base_types_pb_v1_NeuronId id;
+    pb_callback_t account;
     bool has_controller;
-    ic_base_types_pb_v1_PrincipalId controller; 
-    pb_callback_t hot_keys; 
-    uint64_t cached_neuron_stake_e8s; 
-    uint64_t neuron_fees_e8s; 
-    uint64_t created_timestamp_seconds; 
-    uint64_t aging_since_timestamp_seconds; 
+    ic_base_types_pb_v1_PrincipalId controller;
+    pb_callback_t hot_keys;
+    uint64_t cached_neuron_stake_e8s;
+    uint64_t neuron_fees_e8s;
+    uint64_t created_timestamp_seconds;
+    uint64_t aging_since_timestamp_seconds;
     pb_size_t which_dissolve_state;
     union {
         uint64_t when_dissolved_timestamp_seconds;
         uint64_t dissolve_delay_seconds;
-    } dissolve_state; 
-    pb_callback_t followees; 
-    pb_callback_t recent_ballots; 
-    bool kyc_verified; 
+    } dissolve_state;
+    pb_callback_t followees;
+    pb_callback_t recent_ballots;
+    bool kyc_verified;
     bool has_transfer;
-    ic_nns_governance_pb_v1_NeuronStakeTransfer transfer; 
-    uint64_t maturity_e8s_equivalent; 
-    bool not_for_profit; 
+    ic_nns_governance_pb_v1_NeuronStakeTransfer transfer;
+    uint64_t maturity_e8s_equivalent;
+    bool not_for_profit;
 } ic_nns_governance_pb_v1_Neuron;
 
 typedef PB_BYTES_ARRAY_T(32) ic_nns_governance_pb_v1_ManageNeuron_subaccount_t;
@@ -257,10 +258,10 @@ typedef PB_BYTES_ARRAY_T(32) ic_nns_governance_pb_v1_ManageNeuron_subaccount_t;
  addition, commands related to voting, i.g., [manage_neuron::Follow]
  and [manage_neuron::RegisterVote], are also available to the
  registered hot keys of the neuron. */
-typedef struct _ic_nns_governance_pb_v1_ManageNeuron { 
+typedef struct _ic_nns_governance_pb_v1_ManageNeuron {
     /* This is the legacy way to specify neuron IDs that is now discouraged. */
     bool has_id;
-    ic_base_types_pb_v1_NeuronId id; 
+    ic_base_types_pb_v1_NeuronId id;
     pb_size_t which_command;
     union {
         ic_nns_governance_pb_v1_ManageNeuron_Configure configure;
@@ -269,12 +270,12 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron {
         ic_nns_governance_pb_v1_ManageNeuron_Follow follow;
         ic_nns_governance_pb_v1_ManageNeuron_RegisterVote register_vote;
         ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity merge_maturity;
-    } command; 
+    } command;
     pb_size_t which_neuron_id_or_subaccount;
     union {
         ic_nns_governance_pb_v1_ManageNeuron_subaccount_t subaccount;
         ic_base_types_pb_v1_NeuronId neuron_id;
-    } neuron_id_or_subaccount; 
+    } neuron_id_or_subaccount;
 } ic_nns_governance_pb_v1_ManageNeuron;
 
 
