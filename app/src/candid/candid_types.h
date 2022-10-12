@@ -53,6 +53,12 @@ typedef enum {
 } IDLTypes_e;
 
 typedef enum {
+    hash_id = 23515,
+    hash_command = 2171433291,
+    hash_neuron_id_or_subaccount = 3506626033,
+} txn_hash_fields;
+
+typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
@@ -70,12 +76,12 @@ typedef enum {
     //Check these hashes
     hash_operation_Invalid = 971299358,
     hash_operation_IncreaseDissolveDelay = 628424947,
-    hash_operation_StartDissolving = 1954991536,
-    hash_operation_StopDissolving = 1977744848,
+    hash_operation_StopDissolving = 1954991536,
     hash_operation_AddHotKey = 2143729936,
     hash_operation_RemoveHotKey = 3248805476,
     hash_operation_JoinCommunityFund = 45994902,
 
+    hash_operation_StartDissolving = 1977744848,
     hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
