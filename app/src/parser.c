@@ -791,7 +791,7 @@ parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Merge Maturity");
+        snprintf(outVal, outValLen, "Stake Maturity");
         return parser_ok;
     }
 

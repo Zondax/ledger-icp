@@ -109,17 +109,22 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
     app_mode_set_expert(expert_mode);
 
     parser_context_t ctx;
-    parser_error_t err;
+    parser_error_t err, err_val;
 
     uint8_t buffer[10000];
     uint16_t bufferLen = parseHexString(buffer, sizeof(buffer), tc.blob.c_str());
 
     err = parser_parse(&ctx, buffer, bufferLen);
+    err_val = parser_validate(&ctx);
 
     if (tc.valid) {
         ASSERT_EQ(err, parser_ok) << parser_getErrorDescription(err);
     } else {
-        ASSERT_NE(err, parser_ok) << parser_getErrorDescription(err);
+        if (err == parser_ok) {
+            ASSERT_NE(err_val, parser_ok) << parser_getErrorDescription(err_val);
+        } else {
+            ASSERT_NE(err, parser_ok) << parser_getErrorDescription(err);
+        }
         return;
     }
     parser_tx_obj.special_transfer_type = normal_transaction;
