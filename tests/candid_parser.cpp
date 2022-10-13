@@ -31,7 +31,7 @@ namespace {
 
     typedef struct {
         std::string input;
-        int64_t expected;
+        __int128 expected;
         int16_t consumed;
     } testcase_sleb128_t;
 
@@ -69,6 +69,8 @@ namespace {
                             testcase_sleb128_t{"C0BB78", -123456, 3},
                             testcase_sleb128_t{"8089FA00", 2000000, 4},
                             testcase_sleb128_t{"808098F4E9B5CAEA00", 60000000000000000, 9},
+                            testcase_sleb128_t{"FFFFFFFF40", -16911433729, 5},
+                            testcase_sleb128_t{"8080808080808080807F", -9223372036854775808U, 10},
                     })
     );
 
@@ -98,7 +100,7 @@ namespace {
         auto err = decompressSLEB128(inBuffer, inBufferLen, &v, &consumed);
         EXPECT_EQ(err, parser_ok);
 
-        EXPECT_EQ(v, GetParam().expected);
+        EXPECT_EQ(v, (int64_t) GetParam().expected);
         EXPECT_EQ(consumed, GetParam().consumed);
     }
 

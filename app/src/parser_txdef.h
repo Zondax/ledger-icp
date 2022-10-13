@@ -37,7 +37,14 @@ extern "C" {
 #define REQUEST_MAX_LEN 10
 #define METHOD_MAX_LEN 20
 #define NONCE_MAX_LEN 32
-#define ARG_MAX_LEN 1000
+
+// For NanoS restrict max arg size
+#if defined(TARGET_NANOS)
+    #define ARG_MAX_LEN 1000
+#else
+    #define ARG_MAX_LEN 2000
+#endif
+
 #define PATH_MAX_LEN 40
 #define PATH_MAX_ARRAY 2
 

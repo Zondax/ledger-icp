@@ -42,9 +42,10 @@ static candid_transaction_t txn;
 
 parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
     // Check DIDL magic bytes
-    if (ctx->bufferLen < 4) {
+    if (ctx->bufferLen < 4 + ctx->offset) {
         return parser_no_data;
     }
+
     if (memcmp(ctx->buffer + ctx->offset, PIC("DIDL"), 4) != 0) {
         // magic bytes do not match
         return parser_unexpected_tx_version;
@@ -606,6 +607,10 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
     }
 
+    if (ctx.bufferLen - ctx.offset > 0) {
+        return parser_unexpected_characters;
+    }
+
     return parser_ok;
 }
 
@@ -626,6 +631,10 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
     CHECK_PARSER_ERR(readCandidText(&ctx, &val->account_identifier))
     if (val->account_identifier.len != 32) {
         return parser_unexpected_number_items;
+    }
+
+    if (ctx.bufferLen - ctx.offset > 0) {
+        return parser_unexpected_characters;
     }
 
     return parser_ok;
