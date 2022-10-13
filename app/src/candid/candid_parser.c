@@ -38,8 +38,6 @@ typedef struct {
     candid_element_t element;
 } candid_transaction_t;
 
-static candid_transaction_t txn;
-
 parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
     // Check DIDL magic bytes
     if (ctx->bufferLen < 4 + ctx->offset) {
@@ -398,7 +396,11 @@ parser_error_t getCandidTypeFromTable(candid_transaction_t *txn, uint64_t table_
     return parser_ok;
 }
 
-parser_error_t readCandidTypeTable(parser_context_t *ctx) {
+parser_error_t readCandidTypeTable(parser_context_t *ctx, candid_transaction_t *txn) {
+    if (ctx == NULL || txn == NULL) {
+        return parser_unexpected_error;
+    }
+
     ctx->tx_obj->candid_typetableSize = 0;
     CHECK_PARSER_ERR(readCandidLEB128(ctx, &ctx->tx_obj->candid_typetableSize))
 
@@ -406,12 +408,12 @@ parser_error_t readCandidTypeTable(parser_context_t *ctx) {
         return parser_value_out_of_range;
     }
 
-    txn.types_entry_point = ctx->offset;
+    txn->types_entry_point = ctx->offset;
     int64_t type = 0;
     ZEMU_LOGF(50, "-------------------------------\n")
     for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
         CHECK_PARSER_ERR(readCandidType(ctx, &type))
-        txn.txn_type = (IDLTypes_e) type;
+        txn->txn_type = (IDLTypes_e) type;
         CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, &type, itemIdx))
     }
     ZEMU_LOGF(50, "-------------------------------\n")
@@ -419,11 +421,11 @@ parser_error_t readCandidTypeTable(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t readCandidHeader(parser_context_t *ctx) {
+parser_error_t readCandidHeader(parser_context_t *ctx, candid_transaction_t *txn) {
     // Check DIDL magic bytes
     CHECK_PARSER_ERR(checkCandidMAGIC(ctx))
     // Read type table
-    CHECK_PARSER_ERR(readCandidTypeTable(ctx))
+    CHECK_PARSER_ERR(readCandidTypeTable(ctx, txn))
     // Read number of arguments
     uint64_t argsLen;
     CHECK_PARSER_ERR(readCandidNat(ctx, &argsLen))
@@ -475,20 +477,17 @@ parser_error_t getHash(candid_transaction_t *txn, const uint8_t variant, uint64_
 parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
     // Create context and auxiliary ctx
     CREATE_CTX(ctx, tx, input, inputSize)
+    candid_transaction_t txn;
     txn.ctx.buffer = ctx.buffer;
     txn.ctx.bufferLen = ctx.bufferLen;
     txn.ctx.tx_obj = ctx.tx_obj;
 
-    CHECK_PARSER_ERR(readCandidHeader(&ctx))
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
 
     CHECK_PARSER_ERR(readAndCheckType(&ctx, (tx->candid_typetableSize - 1)))
     candid_ManageNeuron_t *val = &tx->tx_fields.call.data.candid_manageNeuron;
 
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
-
-    if (txn.txn_type != Record) {
-        return parser_unexpected_field;
-    }
 
     CHECK_PARSER_ERR(readCandidElementLength(&txn))
     if (txn.txn_length != 3) {
@@ -616,7 +615,12 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
 parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
     CREATE_CTX(ctx, tx, input, inputSize)
-    CHECK_PARSER_ERR(readCandidHeader(&ctx))
+    candid_transaction_t txn;
+    txn.ctx.buffer = ctx.buffer;
+    txn.ctx.bufferLen = ctx.bufferLen;
+    txn.ctx.tx_obj = ctx.tx_obj;
+
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
 
     ///
     CHECK_PARSER_ERR(readAndCheckType(&ctx, 3))
