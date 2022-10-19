@@ -70,7 +70,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_merge`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_merge`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)

@@ -47,7 +47,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_increaseTimer_normal`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_increaseTimer_normal`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -90,7 +90,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_staketx_normal`, m.name === 'nanos' ? 6 : 7)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_staketx_normal`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -128,7 +128,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_addHotkey`, m.name === 'nanos' ? 4 : 5)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_addHotkey`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -157,7 +157,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_removeHotkey`, m.name === 'nanos' ? 4 : 5)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_removeHotkey`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -186,7 +186,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_startdissolve`, m.name === 'nanos' ? 2 : 3)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_startdissolve`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -215,7 +215,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_stopdissolve`, m.name === 'nanos' ? 2 : 3)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_stopdissolve`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -244,7 +244,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_disburse`, m.name === 'nanos' ? 5 : 6)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_disburse`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -272,7 +272,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_listneurons`, m.name === 'nanos' ? 1 : 2)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_listneurons`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -355,7 +355,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_RegisterVote`, m.name === 'nanos' ? 4 : 5)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_RegisterVote`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -383,7 +383,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_follow`, m.name === 'nanos' ? 6 : 7)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_follow`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -411,7 +411,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-claim_neuron`, m.name === 'nanos' ? 1 : 2)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-claim_neuron`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -439,7 +439,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-join_community_fund`, m.name === 'nanos' ? 2 : 3)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-join_community_fund`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -471,7 +471,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_updateCall`, m.name === 'nanos' ? 8 : 9)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_updateCall`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
