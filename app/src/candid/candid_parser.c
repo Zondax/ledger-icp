@@ -234,7 +234,7 @@ parser_error_t readCandidTypeTable_VectorItem(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t readCandidElementLength(candid_transaction_t *txn) {
+parser_error_t readCandidRecordLength(candid_transaction_t *txn) {
     if (txn == NULL) {
         return parser_unexpected_error;
     }
@@ -372,6 +372,18 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
     return parser_ok;
 }
 
+parser_error_t readCandidOptional(candid_transaction_t *txn) {
+    if (txn == NULL) {
+        return parser_unexpected_error;
+    }
+    if (txn->txn_type != Opt) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(readCandidType(&txn->ctx, &txn->element.implementation))
+    return parser_ok;
+}
+
 parser_error_t getCandidTypeFromTable(candid_transaction_t *txn, uint64_t table_index) {
     if (txn == NULL) {
         return parser_unexpected_error;
@@ -489,28 +501,58 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
 
-    CHECK_PARSER_ERR(readCandidElementLength(&txn))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
     if (txn.txn_length != 3) {
         return parser_unexpected_value;
     }
 
-    // Read id
+    // Check sanity Id
     txn.element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
     if (txn.element.field_hash != hash_id) {
         return parser_unexpected_type;
     }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_id || txn.element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+    // Read Id
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_id))
     if (val->has_id) {
         CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->id.id))
     }
 
-    // Read command
+    // Check sanity Command
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
     txn.element.variant_index = 1;
     CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
     if (txn.element.field_hash != hash_command) {
         return parser_unexpected_type;
     }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Variant) {
+        return parser_unexpected_type;
+    }
+
+    // Reset pointers and read Command
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
 
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_command))
     if (val->has_command) {
@@ -519,10 +561,52 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
         switch (val->command.hash) {
             case hash_command_Split: {
+                // Check sanity Split
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_amount_e8s || txn.element.implementation != Nat64) {
+                    return parser_unexpected_type;
+                }
+
+                // Read Split
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.split.amount_e8s))
                 break;
             }
+
             case hash_command_Merge: {
+                // Check sanity Merge
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+
+                if (txn.element.field_hash != hash_source_neuron_id) {
+                    return parser_unexpected_type;
+                }
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+
+                if (txn.element.field_hash != hash_id || txn.element.implementation != Nat64) {
+                    return parser_unexpected_type;
+                }
+
+                // Read Merge
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.merge.has_source))
                 if (!val->command.merge.has_source) {
                     // https://github.com/Zondax/ledger-icp/issues/149
@@ -532,17 +616,43 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.merge.source.id))
                 break;
             }
+
             case hash_command_Configure: {
+                // Save this type
+                const int64_t txn_element_implementation = txn.element.implementation;
+
+                // Check sanity Configure
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_operation) {
+                    return parser_unexpected_type;
+                }
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                if (txn.txn_type != Variant) {
+                    return parser_unexpected_type;
+                }
+
+                // Read Configure / Operation
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.configure.has_operation))
                 if (!val->command.configure.has_operation) {
                     return parser_unexpected_value;
                 }
                 candid_Operation_t *operation = &val->command.configure.operation;
-
                 CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &operation->which))
 
+                // Restore saved type
+                txn.element.implementation = txn_element_implementation;
                 CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
-                CHECK_PARSER_ERR(readCandidElementLength(&txn))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
                 if (txn.txn_length > 1) {
                     return parser_unexpected_number_items;
                 }
@@ -553,6 +663,20 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
                 switch (operation->hash) {
                     case hash_operation_SetDissolvedTimestamp: {
+                        // Check sanity SetDissolvedTimestamp
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length > 1) {
+                            return parser_unexpected_number_items;
+                        }
+
+                        txn.element.variant_index = 0;
+                        CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                        if (txn.element.field_hash != hash_dissolve_timestamp_seconds || txn.element.implementation != Nat64) {
+                            return parser_unexpected_type;
+                        }
+
+                        // Read SetDissolvedTimestamp
                         CHECK_PARSER_ERR(readCandidNat64(&ctx,
                                                          &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
 
@@ -563,6 +687,12 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                         break;
                     }
                     case hash_operation_LeaveCommunityFund: {
+                        // Check sanity LeaveCommunityFund
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length != 0) {
+                            return parser_unexpected_number_items;
+                        }
                         // Empty record
                         break;
                     }
@@ -572,15 +702,16 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 }
                 break;
             }
+
             default:
+                ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)
                 return parser_unexpected_type;
         }
     }
 
-
-    // Read neuron id or subaccount
+    // Check sanity Neuron id or subaccount
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
-    CHECK_PARSER_ERR(readCandidElementLength(&txn))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
     txn.element.variant_index = 2;
 
     CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
@@ -588,15 +719,44 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
         return parser_unexpected_type;
     }
 
+    const int64_t savedElementImplementation = txn.element.implementation;
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Variant) {
+        return parser_unexpected_type;
+    }
+
+
+    // Read neuron id or subaccount
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_neuron_id_or_subaccount))
     if (val->has_neuron_id_or_subaccount) {
         CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->neuron_id_or_subaccount.which))
-        switch (val->neuron_id_or_subaccount.which) {
-            case 0: {
+
+        txn.element.implementation = savedElementImplementation;
+        int64_t neuron_id_or_subaccount_hash = 0;
+        CHECK_PARSER_ERR(getHash(&txn, val->neuron_id_or_subaccount.which, &neuron_id_or_subaccount_hash))
+
+        switch (neuron_id_or_subaccount_hash) {
+            case hash_subaccount: {
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                if (txn.txn_type != Vector) {
+                    return parser_unexpected_type;
+                }
+
+                // Read subaccount
                 CHECK_PARSER_ERR(readCandidText(&ctx, &val->neuron_id_or_subaccount.subaccount))
                 break;
             }
-            case 1: {
+            case hash_neuron_id: {
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+
+                // Read neuron id
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->neuron_id_or_subaccount.neuronId.id))
                 break;
             }
@@ -622,9 +782,21 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
 
     CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
 
-    ///
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, 3))
+    CHECK_PARSER_ERR(readAndCheckType(&ctx, (tx->candid_typetableSize - 1)))
     candid_UpdateNodeProvider_t *val = &tx->tx_fields.call.data.candid_updateNodeProvider;
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+
+    // Check sanity
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_reward_account) {
+        return parser_unexpected_type;
+    }
 
     // Now read
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_reward_account))
@@ -632,6 +804,27 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
         return parser_unexpected_value;
     }
 
+    // Check sanity
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_hash) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Vector) {
+        return parser_unexpected_type;
+    }
+
+    // Now read
     CHECK_PARSER_ERR(readCandidText(&ctx, &val->account_identifier))
     if (val->account_identifier.len != 32) {
         return parser_unexpected_number_items;

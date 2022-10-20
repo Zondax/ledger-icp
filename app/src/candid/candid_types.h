@@ -54,8 +54,16 @@ typedef enum {
 
 typedef enum {
     hash_id = 23515,
+    hash_hash = 1158164430,
+    hash_reward_account = 2095839389,
+    hash_amount_e8s = 2147809209,
     hash_command = 2171433291,
     hash_neuron_id_or_subaccount = 3506626033,
+    hash_source_neuron_id = 3123627971,
+    hash_operation = 2688582695,
+    hash_dissolve_timestamp_seconds = 2863826760,
+    hash_subaccount = 1193510733,
+    hash_neuron_id = 2323144526,
 } txn_hash_fields;
 
 typedef enum {
