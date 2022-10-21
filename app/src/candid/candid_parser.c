@@ -199,12 +199,15 @@ parser_error_t readCandidWhichVariant(parser_context_t *ctx, uint64_t *t) {
     return parser_ok;
 }
 
-parser_error_t readAndCheckType(parser_context_t *ctx, int64_t expected_type) {
-    int64_t t;
-    CHECK_PARSER_ERR(readCandidType(ctx, &t))
-    if (t != expected_type) {
+parser_error_t readAndCheckRootType(parser_context_t *ctx) {
+    int64_t tmpType = -1;
+    CHECK_PARSER_ERR(readCandidType(ctx, &tmpType))
+    if (tmpType < 0 || tmpType >= ctx->tx_obj->candid_typetableSize) {
         return parser_unexpected_type;
     }
+
+    ctx->tx_obj->candid_rootType = (uint64_t) tmpType;
+
     return parser_ok;
 }
 
@@ -413,6 +416,8 @@ parser_error_t readCandidTypeTable(parser_context_t *ctx, candid_transaction_t *
         return parser_unexpected_error;
     }
 
+    // Initialize rootType with an invalid value. It will be read later
+    ctx->tx_obj->candid_rootType = MAX_TYPE_TABLE_SIZE;
     ctx->tx_obj->candid_typetableSize = 0;
     CHECK_PARSER_ERR(readCandidLEB128(ctx, &ctx->tx_obj->candid_typetableSize))
 
@@ -496,10 +501,10 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
     CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
 
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, (tx->candid_typetableSize - 1)))
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
     candid_ManageNeuron_t *val = &tx->tx_fields.call.data.candid_manageNeuron;
 
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
     if (txn.txn_length != 3) {
@@ -532,7 +537,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     }
 
     // Check sanity Command
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
     txn.element.variant_index = 1;
@@ -549,7 +554,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     }
 
     // Reset pointers and read Command
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
     txn.element.variant_index = 1;
     CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
@@ -710,7 +715,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     }
 
     // Check sanity Neuron id or subaccount
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
     txn.element.variant_index = 2;
 
@@ -782,10 +787,11 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
 
     CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
 
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, (tx->candid_typetableSize - 1)))
+
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
     candid_UpdateNodeProvider_t *val = &tx->tx_fields.call.data.candid_updateNodeProvider;
 
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_typetableSize - 1))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     // Check sanity
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))

@@ -181,6 +181,7 @@ typedef struct {
     } tx_fields;
 
     uint64_t candid_typetableSize;
+    uint64_t candid_rootType;
 } parser_tx_t;
 
 #ifdef __cplusplus
