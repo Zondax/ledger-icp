@@ -2,8 +2,9 @@ name: "Test/Build"
 on:
   workflow_dispatch:
   push:
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   configure:
