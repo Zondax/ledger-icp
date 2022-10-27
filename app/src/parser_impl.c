@@ -167,6 +167,13 @@ const char *parser_getErrorDescription(parser_error_t err) {
     CHECK_CBOR_MAP_ERR(_cbor_value_copy_string(&it, (V_OUTPUT).data, &(V_OUTPUT).len, NULL)); \
 }
 
+#define READ_STRING_PTR_SIZE(MAP, FIELDNAME, V_OUTPUT_PTR, V_OUTPUT_SIZE) {                  \
+    CborValue it;                                                                           \
+    CHECK_CBOR_MAP_ERR(cbor_value_map_find_value(MAP, FIELDNAME, &it));                     \
+    PARSER_ASSERT_OR_ERROR(cbor_value_is_byte_string(&it) || cbor_value_is_text_string(&it), parser_context_mismatch); \
+    CHECK_CBOR_MAP_ERR(get_string_chunk(&it, (const void **)&V_OUTPUT_PTR, &V_OUTPUT_SIZE));\
+}
+
 parser_error_t try_read_nonce(CborValue *content_map, parser_tx_t *v) {
     size_t stringLen = 0;
     CborValue it;
@@ -376,6 +383,19 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     return parser_unexpected_type;
 }
 
+static bool isCandidTransaction(parser_tx_t *v) {
+    char *method = v->tx_fields.call.method_name.data;
+    if (strcmp(method, "manage_neuron") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "update_node_provider") == 0) {
+        return true;
+    }
+
+    return false;
+}
+
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     CborValue content_it;
     zemu_log_stack("read content");
@@ -410,8 +430,16 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         READ_STRING(content_map, "method_name", fields->method_name)
         READ_INT64(content_map, "ingress_expiry", fields->ingress_expiry)
 
-        READ_STRING(content_map, "arg", fields->method_args)
-        CHECK_PARSER_ERR(readPayload(v, fields->method_args.data, fields->method_args.len))
+        if (isCandidTransaction(v)) {
+            READ_STRING_PTR_SIZE(content_map, "arg", fields->method_args.dataPtr, fields->method_args.len)
+            if (fields->method_args.dataPtr == NULL) {
+                return parser_no_data;
+            }
+            CHECK_PARSER_ERR(readPayload(v, fields->method_args.dataPtr, fields->method_args.len))
+        } else {
+            READ_STRING(content_map, "arg", fields->method_args)
+            CHECK_PARSER_ERR(readPayload(v, fields->method_args.data, fields->method_args.len))
+        }
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
         state_read_t *fields = &v->tx_fields.stateRead;
