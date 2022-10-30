@@ -121,7 +121,7 @@ const char *CustomTypeToString(uint64_t t) {
             return "?";
     }
 #else
-    return "?"
+    return "?";
 #endif
 }
 
@@ -202,7 +202,7 @@ parser_error_t readCandidWhichVariant(parser_context_t *ctx, uint64_t *t) {
 parser_error_t readAndCheckRootType(parser_context_t *ctx) {
     int64_t tmpType = -1;
     CHECK_PARSER_ERR(readCandidType(ctx, &tmpType))
-    if (tmpType < 0 || tmpType >= ctx->tx_obj->candid_typetableSize) {
+    if (tmpType < 0 || (uint64_t) tmpType >= ctx->tx_obj->candid_typetableSize) {
         return parser_unexpected_type;
     }
 
@@ -740,7 +740,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
         CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->neuron_id_or_subaccount.which))
 
         txn.element.implementation = savedElementImplementation;
-        int64_t neuron_id_or_subaccount_hash = 0;
+        uint64_t neuron_id_or_subaccount_hash = 0;
         CHECK_PARSER_ERR(getHash(&txn, val->neuron_id_or_subaccount.which, &neuron_id_or_subaccount_hash))
 
         switch (neuron_id_or_subaccount_hash) {
