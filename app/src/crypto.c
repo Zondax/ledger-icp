@@ -149,6 +149,14 @@ typedef struct {
     cx_hash(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE);        \
 }
 
+#define HASH_BYTES_PTR_END(FIELDNAME, FIELDVALUE, TMPDIGEST, ENDDIGEST) { \
+    MEMZERO(TMPDIGEST,sizeof(TMPDIGEST));                      \
+    cx_hash_sha256((uint8_t *)FIELDNAME, sizeof(FIELDNAME) - 1, TMPDIGEST, CX_SHA256_SIZE); \
+    cx_hash(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0);         \
+    cx_hash_sha256((uint8_t *)(FIELDVALUE).dataPtr, (FIELDVALUE).len, TMPDIGEST, CX_SHA256_SIZE); \
+    cx_hash(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE);        \
+}
+
 zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
     cx_sha256_t ctx;
     cx_sha256_init(&ctx);
@@ -168,7 +176,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             if(fields->has_nonce){
                 HASH_BYTES_INTERMEDIATE("nonce", fields->nonce, tmpdigest);
             }
-            HASH_BYTES_END("arg", fields->method_args, tmpdigest, digest);
+            HASH_BYTES_PTR_END("arg", fields->method_args, tmpdigest, digest);
             return zxerr_ok;
         }
         case state_transaction_read: {

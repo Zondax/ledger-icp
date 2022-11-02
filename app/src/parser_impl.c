@@ -439,6 +439,7 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
         } else {
             READ_STRING(content_map, "arg", fields->method_args)
             CHECK_PARSER_ERR(readPayload(v, fields->method_args.data, fields->method_args.len))
+            fields->method_args.dataPtr = fields->method_args.data;
         }
 
     } else if (strcmp(v->request_type.data, "read_state") == 0) {
