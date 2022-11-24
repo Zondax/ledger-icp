@@ -303,6 +303,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
 
             const candid_Command_t *command = &v->tx_fields.call.data.candid_manageNeuron.command;
             switch (command->hash) {
+                case hash_command_Spawn:
+                    *mn_type = SpawnCandid;
+                    return parser_ok;
                 case hash_command_Split:
                     *mn_type = Split;
                     return parser_ok;
@@ -662,6 +665,12 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case RegisterVote :
         case Disburse : {
             return 4;
+        }
+        case SpawnCandid: {
+            // 2 fields + opt(percentage_to_spawn) + controller (opt or self) + opt(nonce)
+            return 3
+            + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_percentage_to_spawn ? 1 : 0)
+            + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_nonce ? 1 : 0);
         }
 
         case Follow : {

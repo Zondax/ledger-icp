@@ -746,6 +746,69 @@ static parser_error_t parser_getItemSpawn(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemSpawnCandid(uint8_t displayIdx,
+                                          char *outKey, uint16_t outKeyLen,
+                                          char *outVal, uint16_t outValLen,
+                                          uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    const uint8_t has_percentage_to_spawn = fields->command.spawn.has_percentage_to_spawn;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Spawn Neuron");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2 && has_percentage_to_spawn) {
+        snprintf(outKey, outKeyLen, "Percentage to spawn");
+        snprintf(outVal, outValLen, "%d", fields->command.spawn.percentage_to_spawn);
+        return parser_ok;
+    }
+
+    if ((displayIdx == 2 && !has_percentage_to_spawn) ||
+        (displayIdx == 3 && has_percentage_to_spawn)) {
+        snprintf(outKey, outKeyLen, "Controller");
+        if (!fields->command.spawn.has_controller) {
+
+            snprintf(outVal, outValLen, "Self");
+            return parser_ok;
+        }
+
+        //Paged fields need space ending
+        snprintf(outKey, outKeyLen, "Controller ");
+        return print_textual(fields->command.spawn.new_controller,
+                             29,
+                             outVal, outValLen,
+                             pageIdx, pageCount);
+    }
+
+    if (fields->command.spawn.has_nonce &&
+        ((displayIdx == 3 && !has_percentage_to_spawn) || displayIdx == 4)) {
+        snprintf(outKey, outKeyLen, "Nonce");
+        return print_u64(fields->command.spawn.nonce, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemSplit(uint8_t displayIdx,
                                           char *outKey, uint16_t outKeyLen,
                                           char *outVal, uint16_t outValLen,
@@ -1387,6 +1450,10 @@ static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
         case Spawn : {
             return parser_getItemSpawn(displayIdx,
                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+        case SpawnCandid: {
+            return parser_getItemSpawnCandid(displayIdx,
+                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
         case Split: {
             return parser_getItemSplit(displayIdx,

@@ -64,6 +64,9 @@ typedef enum {
     hash_dissolve_timestamp_seconds = 2863826760,
     hash_subaccount = 1193510733,
     hash_neuron_id = 2323144526,
+    hash_percentage_to_spawn = 809978428,
+    hash_new_controller = 2460987739,
+    hash_nonce = 2680573167,
 } txn_hash_fields;
 
 typedef enum {
@@ -78,6 +81,7 @@ typedef enum {
     hash_command_MakeProposal = 3217030240,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
+    hash_command_ListNeurons = 1349619708,
   } command_variant_hash_e;
 
 typedef enum {
@@ -116,6 +120,17 @@ typedef struct {
 } candid_Operation_t;
 
 typedef struct {
+    uint8_t has_percentage_to_spawn;
+    uint32_t percentage_to_spawn;
+
+    uint8_t has_controller;
+    uint8_t new_controller[30];
+
+    uint8_t has_nonce;
+    uint64_t nonce;
+} candid_Spawn_t;
+
+typedef struct {
     uint64_t amount_e8s;
 } candid_Split_t;
 
@@ -133,6 +148,7 @@ typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
+        candid_Spawn_t spawn;
         candid_Split_t split;
         candid_Merge_t merge;
         candid_Configure_t configure;

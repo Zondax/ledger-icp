@@ -83,7 +83,8 @@ typedef enum {
     Split = 11,
 //    DisburseToNeuron = 12,
 //    ClaimOrRefresh = 13,
-    Merge = 1000
+    Merge = 1000,
+    SpawnCandid = 1001
 } manageNeuron_e;
 
 typedef enum {

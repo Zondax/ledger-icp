@@ -148,6 +148,15 @@ static parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v) {
     return parser_no_data;
 }
 
+static parser_error_t readCandidBytes(parser_context_t *ctx, uint8_t *buff, uint8_t buffLen) {
+    if (ctx->bufferLen - ctx->offset < buffLen) {
+        return parser_unexpected_buffer_end;
+    }
+    MEMCPY(buff, (ctx->buffer + ctx->offset), buffLen);
+    ctx->offset += buffLen;
+    return parser_ok;
+}
+
 static parser_error_t readCandidInt(parser_context_t *ctx, int64_t *v) {
     CHECK_PARSER_ERR(readCandidSLEB128(ctx, v))
     return parser_ok;
@@ -158,12 +167,24 @@ static parser_error_t readCandidNat(parser_context_t *ctx, uint64_t *v) {
     return parser_ok;
 }
 
+static parser_error_t readCandidNat32(parser_context_t *ctx, uint32_t *v) {
+    // need to compose it because ledger cannot deference misaligned values
+    uint8_t b;
+    *v = 0;
+
+    for (uint8_t i = 0; i < 32; i += 8) {
+        CHECK_PARSER_ERR(readCandidByte(ctx, &b))
+        *v += (uint32_t) b << i;
+    }
+    return parser_ok;
+}
+
 static parser_error_t readCandidNat64(parser_context_t *ctx, uint64_t *v) {
     // need to compose it because ledger cannot deference misaligned values
     uint8_t b;
     *v = 0;
 
-    for (uint64_t i = 0; i < 64; i += 8) {
+    for (uint8_t i = 0; i < 64; i += 8) {
         CHECK_PARSER_ERR(readCandidByte(ctx, &b))
         *v += (uint64_t) b << i;
     }
@@ -707,6 +728,87 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 }
                 break;
             }
+            case hash_command_Spawn: {
+                // Check sanity
+                const int64_t spawnRoot = txn.element.implementation;
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 3) {
+                    return parser_unexpected_value;
+                }
+
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_percentage_to_spawn) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Nat32) {
+                    return parser_unexpected_type;
+                }
+
+                // reset txn
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, spawnRoot))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+                txn.element.variant_index = 1;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_new_controller) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Principal) {
+                    return parser_unexpected_type;
+                }
+
+                // reset txn
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, spawnRoot))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+                txn.element.variant_index = 2;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_nonce) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Nat64) {
+                    return parser_unexpected_type;
+                }
+
+                // now let's read
+                // Percentage to spawn
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.spawn.has_percentage_to_spawn))
+                if (val->command.spawn.has_percentage_to_spawn) {
+                    CHECK_PARSER_ERR(readCandidNat32(&ctx, &val->command.spawn.percentage_to_spawn))
+                    // Sanity check
+                    if (val->command.spawn.percentage_to_spawn == 0 || val->command.spawn.percentage_to_spawn > 100) {
+                        return parser_value_out_of_range;
+                    }
+                }
+
+                // Controller
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.spawn.has_controller))
+                if (val->command.spawn.has_controller) {
+                    uint8_t has_principal = 0;
+                    uint8_t principalSize = 0;
+                    CHECK_PARSER_ERR(readCandidByte(&ctx, &has_principal))
+                    if(has_principal) {
+                        CHECK_PARSER_ERR(readCandidByte(&ctx, &principalSize))
+                        CHECK_PARSER_ERR(readCandidBytes(&ctx, val->command.spawn.new_controller, principalSize))
+                    }
+                }
+
+                // Nonce
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.spawn.has_nonce))
+                if (val->command.spawn.has_nonce) {
+                    CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.spawn.nonce))
+                }
+
+                break;
+            }
 
             default:
                 ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)
@@ -732,7 +834,6 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     if (txn.txn_type != Variant) {
         return parser_unexpected_type;
     }
-
 
     // Read neuron id or subaccount
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_neuron_id_or_subaccount))
