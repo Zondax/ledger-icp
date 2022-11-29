@@ -157,11 +157,6 @@ static parser_error_t readCandidBytes(parser_context_t *ctx, uint8_t *buff, uint
     return parser_ok;
 }
 
-static parser_error_t readCandidInt(parser_context_t *ctx, int64_t *v) {
-    CHECK_PARSER_ERR(readCandidSLEB128(ctx, v))
-    return parser_ok;
-}
-
 static parser_error_t readCandidNat(parser_context_t *ctx, uint64_t *v) {
     CHECK_PARSER_ERR(readCandidLEB128(ctx, v))
     return parser_ok;
@@ -187,6 +182,19 @@ static parser_error_t readCandidNat64(parser_context_t *ctx, uint64_t *v) {
     for (uint8_t i = 0; i < 64; i += 8) {
         CHECK_PARSER_ERR(readCandidByte(ctx, &b))
         *v += (uint64_t) b << i;
+    }
+    return parser_ok;
+}
+
+parser_error_t getCandidNat64FromVec(const uint8_t *buf, uint64_t *v, uint8_t size, uint8_t idx) {
+    if (buf == NULL || v == NULL || idx >= size) {
+        return parser_unexpected_value;
+    }
+    *v = 0;
+    buf = buf + 8 * idx;
+
+    for (uint8_t i = 0; i < 8; i++) {
+        *v += (uint64_t) *(buf + i) << 8 * i;
     }
     return parser_ok;
 }
@@ -509,6 +517,53 @@ static parser_error_t getHash(candid_transaction_t *txn, const uint8_t variant, 
 
     CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, hash))
     CHECK_PARSER_ERR(readCandidType(&txn->ctx, &txn->element.implementation))
+    return parser_ok;
+}
+
+parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    // Create context and auxiliary ctx
+    CREATE_CTX(ctx, tx, input, inputSize)
+    candid_transaction_t txn;
+    txn.ctx.buffer = ctx.buffer;
+    txn.ctx.bufferLen = ctx.bufferLen;
+    txn.ctx.tx_obj = ctx.tx_obj;
+
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 2) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_neuron_ids) {
+        return parser_unexpected_type;
+    }
+
+    // reset txn
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+    txn.element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_include_neurons_readable_by_caller ||
+        txn.element.implementation != Bool) {
+        return parser_unexpected_type;
+    }
+
+    // let's read
+    candid_ListNeurons_t *val = &tx->tx_fields.call.data.candid_listNeurons;
+    uint64_t tmp_neuron_id = 0;
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->neuron_ids_size))
+
+    val->neuron_ids_ptr = ctx.buffer + ctx.offset;
+    for (uint8_t i = 0; i < val->neuron_ids_size; i++) {
+        CHECK_PARSER_ERR(readCandidNat64(&ctx, &tmp_neuron_id))
+    }
+
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_neurons_readable_by_caller))
     return parser_ok;
 }
 

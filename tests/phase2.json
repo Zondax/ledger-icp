@@ -345,5 +345,29 @@
       "4 | Nonce : 12345"
     ],
     "valid": true
+  },
+  {
+    "index": 200,
+    "name": "List Neurons",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758194449444c026d786c02acbe9cc50700dabcd1c70d7e010100016b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b1717844f7cfe21c06b6d6574686f645f6e616d656c6c6973745f6e6575726f6e736c726571756573745f747970656463616c6c6673656e6465724104",
+    "output": ["0 | Transaction type : List Own Neurons"],
+    "output_expert": ["0 | Transaction type : List Own Neurons"],
+    "valid": true
+  },
+  {
+    "index": 201,
+    "name": "List Neurons",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758294449444c026d786c02acbe9cc50700dabcd1c70d7e01010200c8c056ea395dd500406c4830c8a17a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b1718cf3d0b5d0b006b6d6574686f645f6e616d656c6c6973745f6e6575726f6e736c726571756573745f747970656463616c6c6673656e6465724104",
+    "output": [
+      "0 | Transaction type : List Own Neurons",
+      "1 | Neuron ID 1 : 15374508381553346560",
+      "2 | Neuron ID 2 : 8836564053576663040"
+    ],
+    "output_expert": [
+      "0 | Transaction type : List Own Neurons",
+      "1 | Neuron ID 1 : 15374508381553346560",
+      "2 | Neuron ID 2 : 8836564053576663040"
+    ],
+    "valid": true
   }
 ]

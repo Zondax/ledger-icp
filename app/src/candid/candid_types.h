@@ -64,6 +64,8 @@ typedef enum {
     hash_dissolve_timestamp_seconds = 2863826760,
     hash_subaccount = 1193510733,
     hash_neuron_id = 2323144526,
+    hash_neuron_ids = 2024218412,
+    hash_include_neurons_readable_by_caller = 3639893594,
     hash_percentage_to_spawn = 809978428,
     hash_new_controller = 2460987739,
     hash_nonce = 2680573167,
@@ -81,7 +83,6 @@ typedef enum {
     hash_command_MakeProposal = 3217030240,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
-    hash_command_ListNeurons = 1349619708,
   } command_variant_hash_e;
 
 typedef enum {
@@ -179,6 +180,13 @@ typedef struct {
     uint8_t has_reward_account;
     sizedBuffer_t account_identifier;
 } candid_UpdateNodeProvider_t;
+
+typedef struct {
+    uint8_t neuron_ids_size;
+    const uint8_t *neuron_ids_ptr;
+
+    uint8_t include_neurons_readable_by_caller;
+} candid_ListNeurons_t;
 
 #ifdef __cplusplus
 }

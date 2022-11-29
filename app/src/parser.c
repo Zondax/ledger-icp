@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <zxmacros.h>
 #include <app_mode.h>
+#include "candid_parser.h"
 #include "parser_impl.h"
 #include "parser.h"
 #include "coin.h"
@@ -1374,6 +1375,27 @@ static parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemListNeuronsCandid(uint8_t displayIdx,
+                                                      char *outKey, uint16_t outKeyLen,
+                                                      char *outVal, uint16_t outValLen,
+                                                      uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    candid_ListNeurons_t *fields = &parser_tx_obj.tx_fields.call.data.candid_listNeurons;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "List Own Neurons");
+        return parser_ok;
+    }
+    if (displayIdx <= fields->neuron_ids_size) {
+        snprintf(outKey, outKeyLen, "Neuron ID %d", displayIdx);
+        uint64_t neuron_id = 0;
+        CHECK_PARSER_ERR(getCandidNat64FromVec(fields->neuron_ids_ptr, &neuron_id, fields->neuron_ids_size, displayIdx - 1))
+        return print_u64(neuron_id, outVal, outValLen, pageIdx, pageCount);
+    }
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemListUpdateNodeProvider(__Z_UNUSED const parser_context_t *_ctx,
                                                            uint8_t displayIdx,
                                                            char *outKey, uint16_t outKeyLen,
@@ -1489,6 +1511,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
     switch (parser_tx_obj.txtype) {
         case call: {
             switch (parser_tx_obj.tx_fields.call.method_type) {
@@ -1534,6 +1557,14 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                                                                 outVal, outValLen,
                                                                 pageIdx, pageCount);
                 }
+
+                case candid_listneurons: {
+                    return parser_getItemListNeuronsCandid(displayIdx,
+                                                           outKey, outKeyLen,
+                                                           outVal, outValLen,
+                                                           pageIdx, pageCount);
+                }
+
                 default :
                     break;
             }

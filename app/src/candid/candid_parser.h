@@ -28,6 +28,10 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
 parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
 
+parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
+
+parser_error_t getCandidNat64FromVec(const uint8_t *buffer, uint64_t *value, uint8_t size, uint8_t idx);
+
 #ifdef __cplusplus
 }
 #endif

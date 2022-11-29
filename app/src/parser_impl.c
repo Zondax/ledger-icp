@@ -383,6 +383,12 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return parser_ok;
     }
 
+    if (strcmp(method, "list_neurons") == 0) {
+        CHECK_PARSER_ERR(readCandidListNeurons(v, buffer, bufferLen))
+        v->tx_fields.call.method_type = candid_listneurons;
+        return parser_ok;
+    }
+
     return parser_unexpected_type;
 }
 
@@ -536,6 +542,7 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
         case pb_listneurons :
         case pb_manageneuron :
         case candid_updatenodeprovider:
+        case candid_listneurons:
         case candid_manageneuron: {
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
@@ -712,6 +719,8 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                 case candid_manageneuron: {
                     return getNumItemsManageNeurons(c, v);
                 }
+                case candid_listneurons:
+                    return 1 + v->tx_fields.call.data.candid_listNeurons.neuron_ids_size;
                 default:
                     break;
             }
