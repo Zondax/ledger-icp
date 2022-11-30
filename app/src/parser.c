@@ -810,6 +810,45 @@ static parser_error_t parser_getItemSpawnCandid(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemStakeMaturityCandid(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    const uint8_t has_percentage_to_stake = fields->command.stake.has_percentage_to_stake;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Stake Maturity Neuron");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2 && has_percentage_to_stake) {
+        snprintf(outKey, outKeyLen, "Percentage to stake");
+        snprintf(outVal, outValLen, "%d", fields->command.spawn.percentage_to_spawn);
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemSplit(uint8_t displayIdx,
                                           char *outKey, uint16_t outKeyLen,
                                           char *outVal, uint16_t outValLen,
@@ -1500,6 +1539,9 @@ static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
 
         case Follow:
             return parser_getItemFollow(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+
+        case StakeMaturityCandid:
+            return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
 
         default:
             return parser_no_data;

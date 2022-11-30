@@ -85,7 +85,8 @@ typedef enum {
 //    DisburseToNeuron = 12,
 //    ClaimOrRefresh = 13,
     Merge = 1000,
-    SpawnCandid = 1001
+    SpawnCandid = 1001,
+    StakeMaturityCandid = 1002,
 } manageNeuron_e;
 
 typedef enum {

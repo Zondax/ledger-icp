@@ -69,6 +69,7 @@ typedef enum {
     hash_percentage_to_spawn = 809978428,
     hash_new_controller = 2460987739,
     hash_nonce = 2680573167,
+    hash_percentage_to_stake = 854334011,
 } txn_hash_fields;
 
 typedef enum {
@@ -81,6 +82,7 @@ typedef enum {
     hash_command_Merge = 2566132376,
     hash_command_DisburseToNeuron = 2803800337,
     hash_command_MakeProposal = 3217030240,
+    hash_command_StakeMaturity = 3582720395,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
   } command_variant_hash_e;
@@ -146,6 +148,11 @@ typedef struct {
 } candid_Configure_t;
 
 typedef struct {
+    uint8_t has_percentage_to_stake;
+    uint32_t percentage_to_stake;
+} candid_StakeMaturity_t;
+
+typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
@@ -153,6 +160,7 @@ typedef struct {
         candid_Split_t split;
         candid_Merge_t merge;
         candid_Configure_t configure;
+        candid_StakeMaturity_t stake;
     };
 } candid_Command_t;
 

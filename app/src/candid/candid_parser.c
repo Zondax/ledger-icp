@@ -864,6 +864,34 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
                 break;
             }
+            case hash_command_StakeMaturity:
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_percentage_to_stake) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Nat32) {
+                    return parser_unexpected_type;
+                }
+
+                // now let's read
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.stake.has_percentage_to_stake))
+                if (val->command.spawn.has_percentage_to_spawn) {
+                    CHECK_PARSER_ERR(readCandidNat32(&ctx, &val->command.stake.percentage_to_stake))
+                    // Sanity check
+                    if (val->command.stake.percentage_to_stake == 0 || val->command.stake.percentage_to_stake > 100) {
+                        return parser_value_out_of_range;
+                    }
+                }
+                break;
 
             default:
                 ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)

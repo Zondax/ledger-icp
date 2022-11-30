@@ -306,6 +306,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case hash_command_Spawn:
                     *mn_type = SpawnCandid;
                     return parser_ok;
+                case hash_command_StakeMaturity:
+                    *mn_type = StakeMaturityCandid;
+                    return parser_ok;
                 case hash_command_Split:
                     *mn_type = Split;
                     return parser_ok;
@@ -679,6 +682,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_percentage_to_spawn ? 1 : 0)
             + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_nonce ? 1 : 0);
         }
+        case StakeMaturityCandid:
+            // 2 fields + opt(percentage_to_stake)
+            return 2
+            + (v->tx_fields.call.data.candid_manageNeuron.command.stake.has_percentage_to_stake ? 1 : 0);
 
         case Follow : {
             pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
