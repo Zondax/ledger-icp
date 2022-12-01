@@ -777,6 +777,23 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                         // Empty record
                         break;
                     }
+                    case hash_operation_ChangeAutoStakeMaturity:
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length != 1) {
+                            return parser_unexpected_number_items;
+                        }
+                        txn.element.variant_index = 0;
+                        CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                        if (txn.element.field_hash != hash_setting_auto_stake_maturity
+                            || txn.element.implementation != Bool) {
+                            return parser_unexpected_type;
+                        }
+                        // let's read
+                        CHECK_PARSER_ERR(readCandidByte(
+                                             &ctx,
+                                             &operation->autoStakeMaturity.requested_setting_for_auto_stake_maturity))
+                        break;
                     default:
                         ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
                         return parser_unexpected_value;

@@ -70,6 +70,7 @@ typedef enum {
     hash_new_controller = 2460987739,
     hash_nonce = 2680573167,
     hash_percentage_to_stake = 854334011,
+    hash_setting_auto_stake_maturity = 3470422224,
 } txn_hash_fields;
 
 typedef enum {
@@ -95,6 +96,7 @@ typedef enum {
     hash_operation_AddHotKey = 2143729936,
     hash_operation_RemoveHotKey = 3248805476,
     hash_operation_JoinCommunityFund = 45994902,
+    hash_operation_ChangeAutoStakeMaturity = 1906071820,
 
     hash_operation_StartDissolving = 1977744848,
     hash_operation_LeaveCommunityFund = 3675510135,
@@ -111,6 +113,10 @@ typedef struct {
 } candid_NeuronId;
 
 typedef struct {
+    uint8_t requested_setting_for_auto_stake_maturity;
+} candid_ChangeAutoStakeMaturity_t;
+
+typedef struct {
     uint64_t dissolve_timestamp_seconds;
 } candid_SetDissolveTimestamp_t;
 
@@ -119,6 +125,7 @@ typedef struct {
     uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
+        candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
     };
 } candid_Operation_t;
 

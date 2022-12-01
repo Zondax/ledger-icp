@@ -73,6 +73,7 @@ typedef enum {
     Configure_SetDissolvedTimestamp = 2006,
     Configure_JoinCommunityFund = 2007,
     Configure_LeaveCommunityFund = 2008,
+    Configure_ChangeAutoStakeMaturity = 2009,
 
 ////
     Disburse = 3,

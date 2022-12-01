@@ -326,6 +326,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_LeaveCommunityFund:
                             *mn_type = Configure_LeaveCommunityFund;
                             break;
+                        case hash_operation_ChangeAutoStakeMaturity:
+                            *mn_type = Configure_ChangeAutoStakeMaturity;
+                            break;
                         default:
                             return parser_unexpected_value;
                     }
@@ -669,6 +672,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_AddHotKey :
         case MergeMaturity :
         case Configure_IncreaseDissolveDelay:
+        case Configure_ChangeAutoStakeMaturity:
         case Configure_SetDissolvedTimestamp: {
             return 3;
         }
