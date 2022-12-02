@@ -17,8 +17,8 @@
 import Zemu from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
-import {SIGN_VALUES_P2} from "@zondax/ledger-icp/dist/common";
-import {DEFAULT_OPTIONS, DEVICE_MODELS} from "./common";
+import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
+import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
 const sha256 = require('js-sha256')
 

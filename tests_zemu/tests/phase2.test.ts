@@ -17,16 +17,11 @@
 import Zemu from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
-import {SIGN_VALUES_P2} from "@zondax/ledger-icp/dist/common";
-import {DEFAULT_OPTIONS, DEVICE_MODELS} from "./common";
+import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
+import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
+import { sha256 } from 'js-sha256'
 
-const sha256 = require('js-sha256')
-
-jest.setTimeout(60000)
-
-beforeAll(async () => {
-  await Zemu.checkAndPullImage()
-})
+jest.setTimeout(180000)
 
 describe('Phase2', function () {
   test.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
@@ -135,7 +130,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -164,7 +158,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -193,7 +186,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -222,7 +214,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -251,7 +242,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -279,7 +269,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -307,7 +296,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -334,7 +322,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -362,7 +349,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -390,7 +376,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -418,7 +403,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -446,7 +430,6 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -479,7 +462,12 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
-      const pk = Uint8Array.from(Buffer.from("0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835", 'hex'))
+      const pk = Uint8Array.from(
+        Buffer.from(
+          '0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835',
+          'hex',
+        ),
+      )
 
       const digest_request = Uint8Array.from(signatureResponse.RequestHash)
       const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS)
@@ -494,7 +482,6 @@ describe('Phase2', function () {
 
       const signatureOk_statusread = secp256k1.ecdsaVerify(signature_statusread, digest_statusread, pk)
       expect(signatureOk_statusread).toEqual(true)
-
     } finally {
       await sim.close()
     }

@@ -58,6 +58,7 @@ typedef enum {
 
     candid_manageneuron = 0xF002,
     candid_updatenodeprovider = 0xF003,
+    candid_listneurons = 0xF004,
 } method_type_e;
 
 typedef enum {
@@ -72,6 +73,7 @@ typedef enum {
     Configure_SetDissolvedTimestamp = 2006,
     Configure_JoinCommunityFund = 2007,
     Configure_LeaveCommunityFund = 2008,
+    Configure_ChangeAutoStakeMaturity = 2009,
 
 ////
     Disburse = 3,
@@ -83,7 +85,9 @@ typedef enum {
     Split = 11,
 //    DisburseToNeuron = 12,
 //    ClaimOrRefresh = 13,
-    Merge = 1000
+    Merge = 1000,
+    SpawnCandid = 1001,
+    StakeMaturityCandid = 1002,
 } manageNeuron_e;
 
 typedef enum {
@@ -151,6 +155,7 @@ typedef struct {
         ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
         candid_ManageNeuron_t candid_manageNeuron;
         candid_UpdateNodeProvider_t candid_updateNodeProvider;
+        candid_ListNeurons_t candid_listNeurons;
         SendRequest SendRequest;
         ListNeurons ListNeurons;
     } data;

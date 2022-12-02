@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <zxmacros.h>
 #include <app_mode.h>
+#include "candid_parser.h"
 #include "parser_impl.h"
 #include "parser.h"
 #include "coin.h"
@@ -563,6 +564,7 @@ static parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
                                                       char *outKey, uint16_t outKeyLen,
                                                       char *outVal, uint16_t outValLen,
                                                       uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -603,6 +605,7 @@ static parser_error_t parser_getItemLeaveCommunityFund(uint8_t displayIdx,
                                                        char *outKey, uint16_t outKeyLen,
                                                        char *outVal, uint16_t outValLen,
                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Configure, parser_unexpected_value)
@@ -638,6 +641,7 @@ static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
                                                          char *outKey, uint16_t outKeyLen,
                                                          char *outVal, uint16_t outValLen,
                                                          uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Configure, parser_unexpected_value)
@@ -690,10 +694,53 @@ static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemChangeAutoStakeMaturity(uint8_t displayIdx,
+                                                            char *outKey, uint16_t outKeyLen,
+                                                            char *outVal, uint16_t outValLen,
+                                                            uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Configure, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.has_operation, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.hash == hash_operation_ChangeAutoStakeMaturity,
+                           parser_unexpected_value)
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Set Auto Stake Maturity");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Auto stake");
+        snprintf(outVal, outValLen, fields->command.configure.operation.autoStakeMaturity.requested_setting_for_auto_stake_maturity ? "true" : "false");
+        return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemSpawn(uint8_t displayIdx,
                                           char *outKey, uint16_t outKeyLen,
                                           char *outVal, uint16_t outValLen,
                                           uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -742,10 +789,113 @@ static parser_error_t parser_getItemSpawn(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemSpawnCandid(uint8_t displayIdx,
+                                          char *outKey, uint16_t outKeyLen,
+                                          char *outVal, uint16_t outValLen,
+                                          uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    const uint8_t has_percentage_to_spawn = fields->command.spawn.has_percentage_to_spawn;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Spawn Neuron");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2 && has_percentage_to_spawn) {
+        snprintf(outKey, outKeyLen, "Percentage to spawn");
+        snprintf(outVal, outValLen, "%d", fields->command.spawn.percentage_to_spawn);
+        return parser_ok;
+    }
+
+    if ((displayIdx == 2 && !has_percentage_to_spawn) ||
+        (displayIdx == 3 && has_percentage_to_spawn)) {
+        snprintf(outKey, outKeyLen, "Controller");
+        if (!fields->command.spawn.has_controller) {
+
+            snprintf(outVal, outValLen, "Self");
+            return parser_ok;
+        }
+
+        //Paged fields need space ending
+        snprintf(outKey, outKeyLen, "Controller ");
+        return print_textual(fields->command.spawn.new_controller,
+                             29,
+                             outVal, outValLen,
+                             pageIdx, pageCount);
+    }
+
+    if (fields->command.spawn.has_nonce &&
+        ((displayIdx == 3 && !has_percentage_to_spawn) || displayIdx == 4)) {
+        snprintf(outKey, outKeyLen, "Nonce");
+        return print_u64(fields->command.spawn.nonce, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemStakeMaturityCandid(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    const uint8_t has_percentage_to_stake = fields->command.stake.has_percentage_to_stake;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Stake Maturity Neuron");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2 && has_percentage_to_stake) {
+        snprintf(outKey, outKeyLen, "Percentage to stake");
+        snprintf(outVal, outValLen, "%d", fields->command.spawn.percentage_to_spawn);
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemSplit(uint8_t displayIdx,
                                           char *outKey, uint16_t outKeyLen,
                                           char *outVal, uint16_t outValLen,
                                           uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Split, parser_unexpected_value)
@@ -783,6 +933,7 @@ static parser_error_t parser_getItemMerge(uint8_t displayIdx,
                                           char *outKey, uint16_t outKeyLen,
                                           char *outVal, uint16_t outValLen,
                                           uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Merge, parser_unexpected_value)
@@ -824,6 +975,7 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                                     char *outKey, uint16_t outKeyLen,
                                                     char *outVal, uint16_t outValLen,
                                                     uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
@@ -892,6 +1044,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
                                              char *outKey, uint16_t outKeyLen,
                                              char *outVal, uint16_t outValLen,
                                              uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
@@ -956,6 +1109,7 @@ static parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
                                                         char *outKey, uint16_t outKeyLen,
                                                         char *outVal, uint16_t outValLen,
                                                         uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -1009,6 +1163,7 @@ static parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
                                                   char *outVal, uint16_t outValLen,
                                                   uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -1056,6 +1211,7 @@ static parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
                                                       char *outKey, uint16_t outKeyLen,
                                                       char *outVal, uint16_t outValLen,
                                                       uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -1090,6 +1246,7 @@ static parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
                                                  char *outVal, uint16_t outValLen,
                                                  uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -1145,6 +1302,7 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx,
                                            char *outKey, uint16_t outKeyLen,
                                            char *outVal, uint16_t outValLen,
                                            uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
@@ -1298,11 +1456,33 @@ static parser_error_t parser_getItemListNeurons(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemListNeuronsCandid(uint8_t displayIdx,
+                                                      char *outKey, uint16_t outKeyLen,
+                                                      char *outVal, uint16_t outValLen,
+                                                      uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    candid_ListNeurons_t *fields = &parser_tx_obj.tx_fields.call.data.candid_listNeurons;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "List Own Neurons");
+        return parser_ok;
+    }
+    if (displayIdx <= fields->neuron_ids_size) {
+        snprintf(outKey, outKeyLen, "Neuron ID %d", displayIdx);
+        uint64_t neuron_id = 0;
+        CHECK_PARSER_ERR(getCandidNat64FromVec(fields->neuron_ids_ptr, &neuron_id, fields->neuron_ids_size, displayIdx - 1))
+        return print_u64(neuron_id, outVal, outValLen, pageIdx, pageCount);
+    }
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemListUpdateNodeProvider(__Z_UNUSED const parser_context_t *_ctx,
                                                            uint8_t displayIdx,
                                                            char *outKey, uint16_t outKeyLen,
                                                            char *outVal, uint16_t outValLen,
                                                            uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
 
     candid_UpdateNodeProvider_t *fields = &parser_tx_obj.tx_fields.call.data.candid_updateNodeProvider;
 
@@ -1369,10 +1549,18 @@ static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
             return parser_getItemSetDissolveTimestamp(displayIdx,
                                                       outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
+        case Configure_ChangeAutoStakeMaturity: {
+            return parser_getItemChangeAutoStakeMaturity(displayIdx,
+                                                         outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
 
         case Spawn : {
             return parser_getItemSpawn(displayIdx,
                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+        case SpawnCandid: {
+            return parser_getItemSpawnCandid(displayIdx,
+                                        outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
         case Split: {
             return parser_getItemSplit(displayIdx,
@@ -1398,6 +1586,9 @@ static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
         case Follow:
             return parser_getItemFollow(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
+        case StakeMaturityCandid:
+            return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
+
         default:
             return parser_no_data;
     }
@@ -1408,6 +1599,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
     switch (parser_tx_obj.txtype) {
         case call: {
             switch (parser_tx_obj.tx_fields.call.method_type) {
@@ -1453,6 +1645,14 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                                                                 outVal, outValLen,
                                                                 pageIdx, pageCount);
                 }
+
+                case candid_listneurons: {
+                    return parser_getItemListNeuronsCandid(displayIdx,
+                                                           outKey, outKeyLen,
+                                                           outVal, outValLen,
+                                                           pageIdx, pageCount);
+                }
+
                 default :
                     break;
             }
