@@ -220,4 +220,26 @@ describe('Phase2', function () {
       await sim.close()
     }
   })
+
+  test.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+        'd9d9f7a167636f6e74656e74a76361726750620a10bcc7f5c8a3f293fb47220218326b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b172e706d8c61d2806b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f7062656e6f6e63655000000184eb5a7ffab5d56eb72b8a04df6c726571756573745f747970656463616c6c6673656e646572581df1305df1b074e88adb99dc2f56f12d63208165f24dea7e60ae6cf6cf02'
+
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const signatureResponse = await app.sign(path, txBlob, SIGN_VALUES_P2.DEFAULT)
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x6984)
+      expect(signatureResponse.errorMessage).toEqual('Data is invalid : Unexpected value')
+    } finally {
+      sim.dumpEvents()
+      await sim.close()
+    }
+  })
 })

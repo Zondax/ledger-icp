@@ -244,7 +244,8 @@ bool pb_field_iter_find_extension(pb_field_iter_t *iter) {
             advance_iterator(iter);
 
             /* Do fast check for field type */
-            fieldinfo = PB_PROGMEM_READU32(iter->descriptor->field_info, iter->field_info_index);
+            const pb_msgdesc_t *descriptor = (const pb_msgdesc_t *) PIC(iter->descriptor);
+            fieldinfo = PB_PROGMEM_READU32(descriptor->field_info, iter->field_info_index);
 
             if (PB_LTYPE((fieldinfo >> 8) & 0xFF) == PB_LTYPE_EXTENSION) {
                 return load_descriptor_values(iter);
