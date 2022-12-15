@@ -314,7 +314,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- Merge Mature', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- Stake Mature', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -328,8 +328,7 @@ describe('Phase2', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_MergeMature`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_StakeMature`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
