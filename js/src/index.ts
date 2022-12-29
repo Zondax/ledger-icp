@@ -40,21 +40,21 @@ export * from './types'
 function processGetAddrResponse(response: Buffer) {
   let partialResponse = response
 
-  const errorCodeData = partialResponse.slice(-2)
+  const errorCodeData = partialResponse.subarray(-2)
   const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
 
-  const publicKey = Buffer.from(partialResponse.slice(0, PKLEN))
-  partialResponse = partialResponse.slice(PKLEN)
+  const publicKey = Buffer.from(partialResponse.subarray(0, PKLEN))
+  partialResponse = partialResponse.subarray(PKLEN)
 
-  const principal = Buffer.from(partialResponse.slice(0, PRINCIPAL_LEN))
+  const principal = Buffer.from(partialResponse.subarray(0, PRINCIPAL_LEN))
 
-  partialResponse = partialResponse.slice(PRINCIPAL_LEN)
+  partialResponse = partialResponse.subarray(PRINCIPAL_LEN)
 
-  const address = Buffer.from(partialResponse.slice(0, ADDRLEN))
+  const address = Buffer.from(partialResponse.subarray(0, ADDRLEN))
 
-  partialResponse = partialResponse.slice(ADDRLEN)
+  partialResponse = partialResponse.subarray(ADDRLEN)
 
-  const principalText = Buffer.from(partialResponse.slice(0, -2))
+  const principalText = Buffer.from(partialResponse.subarray(0, -2))
     .toString()
     .replace(/(.{5})/g, '$1-')
 
@@ -92,7 +92,7 @@ export default class InternetComputerApp {
       if (i > buffer.length) {
         end = buffer.length
       }
-      chunks.push(buffer.slice(i, end))
+      chunks.push(buffer.subarray(i, end))
     }
 
     return chunks
@@ -108,7 +108,7 @@ export default class InternetComputerApp {
 
   async getAppInfo(): Promise<ResponseAppInfo> {
     return this.transport.send(0xb0, 0x01, 0, 0).then(response => {
-      const errorCodeData = response.slice(-2)
+      const errorCodeData = response.subarray(-2)
       const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
 
       const result: { errorMessage?: string; returnCode?: LedgerError } = {}
@@ -124,11 +124,11 @@ export default class InternetComputerApp {
         result.returnCode = LedgerError.DeviceIsBusy
       } else {
         const appNameLen = response[1]
-        appName = response.slice(2, 2 + appNameLen).toString('ascii')
+        appName = response.subarray(2, 2 + appNameLen).toString('ascii')
         let idx = 2 + appNameLen
         const appVersionLen = response[idx]
         idx += 1
-        appVersion = response.slice(idx, idx + appVersionLen).toString('ascii')
+        appVersion = response.subarray(idx, idx + appVersionLen).toString('ascii')
         idx += appVersionLen
         const appFlagsLen = response[idx]
         idx += 1
@@ -233,7 +233,7 @@ export default class InternetComputerApp {
         LedgerError.SignVerifyError,
       ])
       .then((response: Buffer) => {
-        const errorCodeData = response.slice(-2)
+        const errorCodeData = response.subarray(-2)
         const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         let errorMessage = errorCodeToString(returnCode)
 
@@ -246,13 +246,13 @@ export default class InternetComputerApp {
           returnCode === LedgerError.DataIsInvalid ||
           returnCode === LedgerError.SignVerifyError
         ) {
-          errorMessage = `${errorMessage} : ${response.slice(0, response.length - 2).toString('ascii')}`
+          errorMessage = `${errorMessage} : ${response.subarray(0, response.length - 2).toString('ascii')}`
         }
 
         if (returnCode === LedgerError.NoErrors && response.length > 2) {
-          preSignHash = response.slice(0, PREHASH_LEN)
-          signatureRS = response.slice(PREHASH_LEN, PREHASH_LEN + SIGRSLEN)
-          signatureDER = response.slice(PREHASH_LEN + SIGRSLEN + 1, response.length - 2)
+          preSignHash = response.subarray(0, PREHASH_LEN)
+          signatureRS = response.subarray(PREHASH_LEN, PREHASH_LEN + SIGRSLEN)
+          signatureDER = response.subarray(PREHASH_LEN + SIGRSLEN + 1, response.length - 2)
           return {
             preSignHash,
             signatureRS,
@@ -309,7 +309,7 @@ export default class InternetComputerApp {
         LedgerError.SignVerifyError,
       ])
       .then((response: Buffer) => {
-        const errorCodeData = response.slice(-2)
+        const errorCodeData = response.subarray(-2)
         const returnCode = errorCodeData[0] * 256 + errorCodeData[1]
         let errorMessage = errorCodeToString(returnCode)
 
@@ -323,14 +323,14 @@ export default class InternetComputerApp {
           returnCode === LedgerError.DataIsInvalid ||
           returnCode === LedgerError.SignVerifyError
         ) {
-          errorMessage = `${errorMessage} : ${response.slice(0, response.length - 2).toString('ascii')}`
+          errorMessage = `${errorMessage} : ${response.subarray(0, response.length - 2).toString('ascii')}`
         }
 
         if (returnCode === LedgerError.NoErrors && response.length > 2) {
-          RequestHash = response.slice(0, 32)
-          RequestSignatureRS = response.slice(32, 96)
-          StatusReadHash = response.slice(96, 128)
-          StatusReadSignatureRS = response.slice(128, 192)
+          RequestHash = response.subarray(0, 32)
+          RequestSignatureRS = response.subarray(32, 96)
+          StatusReadHash = response.subarray(96, 128)
+          StatusReadSignatureRS = response.subarray(128, 192)
           return {
             RequestHash,
             RequestSignatureRS,
