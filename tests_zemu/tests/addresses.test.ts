@@ -92,7 +92,7 @@ describe('Addresses', function () {
         expect(resp.errorMessage).toEqual('No errors')
 
         expect(resp.principalText).toEqual(TEST.prinipal)
-        expect(resp.address.toString('hex')).toEqual(TEST.address)
+        expect((resp.address ?? []).toString('hex')).toEqual(TEST.address)
       } finally {
         await sim.close()
       }
