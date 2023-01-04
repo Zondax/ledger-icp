@@ -53,6 +53,27 @@ typedef enum {
 } IDLTypes_e;
 
 typedef enum {
+    hash_id = 23515,
+    hash_hash = 1158164430,
+    hash_reward_account = 2095839389,
+    hash_amount_e8s = 2147809209,
+    hash_command = 2171433291,
+    hash_neuron_id_or_subaccount = 3506626033,
+    hash_source_neuron_id = 3123627971,
+    hash_operation = 2688582695,
+    hash_dissolve_timestamp_seconds = 2863826760,
+    hash_subaccount = 1193510733,
+    hash_neuron_id = 2323144526,
+    hash_neuron_ids = 2024218412,
+    hash_include_neurons_readable_by_caller = 3639893594,
+    hash_percentage_to_spawn = 809978428,
+    hash_new_controller = 2460987739,
+    hash_nonce = 2680573167,
+    hash_percentage_to_stake = 854334011,
+    hash_setting_auto_stake_maturity = 3470422224,
+} txn_hash_fields;
+
+typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
@@ -62,6 +83,7 @@ typedef enum {
     hash_command_Merge = 2566132376,
     hash_command_DisburseToNeuron = 2803800337,
     hash_command_MakeProposal = 3217030240,
+    hash_command_StakeMaturity = 3582720395,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
   } command_variant_hash_e;
@@ -70,12 +92,13 @@ typedef enum {
     //Check these hashes
     hash_operation_Invalid = 971299358,
     hash_operation_IncreaseDissolveDelay = 628424947,
-    hash_operation_StartDissolving = 1954991536,
-    hash_operation_StopDissolving = 1977744848,
+    hash_operation_StopDissolving = 1954991536,
     hash_operation_AddHotKey = 2143729936,
     hash_operation_RemoveHotKey = 3248805476,
     hash_operation_JoinCommunityFund = 45994902,
+    hash_operation_ChangeAutoStakeMaturity = 1906071820,
 
+    hash_operation_StartDissolving = 1977744848,
     hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
@@ -90,6 +113,10 @@ typedef struct {
 } candid_NeuronId;
 
 typedef struct {
+    uint8_t requested_setting_for_auto_stake_maturity;
+} candid_ChangeAutoStakeMaturity_t;
+
+typedef struct {
     uint64_t dissolve_timestamp_seconds;
 } candid_SetDissolveTimestamp_t;
 
@@ -98,8 +125,20 @@ typedef struct {
     uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
+        candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
     };
 } candid_Operation_t;
+
+typedef struct {
+    uint8_t has_percentage_to_spawn;
+    uint32_t percentage_to_spawn;
+
+    uint8_t has_controller;
+    uint8_t new_controller[30];
+
+    uint8_t has_nonce;
+    uint64_t nonce;
+} candid_Spawn_t;
 
 typedef struct {
     uint64_t amount_e8s;
@@ -116,12 +155,19 @@ typedef struct {
 } candid_Configure_t;
 
 typedef struct {
+    uint8_t has_percentage_to_stake;
+    uint32_t percentage_to_stake;
+} candid_StakeMaturity_t;
+
+typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
+        candid_Spawn_t spawn;
         candid_Split_t split;
         candid_Merge_t merge;
         candid_Configure_t configure;
+        candid_StakeMaturity_t stake;
     };
 } candid_Command_t;
 
@@ -149,6 +195,13 @@ typedef struct {
     uint8_t has_reward_account;
     sizedBuffer_t account_identifier;
 } candid_UpdateNodeProvider_t;
+
+typedef struct {
+    uint8_t neuron_ids_size;
+    const uint8_t *neuron_ids_ptr;
+
+    uint8_t include_neurons_readable_by_caller;
+} candid_ListNeurons_t;
 
 #ifdef __cplusplus
 }

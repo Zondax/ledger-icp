@@ -19,64 +19,31 @@
 #include "candid_parser.h"
 #include "leb128.h"
 
+#define MAX_TYPE_TABLE_SIZE 16384
+
 // Good reference:  https://github.com/dfinity/agent-js/tree/main/packages/candid
 // https://github.com/dfinity/candid/blob/master/spec/Candid.md#deserialisation
 
-static uint16_t table_entry_point = 0;
+typedef struct {
+    uint64_t variant_index;
+    uint64_t field_hash;
+    int64_t implementation;
+} candid_element_t;
 
-typedef parser_error_t (*check_hash)(const uint64_t *hash, bool *found);
+typedef struct {
+    uint16_t types_entry_point;
+    parser_context_t ctx;
+    int64_t txn_type;
+    uint64_t txn_length;
+    candid_element_t element;
+} candid_transaction_t;
 
-parser_error_t check_hash_method(const uint64_t *hash, bool *found) {
-    if(found == NULL || hash == NULL) {
-        return parser_unexpected_value;
-    }
-    *found = false;
-
-    switch (*hash)
-    {
-        case hash_command_Spawn:
-        case hash_command_Split:
-        case hash_command_Follow:
-        case hash_command_ClaimOrRefresh:
-        case hash_command_Configure:
-        case hash_command_RegisterVote:
-        case hash_command_Merge:
-            *found = true;
-            break;
-    }
-
-    return parser_ok;
-}
-
-parser_error_t check_hash_operation(const uint64_t *hash, bool *found) {
-    if(found == NULL || hash == NULL) {
-        return parser_unexpected_value;
-    }
-    *found = false;
-
-    switch (*hash)
-    {
-        // case hash_operation_Invalid:
-        // case hash_operation_RemoveHotKey:
-        // case hash_operation_AddHotKey:
-        // case hash_operation_StopDissolving:
-        // case hash_operation_StartDissolving:
-        // case hash_operation_IncreaseDissolveDelay:
-        // case hash_operation_JoinCommunityFund:
-        case hash_operation_LeaveCommunityFund:
-        case hash_operation_SetDissolvedTimestamp:
-            *found = true;
-            break;
-    }
-
-    return parser_ok;
-}
-
-parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
+static parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
     // Check DIDL magic bytes
-    if (ctx->bufferLen < 4) {
+    if (ctx->bufferLen < 4 + ctx->offset) {
         return parser_no_data;
     }
+
     if (memcmp(ctx->buffer + ctx->offset, PIC("DIDL"), 4) != 0) {
         // magic bytes do not match
         return parser_unexpected_tx_version;
@@ -154,25 +121,25 @@ const char *CustomTypeToString(uint64_t t) {
             return "?";
     }
 #else
-    return "?"
+    return "?";
 #endif
 }
 
-parser_error_t readCandidLEB128(parser_context_t *ctx, uint64_t *v) {
+static parser_error_t readCandidLEB128(parser_context_t *ctx, uint64_t *v) {
     uint16_t consumed;
     CHECK_PARSER_ERR(decompressLEB128(ctx->buffer + ctx->offset, ctx->bufferLen - ctx->offset, v, &consumed))
     ctx->offset += consumed;
     return parser_ok;
 }
 
-parser_error_t readCandidSLEB128(parser_context_t *ctx, int64_t *v) {
+static parser_error_t readCandidSLEB128(parser_context_t *ctx, int64_t *v) {
     uint16_t consumed;
     CHECK_PARSER_ERR(decompressSLEB128(ctx->buffer + ctx->offset, ctx->bufferLen - ctx->offset, v, &consumed))
     ctx->offset += consumed;
     return parser_ok;
 }
 
-parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v) {
+static parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v) {
     if (ctx->offset < ctx->bufferLen) {
         *v = *(ctx->buffer + ctx->offset);
         ctx->offset++;
@@ -181,29 +148,58 @@ parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v) {
     return parser_no_data;
 }
 
-parser_error_t readCandidInt(parser_context_t *ctx, int64_t *v) {
-    CHECK_PARSER_ERR(readCandidSLEB128(ctx, v))
+static parser_error_t readCandidBytes(parser_context_t *ctx, uint8_t *buff, uint8_t buffLen) {
+    if (ctx->bufferLen - ctx->offset < buffLen) {
+        return parser_unexpected_buffer_end;
+    }
+    MEMCPY(buff, (ctx->buffer + ctx->offset), buffLen);
+    ctx->offset += buffLen;
     return parser_ok;
 }
 
-parser_error_t readCandidNat(parser_context_t *ctx, uint64_t *v) {
+static parser_error_t readCandidNat(parser_context_t *ctx, uint64_t *v) {
     CHECK_PARSER_ERR(readCandidLEB128(ctx, v))
     return parser_ok;
 }
 
-parser_error_t readCandidNat64(parser_context_t *ctx, uint64_t *v) {
+static parser_error_t readCandidNat32(parser_context_t *ctx, uint32_t *v) {
     // need to compose it because ledger cannot deference misaligned values
     uint8_t b;
     *v = 0;
 
-    for (uint64_t i = 0; i < 64; i += 8) {
+    for (uint8_t i = 0; i < 32; i += 8) {
+        CHECK_PARSER_ERR(readCandidByte(ctx, &b))
+        *v += (uint32_t) b << i;
+    }
+    return parser_ok;
+}
+
+static parser_error_t readCandidNat64(parser_context_t *ctx, uint64_t *v) {
+    // need to compose it because ledger cannot deference misaligned values
+    uint8_t b;
+    *v = 0;
+
+    for (uint8_t i = 0; i < 64; i += 8) {
         CHECK_PARSER_ERR(readCandidByte(ctx, &b))
         *v += (uint64_t) b << i;
     }
     return parser_ok;
 }
 
-parser_error_t readCandidText(parser_context_t *ctx, sizedBuffer_t *v) {
+parser_error_t getCandidNat64FromVec(const uint8_t *buf, uint64_t *v, uint8_t size, uint8_t idx) {
+    if (buf == NULL || v == NULL || idx >= size) {
+        return parser_unexpected_value;
+    }
+    *v = 0;
+    buf = buf + 8 * idx;
+
+    for (uint8_t i = 0; i < 8; i++) {
+        *v += (uint64_t) *(buf + i) << 8 * i;
+    }
+    return parser_ok;
+}
+
+static parser_error_t readCandidText(parser_context_t *ctx, sizedBuffer_t *v) {
     CHECK_PARSER_ERR(readCandidLEB128(ctx, &v->len))
     if (ctx->bufferLen - ctx->offset < v->len) {
         return parser_unexpected_buffer_end;
@@ -213,7 +209,7 @@ parser_error_t readCandidText(parser_context_t *ctx, sizedBuffer_t *v) {
     return parser_ok;
 }
 
-parser_error_t readCandidType(parser_context_t *ctx, int64_t *t) {
+static parser_error_t readCandidType(parser_context_t *ctx, int64_t *t) {
     CHECK_PARSER_ERR(readCandidSLEB128(ctx, t))
 
     if (*t < -24) {
@@ -227,21 +223,24 @@ parser_error_t readCandidType(parser_context_t *ctx, int64_t *t) {
     return parser_ok;
 }
 
-parser_error_t readCandidWhichVariant(parser_context_t *ctx, uint64_t *t) {
+static parser_error_t readCandidWhichVariant(parser_context_t *ctx, uint64_t *t) {
     CHECK_PARSER_ERR(readCandidLEB128(ctx, t))
     return parser_ok;
 }
 
-parser_error_t readAndCheckType(parser_context_t *ctx, int64_t expected_type) {
-    int64_t t;
-    CHECK_PARSER_ERR(readCandidType(ctx, &t))
-    if (t != expected_type) {
+static parser_error_t readAndCheckRootType(parser_context_t *ctx) {
+    int64_t tmpType = -1;
+    CHECK_PARSER_ERR(readCandidType(ctx, &tmpType))
+    if (tmpType < 0 || (uint64_t) tmpType >= ctx->tx_obj->candid_typetableSize) {
         return parser_unexpected_type;
     }
+
+    ctx->tx_obj->candid_rootType = (uint64_t) tmpType;
+
     return parser_ok;
 }
 
-parser_error_t readCandidTypeTable_Opt(parser_context_t *ctx) {
+static parser_error_t readCandidTypeTable_Opt(parser_context_t *ctx) {
     int64_t t;
     CHECK_PARSER_ERR(readCandidType(ctx, &t))
 #if CANDID_TESTING
@@ -254,7 +253,7 @@ parser_error_t readCandidTypeTable_Opt(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t readCandidTypeTable_VectorItem(parser_context_t *ctx) {
+static parser_error_t readCandidTypeTable_VectorItem(parser_context_t *ctx) {
     int64_t t;
     CHECK_PARSER_ERR(readCandidType(ctx, &t))
 #if CANDID_TESTING
@@ -267,7 +266,59 @@ parser_error_t readCandidTypeTable_VectorItem(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t readCandidTypeTable_Variant(parser_context_t *ctx) {
+static parser_error_t readCandidRecordLength(candid_transaction_t *txn) {
+    if (txn == NULL) {
+        return parser_unexpected_error;
+    }
+    if (txn->txn_type != Record) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &txn->txn_length))
+    return parser_ok;
+}
+
+static parser_error_t readCandidInnerElement(candid_transaction_t *txn, candid_element_t *element) {
+    if (txn == NULL || element == NULL) {
+        return parser_unexpected_error;
+    }
+
+    if (element->variant_index >= txn->txn_length) {
+        return parser_unexpected_value;
+    }
+
+    uint16_t start_offset = txn->ctx.offset;
+    uint64_t prevHash = 0;
+    bool_t prevHashInitialized = 0;
+    int64_t t;
+
+    for (uint64_t i = 0; i <= element->variant_index; i++) {
+        uint64_t hash;
+        CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &hash))
+
+        if (prevHashInitialized && hash <= prevHash) {
+            return parser_value_out_of_range;
+        }
+        prevHash = hash;
+        prevHashInitialized = 1;
+
+        CHECK_PARSER_ERR(readCandidType(&txn->ctx, &t))
+#if CANDID_TESTING
+        if (t < 0) {
+            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %s", i, hash, CustomTypeToString(hash),
+                      IDLTypeToString(t))
+        } else {
+            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %03lld", i, hash, CustomTypeToString(hash), t)
+        }
+#endif
+        element->field_hash = hash;
+        element->implementation = t;
+    }
+
+    txn->ctx.offset = start_offset;
+    return parser_ok;
+}
+
+static parser_error_t readCandidTypeTable_Variant(parser_context_t *ctx) {
     uint64_t objectLength;
     CHECK_PARSER_ERR(readCandidLEB128(ctx, &objectLength))
 
@@ -299,14 +350,7 @@ parser_error_t readCandidTypeTable_Variant(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t findCandidFieldHash(__Z_UNUSED parser_context_t *_ctx,
-                                   __Z_UNUSED uint64_t _type_idx,
-                                   __Z_UNUSED uint64_t _item_idx,
-                                   __Z_UNUSED uint64_t *_hash) {
-    return parser_not_implemented;
-}
-
-parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *type, __Z_UNUSED uint64_t typeIdx) {
+static parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *type, __Z_UNUSED uint64_t typeIdx) {
     switch (*type) {
         case Opt: {
             zemu_log_stack("readCandidTypeTable::Opt");
@@ -360,32 +404,62 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
     return parser_ok;
 }
 
-parser_error_t getNextType(parser_context_t *ctx, const IDLTypes_e type, int64_t *ty, const uint64_t itemIdx) {
-    if(ty == NULL || ctx == NULL) {
-        return parser_unexpected_value;
+static parser_error_t readCandidOptional(candid_transaction_t *txn) {
+    if (txn == NULL) {
+        return parser_unexpected_error;
+    }
+    if (txn->txn_type != Opt) {
+        return parser_unexpected_type;
     }
 
-    CHECK_PARSER_ERR(readCandidType(ctx, ty))
-    if (type == *ty) {
-        return parser_ok;
-    }
-    CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, ty, itemIdx))
+    CHECK_PARSER_ERR(readCandidType(&txn->ctx, &txn->element.implementation))
     return parser_ok;
 }
 
-parser_error_t readCandidTypeTable(parser_context_t *ctx) {
-    ctx->tx_obj->candid_typetableSize = 0;
-    CHECK_PARSER_ERR(readCandidLEB128(ctx, &ctx->tx_obj->candid_typetableSize))
+static parser_error_t getCandidTypeFromTable(candid_transaction_t *txn, uint64_t table_index) {
+    if (txn == NULL) {
+        return parser_unexpected_error;
+    }
 
-    if (ctx->tx_obj->candid_typetableSize >= 16384) {
+    if (table_index >= txn->ctx.tx_obj->candid_typetableSize) {
         return parser_value_out_of_range;
     }
 
-    table_entry_point = ctx->offset;
+    int64_t type = 0;
+
+    // Move pointer to types table
+    txn->ctx.offset = txn->types_entry_point;
+    for (uint64_t itemIdx = 0; itemIdx <= table_index; itemIdx++) {
+        CHECK_PARSER_ERR(readCandidType(&txn->ctx, &type))
+        txn->txn_type = type;
+
+        if (itemIdx < table_index) {
+            CHECK_PARSER_ERR(readCandidTypeTable_Item(&txn->ctx, &type, itemIdx))
+        }
+    }
+    return parser_ok;
+}
+
+static parser_error_t readCandidTypeTable(parser_context_t *ctx, candid_transaction_t *txn) {
+    if (ctx == NULL || txn == NULL) {
+        return parser_unexpected_error;
+    }
+
+    // Initialize rootType with an invalid value. It will be read later
+    ctx->tx_obj->candid_rootType = MAX_TYPE_TABLE_SIZE;
+    ctx->tx_obj->candid_typetableSize = 0;
+    CHECK_PARSER_ERR(readCandidLEB128(ctx, &ctx->tx_obj->candid_typetableSize))
+
+    if (ctx->tx_obj->candid_typetableSize >= MAX_TYPE_TABLE_SIZE) {
+        return parser_value_out_of_range;
+    }
+
+    txn->types_entry_point = ctx->offset;
     int64_t type = 0;
     ZEMU_LOGF(50, "-------------------------------\n")
     for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
         CHECK_PARSER_ERR(readCandidType(ctx, &type))
+        txn->txn_type = (IDLTypes_e) type;
         CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, &type, itemIdx))
     }
     ZEMU_LOGF(50, "-------------------------------\n")
@@ -393,11 +467,11 @@ parser_error_t readCandidTypeTable(parser_context_t *ctx) {
     return parser_ok;
 }
 
-parser_error_t readCandidHeader(parser_context_t *ctx) {
+static parser_error_t readCandidHeader(parser_context_t *ctx, candid_transaction_t *txn) {
     // Check DIDL magic bytes
     CHECK_PARSER_ERR(checkCandidMAGIC(ctx))
     // Read type table
-    CHECK_PARSER_ERR(readCandidTypeTable(ctx))
+    CHECK_PARSER_ERR(readCandidTypeTable(ctx, txn))
     // Read number of arguments
     uint64_t argsLen;
     CHECK_PARSER_ERR(readCandidNat(ctx, &argsLen))
@@ -415,72 +489,205 @@ parser_error_t readCandidHeader(parser_context_t *ctx) {
     ctx.tx_obj = __TX;
 
 
-parser_error_t findHash(parser_context_t *ctx, check_hash check_function,
-                          const uint8_t variant, uint64_t *hash) {
-    if(ctx == NULL || hash == NULL || check_function == NULL) {
-        return parser_unexpected_value;
+static parser_error_t getHash(candid_transaction_t *txn, const uint8_t variant, uint64_t *hash) {
+    if (txn == NULL || hash == NULL) {
+        return parser_unexpected_error;
     }
-    ctx->offset = table_entry_point;
+    *hash = 0;
+    // Get option type implementation
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
 
     int64_t type = 0;
-    bool found = false;
+    CHECK_PARSER_ERR(readCandidType(&txn->ctx, &type))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, type))
 
-    for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
-        CHECK_PARSER_ERR(getNextType(ctx, Variant, &type, itemIdx))
-        if (type == Variant) {
-            uint64_t objectLength;
-            CHECK_PARSER_ERR(readCandidLEB128(ctx, &objectLength))
-
-            for (uint64_t i = 0; i < objectLength; i++) {
-                int64_t dummyType;
-                CHECK_PARSER_ERR(readCandidLEB128(ctx, hash))
-                if (i == variant) {
-                    CHECK_PARSER_ERR(check_function(hash, &found))
-                }
-                if(found) {
-                    return parser_ok;
-                }
-
-                CHECK_PARSER_ERR(readCandidType(ctx, &dummyType))
-            }
-        }
+    uint64_t variantLength = 0;
+    CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &variantLength))
+    if (variant >= variantLength) {
+        return parser_value_out_of_range;
     }
-    return parser_type_not_found;
+
+    // Move until requested variant
+    for (uint64_t i = 0; i < variant; i++) {
+        int64_t dummyType;
+        uint64_t tmpHash = 0;
+        CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &tmpHash))
+        CHECK_PARSER_ERR(readCandidType(&txn->ctx, &dummyType))
+    }
+
+    CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, hash))
+    CHECK_PARSER_ERR(readCandidType(&txn->ctx, &txn->element.implementation))
+    return parser_ok;
 }
 
-parser_error_t getHash(parser_context_t *ctx, check_hash check_function,
-                          const uint8_t variant, uint64_t *hash) {
-    const uint16_t start = ctx->offset;
-    *hash = 0;
-    parser_error_t err = findHash(ctx, check_function, variant, hash);
-    ctx->offset = start;
-    return err;
+parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    // Create context and auxiliary ctx
+    CREATE_CTX(ctx, tx, input, inputSize)
+    candid_transaction_t txn;
+    txn.ctx.buffer = ctx.buffer;
+    txn.ctx.bufferLen = ctx.bufferLen;
+    txn.ctx.tx_obj = ctx.tx_obj;
+
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 2) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_neuron_ids) {
+        return parser_unexpected_type;
+    }
+
+    // reset txn
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+    txn.element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_include_neurons_readable_by_caller ||
+        txn.element.implementation != Bool) {
+        return parser_unexpected_type;
+    }
+
+    // let's read
+    candid_ListNeurons_t *val = &tx->tx_fields.call.data.candid_listNeurons;
+    uint64_t tmp_neuron_id = 0;
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->neuron_ids_size))
+
+    val->neuron_ids_ptr = ctx.buffer + ctx.offset;
+    for (uint8_t i = 0; i < val->neuron_ids_size; i++) {
+        CHECK_PARSER_ERR(readCandidNat64(&ctx, &tmp_neuron_id))
+    }
+
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_neurons_readable_by_caller))
+    return parser_ok;
 }
 
 parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    // Create context and auxiliary ctx
     CREATE_CTX(ctx, tx, input, inputSize)
-    CHECK_PARSER_ERR(readCandidHeader(&ctx))
+    candid_transaction_t txn;
+    txn.ctx.buffer = ctx.buffer;
+    txn.ctx.bufferLen = ctx.bufferLen;
+    txn.ctx.tx_obj = ctx.tx_obj;
 
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, (tx->candid_typetableSize - 1)))
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
+
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
     candid_ManageNeuron_t *val = &tx->tx_fields.call.data.candid_manageNeuron;
 
-    // Now read
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 3) {
+        return parser_unexpected_value;
+    }
+
+    // Check sanity Id
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_id) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_id || txn.element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+    // Read Id
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_id))
     if (val->has_id) {
         CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->id.id))
     }
 
+    // Check sanity Command
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+    txn.element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_command) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Variant) {
+        return parser_unexpected_type;
+    }
+
+    // Reset pointers and read Command
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_command))
     if (val->has_command) {
         CHECK_PARSER_ERR(readCandidNat(&ctx, &val->command.variant))
-        CHECK_PARSER_ERR(getHash(&ctx, check_hash_method, val->command.variant, &val->command.hash))
+        CHECK_PARSER_ERR(getHash(&txn, val->command.variant, &val->command.hash))
 
         switch (val->command.hash) {
             case hash_command_Split: {
+                // Check sanity Split
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_amount_e8s || txn.element.implementation != Nat64) {
+                    return parser_unexpected_type;
+                }
+
+                // Read Split
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.split.amount_e8s))
                 break;
             }
+
             case hash_command_Merge: {
+                // Check sanity Merge
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+
+                if (txn.element.field_hash != hash_source_neuron_id) {
+                    return parser_unexpected_type;
+                }
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+
+                if (txn.element.field_hash != hash_id || txn.element.implementation != Nat64) {
+                    return parser_unexpected_type;
+                }
+
+                // Read Merge
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.merge.has_source))
                 if (!val->command.merge.has_source) {
                     // https://github.com/Zondax/ledger-icp/issues/149
@@ -490,18 +697,67 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.merge.source.id))
                 break;
             }
+
             case hash_command_Configure: {
+                // Save this type
+                const int64_t txn_element_implementation = txn.element.implementation;
+
+                // Check sanity Configure
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_operation) {
+                    return parser_unexpected_type;
+                }
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                if (txn.txn_type != Variant) {
+                    return parser_unexpected_type;
+                }
+
+                // Read Configure / Operation
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.configure.has_operation))
                 if (!val->command.configure.has_operation) {
                     return parser_unexpected_value;
                 }
                 candid_Operation_t *operation = &val->command.configure.operation;
-
                 CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &operation->which))
-                CHECK_PARSER_ERR(getHash(&ctx, check_hash_operation, operation->which, &operation->hash))
+
+                // Restore saved type
+                txn.element.implementation = txn_element_implementation;
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length > 1) {
+                    return parser_unexpected_number_items;
+                }
+
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                CHECK_PARSER_ERR(getHash(&txn, operation->which, &operation->hash))
 
                 switch (operation->hash) {
                     case hash_operation_SetDissolvedTimestamp: {
+                        // Check sanity SetDissolvedTimestamp
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length > 1) {
+                            return parser_unexpected_number_items;
+                        }
+
+                        txn.element.variant_index = 0;
+                        CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                        if (txn.element.field_hash != hash_dissolve_timestamp_seconds || txn.element.implementation != Nat64) {
+                            return parser_unexpected_type;
+                        }
+
+                        // Read SetDissolvedTimestamp
                         CHECK_PARSER_ERR(readCandidNat64(&ctx,
                                                          &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
 
@@ -512,29 +768,201 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                         break;
                     }
                     case hash_operation_LeaveCommunityFund: {
+                        // Check sanity LeaveCommunityFund
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length != 0) {
+                            return parser_unexpected_number_items;
+                        }
                         // Empty record
                         break;
                     }
+                    case hash_operation_ChangeAutoStakeMaturity:
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length != 1) {
+                            return parser_unexpected_number_items;
+                        }
+                        txn.element.variant_index = 0;
+                        CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                        if (txn.element.field_hash != hash_setting_auto_stake_maturity
+                            || txn.element.implementation != Bool) {
+                            return parser_unexpected_type;
+                        }
+                        // let's read
+                        CHECK_PARSER_ERR(readCandidByte(
+                                             &ctx,
+                                             &operation->autoStakeMaturity.requested_setting_for_auto_stake_maturity))
+                        break;
                     default:
+                        ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
                         return parser_unexpected_value;
                 }
                 break;
             }
+            case hash_command_Spawn: {
+                // Check sanity
+                const int64_t spawnRoot = txn.element.implementation;
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 3) {
+                    return parser_unexpected_value;
+                }
+
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_percentage_to_spawn) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Nat32) {
+                    return parser_unexpected_type;
+                }
+
+                // reset txn
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, spawnRoot))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+                txn.element.variant_index = 1;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_new_controller) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Principal) {
+                    return parser_unexpected_type;
+                }
+
+                // reset txn
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, spawnRoot))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+                txn.element.variant_index = 2;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_nonce) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Nat64) {
+                    return parser_unexpected_type;
+                }
+
+                // now let's read
+                // Percentage to spawn
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.spawn.has_percentage_to_spawn))
+                if (val->command.spawn.has_percentage_to_spawn) {
+                    CHECK_PARSER_ERR(readCandidNat32(&ctx, &val->command.spawn.percentage_to_spawn))
+                    // Sanity check
+                    if (val->command.spawn.percentage_to_spawn == 0 || val->command.spawn.percentage_to_spawn > 100) {
+                        return parser_value_out_of_range;
+                    }
+                }
+
+                // Controller
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.spawn.has_controller))
+                if (val->command.spawn.has_controller) {
+                    uint8_t has_principal = 0;
+                    uint8_t principalSize = 0;
+                    CHECK_PARSER_ERR(readCandidByte(&ctx, &has_principal))
+                    if(has_principal) {
+                        CHECK_PARSER_ERR(readCandidByte(&ctx, &principalSize))
+                        CHECK_PARSER_ERR(readCandidBytes(&ctx, val->command.spawn.new_controller, principalSize))
+                    }
+                }
+
+                // Nonce
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.spawn.has_nonce))
+                if (val->command.spawn.has_nonce) {
+                    CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->command.spawn.nonce))
+                }
+
+                break;
+            }
+            case hash_command_StakeMaturity:
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+
+                txn.element.variant_index = 0;
+                CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                if (txn.element.field_hash != hash_percentage_to_stake) {
+                    return parser_unexpected_type;
+                }
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidOptional(&txn))
+                if (txn.element.implementation != Nat32) {
+                    return parser_unexpected_type;
+                }
+
+                // now let's read
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.stake.has_percentage_to_stake))
+                if (val->command.spawn.has_percentage_to_spawn) {
+                    CHECK_PARSER_ERR(readCandidNat32(&ctx, &val->command.stake.percentage_to_stake))
+                    // Sanity check
+                    if (val->command.stake.percentage_to_stake == 0 || val->command.stake.percentage_to_stake > 100) {
+                        return parser_value_out_of_range;
+                    }
+                }
+                break;
+
             default:
+                ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)
                 return parser_unexpected_type;
         }
     }
 
+    // Check sanity Neuron id or subaccount
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 2;
+
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_neuron_id_or_subaccount) {
+        return parser_unexpected_type;
+    }
+
+    const int64_t savedElementImplementation = txn.element.implementation;
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Variant) {
+        return parser_unexpected_type;
+    }
+
+    // Read neuron id or subaccount
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_neuron_id_or_subaccount))
     if (val->has_neuron_id_or_subaccount) {
         CHECK_PARSER_ERR(readCandidWhichVariant(&ctx, &val->neuron_id_or_subaccount.which))
 
-        switch (val->neuron_id_or_subaccount.which) {
-            case 0: {
+        txn.element.implementation = savedElementImplementation;
+        uint64_t neuron_id_or_subaccount_hash = 0;
+        CHECK_PARSER_ERR(getHash(&txn, val->neuron_id_or_subaccount.which, &neuron_id_or_subaccount_hash))
+
+        switch (neuron_id_or_subaccount_hash) {
+            case hash_subaccount: {
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                if (txn.txn_type != Vector) {
+                    return parser_unexpected_type;
+                }
+
+                // Read subaccount
                 CHECK_PARSER_ERR(readCandidText(&ctx, &val->neuron_id_or_subaccount.subaccount))
                 break;
             }
-            case 1: {
+            case hash_neuron_id: {
+                CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                if (txn.txn_length != 1) {
+                    return parser_unexpected_value;
+                }
+
+                // Read neuron id
                 CHECK_PARSER_ERR(readCandidNat64(&ctx, &val->neuron_id_or_subaccount.neuronId.id))
                 break;
             }
@@ -544,16 +972,38 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
     }
 
+    if (ctx.bufferLen - ctx.offset > 0) {
+        return parser_unexpected_characters;
+    }
+
     return parser_ok;
 }
 
 parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
     CREATE_CTX(ctx, tx, input, inputSize)
-    CHECK_PARSER_ERR(readCandidHeader(&ctx))
+    candid_transaction_t txn;
+    txn.ctx.buffer = ctx.buffer;
+    txn.ctx.bufferLen = ctx.bufferLen;
+    txn.ctx.tx_obj = ctx.tx_obj;
 
-    ///
-    CHECK_PARSER_ERR(readAndCheckType(&ctx, 3))
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
+
+
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
     candid_UpdateNodeProvider_t *val = &tx->tx_fields.call.data.candid_updateNodeProvider;
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+
+    // Check sanity
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_reward_account) {
+        return parser_unexpected_type;
+    }
 
     // Now read
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_reward_account))
@@ -561,9 +1011,34 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
         return parser_unexpected_value;
     }
 
+    // Check sanity
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != hash_hash) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Vector) {
+        return parser_unexpected_type;
+    }
+
+    // Now read
     CHECK_PARSER_ERR(readCandidText(&ctx, &val->account_identifier))
     if (val->account_identifier.len != 32) {
         return parser_unexpected_number_items;
+    }
+
+    if (ctx.bufferLen - ctx.offset > 0) {
+        return parser_unexpected_characters;
     }
 
     return parser_ok;

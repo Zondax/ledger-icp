@@ -17,16 +17,11 @@
 import Zemu from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
-import {SIGN_VALUES_P2} from "@zondax/ledger-icp/dist/common";
-import {DEFAULT_OPTIONS, DEVICE_MODELS} from "./common";
+import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
+import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
+import { sha256 } from 'js-sha256'
 
-const sha256 = require('js-sha256')
-
-jest.setTimeout(60000)
-
-beforeAll(async () => {
-  await Zemu.checkAndPullImage()
-})
+jest.setTimeout(180000)
 
 describe('Phase2', function () {
   test.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
@@ -47,7 +42,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_increaseTimer_normal`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_increaseTimer_normal`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -90,7 +85,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_staketx_normal`, m.name === 'nanos' ? 6 : 7)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_staketx_normal`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -128,14 +123,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_addHotkey`, m.name === 'nanos' ? 4 : 5)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_addHotkey`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -157,14 +151,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_removeHotkey`, m.name === 'nanos' ? 4 : 5)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_removeHotkey`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -186,14 +179,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_startdissolve`, m.name === 'nanos' ? 2 : 3)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_startdissolve`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -215,14 +207,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_stopdissolve`, m.name === 'nanos' ? 2 : 3)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_stopdissolve`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -244,14 +235,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_disburse`, m.name === 'nanos' ? 5 : 6)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_disburse`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -272,14 +262,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_listneurons`, m.name === 'nanos' ? 1 : 2)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_listneurons`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -307,13 +296,12 @@ describe('Phase2', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- Merge Mature', async function (m) {
+  test.each(DEVICE_MODELS)('sign normal -- Stake Mature', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -327,15 +315,13 @@ describe('Phase2', function () {
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_MergeMature`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_StakeMature`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -356,14 +342,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_RegisterVote`, m.name === 'nanos' ? 4 : 5)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_RegisterVote`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -384,14 +369,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_follow`, m.name === 'nanos' ? 6 : 7)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_follow`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -412,14 +396,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-claim_neuron`, m.name === 'nanos' ? 1 : 2)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-claim_neuron`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -440,14 +423,13 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-join_community_fund`, m.name === 'nanos' ? 2 : 3)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-join_community_fund`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-
     } finally {
       await sim.close()
     }
@@ -472,7 +454,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_updateCall`, m.name === 'nanos' ? 8 : 9)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_updateCall`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -480,7 +462,12 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
-      const pk = Uint8Array.from(Buffer.from("0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835", 'hex'))
+      const pk = Uint8Array.from(
+        Buffer.from(
+          '0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835',
+          'hex',
+        ),
+      )
 
       const digest_request = Uint8Array.from(signatureResponse.RequestHash)
       const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS)
@@ -495,7 +482,6 @@ describe('Phase2', function () {
 
       const signatureOk_statusread = secp256k1.ecdsaVerify(signature_statusread, digest_statusread, pk)
       expect(signatureOk_statusread).toEqual(true)
-
     } finally {
       await sim.close()
     }
