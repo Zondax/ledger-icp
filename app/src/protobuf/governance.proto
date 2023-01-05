@@ -132,51 +132,51 @@ message ManageNeuronResponse {
 
 message GovernanceError {
   enum ErrorType {
-     ERROR_TYPE_UNSPECIFIED = 0;
-     // The operation was successfully completed.
-     ERROR_TYPE_OK = 1;
-     // This operation is not available, e.g., not implemented.
-     ERROR_TYPE_UNAVAILABLE = 2;
-     // The caller is not authorized to perform this operation.
-     ERROR_TYPE_NOT_AUTHORIZED = 3;
-     // Some entity required for the operation (for example, a neuron) was not found.
-     ERROR_TYPE_NOT_FOUND = 4;
-     // The command was missing or invalid. This is a permanent error.
-     ERROR_TYPE_INVALID_COMMAND = 5;
-     // The neuron is dissolving or dissolved and the operation requires it to
-     // be not dissolving (that is, having a non-zero dissolve delay that is
-     // accumulating age).
-     ERROR_TYPE_REQUIRES_NOT_DISSOLVING = 6;
-     // The neuron is not dissolving or dissolved and the operation requires
-     // it to be dissolving (that is, having a non-zero dissolve delay with
-     // zero age that is not accumulating).
-     ERROR_TYPE_REQUIRES_DISSOLVING = 7;
-     // The neuron is not dissolving and not dissolved and the operation
-     // requires it to be dissolved (that is, having a dissolve delay of zero
-     // and an age of zero).
-     ERROR_TYPE_REQUIRES_DISSOLVED = 8;
-     // When adding or removing a hot key: the key to add was already
-     // present or the key to remove was not present or the key to add
-     // was invalid or adding another hot key would bring the total
-     // number of the maximum number of allowed hot keys per neuron.
-     ERROR_TYPE_HOT_KEY = 9;
-     // Some canister side resource is exhausted, so this operation cannot be
-     // performed.
-     ERROR_TYPE_RESOURCE_EXHAUSTED = 10;
-     // Some precondition for executing this method was not met.
-     ERROR_TYPE_PRECONDITION_FAILED = 11;
-     // Executing this method failed for some reason external to the
-     // governance canister.
-     ERROR_TYPE_EXTERNAL = 12;
-     // A neuron has an ongoing ledger update and thus can't be
-     // changed.
-     ERROR_TYPE_LEDGER_UPDATE_ONGOING = 13;
-     // There wasn't enough funds to perform the operation.
-     ERROR_TYPE_INSUFFICIENT_FUNDS = 14;
-     // The principal provided was invalid.
-     ERROR_TYPE_INVALID_PRINCIPAL = 15;
-     // The proposal's parameters violate size restrictions.
-     ERROR_TYPE_INVALID_PROPOSAL = 16;
+    ERROR_TYPE_UNSPECIFIED = 0;
+    // The operation was successfully completed.
+    ERROR_TYPE_OK = 1;
+    // This operation is not available, e.g., not implemented.
+    ERROR_TYPE_UNAVAILABLE = 2;
+    // The caller is not authorized to perform this operation.
+    ERROR_TYPE_NOT_AUTHORIZED = 3;
+    // Some entity required for the operation (for example, a neuron) was not found.
+    ERROR_TYPE_NOT_FOUND = 4;
+    // The command was missing or invalid. This is a permanent error.
+    ERROR_TYPE_INVALID_COMMAND = 5;
+    // The neuron is dissolving or dissolved and the operation requires it to
+    // be not dissolving (that is, having a non-zero dissolve delay that is
+    // accumulating age).
+    ERROR_TYPE_REQUIRES_NOT_DISSOLVING = 6;
+    // The neuron is not dissolving or dissolved and the operation requires
+    // it to be dissolving (that is, having a non-zero dissolve delay with
+    // zero age that is not accumulating).
+    ERROR_TYPE_REQUIRES_DISSOLVING = 7;
+    // The neuron is not dissolving and not dissolved and the operation
+    // requires it to be dissolved (that is, having a dissolve delay of zero
+    // and an age of zero).
+    ERROR_TYPE_REQUIRES_DISSOLVED = 8;
+    // When adding or removing a hot key: the key to add was already
+    // present or the key to remove was not present or the key to add
+    // was invalid or adding another hot key would bring the total
+    // number of the maximum number of allowed hot keys per neuron.
+    ERROR_TYPE_HOT_KEY = 9;
+    // Some canister side resource is exhausted, so this operation cannot be
+    // performed.
+    ERROR_TYPE_RESOURCE_EXHAUSTED = 10;
+    // Some precondition for executing this method was not met.
+    ERROR_TYPE_PRECONDITION_FAILED = 11;
+    // Executing this method failed for some reason external to the
+    // governance canister.
+    ERROR_TYPE_EXTERNAL = 12;
+    // A neuron has an ongoing ledger update and thus can't be
+    // changed.
+    ERROR_TYPE_LEDGER_UPDATE_ONGOING = 13;
+    // There wasn't enough funds to perform the operation.
+    ERROR_TYPE_INSUFFICIENT_FUNDS = 14;
+    // The principal provided was invalid.
+    ERROR_TYPE_INVALID_PRINCIPAL = 15;
+    // The proposal's parameters violate size restrictions.
+    ERROR_TYPE_INVALID_PROPOSAL = 16;
   }
 
   ErrorType error_type = 1;
@@ -228,7 +228,7 @@ message Neuron {
     uint64 when_dissolved_timestamp_seconds = 9 [jstype = JS_STRING];
     uint64 dissolve_delay_seconds = 10 [jstype = JS_STRING];
   }
-  message Followees { repeated ic_base_types.pb.v1.NeuronId followees = 1; }
+  message Followees {repeated ic_base_types.pb.v1.NeuronId followees = 1;}
   map<int32, Followees> followees = 11;
   repeated BallotInfo recent_ballots = 12;
   bool kyc_verified = 13;

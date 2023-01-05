@@ -1,4 +1,4 @@
-import {DEFAULT_START_OPTIONS, DeviceModel} from "@zondax/zemu";
+import { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
 
 const Resolve = require('path').resolve
 const APP_PATH_S = Resolve('../app/output/app_s.elf')

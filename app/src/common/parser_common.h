@@ -35,7 +35,8 @@ typedef enum {
     parser_init_context_empty,
     parser_display_idx_out_of_range,
     parser_display_page_out_of_range,
-    parser_unexepected_error,
+    parser_unexpected_error,
+    parser_not_implemented,
     // Cbor
     parser_cbor_unexpected,
     parser_cbor_unexpected_EOF,
@@ -59,6 +60,8 @@ typedef enum {
     // Required fields
     parser_required_nonce,
     parser_required_method,
+    // Special codes
+    parser_type_not_found,
 } parser_error_t;
 
 typedef struct {

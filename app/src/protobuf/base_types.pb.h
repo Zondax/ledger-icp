@@ -3,6 +3,7 @@
 
 #ifndef PB_IC_BASE_TYPES_PB_V1_BASE_TYPES_PB_H_INCLUDED
 #define PB_IC_BASE_TYPES_PB_V1_BASE_TYPES_PB_H_INCLUDED
+
 #include <pb.h>
 
 #if PB_PROTO_HEADER_VERSION != 40
@@ -13,40 +14,40 @@
 /* A descriptor of the authorization of all the update methods in a
  canister that require authorization.
  Methods that should be accessible to anyone should not appear in this list */
-typedef struct _ic_base_types_pb_v1_CanisterAuthzInfo { 
-    pb_callback_t methods_authz; 
+typedef struct _ic_base_types_pb_v1_CanisterAuthzInfo {
+    pb_callback_t methods_authz;
 } ic_base_types_pb_v1_CanisterAuthzInfo;
 
 /* A PB container for a CanisterId, which uniquely identifies
  a principal. */
-typedef struct _ic_base_types_pb_v1_CanisterId { 
-    pb_callback_t serialized_id; 
+typedef struct _ic_base_types_pb_v1_CanisterId {
+    pb_callback_t serialized_id;
 } ic_base_types_pb_v1_CanisterId;
 
 /* A descriptor of the authorization of a single method.
  Any of the principals in the list are authorized to execute
  the method. */
-typedef struct _ic_base_types_pb_v1_MethodAuthzInfo { 
-    pb_callback_t method_name; 
-    pb_callback_t principal_ids; 
+typedef struct _ic_base_types_pb_v1_MethodAuthzInfo {
+    pb_callback_t method_name;
+    pb_callback_t principal_ids;
 } ic_base_types_pb_v1_MethodAuthzInfo;
 
 /* A container for a NeuronId blob, which uniquely identifies
  a Neuron. */
-typedef struct _ic_base_types_pb_v1_NeuronId { 
-    uint64_t id; 
+typedef struct _ic_base_types_pb_v1_NeuronId {
+    uint64_t id;
 } ic_base_types_pb_v1_NeuronId;
 
 typedef PB_BYTES_ARRAY_T(30) ic_base_types_pb_v1_PrincipalId_serialized_id_t;
 /* A PB container for a PrincipalId, which uniquely identifies
  a principal. */
-typedef struct _ic_base_types_pb_v1_PrincipalId { 
-    ic_base_types_pb_v1_PrincipalId_serialized_id_t serialized_id; 
+typedef struct _ic_base_types_pb_v1_PrincipalId {
+    ic_base_types_pb_v1_PrincipalId_serialized_id_t serialized_id;
 } ic_base_types_pb_v1_PrincipalId;
 
 /* The id of a specific proposal. */
-typedef struct _ic_base_types_pb_v1_ProposalId { 
-    uint64_t id; 
+typedef struct _ic_base_types_pb_v1_ProposalId {
+    uint64_t id;
 } ic_base_types_pb_v1_ProposalId;
 
 

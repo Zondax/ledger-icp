@@ -17,9 +17,36 @@
 
 #include <vector>
 #include <string>
+#include "parser_common.h"
+
+typedef struct {
+    uint64_t index;
+    std::string name;
+    std::string blob;
+    bool valid;
+    std::vector<std::string> expected;
+    std::vector<std::string> expected_expert;
+} testcase_t;
+
+class JsonTests_Base : public ::testing::TestWithParam<testcase_t> {
+public:
+    struct PrintToStringParamName {
+        template<class ParamType>
+        std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+            auto p = static_cast<testcase_t>(info.param);
+            std::stringstream ss;
+            ss << p.index << "_" << p.name;
+            return ss.str();
+        }
+    };
+};
 
 #define EXPECT_EQ_STR(_STR1, _STR2, _errorMessage) { if (_STR1 != nullptr & _STR2 != nullptr) \
 EXPECT_TRUE(!strcmp(_STR1, _STR2)) << _errorMessage << ", expected: " << _STR2 << ", received: " << _STR1; \
 else FAIL() << "One of the strings is null"; }
 
 std::vector<std::string> dumpUI(parser_context_t *ctx, uint16_t maxKeyLen, uint16_t maxValueLen);
+
+std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile);
+
+void check_testcase(const testcase_t &tc, bool expert_mode);
