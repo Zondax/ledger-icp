@@ -48,36 +48,18 @@ parser_error_t getCandidNat64FromVec(const uint8_t *buf, uint64_t *v, uint8_t si
     return parser_ok;
 }
 
-// static parser_error_t getHash(candid_transaction_t *txn, const uint8_t variant, uint64_t *hash) {
-//     if (txn == NULL || hash == NULL) {
-//         return parser_unexpected_error;
-//     }
-//     *hash = 0;
-//     // Get option type implementation
-//     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+parser_error_t getCandidInt32FromVec(const uint8_t *buf, int32_t *v, uint8_t size, uint8_t idx) {
+    if (buf == NULL || v == NULL || idx >= size) {
+        return parser_unexpected_value;
+    }
+    *v = 0;
+    buf = buf + 4 * idx;
 
-//     int64_t type = 0;
-//     CHECK_PARSER_ERR(readCandidType(&txn->ctx, &type))
-//     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, type))
-
-//     uint64_t variantLength = 0;
-//     CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &variantLength))
-//     if (variant >= variantLength) {
-//         return parser_value_out_of_range;
-//     }
-
-//     // Move until requested variant
-//     for (uint64_t i = 0; i < variant; i++) {
-//         int64_t dummyType;
-//         uint64_t tmpHash = 0;
-//         CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &tmpHash))
-//         CHECK_PARSER_ERR(readCandidType(&txn->ctx, &dummyType))
-//     }
-
-//     CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, hash))
-//     CHECK_PARSER_ERR(readCandidType(&txn->ctx, &txn->element.implementation))
-//     return parser_ok;
-// }
+    for (uint8_t i = 0; i < 4; i++) {
+        *v += (int32_t) *(buf + i) << 8 * i;
+    }
+    return parser_ok;
+}
 
 parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
     // Create context and auxiliary ctx

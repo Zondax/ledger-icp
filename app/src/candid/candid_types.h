@@ -74,6 +74,15 @@ typedef enum {
 } txn_hash_fields;
 
 typedef enum {
+    sns_hash_subaccount = 1349681965,
+    sns_hash_command = 2171433291,
+    sns_hash_permissions_to_add = 425878456,
+    sns_hash_principal_id = 3211002892,
+
+    sns_hash_neuron_permission_list = 248806532,
+} sns_hash_fields;
+
+typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
@@ -86,7 +95,22 @@ typedef enum {
     hash_command_StakeMaturity = 3582720395,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
-  } command_variant_hash_e;
+} command_variant_hash_e;
+
+typedef enum {
+    sns_hash_command_Split = 345791162,
+    sns_hash_command_Follow = 774571409,
+    sns_hash_command_DisburseMaturity = 914851348,
+    sns_hash_command_Configure = 1349619708,
+    sns_hash_command_RegisterVote = 1647237574,
+    sns_hash_command_SyncCommand = 2455066893,
+    sns_hash_command_MakeProposal = 3217030240,
+    sns_hash_command_ClaimOrRefreshNeuron = 3582720395,
+    sns_hash_command_RemoveNeuronPermissions = 3664916941,
+    sns_hash_command_AddNeuronPermissions = 3723163536,
+    sns_hash_command_MergeMaturity = 3865893897,
+    sns_hash_command_Disburse = 4121967011,
+} sns_hash_commands;
 
 typedef enum {
     //Check these hashes

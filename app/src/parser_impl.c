@@ -334,6 +334,10 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     }
                     return parser_ok;
                 }
+                case sns_hash_command_AddNeuronPermissions:
+                    *mn_type = SNS_AddNeuronPermissions;
+                    return parser_ok;
+
                 default:
                     break;
             }
@@ -697,6 +701,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Follow : {
             pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
             return follow_count > 0 ? 3 + follow_count : 4;
+        }
+
+        case SNS_AddNeuronPermissions: {
+            return 4 + v->tx_fields.call.data.sns_manageNeuron.command.addNeuronPermissions.permissionList.list_size;
         }
 
         default:

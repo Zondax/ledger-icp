@@ -88,6 +88,8 @@ typedef enum {
     Merge = 1000,
     SpawnCandid = 1001,
     StakeMaturityCandid = 1002,
+
+    SNS_AddNeuronPermissions = 3000,
 } manageNeuron_e;
 
 typedef enum {

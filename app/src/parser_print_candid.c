@@ -19,6 +19,40 @@
 #include "timeutils.h"
 #include <zxformat.h>
 
+// Permissions ENUM
+// https://github.com/dfinity/ic-js/blob/d82310ec5519160b5fa2ec94fd82200485bd3ccc/packages/sns/src/enums/governance.enums.ts#L2
+typedef enum {
+    NEURON_PERMISSION_TYPE_UNSPECIFIED = 0,
+    NEURON_PERMISSION_TYPE_CONFIGURE_DISSOLVE_STATE = 1,
+    NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS = 2,
+    NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL = 3,
+    NEURON_PERMISSION_TYPE_VOTE = 4,
+    NEURON_PERMISSION_TYPE_DISBURSE = 5,
+    NEURON_PERMISSION_TYPE_SPLIT = 6,
+    NEURON_PERMISSION_TYPE_MERGE_MATURITY = 7,
+    NEURON_PERMISSION_TYPE_DISBURSE_MATURITY = 8,
+    NEURON_PERMISSION_TYPE_STAKE_MATURITY = 9,
+    NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION = 10,
+} sns_permissions_e;
+
+__Z_INLINE parser_error_t print_permission(int32_t permission,
+                                           char *outVal, uint16_t outValLen) {
+    switch (permission)
+    {
+        case NEURON_PERMISSION_TYPE_VOTE:
+            snprintf(outVal, outValLen, "Vote");
+            break;
+        case NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL:
+            snprintf(outVal, outValLen, "Submit Proposal");
+            break;
+
+    default:
+        return parser_unexpected_value;
+    }
+
+    return parser_ok;
+}
+
 static parser_error_t parser_getItemLeaveCommunityFund(uint8_t displayIdx,
                                                        char *outKey, uint16_t outKeyLen,
                                                        char *outVal, uint16_t outValLen,
@@ -389,6 +423,52 @@ static parser_error_t parser_getItemListUpdateNodeProvider(__Z_UNUSED const pars
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemAddNeuronPermissions(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    sns_AddNeuronPermissions_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.addNeuronPermissions;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Add Neuron Permissions");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
+
+        snprintf(outKey, outKeyLen, "Canister Id");
+        return print_textual(canisterId, canisterIdSize,
+                            outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Neuron Id");
+        snprintf(outVal, outValLen, "NEURON ID");
+        return parser_ok;
+    }
+
+    if (displayIdx == 3 && fields->has_principal) {
+        snprintf(outKey, outKeyLen, "Principal Id");
+        return print_textual(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    displayIdx -= fields->has_principal ? 4 : 3;
+    if (displayIdx < fields->permissionList.list_size && fields->has_permissionList) {
+        snprintf(outKey, outKeyLen, "Add Permission");
+        int32_t permission = 0;
+        CHECK_PARSER_ERR(getCandidInt32FromVec(fields->permissionList.permissions_list_ptr, &permission,
+                                               fields->permissionList.list_size, displayIdx))
+
+        return print_permission(permission, outVal, outValLen);
+    }
+
+    return parser_no_data;
+}
+
 __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
                                                      uint8_t displayIdx,
                                                      char *outKey, uint16_t outKeyLen,
@@ -429,6 +509,9 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         }
         case StakeMaturityCandid: {
             return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
+        }
+        case SNS_AddNeuronPermissions: {
+            return parser_getItemAddNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         }
 
         default:
