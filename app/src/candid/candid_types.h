@@ -160,6 +160,19 @@ typedef struct {
 } candid_StakeMaturity_t;
 
 typedef struct {
+    uint8_t list_size;
+    const uint8_t *permissions_list_ptr;
+} sns_NeuronPermissionList_t;
+
+typedef struct {
+    uint8_t has_permissionList;
+    sns_NeuronPermissionList_t permissionList;
+
+    uint8_t has_principal;
+    uint8_t principal[30];
+} sns_AddNeuronPermissions_t;
+
+typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
@@ -168,6 +181,8 @@ typedef struct {
         candid_Merge_t merge;
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
+
+        sns_AddNeuronPermissions_t addNeuronPermissions;
     };
 } candid_Command_t;
 
@@ -189,6 +204,13 @@ typedef struct {
     uint8_t has_neuron_id_or_subaccount;
     candid_Neuron_id_or_subaccount_t neuron_id_or_subaccount;
 } candid_ManageNeuron_t;
+
+typedef struct {
+    sizedBuffer_t subaccount;
+
+    uint8_t has_command;
+    candid_Command_t command;
+} sns_ManageNeuron_t;
 
 
 typedef struct {

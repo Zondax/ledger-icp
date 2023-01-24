@@ -21,6 +21,7 @@ using ::testing::TestWithParam;
 
 class JsonTests_Phase1 : public JsonTests_Base {};
 class JsonTests_Phase2 : public JsonTests_Base {};
+class JsonTests_SNS : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
         Phase1,
@@ -49,3 +50,22 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_Phase2, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_Phase2, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+#if 0
+INSTANTIATE_TEST_SUITE_P (
+        Sns,
+        JsonTests_SNS,
+        ::testing::ValuesIn(GetJsonTestCases("sns_add_neuron_permission.json")),
+        JsonTests_SNS::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS, Expert) { check_testcase(GetParam(), true); }
+
+#endif
