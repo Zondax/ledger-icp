@@ -375,8 +375,7 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         }
     }
 
-    // Candid
-
+    // Candid NNS + SNS
     if (strcmp(method, "manage_neuron") == 0) {
         v->tx_fields.call.method_type = candid_manageneuron;
         CHECK_PARSER_ERR(readCandidManageNeuron(v, buffer, bufferLen))
@@ -405,6 +404,10 @@ static bool isCandidTransaction(parser_tx_t *v) {
     }
 
     if (strcmp(method, "update_node_provider") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "list_neurons") == 0) {
         return true;
     }
 
