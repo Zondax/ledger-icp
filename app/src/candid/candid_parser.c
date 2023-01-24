@@ -345,6 +345,24 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
                                              &ctx,
                                              &operation->autoStakeMaturity.requested_setting_for_auto_stake_maturity))
                         break;
+                    case hash_operation_IncreaseDissolveDelay:
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+                        if (txn.txn_length != 1) {
+                            return parser_unexpected_number_items;
+                        }
+                        txn.element.variant_index = 0;
+                        CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+                        if (txn.element.field_hash != hash_setting_increse_dissolve_delay
+                            || txn.element.implementation != Nat32) {
+                            return parser_unexpected_type;
+                        }
+                        // let's read
+                        CHECK_PARSER_ERR(readCandidNat32(
+                                             &ctx,
+                                             &operation->increaseDissolveDelay.dissolve_timestamp_seconds))
+                        break;
+
                     default:
                         ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
                         return parser_unexpected_value;

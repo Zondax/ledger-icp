@@ -16,6 +16,7 @@
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
 #include "candid_parser.h"
+#include "parser_txdef.h"
 #include "timeutils.h"
 #include <zxformat.h>
 
@@ -182,6 +183,62 @@ static parser_error_t parser_getItemChangeAutoStakeMaturity(uint8_t displayIdx,
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Auto stake");
         snprintf(outVal, outValLen, fields->command.configure.operation.autoStakeMaturity.requested_setting_for_auto_stake_maturity ? "true" : "false");
+        return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayIdx,
+                                                            char *outKey, uint16_t outKeyLen,
+                                                            char *outVal, uint16_t outValLen,
+                                                            uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Configure, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.has_operation, parser_unexpected_value)
+    PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.hash == hash_operation_IncreaseDissolveDelay,
+                           parser_unexpected_value)
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Increase Dissolve Delay");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Additional Delay");
+
+        if (fields->command.configure.operation.increaseDissolveDelay.dissolve_timestamp_seconds == 0) {
+            snprintf(outVal, outValLen, "0s");
+            return parser_ok;
+        }
+
+        char buffer[100];
+        MEMZERO(buffer, sizeof(buffer));
+        uint64_t value = 0;
+        MEMCPY(&value,
+               &fields->command.configure.operation.increaseDissolveDelay.dissolve_timestamp_seconds,
+               4);
+
+        CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -509,6 +566,9 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         }
         case StakeMaturityCandid: {
             return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
+        }
+        case Configure_IncreaseDissolveDelayCandid: {
+            return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         }
         case SNS_AddNeuronPermissions: {
             return parser_getItemAddNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
