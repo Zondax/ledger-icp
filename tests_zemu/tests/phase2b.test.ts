@@ -15,8 +15,7 @@
  ******************************************************************************* */
 
 import Zemu from '@zondax/zemu'
-import InternetComputerApp from '@zondax/ledger-icp'
-import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
+import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
 jest.setTimeout(180000)

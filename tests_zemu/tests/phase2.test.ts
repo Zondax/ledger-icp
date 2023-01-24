@@ -15,9 +15,8 @@
  ******************************************************************************* */
 
 import Zemu from '@zondax/zemu'
-import InternetComputerApp from '@zondax/ledger-icp'
+import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
-import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 import { sha256 } from 'js-sha256'
 
@@ -50,12 +49,12 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
-      const hash = sha256.hex(signatureResponse.preSignHash)
+      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
 
       const pk = Uint8Array.from(Buffer.from(pkhex, 'hex'))
       expect(pk.byteLength).toEqual(65)
       const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      const signature = Uint8Array.from(signatureResponse.signatureRS)
+      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
       //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
       expect(signature.byteLength).toEqual(64)
 
@@ -93,11 +92,11 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
-      const hash = sha256.hex(signatureResponse.preSignHash)
+      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
 
       const pk = Uint8Array.from(Buffer.from(expected_pk, 'hex'))
       const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      const signature = Uint8Array.from(signatureResponse.signatureRS)
+      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
       expect(signature.byteLength).toEqual(64)
 
       const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
@@ -469,15 +468,15 @@ describe('Phase2', function () {
         ),
       )
 
-      const digest_request = Uint8Array.from(signatureResponse.RequestHash)
-      const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS)
+      const digest_request = Uint8Array.from(signatureResponse.RequestHash ?? [])
+      const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS ?? [])
       expect(signature_request.byteLength).toEqual(64)
 
       const signatureOk = secp256k1.ecdsaVerify(signature_request, digest_request, pk)
       expect(signatureOk).toEqual(true)
 
-      const digest_statusread = Uint8Array.from(signatureResponse.StatusReadHash)
-      const signature_statusread = Uint8Array.from(signatureResponse.StatusReadSignatureRS)
+      const digest_statusread = Uint8Array.from(signatureResponse.StatusReadHash ?? [])
+      const signature_statusread = Uint8Array.from(signatureResponse.StatusReadSignatureRS ?? [])
       expect(signature_request.byteLength).toEqual(64)
 
       const signatureOk_statusread = secp256k1.ecdsaVerify(signature_statusread, digest_statusread, pk)
