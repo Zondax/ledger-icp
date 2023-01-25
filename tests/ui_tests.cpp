@@ -55,7 +55,6 @@ TEST_P(JsonTests_Phase2, Expert) { check_testcase(GetParam(), true); }
 ////////////////////
 ////////////////////
 
-#if 0
 INSTANTIATE_TEST_SUITE_P (
         Sns,
         JsonTests_SNS,
@@ -67,5 +66,3 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_SNS, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_SNS, Expert) { check_testcase(GetParam(), true); }
-
-#endif

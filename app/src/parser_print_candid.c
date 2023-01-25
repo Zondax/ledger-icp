@@ -498,19 +498,25 @@ static parser_error_t parser_getItemAddNeuronPermissions(uint8_t displayIdx,
         const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_textual(canisterId, canisterIdSize,
-                            outVal, outValLen, pageIdx, pageCount);
+        return print_canisterId(canisterId, canisterIdSize,
+                                outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Neuron Id");
-        snprintf(outVal, outValLen, "NEURON ID");
+        snprintf(outKey, outKeyLen, "Neuron Id ");
+        const uint8_t CHARS_PER_PAGE = 24;
+        uint8_t buffer[100] = {0};
+        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                  parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                  buffer, sizeof(buffer), pageCount);
+        snprintf(outVal, CHARS_PER_PAGE + 1, buffer + pageIdx * CHARS_PER_PAGE);
+
         return parser_ok;
     }
 
     if (displayIdx == 3 && fields->has_principal) {
-        snprintf(outKey, outKeyLen, "Principal Id");
-        return print_textual(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        snprintf(outKey, outKeyLen, "Principal Id ");
+        return print_principal(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
