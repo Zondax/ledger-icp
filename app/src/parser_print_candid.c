@@ -40,15 +40,35 @@ __Z_INLINE parser_error_t print_permission(int32_t permission,
                                            char *outVal, uint16_t outValLen) {
     switch (permission)
     {
-        case NEURON_PERMISSION_TYPE_VOTE:
-            snprintf(outVal, outValLen, "Vote");
+        case NEURON_PERMISSION_TYPE_UNSPECIFIED:
+            snprintf(outVal, outValLen, "Unspecified");
+            break;
+        case NEURON_PERMISSION_TYPE_CONFIGURE_DISSOLVE_STATE:
+            snprintf(outVal, outValLen, "Configure Dissolve State");
             break;
         case NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL:
             snprintf(outVal, outValLen, "Submit Proposal");
             break;
+        case NEURON_PERMISSION_TYPE_VOTE:
+            snprintf(outVal, outValLen, "Vote");
+            break;
+        case NEURON_PERMISSION_TYPE_DISBURSE:
+            snprintf(outVal, outValLen, "Disburse Neuron");
+            break;
+        case NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION:
+            snprintf(outVal, outValLen, "Manage Voting Permission");
+            break;
 
-    default:
-        return parser_unexpected_value;
+        case NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS:
+        case NEURON_PERMISSION_TYPE_SPLIT:
+        case NEURON_PERMISSION_TYPE_MERGE_MATURITY:
+        case NEURON_PERMISSION_TYPE_DISBURSE_MATURITY:
+        case NEURON_PERMISSION_TYPE_STAKE_MATURITY:
+            snprintf(outVal, outValLen, "Neuron permission: %d", permission);
+            break;
+
+        default:
+            return parser_unexpected_value;
     }
 
     return parser_ok;
