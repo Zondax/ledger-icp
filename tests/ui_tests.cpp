@@ -23,6 +23,7 @@ class JsonTests_Phase1 : public JsonTests_Base {};
 class JsonTests_Phase2 : public JsonTests_Base {};
 class JsonTests_SNS_AddPermission : public JsonTests_Base {};
 class JsonTests_SNS_RemovePermission : public JsonTests_Base {};
+class JsonTests_SNS_NeuronActions : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
         Phase1,
@@ -83,3 +84,19 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_SNS_RemovePermission, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_SNS_RemovePermission, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        NeuronActions,
+        JsonTests_SNS_NeuronActions,
+        ::testing::ValuesIn(GetJsonTestCases("sns_manage_neuron_actions.json")),
+        JsonTests_SNS_NeuronActions::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_NeuronActions, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_NeuronActions, Expert) { check_testcase(GetParam(), true); }
