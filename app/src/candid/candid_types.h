@@ -83,6 +83,10 @@ typedef enum {
     sns_hash_operation = 2688582695,
 
     sns_hash_neuron_permission_list = 248806532,
+
+    sns_hash_disburse_to_account = 1937583785,
+    sns_hash_opt_principal = 947296307,
+    sns_hash_opt_amount = 3573748184,
 } sns_hash_fields;
 
 typedef enum {
@@ -259,6 +263,14 @@ typedef struct {
 } icrc_transfer_t;
 
 typedef struct {
+    uint8_t has_account;
+    Account_t account;
+
+    uint8_t has_amount;
+    uint64_t amount;
+} sns_Disburse_t;
+
+typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
@@ -269,6 +281,7 @@ typedef struct {
         candid_StakeMaturity_t stake;
 
         sns_NeuronPermissions_t neuronPermissions;
+        sns_Disburse_t disburse;
     };
 } candid_Command_t;
 

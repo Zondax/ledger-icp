@@ -212,7 +212,7 @@ static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen,
     const uint8_t CHARS_PER_CHUNK = 5;
     const uint8_t CHUNKS_PER_PAGE = 6;
 
-    if (outputLen < CHARS_PER_PAGE + 2) {
+    if (outputLen < 35) {
         return parser_unexpected_buffer_end;
     }
 
@@ -224,8 +224,8 @@ static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen,
     input += pageIdx * CHARS_PER_PAGE;
     for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++) {
         if (idx == 3) {
-            snprintf(output, 4, " : ");
-            output += 3;
+            snprintf(output, 2, " ");
+            output += 1;
         }
 
         const bool endOfInput = strlen(input) < 6;
