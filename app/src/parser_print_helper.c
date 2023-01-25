@@ -190,7 +190,7 @@ parser_error_t subaccount_hexstring(const uint8_t *subaccount, const uint16_t su
     for (uint16_t i = 0; i < subaccountLen; i+= 3) {
         const uint8_t bytesToProcess = (subaccountLen - i) >= 3 ? 3 : (subaccountLen - i);
         for (uint8_t j = 0; j < bytesToProcess; j++) {
-            sprintf(output, "%02x", *subaccount);
+            snprintf((char*) output, 3, "%02x", *subaccount);
             subaccount++;
             output += 2;
         }
@@ -199,7 +199,7 @@ parser_error_t subaccount_hexstring(const uint8_t *subaccount, const uint16_t su
         delimiterCount = (i%9 == 0) ? 0 : delimiterCount;
 
         if (bytesToProcess == 3 && delimiterCount < 2) {
-            snprintf(output, sizeof(delimiter), delimiter);
+            snprintf((char*) output, sizeof(delimiter), delimiter);
             output += 3;
             delimiterCount++;
         }

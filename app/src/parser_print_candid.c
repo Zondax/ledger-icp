@@ -529,7 +529,7 @@ static parser_error_t parser_getItemAddNeuronPermissions(uint8_t displayIdx,
         subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
                                   parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
                                   buffer, sizeof(buffer), pageCount);
-        snprintf(outVal, CHARS_PER_PAGE + 1, buffer + pageIdx * CHARS_PER_PAGE);
+        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
 
         return parser_ok;
     }
