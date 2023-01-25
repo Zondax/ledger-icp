@@ -83,6 +83,9 @@ __Z_INLINE parser_error_t readSNSCommandAddNeuronPermissions(parser_context_t *c
         val->permissionList.permissions_list_ptr = ctx->buffer + ctx->offset;
         for (uint8_t i = 0; i < val->permissionList.list_size; i++) {
             CHECK_PARSER_ERR(readCandidInt32(ctx, &tmp_permission))
+            if (tmp_permission > NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION) {
+                return parser_unexpected_value;
+            }
         }
     }
 

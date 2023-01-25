@@ -20,22 +20,6 @@
 #include "timeutils.h"
 #include <zxformat.h>
 
-// Permissions ENUM
-// https://github.com/dfinity/ic-js/blob/d82310ec5519160b5fa2ec94fd82200485bd3ccc/packages/sns/src/enums/governance.enums.ts#L2
-typedef enum {
-    NEURON_PERMISSION_TYPE_UNSPECIFIED = 0,
-    NEURON_PERMISSION_TYPE_CONFIGURE_DISSOLVE_STATE = 1,
-    NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS = 2,
-    NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL = 3,
-    NEURON_PERMISSION_TYPE_VOTE = 4,
-    NEURON_PERMISSION_TYPE_DISBURSE = 5,
-    NEURON_PERMISSION_TYPE_SPLIT = 6,
-    NEURON_PERMISSION_TYPE_MERGE_MATURITY = 7,
-    NEURON_PERMISSION_TYPE_DISBURSE_MATURITY = 8,
-    NEURON_PERMISSION_TYPE_STAKE_MATURITY = 9,
-    NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION = 10,
-} sns_permissions_e;
-
 __Z_INLINE parser_error_t print_permission(int32_t permission,
                                            char *outVal, uint16_t outValLen) {
     switch (permission)
