@@ -17,9 +17,9 @@
 #include "candid_helper.h"
 
 
-__Z_INLINE parser_error_t readSNSCommandAddNeuronPermissions(parser_context_t *ctx, candid_transaction_t *txn) {
-    const int64_t addNeuronPermissionsRoot = txn->element.implementation;
-    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, addNeuronPermissionsRoot))
+__Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx, candid_transaction_t *txn, uint64_t hash_permission_to) {
+    const int64_t neuronPermissionsRoot = txn->element.implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, neuronPermissionsRoot))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
     if (txn->txn_length != 2) {
         return parser_unexpected_value;
@@ -28,7 +28,7 @@ __Z_INLINE parser_error_t readSNSCommandAddNeuronPermissions(parser_context_t *c
     // Check PermissionsToAdd
     txn->element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    if (txn->element.field_hash != sns_hash_permissions_to_add) {
+    if (txn->element.field_hash != hash_permission_to) {
         return parser_unexpected_type;
     }
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -55,7 +55,7 @@ __Z_INLINE parser_error_t readSNSCommandAddNeuronPermissions(parser_context_t *c
     }
 
     // reset txn
-    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, addNeuronPermissionsRoot))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, neuronPermissionsRoot))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
 
     txn->element.variant_index = 1;
@@ -72,7 +72,7 @@ __Z_INLINE parser_error_t readSNSCommandAddNeuronPermissions(parser_context_t *c
     }
 
     // Read data
-    sns_AddNeuronPermissions_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron.command.addNeuronPermissions;
+    sns_NeuronPermissions_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions;
 
     // Read Permissiones
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_permissionList))
@@ -158,11 +158,11 @@ parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
 
         switch (val->command.hash) {
             case sns_hash_command_AddNeuronPermissions: {
-                CHECK_PARSER_ERR(readSNSCommandAddNeuronPermissions(ctx, txn))
+                CHECK_PARSER_ERR(readSNSCommandNeuronPermissions(ctx, txn, sns_hash_permissions_to_add))
                 break;
             }
             case sns_hash_command_RemoveNeuronPermissions: {
-
+                CHECK_PARSER_ERR(readSNSCommandNeuronPermissions(ctx, txn, sns_hash_permissions_to_remove))
                 break;
             }
             case sns_hash_command_Disburse: {

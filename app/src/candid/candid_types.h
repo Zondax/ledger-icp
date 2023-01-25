@@ -79,6 +79,7 @@ typedef enum {
     sns_hash_command = 2171433291,
     sns_hash_permissions_to_add = 425878456,
     sns_hash_principal_id = 3211002892,
+    sns_hash_permissions_to_remove = 3210478349,
 
     sns_hash_neuron_permission_list = 248806532,
 } sns_hash_fields;
@@ -215,7 +216,7 @@ typedef struct {
 
     uint8_t has_principal;
     uint8_t principal[30];
-} sns_AddNeuronPermissions_t;
+} sns_NeuronPermissions_t;
 
 typedef struct {
     uint64_t variant;
@@ -227,7 +228,7 @@ typedef struct {
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
 
-        sns_AddNeuronPermissions_t addNeuronPermissions;
+        sns_NeuronPermissions_t neuronPermissions;
     };
 } candid_Command_t;
 

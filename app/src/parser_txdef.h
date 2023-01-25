@@ -91,6 +91,7 @@ typedef enum {
     Configure_IncreaseDissolveDelayCandid = 1003,
 
     SNS_AddNeuronPermissions = 3000,
+    SNS_RemoveNeuronPermissions = 3001,
 } manageNeuron_e;
 
 typedef enum {

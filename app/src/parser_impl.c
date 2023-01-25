@@ -340,6 +340,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case sns_hash_command_AddNeuronPermissions:
                     *mn_type = SNS_AddNeuronPermissions;
                     return parser_ok;
+                case sns_hash_command_RemoveNeuronPermissions:
+                    *mn_type = SNS_RemoveNeuronPermissions;
+                    return parser_ok;
 
                 default:
                     break;
@@ -707,9 +710,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return follow_count > 0 ? 3 + follow_count : 4;
         }
 
-        case SNS_AddNeuronPermissions: {
-            if (v->tx_fields.call.data.sns_manageNeuron.command.addNeuronPermissions.has_permissionList) {
-                return 4 + v->tx_fields.call.data.sns_manageNeuron.command.addNeuronPermissions.permissionList.list_size;
+        case SNS_AddNeuronPermissions:
+        case SNS_RemoveNeuronPermissions: {
+            if (v->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions.has_permissionList) {
+                return 4 + v->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions.permissionList.list_size;
             }
             return 4;
         }

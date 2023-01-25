@@ -30,6 +30,9 @@ __Z_INLINE parser_error_t print_permission(int32_t permission,
         case NEURON_PERMISSION_TYPE_CONFIGURE_DISSOLVE_STATE:
             snprintf(outVal, outValLen, "Configure Dissolve State");
             break;
+        case NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS:
+            snprintf(outVal, outValLen, "Manage Principals");
+            break;
         case NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL:
             snprintf(outVal, outValLen, "Submit Proposal");
             break;
@@ -39,16 +42,20 @@ __Z_INLINE parser_error_t print_permission(int32_t permission,
         case NEURON_PERMISSION_TYPE_DISBURSE:
             snprintf(outVal, outValLen, "Disburse Neuron");
             break;
+        case NEURON_PERMISSION_TYPE_SPLIT:
+            snprintf(outVal, outValLen, "Split Neuron");
+            break;
+        case NEURON_PERMISSION_TYPE_MERGE_MATURITY:
+            snprintf(outVal, outValLen, "Merge Maturity");
+            break;
+        case NEURON_PERMISSION_TYPE_DISBURSE_MATURITY:
+            snprintf(outVal, outValLen, "Disburse Maturity");
+            break;
+        case NEURON_PERMISSION_TYPE_STAKE_MATURITY:
+            snprintf(outVal, outValLen, "Stake Maturity");
+            break;
         case NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION:
             snprintf(outVal, outValLen, "Manage Voting Permission");
-            break;
-
-        case NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS:
-        case NEURON_PERMISSION_TYPE_SPLIT:
-        case NEURON_PERMISSION_TYPE_MERGE_MATURITY:
-        case NEURON_PERMISSION_TYPE_DISBURSE_MATURITY:
-        case NEURON_PERMISSION_TYPE_STAKE_MATURITY:
-            snprintf(outVal, outValLen, "Neuron permission: %d", permission);
             break;
 
         default:
@@ -484,16 +491,24 @@ static parser_error_t parser_getItemListUpdateNodeProvider(__Z_UNUSED const pars
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemAddNeuronPermissions(uint8_t displayIdx,
+static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
                                                         char *outKey, uint16_t outKeyLen,
                                                         char *outVal, uint16_t outValLen,
                                                         uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
-    sns_AddNeuronPermissions_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.addNeuronPermissions;
+    sns_NeuronPermissions_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.neuronPermissions;
+    candid_Command_t *command = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Add Neuron Permissions");
+
+        if (command->hash == sns_hash_command_AddNeuronPermissions) {
+            snprintf(outVal, outValLen, "Add Neuron Permissions");
+        } else if (command->hash == sns_hash_command_RemoveNeuronPermissions) {
+            snprintf(outVal, outValLen, "Remove Neuron Permissions");
+        } else {
+            return parser_unexpected_value;
+        }
         return parser_ok;
     }
 
@@ -525,7 +540,14 @@ static parser_error_t parser_getItemAddNeuronPermissions(uint8_t displayIdx,
 
     displayIdx -= fields->has_principal ? 4 : 3;
     if (displayIdx < fields->permissionList.list_size && fields->has_permissionList) {
-        snprintf(outKey, outKeyLen, "Add Permission");
+        if (command->hash == sns_hash_command_AddNeuronPermissions) {
+            snprintf(outKey, outKeyLen, "Add Permission");
+        } else if (command->hash == sns_hash_command_RemoveNeuronPermissions) {
+            snprintf(outKey, outKeyLen, "Remove Permission");
+        } else {
+            return parser_unexpected_value;
+        }
+
         int32_t permission = 0;
         CHECK_PARSER_ERR(getCandidInt32FromVec(fields->permissionList.permissions_list_ptr, &permission,
                                                fields->permissionList.list_size, displayIdx))
@@ -580,8 +602,9 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         }
-        case SNS_AddNeuronPermissions: {
-            return parser_getItemAddNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
+        case SNS_AddNeuronPermissions:
+        case SNS_RemoveNeuronPermissions: {
+            return parser_getItemNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         }
 
         default:
