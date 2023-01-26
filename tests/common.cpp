@@ -14,6 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 #include "gmock/gmock.h"
+#include "parser_impl.h"
 
 #include <parser.h>
 #include <sstream>
@@ -146,6 +147,7 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
     uint16_t bufferLen = parseHexString(buffer, sizeof(buffer), tc.blob.c_str());
 
     err = parser_parse(&ctx, buffer, bufferLen);
+    parser_tx_obj.special_transfer_type = normal_transaction;
     err_val = parser_validate(&ctx);
 
     if (tc.valid) {
@@ -158,7 +160,6 @@ void check_testcase(const testcase_t &tc, bool expert_mode) {
         }
         return;
     }
-    parser_tx_obj.special_transfer_type = normal_transaction;
     ASSERT_EQ(err_val, parser_ok) << parser_getErrorDescription(err);
 
     auto output = dumpUI(&ctx, 40, 37);
