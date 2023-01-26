@@ -15,7 +15,8 @@
 ********************************************************************************/
 #include "sns_parser.h"
 #include "candid_helper.h"
-
+#include "candid_types.h"
+#include "parser_common.h"
 
 __Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx, candid_transaction_t *txn, uint64_t hash_permission_to) {
     const int64_t neuronPermissionsRoot = txn->element.implementation;
@@ -107,6 +108,68 @@ __Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx,
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readSNSCommandNeuronConfigure(parser_context_t *ctx, candid_transaction_t *txn) {
+    sns_ManageNeuron_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron;
+    // Save this type
+    const int64_t txn_element_implementation = txn->element.implementation;
+
+    // Check sanity Configure
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != sns_hash_operation) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    if (txn->txn_type != Variant) {
+        return parser_unexpected_type;
+    }
+
+    // Read Configure / Operation
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.configure.has_operation))
+    if (!val->command.configure.has_operation) {
+        return parser_unexpected_value;
+    }
+    candid_Operation_t *operation = &val->command.configure.operation;
+    CHECK_PARSER_ERR(readCandidLEB128(ctx, &operation->which)) // read variant
+
+    // Restore saved type
+    txn->element.implementation = txn_element_implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length > 1) {
+        return parser_unexpected_number_items;
+    }
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    CHECK_PARSER_ERR(getHash(txn, operation->which, &operation->hash))
+
+    switch (operation->hash) {
+        case hash_operation_StartDissolving:
+        case hash_operation_StopDissolving:
+            // Check empty record
+            CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+            CHECK_PARSER_ERR(readCandidRecordLength(txn))
+            if (txn->txn_length != 0) {
+                return parser_unexpected_number_items;
+            }
+            break;
+        default:
+            ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
+            return parser_unexpected_value;
+    }
+    return parser_ok;
+}
+
 parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *txn) {
     if (ctx == NULL || txn == NULL || txn->txn_length != 2) {
         return parser_unexpected_error;
@@ -163,6 +226,10 @@ parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             }
             case sns_hash_command_RemoveNeuronPermissions: {
                 CHECK_PARSER_ERR(readSNSCommandNeuronPermissions(ctx, txn, sns_hash_permissions_to_remove))
+                break;
+            }
+            case sns_hash_command_Configure: {
+                CHECK_PARSER_ERR(readSNSCommandNeuronConfigure(ctx, txn))
                 break;
             }
             case sns_hash_command_Disburse: {

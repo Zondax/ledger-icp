@@ -491,6 +491,50 @@ static parser_error_t parser_getItemListUpdateNodeProvider(__Z_UNUSED const pars
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemConfigureDissolving(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    candid_Command_t *command = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+
+        if (command->configure.operation.hash == hash_operation_StartDissolving) {
+            snprintf(outVal, outValLen, "Start Dissolve Neuron");
+        } else if (command->configure.operation.hash == hash_operation_StopDissolving) {
+            snprintf(outVal, outValLen, "Stop Dissolve Neuron");
+        } else {
+            return parser_unexpected_value;
+        }
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
+
+        snprintf(outKey, outKeyLen, "Canister Id");
+        return print_canisterId(canisterId, canisterIdSize,
+                                outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Neuron Id ");
+        const uint8_t CHARS_PER_PAGE = 24;
+        uint8_t buffer[100] = {0};
+        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                  parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                  buffer, sizeof(buffer), pageCount);
+        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
+
+        return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
                                                         char *outKey, uint16_t outKeyLen,
                                                         char *outVal, uint16_t outValLen,
@@ -539,7 +583,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
-    if (displayIdx < fields->permissionList.list_size || !fields->has_permissionList && displayIdx == 0) {
+    if (displayIdx < fields->permissionList.list_size || (!fields->has_permissionList && displayIdx == 0)) {
         if (command->hash == sns_hash_command_AddNeuronPermissions) {
             snprintf(outKey, outKeyLen, "Add Permission");
         } else if (command->hash == sns_hash_command_RemoveNeuronPermissions) {
@@ -608,6 +652,9 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         }
+        case SNS_Configure_StartDissolving:
+        case SNS_Configure_StopDissolving:
+            return parser_getItemConfigureDissolving(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         case SNS_AddNeuronPermissions:
         case SNS_RemoveNeuronPermissions: {
             return parser_getItemNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);

@@ -302,6 +302,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
             }
 
             const candid_Command_t *command = &v->tx_fields.call.data.candid_manageNeuron.command;
+            const bool isSNS = v->tx_fields.call.is_sns;
             switch (command->hash) {
                 case hash_command_Spawn:
                     *mn_type = SpawnCandid;
@@ -331,6 +332,12 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                             break;
                         case hash_operation_IncreaseDissolveDelay:
                             *mn_type = Configure_IncreaseDissolveDelayCandid;
+                            break;
+                        case hash_operation_StartDissolving:
+                            *mn_type = isSNS ? SNS_Configure_StartDissolving : Configure_StartDissolving;
+                            break;
+                        case hash_operation_StopDissolving:
+                            *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolving;
                             break;
                         default:
                             return parser_unexpected_value;
@@ -712,6 +719,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
             return follow_count > 0 ? 3 + follow_count : 4;
         }
+
+        case SNS_Configure_StartDissolving:
+        case SNS_Configure_StopDissolving:
+            return 3;
 
         case SNS_AddNeuronPermissions:
         case SNS_RemoveNeuronPermissions: {
