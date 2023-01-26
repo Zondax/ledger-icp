@@ -80,6 +80,7 @@ typedef enum {
     sns_hash_permissions_to_add = 425878456,
     sns_hash_principal_id = 3211002892,
     sns_hash_permissions_to_remove = 3210478349,
+    sns_hash_operation = 2688582695,
 
     sns_hash_neuron_permission_list = 248806532,
 } sns_hash_fields;
@@ -103,8 +104,8 @@ typedef enum {
     sns_hash_command_Split = 345791162,
     sns_hash_command_Follow = 774571409,
     sns_hash_command_DisburseMaturity = 914851348,
-    sns_hash_command_Configure = 1349619708,
-    sns_hash_command_RegisterVote = 1647237574,
+    sns_hash_command_Configure = 1647237574,
+    // sns_hash_command_RegisterVote = 1647237574,
     sns_hash_command_SyncCommand = 2455066893,
     sns_hash_command_MakeProposal = 3217030240,
     sns_hash_command_ClaimOrRefreshNeuron = 3582720395,
@@ -257,7 +258,6 @@ typedef struct {
     uint8_t has_command;
     candid_Command_t command;
 } sns_ManageNeuron_t;
-
 
 typedef struct {
     uint8_t has_reward_account;

@@ -92,6 +92,8 @@ typedef enum {
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,
+    SNS_Configure_StartDissolving = 3002,
+    SNS_Configure_StopDissolving = 3003,
 } manageNeuron_e;
 
 typedef enum {
