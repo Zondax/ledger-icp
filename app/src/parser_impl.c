@@ -360,6 +360,8 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
     manageNeuron_e mn_type;
 
+    v->tx_fields.call.is_sns = 0; // we'll set this var later if is sns
+
     // Depending on the method, we may try to read protobuf or candid
 
     if (strcmp(method, "send_pb") == 0 || v->special_transfer_type == neuron_stake_transaction) {
@@ -563,6 +565,7 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
         case candid_updatenodeprovider:
         case candid_listneurons:
         case candid_manageneuron: {
+            if (v->tx_fields.call.is_sns) return parser_ok; // sns has dynamic canister id
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
 
