@@ -128,6 +128,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     {
         case 2: // SNS
             /* code */
+            tx->tx_fields.call.is_sns = 1;
             return readSNSManageNeuron(&ctx, &txn);
             break;
         case 3: // NNS

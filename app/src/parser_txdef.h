@@ -155,6 +155,8 @@ typedef struct {
     method_type_e method_type;
     method_arg_t method_args;
 
+    uint8_t is_sns;
+
     union {
         ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
         candid_ManageNeuron_t candid_manageNeuron;
