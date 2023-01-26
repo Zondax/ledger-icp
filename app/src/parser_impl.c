@@ -413,6 +413,12 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return parser_ok;
     }
 
+    if (strcmp(method, "icrc1_transfer") == 0) {
+        v->tx_fields.call.method_type = candid_icrc_transfer;
+        CHECK_PARSER_ERR(readCandidICRCTransfer(v, buffer, bufferLen))
+        return parser_ok;
+    }
+
     return parser_unexpected_type;
 }
 
@@ -427,6 +433,10 @@ static bool isCandidTransaction(parser_tx_t *v) {
     }
 
     if (strcmp(method, "list_neurons") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "icrc1_transfer") == 0) {
         return true;
     }
 
@@ -578,6 +588,10 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
 
         case pb_claimneurons : {
             CHECK_METHOD_WITH_CANISTER("renrkeyaaaaaaaaaaadacai")
+        }
+
+        case candid_icrc_transfer: {
+            return parser_ok;
         }
 
         default: {
@@ -768,6 +782,15 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                 }
                 case candid_listneurons:
                     return 1 + v->tx_fields.call.data.candid_listNeurons.neuron_ids_size;
+                case candid_icrc_transfer: {
+                    const call_t *call = &v->tx_fields.call;
+                    const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
+
+                    // Canister ID will be display only when different to ICP
+                    // Fee will be display if available or default if Canister ID is ICP
+                    return 5 + (icp_canisterId ? 0 : 1) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0);
+                }
+
                 default:
                     break;
             }

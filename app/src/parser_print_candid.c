@@ -20,6 +20,8 @@
 #include "timeutils.h"
 #include <zxformat.h>
 
+#define DEFAULT_MAXIMUM_FEES 10000
+
 __Z_INLINE parser_error_t print_permission(int32_t permission,
                                            char *outVal, uint16_t outValLen) {
     switch (permission)
@@ -512,7 +514,7 @@ static parser_error_t parser_getItemConfigureDissolving(uint8_t displayIdx,
     }
 
     if (displayIdx == 1) {
-        uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const uint8_t *canisterId = (const uint8_t*) parser_tx_obj.tx_fields.call.canister_id.data;
         const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
@@ -557,7 +559,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
     }
 
     if (displayIdx == 1) {
-        uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const uint8_t *canisterId = (const uint8_t*) parser_tx_obj.tx_fields.call.canister_id.data;
         const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
@@ -603,6 +605,86 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
                                                fields->permissionList.list_size, displayIdx))
 
         return print_permission(permission, outVal, outValLen);
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
+                                                 char *outKey, uint16_t outKeyLen,
+                                                 char *outVal, uint16_t outValLen,
+                                                 uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    call_t *call = &parser_tx_obj.tx_fields.call;
+    const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
+
+    if (displayIdx == 0) {
+        if (icp_canisterId) {
+            snprintf(outKey, outKeyLen, "Send ICP");
+        } else {
+            snprintf(outKey, outKeyLen, "Send Tokens");
+        }
+        return parser_ok;
+    }
+
+    // Don't display Canister Id if ICP canister
+    if (icp_canisterId) displayIdx++;
+
+    if (displayIdx == 1) {
+        const uint8_t *canisterId = (const uint8_t*) call->canister_id.data;
+        const size_t canisterIdLen = call->canister_id.len;
+        snprintf(outKey, outKeyLen, "Canister Id");
+
+        return print_canisterId(canisterId, canisterIdLen,
+                                outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "From account ");
+        const uint8_t *sender = (uint8_t*) call->sender.data;
+        const size_t senderLen = call->sender.len;
+        const uint8_t *fromSubaccount = (uint8_t*) call->data.icrcTransfer.from_subaccount.p;
+        const size_t fromSubaccountLen = call->data.icrcTransfer.from_subaccount.len;
+
+        return print_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen,
+                                               outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "To account ");
+        const uint8_t *owner = call->data.icrcTransfer.account.owner;
+        const uint8_t *subaccount = call->data.icrcTransfer.account.subaccount.p;
+        const uint16_t subaccountLen = call->data.icrcTransfer.account.subaccount.len;
+
+        return print_principal_with_subaccount(owner, DFINITY_PRINCIPAL_LEN, subaccount, subaccountLen,
+                                               outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 4) {
+        const char *title = icp_canisterId ? "Payment (ICP)" : "Payment (Tokens)";
+        snprintf(outKey, outKeyLen, "%s", title);
+
+        return print_ICP(call->data.icrcTransfer.amount, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    // Skip fee if not present and not icp canister id
+    if (!(call->data.icrcTransfer.has_fee || icp_canisterId)) displayIdx++;
+    if (displayIdx == 5) {
+        const char *title = icp_canisterId ? "Maximum fee (ICP)" : "Maximum fee (Tokens)";
+        snprintf(outKey, outKeyLen, "%s", title);
+
+        uint64_t fees = call->data.icrcTransfer.has_fee ? call->data.icrcTransfer.fee : DEFAULT_MAXIMUM_FEES;
+        return print_ICP(fees, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 6) {
+        snprintf(outKey, outKeyLen, "Memo");
+        if (call->data.icrcTransfer.has_memo) {
+            uint64_t memo = uint64_from_BEarray(call->data.icrcTransfer.memo.p);
+            return print_u64(memo, outVal, outValLen, pageIdx, pageCount);
+        }
+        snprintf(outVal, outValLen, "0");
+        return parser_ok;
     }
 
     return parser_no_data;
@@ -671,6 +753,9 @@ parser_error_t parser_getItemCandid(const parser_context_t *ctx,
                                     char *outVal, uint16_t outValLen,
                                     uint8_t pageIdx, uint8_t *pageCount) {
 
+    MEMZERO(outKey, outKeyLen);
+    MEMZERO(outVal, outValLen);
+
     *pageCount = 1;
     switch (parser_tx_obj.tx_fields.call.method_type) {
         case candid_manageneuron: {
@@ -692,6 +777,13 @@ parser_error_t parser_getItemCandid(const parser_context_t *ctx,
                                                     outKey, outKeyLen,
                                                     outVal, outValLen,
                                                     pageIdx, pageCount);
+        }
+
+        case candid_icrc_transfer: {
+            return parser_getItemICRCTransfer(displayIdx,
+                                              outKey, outKeyLen,
+                                              outVal, outValLen,
+                                              pageIdx, pageCount);
         }
 
         default:

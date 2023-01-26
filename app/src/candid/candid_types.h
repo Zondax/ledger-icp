@@ -86,6 +86,17 @@ typedef enum {
 } sns_hash_fields;
 
 typedef enum {
+    icrc_hash_to = 25979,
+    icrc_hash_owner = 947296307,
+    icrc_hash_subaccount = 1349681965,
+    icrc_hash_fee = 5094982,
+    icrc_hash_memo = 1213809850,
+    icrc_hash_from_subaccount = 1835347746,
+    icrc_hash_created_at_time = 3258775938,
+    icrc_hash_amount = 3573748184,
+} icrc_hash_fields;
+
+typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
@@ -218,6 +229,34 @@ typedef struct {
     uint8_t has_principal;
     uint8_t principal[30];
 } sns_NeuronPermissions_t;
+
+typedef struct {
+    uint8_t has_owner;
+    uint8_t owner[30];
+
+    uint8_t has_subaccount;
+    sizedBuffer_t subaccount;
+} Account_t;
+
+typedef struct {
+    uint8_t icp_canister;
+    Account_t account;
+
+    uint8_t has_fee;
+    uint64_t fee;
+
+    uint8_t has_memo;
+    sizedBuffer_t memo;
+
+    uint8_t has_from_subaccount;
+    sizedBuffer_t from_subaccount;
+
+    uint8_t has_created_at_time;
+    uint64_t created_at_time;
+
+    uint64_t amount;
+
+} icrc_transfer_t;
 
 typedef struct {
     uint64_t variant;
