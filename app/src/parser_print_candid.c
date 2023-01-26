@@ -539,13 +539,19 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
-    if (displayIdx < fields->permissionList.list_size && fields->has_permissionList) {
+    if (displayIdx < fields->permissionList.list_size || !fields->has_permissionList && displayIdx == 0) {
         if (command->hash == sns_hash_command_AddNeuronPermissions) {
             snprintf(outKey, outKeyLen, "Add Permission");
         } else if (command->hash == sns_hash_command_RemoveNeuronPermissions) {
             snprintf(outKey, outKeyLen, "Remove Permission");
         } else {
             return parser_unexpected_value;
+        }
+
+        // If permission list is empty, print None
+        if (!fields->has_permissionList) {
+            snprintf(outVal, outValLen, "None");
+            return parser_ok;
         }
 
         int32_t permission = 0;

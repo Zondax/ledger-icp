@@ -718,7 +718,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             if (v->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions.has_permissionList) {
                 return 4 + v->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions.permissionList.list_size;
             }
-            return 4;
+            return 5;
         }
 
         default:
