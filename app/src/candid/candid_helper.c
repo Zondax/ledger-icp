@@ -376,7 +376,12 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
         }
 
         case Func:
+            ZEMU_LOGF(50, "Read Func not implemented yet\n")
+            return parser_unexpected_type;
         case Service:
+            ZEMU_LOGF(50, "Read Service not implemented yet\n")
+            return parser_unexpected_type;
+
         default:
             return parser_unexpected_type;
     }
