@@ -690,6 +690,71 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
+                                             char *outKey, uint16_t outKeyLen,
+                                             char *outVal, uint16_t outValLen,
+                                             uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    sns_Disburse_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.disburse;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Disburse Neuron");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
+
+        snprintf(outKey, outKeyLen, "Canister Id");
+        return print_canisterId(canisterId, canisterIdSize,
+                                outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Neuron Id ");
+        const uint8_t CHARS_PER_PAGE = 24;
+        uint8_t buffer[100] = {0};
+        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                  parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                  buffer, sizeof(buffer), pageCount);
+        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
+
+        return parser_ok;
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Disburse to ");
+        if (!fields->has_account) {
+            return print_principal(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN,
+                                   outVal, outValLen, pageIdx, pageCount);
+        }
+        // assume has_account
+        const uint8_t *principal = fields->account.has_owner
+            ? fields->account.owner
+            : parser_tx_obj.tx_fields.call.sender.data;
+        if (fields->account.has_subaccount) {
+            return print_principal_with_subaccount(principal, DFINITY_PRINCIPAL_LEN,
+                                                   fields->account.subaccount.p, fields->account.subaccount.len,
+                                                   outVal, outValLen, pageIdx, pageCount);
+        } else {
+            return print_principal((uint8_t *)principal, DFINITY_PRINCIPAL_LEN,
+                                   outVal, outValLen, pageIdx, pageCount);
+        }
+    }
+    if (displayIdx == 4) {
+        snprintf(outKey, outKeyLen, "Amount");
+        if (fields->has_amount) {
+            return print_ICP(fields->amount, outVal, outValLen, pageIdx, pageCount);
+        } else {
+            snprintf(outVal, outValLen, "All");
+            return parser_ok;
+        }
+    }
+    return parser_no_data;
+}
+
 __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
                                                      uint8_t displayIdx,
                                                      char *outKey, uint16_t outKeyLen,
@@ -741,6 +806,9 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case SNS_RemoveNeuronPermissions: {
             return parser_getItemNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
         }
+        case SNS_Disburse:
+            return parser_getItemDisburse(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
+
 
         default:
             return parser_no_data;

@@ -170,6 +170,135 @@ __Z_INLINE parser_error_t readSNSCommandNeuronConfigure(parser_context_t *ctx, c
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readSNSCommandNeuronDisburse(parser_context_t *ctx, candid_transaction_t *txn) {
+    const int64_t disburseRoot = txn->element.implementation;
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, disburseRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 2) {
+        return parser_unexpected_value;
+    }
+
+    // Check ToAccount
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != sns_hash_disburse_to_account) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    if (txn->txn_type != Record) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 2) {
+        return parser_unexpected_value;
+    }
+
+    const int64_t accountRoot = txn->element.implementation; // save for later
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != sns_hash_opt_principal) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    if (txn->element.implementation != Principal) {
+        return parser_unexpected_type;
+    }
+
+    // reset to accountRoot
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, accountRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+
+    txn->element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != sns_hash_subaccount) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    if (txn->txn_type != Record) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    if (txn->txn_type != Vector) {
+        return parser_unexpected_type;
+    }
+
+    // reset txn
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, disburseRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+
+    txn->element.variant_index = 1;
+
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != sns_hash_opt_amount) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+
+    if (txn->element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+
+    // Read data
+    sns_Disburse_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron.command.disburse;
+
+    // Read Account
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_account))
+    if (val->has_account) {
+        CHECK_PARSER_ERR(readCandidByte(ctx, &val->account.has_owner))
+        if (val->account.has_owner) {
+            uint8_t has_principal = 0;
+            uint8_t principalSize = 0;
+            CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
+            if (has_principal) {
+                CHECK_PARSER_ERR(readCandidByte(ctx, &principalSize))
+                if (principalSize != DFINITY_PRINCIPAL_LEN) {
+                    return parser_unexpected_value;
+                }
+                CHECK_PARSER_ERR(readCandidBytes(ctx, val->account.owner, principalSize))
+            }
+        }
+
+        CHECK_PARSER_ERR(readCandidByte(ctx, &val->account.has_subaccount))
+        if (val->account.has_subaccount) {
+            CHECK_PARSER_ERR(readCandidText(ctx, &val->account.subaccount))
+        }
+    }
+
+    // Read Amount
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_amount))
+    if (val->has_amount) {
+        CHECK_PARSER_ERR(readCandidNat64(ctx, &val->amount))
+    }
+
+    return parser_ok;
+}
+
 parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *txn) {
     if (ctx == NULL || txn == NULL || txn->txn_length != 2) {
         return parser_unexpected_error;
@@ -233,7 +362,7 @@ parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
                 break;
             }
             case sns_hash_command_Disburse: {
-
+                CHECK_PARSER_ERR(readSNSCommandNeuronDisburse(ctx, txn))
                 break;
             }
         }
