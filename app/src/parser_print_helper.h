@@ -40,6 +40,11 @@ parser_error_t print_principal(uint8_t *data, uint16_t len, char *outVal, uint16
 parser_error_t print_canisterId(uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen,
                                 uint8_t pageIdx, uint8_t *pageCount);
 
+parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen,
+                                               const uint8_t *fromSubaccount, uint16_t fromSubaccountLen,
+                                               char *outVal, uint16_t outValLen,
+                                               uint8_t pageIdx, uint8_t *pageCount);
+
 #ifdef __cplusplus
 }
 #endif

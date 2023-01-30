@@ -584,7 +584,10 @@ void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc) {
 }
 
 zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, char *textual, uint16_t *outLen) {
-    uint8_t input[33];
+    uint8_t input[33] = {0};
+    if (addressLen >= sizeof (input) + 4) {
+        return zxerr_buffer_too_small;
+    }
     uint32_t crc = 0;
     crc32_small(address_in, addressLen, &crc);
     input[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
@@ -600,6 +603,34 @@ zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen,
     }
 
     *outLen = enc_len;
+    return zxerr_ok;
+}
+
+zxerr_t crypto_toTextual(uint8_t *input, uint16_t inputLen, char *output, uint16_t *outputLen) {
+    if (input == NULL || output == NULL || outputLen == NULL) {
+        return zxerr_unknown;
+    }
+    if (inputLen <= 4) {
+        return zxerr_buffer_too_small;
+    }
+    if (inputLen > 255) {
+        return zxerr_out_of_bounds;
+    }
+
+    uint32_t crc = 0;
+    crc32_small(input + 4, inputLen - 4, &crc);
+    input[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
+    input[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
+    input[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
+    input[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
+
+    uint32_t enc_len = base32_encode(input, inputLen, output, *outputLen);
+
+    if (enc_len <= 0) {
+        return zxerr_unknown;
+    }
+
+    *outputLen = enc_len;
     return zxerr_ok;
 }
 
