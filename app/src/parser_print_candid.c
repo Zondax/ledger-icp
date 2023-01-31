@@ -580,7 +580,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
 
     if (displayIdx == 3 && fields->has_principal) {
         snprintf(outKey, outKeyLen, "Principal Id ");
-        return print_principal(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_textual(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
@@ -726,7 +726,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Disburse to ");
         if (!fields->has_account) {
-            return print_principal(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN,
+            return print_textual(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN,
                                    outVal, outValLen, pageIdx, pageCount);
         }
         // assume has_account
@@ -738,7 +738,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
                                                    fields->account.subaccount.p, fields->account.subaccount.len,
                                                    outVal, outValLen, pageIdx, pageCount);
         } else {
-            return print_principal((uint8_t *)principal, DFINITY_PRINCIPAL_LEN,
+            return print_textual((uint8_t *)principal, DFINITY_PRINCIPAL_LEN,
                                    outVal, outValLen, pageIdx, pageCount);
         }
     }
