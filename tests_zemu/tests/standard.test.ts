@@ -23,10 +23,6 @@ import { sha256 } from 'js-sha256'
 
 jest.setTimeout(60000)
 
-beforeAll(async () => {
-  await Zemu.checkAndPullImage()
-})
-
 describe('Standard', function () {
   test.each(DEVICE_MODELS)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
