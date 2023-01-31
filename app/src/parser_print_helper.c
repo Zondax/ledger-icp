@@ -89,7 +89,7 @@ parser_error_t print_principal(uint8_t *data, uint16_t len,
     }
 
     char buffer[100] = {0};
-    err = addr_to_textual(buffer, sizeof(buffer), (const char *) tmpBuffer, outLen);   \
+    err = addr_to_textual(buffer, sizeof(buffer), (const char *) tmpBuffer, outLen);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
     }
