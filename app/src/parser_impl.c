@@ -655,20 +655,24 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         }
     }
 
+
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
-    uint8_t publicKey[SECP256K1_PK_LEN];
-    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+    const bool icrc_transfer = v->tx_fields.call.method_type == candid_icrc_transfer;
+    if (!icrc_transfer) {
+        uint8_t publicKey[SECP256K1_PK_LEN];
+        uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
-    MEMZERO(publicKey, sizeof(publicKey));
-    MEMZERO(principalBytes, sizeof(principalBytes));
+        MEMZERO(publicKey, sizeof(publicKey));
+        MEMZERO(principalBytes, sizeof(principalBytes));
 
-    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-                           parser_unexpected_error)
+        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                            parser_unexpected_error)
 
-    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
+        PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
 
-    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-        return parser_unexpected_value;
+        if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+            return parser_unexpected_value;
+        }
     }
 #endif
 
