@@ -24,6 +24,7 @@ class JsonTests_Phase2 : public JsonTests_Base {};
 class JsonTests_SNS_AddPermission : public JsonTests_Base {};
 class JsonTests_SNS_RemovePermission : public JsonTests_Base {};
 class JsonTests_SNS_NeuronActions : public JsonTests_Base {};
+class JsonTests_SNS_StakeMaturity : public JsonTests_Base {};
 class JsonTests_ICRC : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
@@ -101,6 +102,22 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_SNS_NeuronActions, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_SNS_NeuronActions, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        NeuronActions,
+        JsonTests_SNS_StakeMaturity,
+        ::testing::ValuesIn(GetJsonTestCases("sns-stake-maturity.json")),
+        JsonTests_SNS_StakeMaturity::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_StakeMaturity, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_StakeMaturity, Expert) { check_testcase(GetParam(), true); }
 
 ////////////////////
 ////////////////////

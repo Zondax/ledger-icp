@@ -123,7 +123,7 @@ typedef enum {
     // sns_hash_command_RegisterVote = 1647237574,
     sns_hash_command_SyncCommand = 2455066893,
     sns_hash_command_MakeProposal = 3217030240,
-    sns_hash_command_ClaimOrRefreshNeuron = 3582720395,
+    sns_hash_command_StakeMaturity = 3582720395,
     sns_hash_command_RemoveNeuronPermissions = 3664916941,
     sns_hash_command_AddNeuronPermissions = 3723163536,
     sns_hash_command_MergeMaturity = 3865893897,

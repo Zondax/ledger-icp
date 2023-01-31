@@ -299,6 +299,40 @@ __Z_INLINE parser_error_t readSNSCommandNeuronDisburse(parser_context_t *ctx, ca
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readSNSCommandStakeMaturity(parser_context_t *ctx, candid_transaction_t *txn) {
+    const int64_t stakeMaturityRoot = txn->element.implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, stakeMaturityRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+
+    // Check Percentage to Stake
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_percentage_to_stake) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    if (txn->element.implementation != Nat32) {
+        return parser_unexpected_type;
+    }
+
+    // Read data
+    candid_StakeMaturity_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron.command.stake;
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_percentage_to_stake))
+    if (val->has_percentage_to_stake) {
+        CHECK_PARSER_ERR(readCandidNat32(ctx, &val->percentage_to_stake))
+            // Sanity check
+        if (val->percentage_to_stake == 0 || val->percentage_to_stake > 100) {
+            return parser_value_out_of_range;
+        }
+    }
+
+    return parser_ok;
+}
+
 parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *txn) {
     if (ctx == NULL || txn == NULL || txn->txn_length != 2) {
         return parser_unexpected_error;
@@ -363,6 +397,10 @@ parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             }
             case sns_hash_command_Disburse: {
                 CHECK_PARSER_ERR(readSNSCommandNeuronDisburse(ctx, txn))
+                break;
+            }
+            case sns_hash_command_StakeMaturity: {
+                CHECK_PARSER_ERR(readSNSCommandStakeMaturity(ctx, txn))
                 break;
             }
         }

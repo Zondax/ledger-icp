@@ -308,7 +308,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     *mn_type = SpawnCandid;
                     return parser_ok;
                 case hash_command_StakeMaturity:
-                    *mn_type = StakeMaturityCandid;
+                    *mn_type = isSNS ? SNS_StakeMaturity : StakeMaturityCandid;
                     return parser_ok;
                 case hash_command_Split:
                     *mn_type = Split;
@@ -751,6 +751,9 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
 
         case SNS_Disburse:
             return 5;
+
+        case SNS_StakeMaturity:
+            return 3 + (v->tx_fields.call.data.sns_manageNeuron.command.stake.has_percentage_to_stake ? 1 : 0);
 
         default:
             break;
