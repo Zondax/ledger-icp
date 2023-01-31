@@ -472,7 +472,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
                 // now let's read
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->command.stake.has_percentage_to_stake))
-                if (val->command.spawn.has_percentage_to_spawn) {
+                if (val->command.stake.has_percentage_to_stake) {
                     CHECK_PARSER_ERR(readCandidNat32(&ctx, &val->command.stake.percentage_to_stake))
                     // Sanity check
                     if (val->command.stake.percentage_to_stake == 0 || val->command.stake.percentage_to_stake > 100) {

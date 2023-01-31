@@ -354,7 +354,7 @@ static parser_error_t parser_getItemStakeMaturityCandid(uint8_t displayIdx,
 
     if (displayIdx == 2 && has_percentage_to_stake) {
         snprintf(outKey, outKeyLen, "Percentage to stake");
-        snprintf(outVal, outValLen, "%d", fields->command.spawn.percentage_to_spawn);
+        snprintf(outVal, outValLen, "%d", fields->command.stake.percentage_to_stake);
         return parser_ok;
     }
     return parser_no_data;
