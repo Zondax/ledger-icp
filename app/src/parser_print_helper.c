@@ -219,7 +219,8 @@ static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen,
         return parser_unexpected_buffer_end;
     }
 
-    *pageCount = inputLen / CHARS_PER_PAGE + (inputLen % CHARS_PER_PAGE ? 1 : 0);
+    const size_t inputStrLen = strnlen(input, inputLen);
+    *pageCount = inputStrLen / CHARS_PER_PAGE + (inputStrLen % CHARS_PER_PAGE ? 1 : 0);
     if (pageIdx >= *pageCount) {
         return parser_display_idx_out_of_range;
     }
@@ -231,7 +232,8 @@ static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen,
             output += 1;
         }
 
-        const bool endOfInput = strlen(input) < 6;
+        const uint16_t remainingChars = inputStrLen - (pageIdx * CHARS_PER_PAGE) - (idx * CHARS_PER_CHUNK);
+        const bool endOfInput = remainingChars < 6;
         const bool skipDash = (idx == 2 || idx == 5);
 
         if (skipDash || endOfInput) {
@@ -289,7 +291,7 @@ parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t s
     uint16_t bufferSize = sizeof(buffer);
     crypto_toTextual(tmpArray, tmpArrayLen, buffer, &bufferSize);
 
-    return page_with_delimiters(buffer, bufferSize, outVal, outValLen, pageIdx, pageCount);
+    return page_with_delimiters(buffer, sizeof(buffer), outVal, outValLen, pageIdx, pageCount);
 }
 
 parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize) {

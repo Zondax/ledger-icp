@@ -823,9 +823,6 @@ static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    const uint8_t numItems = _getNumItems(ctx, &parser_tx_obj);
-    CHECK_APP_CANARY()
-
     manageNeuron_e mn_type;
     CHECK_PARSER_ERR(getManageNeuronType(&parser_tx_obj, &mn_type))
 
