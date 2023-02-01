@@ -400,6 +400,10 @@ parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
                 CHECK_PARSER_ERR(readSNSCommandStakeMaturity(ctx, txn))
                 break;
             }
+
+            default:
+                ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)
+                return parser_unexpected_type;
         }
     }
 

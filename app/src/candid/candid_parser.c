@@ -128,6 +128,9 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
             return readSNSManageNeuron(&ctx, &txn);
         case 3: // NNS
             return readNNSManageNeuron(&ctx, &txn);
+
+        default:
+            ZEMU_LOGF(100, "Error: transaction type not supported\n")
     }
 
     return parser_unexpected_value;
@@ -394,12 +397,13 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     }
 
     // Check if the transaction has ICP canister
-    uint8_t *canisterId = ctx.tx_obj->tx_fields.call.canister_id.data;
+    const uint8_t *canisterId = ctx.tx_obj->tx_fields.call.canister_id.data;
     const size_t canisterIdSize = ctx.tx_obj->tx_fields.call.canister_id.len;
     char canister_textual[50] = {0};
     uint16_t outLen = sizeof(canister_textual);
+    if (canisterIdSize > 255) return parser_unexpected_value;
     crypto_principalToTextual(canisterId,
-                              canisterIdSize,
+                              (uint8_t) canisterIdSize,
                               canister_textual,
                               &outLen);
 

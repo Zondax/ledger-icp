@@ -171,11 +171,11 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
     }
 
     if (app_mode_expert()) {
-        state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
+        const state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;
@@ -212,7 +212,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 case pb_manageneuron:
                 case pb_listneurons:
                 case pb_claimneurons: {
-                    return parser_getItemProtobuf(ctx, displayIdx,
+                    return parser_getItemProtobuf(displayIdx,
                                                   outKey, outKeyLen,
                                                   outVal, outValLen,
                                                   pageIdx, pageCount);

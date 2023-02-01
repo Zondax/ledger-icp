@@ -216,7 +216,7 @@ __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ct
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readOperationLeaveCommunityFund(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+__Z_INLINE parser_error_t readOperationLeaveCommunityFund(candid_transaction_t *txn) {
     // Check sanity LeaveCommunityFund
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -384,7 +384,7 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
                         break;
                     }
                     case hash_operation_LeaveCommunityFund: {
-                        CHECK_PARSER_ERR(readOperationLeaveCommunityFund(ctx, txn, operation))
+                        CHECK_PARSER_ERR(readOperationLeaveCommunityFund(txn))
                         break;
                     }
                     case hash_operation_ChangeAutoStakeMaturity:

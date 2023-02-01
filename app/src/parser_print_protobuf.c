@@ -26,7 +26,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     uint8_t address[32];
     MEMZERO(address, sizeof(address));
 
-    zxerr_t err = crypto_principalToSubaccount(sender.data, sender.len,
+    zxerr_t err = crypto_principalToSubaccount(sender.data, (uint16_t) sender.len,
                                                sendrequest->from_subaccount.sub_account, 32,
                                                address, sizeof(address));
     if (err != zxerr_ok) {
@@ -44,8 +44,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
     return parser_ok;
 }
 
-static parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
-                                                  uint8_t displayIdx,
+static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
                                                   char *outKey, uint16_t outKeyLen,
                                                   char *outVal, uint16_t outValLen,
                                                   uint8_t pageIdx, uint8_t *pageCount) {
@@ -55,14 +54,7 @@ static parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    const uint8_t numItems = _getNumItems(ctx, &parser_tx_obj);
-    CHECK_APP_CANARY()
-
     call_t *fields = &parser_tx_obj.tx_fields.call;
-
-    if (displayIdx < 0 || displayIdx >= numItems) {
-        return parser_no_data;
-    }
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (is_stake_tx) {
@@ -78,7 +70,7 @@ static parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
@@ -146,8 +138,7 @@ static parser_error_t parser_getItemTokenTransfer(const parser_context_t *ctx,
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemStakeNeuron(const parser_context_t *ctx,
-                                                uint8_t displayIdx,
+static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
                                                 char *outKey, uint16_t outKeyLen,
                                                 char *outVal, uint16_t outValLen,
                                                 uint8_t pageIdx, uint8_t *pageCount) {
@@ -157,14 +148,7 @@ static parser_error_t parser_getItemStakeNeuron(const parser_context_t *ctx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    const uint8_t numItems = _getNumItems(ctx, &parser_tx_obj);
-    CHECK_APP_CANARY()
-
     call_t *fields = &parser_tx_obj.tx_fields.call;
-
-    if (displayIdx < 0 || displayIdx >= numItems) {
-        return parser_no_data;
-    }
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (!is_stake_tx) {
@@ -180,7 +164,7 @@ static parser_error_t parser_getItemStakeNeuron(const parser_context_t *ctx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
@@ -264,7 +248,7 @@ static parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
                                                         uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -318,7 +302,7 @@ static parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
                                                       uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -353,7 +337,7 @@ static parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
                                                       uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -394,7 +378,7 @@ static parser_error_t parser_getItemSpawn(uint8_t displayIdx,
                                           uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -447,7 +431,7 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                                     uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
 
@@ -516,7 +500,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
                                              uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         snprintf(outVal, outValLen, "Disburse Neuron");
@@ -552,7 +536,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
         char buffer[80];
         zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      (uint8_t *) fields->command.disburse.to_account.hash.bytes, 32);
+                                      (const uint8_t *) fields->command.disburse.to_account.hash.bytes, 32);
         if (err != zxerr_ok) {
             return parser_unexpected_error;
         }
@@ -581,7 +565,7 @@ static parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
                                                   uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -629,7 +613,7 @@ static parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
                                                  uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -685,7 +669,7 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx,
                                            uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -812,8 +796,7 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx,
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
-                                                 uint8_t displayIdx,
+static parser_error_t parser_getItemManageNeuron(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
                                                  char *outVal, uint16_t outValLen,
                                                  uint8_t pageIdx, uint8_t *pageCount) {
@@ -863,8 +846,7 @@ static parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
     }
 }
 
-parser_error_t parser_getItemProtobuf(const parser_context_t *ctx,
-                                      uint8_t displayIdx,
+parser_error_t parser_getItemProtobuf(uint8_t displayIdx,
                                       char *outKey, uint16_t outKeyLen,
                                       char *outVal, uint16_t outValLen,
                                       uint8_t pageIdx, uint8_t *pageCount) {
@@ -878,23 +860,23 @@ parser_error_t parser_getItemProtobuf(const parser_context_t *ctx,
             const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
             if (is_stake_tx) {
-                return parser_getItemStakeNeuron(ctx, displayIdx,
-                                                    outKey, outKeyLen,
-                                                    outVal, outValLen,
-                                                    pageIdx, pageCount);
+                return parser_getItemStakeNeuron(displayIdx,
+                                                 outKey, outKeyLen,
+                                                 outVal, outValLen,
+                                                 pageIdx, pageCount);
             }
 
-            return parser_getItemTokenTransfer(ctx, displayIdx,
+            return parser_getItemTokenTransfer( displayIdx,
                                                 outKey, outKeyLen,
                                                 outVal, outValLen,
                                                 pageIdx, pageCount);
         }
 
         case pb_manageneuron: {
-            return parser_getItemManageNeuron(ctx, displayIdx,
-                                                outKey, outKeyLen,
-                                                outVal, outValLen,
-                                                pageIdx, pageCount);
+            return parser_getItemManageNeuron(displayIdx,
+                                              outKey, outKeyLen,
+                                              outVal, outValLen,
+                                              pageIdx, pageCount);
         }
 
         case pb_listneurons : {

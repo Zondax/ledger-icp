@@ -620,7 +620,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
             }
 
             if (v->tx_fields.call.method_type == pb_manageneuron) {
-                ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+                const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
                 PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0),
                                        parser_unexpected_error);
             }

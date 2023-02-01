@@ -47,13 +47,12 @@ parser_error_t print_ICP(uint64_t value,
     return parser_ok;
 }
 
-parser_error_t print_textual(uint8_t *data, uint16_t len,
+parser_error_t print_textual(const uint8_t *data, uint8_t len,
                              char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount) {
     char tmpBuffer[100] = {0};
     uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual((const uint8_t *) data, len, (char *) tmpBuffer,
-                                            &outLen);
+    zxerr_t err = crypto_principalToTextual(data, len, (char *) tmpBuffer, &outLen);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
     }
@@ -75,46 +74,7 @@ parser_error_t print_textual(uint8_t *data, uint16_t len,
     return parser_ok;
 }
 
-parser_error_t print_principal(uint8_t *data, uint16_t len,
-                             char *outVal, uint16_t outValLen,
-                             uint8_t pageIdx, uint8_t *pageCount) {
-
-    const uint8_t MAX_CHARS_PER_LINE = 38;
-    if (data == NULL || outVal == NULL || pageCount == NULL || outValLen < MAX_CHARS_PER_LINE) {
-        return parser_unexpected_error;
-    }
-    char tmpBuffer[100] = {0};
-    uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual((const uint8_t *) data, len, (char *) tmpBuffer,
-                                            &outLen);
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    char buffer[100] = {0};
-    err = addr_to_textual(buffer, sizeof(buffer), (const char *) tmpBuffer, outLen);
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    // Alignment logic
-    if (buffer[17] == '-') buffer[17] = ' ';
-    if (buffer[53] == '-') buffer[53] = ' ';
-    // Remove one buffer[35] ('-' character)
-    MEMMOVE(buffer+35, buffer+36, sizeof(buffer) - 36);
-
-    inplace_insert_char(buffer, sizeof(buffer), 18, ':');
-    inplace_insert_char(buffer, sizeof(buffer), 19, ' ');
-
-    inplace_insert_char(buffer, sizeof(buffer), 55, ':');
-    inplace_insert_char(buffer, sizeof(buffer), 56, ' ');
-
-    pageString(outVal, MAX_CHARS_PER_LINE, buffer, pageIdx, pageCount);
-
-    return parser_ok;
-}
-
-parser_error_t print_canisterId(const uint8_t *data, uint16_t len,
+parser_error_t print_canisterId(const uint8_t *data, uint8_t len,
                              char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount) {
     char tmpBuffer[100] = {0};
@@ -145,7 +105,9 @@ parser_error_t print_canisterId(const uint8_t *data, uint16_t len,
 
 zxerr_t print_hexstring(char *out, uint16_t outLen, const uint8_t *data, uint16_t dataLen) {
     MEMZERO(out, outLen);
-    const uint32_t writtenBytes = array_to_hexstr(out, outLen, data, dataLen);
+    if (dataLen > 255) return zxerr_out_of_bounds;
+
+    const uint32_t writtenBytes = array_to_hexstr(out, outLen, data, (uint8_t) dataLen);
     if (writtenBytes != dataLen * 2) {
         return zxerr_out_of_bounds;
     }
@@ -190,8 +152,8 @@ parser_error_t subaccount_hexstring(const uint8_t *subaccount, const uint16_t su
     // 3 chunks per page and do not add delimiter on the last one from each page
     uint8_t delimiterCount = 0;
     for (uint16_t i = 0; i < subaccountLen; i+= 3) {
-        const uint8_t bytesToProcess = (subaccountLen - i) >= 3 ? 3 : (subaccountLen - i);
-        for (uint8_t j = 0; j < bytesToProcess; j++) {
+        const uint16_t bytesToProcess = (subaccountLen - i) >= 3 ? 3 : (subaccountLen - i);
+        for (uint16_t j = 0; j < bytesToProcess; j++) {
             snprintf((char*) output, 3, "%02x", *subaccount);
             subaccount++;
             output += 2;
@@ -220,7 +182,7 @@ static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen,
     }
 
     const size_t inputStrLen = strnlen(input, inputLen);
-    *pageCount = inputStrLen / CHARS_PER_PAGE + (inputStrLen % CHARS_PER_PAGE ? 1 : 0);
+    *pageCount = (uint8_t) (inputStrLen / CHARS_PER_PAGE) + ((inputStrLen % CHARS_PER_PAGE) ? 1 : 0);
     if (pageIdx >= *pageCount) {
         return parser_display_idx_out_of_range;
     }
@@ -232,7 +194,7 @@ static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen,
             output += 1;
         }
 
-        const uint16_t remainingChars = inputStrLen - (pageIdx * CHARS_PER_PAGE) - (idx * CHARS_PER_CHUNK);
+        const size_t remainingChars = inputStrLen - (pageIdx * CHARS_PER_PAGE) - (idx * CHARS_PER_CHUNK);
         const bool endOfInput = remainingChars < 6;
         const bool skipDash = (idx == 2 || idx == 5);
 
@@ -260,12 +222,12 @@ parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t s
         return parser_unexpected_error;
     }
 
-    //[ CRC | sender | shrink(fromSubaccount) | bytes(shrink(fromSubaccount)) | EXTRA_BYTE(0x7F) ]
+    // [ CRC | sender | shrink(fromSubaccount) | bytes(shrink(fromSubaccount)) | EXTRA_BYTE(0x7F) ]
     uint8_t tmpArray[CRC_LENGTH + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN + 2] = {0};
 
     MEMCPY(tmpArray + CRC_LENGTH, sender, senderLen);
 
-    int8_t shrinkBytes = 0;
+    int shrinkBytes = 0;
     if (fromSubaccount != NULL) {
         for (shrinkBytes = fromSubaccountLen - 1; shrinkBytes >= 0; shrinkBytes--) {
             if (*(fromSubaccount + shrinkBytes)) {
@@ -275,16 +237,17 @@ parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t s
         shrinkBytes++;
 
         if (shrinkBytes > 0) {
+            if (shrinkBytes > DFINITY_SUBACCOUNT_LEN) return parser_unexpected_value;
             MEMCPY(tmpArray + CRC_LENGTH + DFINITY_PRINCIPAL_LEN, fromSubaccount, shrinkBytes);
             // Add fromSubaccount length after shrinked and EXTRA_BYTE
-            tmpArray[CRC_LENGTH + DFINITY_PRINCIPAL_LEN + shrinkBytes] = shrinkBytes;
+            tmpArray[CRC_LENGTH + DFINITY_PRINCIPAL_LEN + shrinkBytes] = (uint8_t) shrinkBytes;
             tmpArray[CRC_LENGTH + DFINITY_PRINCIPAL_LEN + shrinkBytes + 1] = SUBACCOUNT_EXTRA_BYTE;
         }
     }
 
 
     const uint8_t tmpArrayLen = shrinkBytes
-                                ? (CRC_LENGTH + DFINITY_PRINCIPAL_LEN + shrinkBytes + 2)
+                                ? (CRC_LENGTH + DFINITY_PRINCIPAL_LEN + (uint8_t) shrinkBytes + 2)
                                 : (CRC_LENGTH + DFINITY_PRINCIPAL_LEN);
 
     char buffer[120] = {0};

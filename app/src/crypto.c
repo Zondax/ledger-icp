@@ -618,13 +618,13 @@ zxerr_t crypto_toTextual(uint8_t *input, uint16_t inputLen, char *output, uint16
     }
 
     uint32_t crc = 0;
-    crc32_small(input + 4, inputLen - 4, &crc);
+    crc32_small(input + 4, (uint8_t) inputLen - 4, &crc);
     input[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
     input[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
     input[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
     input[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
 
-    uint32_t enc_len = base32_encode(input, inputLen, output, *outputLen);
+    const uint16_t enc_len = (uint16_t) base32_encode(input, inputLen, output, *outputLen);
 
     if (enc_len <= 0) {
         return zxerr_unknown;
