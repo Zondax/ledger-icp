@@ -24,6 +24,10 @@ extern "C" {
 #include "candid_types.h"
 #include "parser_common.h"
 
+parser_error_t parser_getItemProtobuf(uint8_t displayIdx,
+                                      char *outKey, uint16_t outKeyLen,
+                                      char *outVal, uint16_t outValLen,
+                                      uint8_t pageIdx, uint8_t *pageCount);
 
 #ifdef __cplusplus
 }

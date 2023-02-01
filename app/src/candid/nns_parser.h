@@ -23,7 +23,9 @@ extern "C" {
 #include <zxerror.h>
 #include "candid_types.h"
 #include "parser_common.h"
+#include "candid_helper.h"
 
+parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *txn);
 
 #ifdef __cplusplus
 }
