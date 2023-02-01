@@ -21,6 +21,9 @@
 #define CRC_LENGTH  4
 #define SUBACCOUNT_EXTRA_BYTE 0x7F
 
+// 365.25 * 24*60*60 = 31557600
+#define ICP_YEAR_IN_SECONDS ((uint64_t)31557600)
+
 parser_error_t print_u64(uint64_t value,
                         char *outVal, uint16_t outValLen,
                         uint8_t pageIdx, uint8_t *pageCount) {
@@ -287,4 +290,75 @@ parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t s
     crypto_toTextual(tmpArray, tmpArrayLen, buffer, &bufferSize);
 
     return page_with_delimiters(buffer, bufferSize, outVal, outValLen, pageIdx, pageCount);
+}
+
+parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize) {
+    MEMZERO(buffer, bufferSize);
+    uint16_t index = 0;
+    uint64_t years = value / ICP_YEAR_IN_SECONDS;
+    if (years >= 1) {
+        index += fpuint64_to_str(buffer, bufferSize, years, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end)
+        MEMCPY(buffer + index, (char *) "y", 1);
+        index += 1;
+    }
+    value %= ICP_YEAR_IN_SECONDS;
+
+    uint64_t days = value / (uint64_t) (60 * 60 * 24);
+    if (days > 0) {
+        if (index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end)
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, days, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end)
+        MEMCPY(buffer + index, (char *) "d", 1);
+        index += 1;
+    }
+    value %= (uint64_t) (60 * 60 * 24);
+
+    uint64_t hours = value / (uint64_t) (60 * 60);
+    if (hours > 0) {
+        if (index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end)
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, hours, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end)
+        MEMCPY(buffer + index, (char *) "h", 1);
+        index += 1;
+    }
+    value %= (uint64_t) (60 * 60);
+
+    uint64_t minutes = value / (uint64_t) (60);
+    if (minutes > 0) {
+        if (index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end)
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, minutes, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end)
+        MEMCPY(buffer + index, (char *) "m", 1);
+        index += 1;
+    }
+    value %= (uint64_t) (60);
+
+    uint64_t seconds = value;
+    if (seconds > 0) {
+        if (index > 0) {
+            PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end)
+            MEMCPY(buffer + index, (char *) ", ", 2);
+            index += 2;
+        }
+        index += fpuint64_to_str(buffer + index, bufferSize - index, seconds, 0);
+        PARSER_ASSERT_OR_ERROR(index + 1 < bufferSize, parser_unexpected_buffer_end)
+        MEMCPY(buffer + index, (char *) "s", 1);
+        index += 1;
+    }
+
+    buffer[index] = 0;
+    return parser_ok;
 }

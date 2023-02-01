@@ -14,9 +14,6 @@
 *  limitations under the License.
 ********************************************************************************/
 #include "sns_parser.h"
-#include "candid_helper.h"
-#include "candid_types.h"
-#include "parser_common.h"
 
 __Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx, candid_transaction_t *txn, uint64_t hash_permission_to) {
     const int64_t neuronPermissionsRoot = txn->element.implementation;
