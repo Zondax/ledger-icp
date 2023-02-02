@@ -57,7 +57,7 @@ const CANDID_TRANSACTIONS = [
 ]
 
 describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
-  test.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
+  test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })

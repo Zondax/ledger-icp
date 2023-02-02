@@ -23,7 +23,7 @@ import { sha256 } from 'js-sha256'
 jest.setTimeout(180000)
 
 describe('Phase2', function () {
-  test.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -65,7 +65,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- stake transfer', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- stake transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -106,7 +106,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- add hotkey', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- add hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -134,7 +134,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- remove hotkey', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- remove hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -162,7 +162,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- start dissolve', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- start dissolve', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -190,7 +190,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- stop dissolve', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- stop dissolve', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -218,7 +218,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- disburse', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- disburse', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -246,7 +246,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- list neurons', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- list neurons', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -273,7 +273,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- spawn', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- spawn', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -300,7 +300,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- Stake Mature', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- Stake Mature', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -326,7 +326,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- Register Vote', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- Register Vote', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -353,7 +353,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- follow', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- follow', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -380,7 +380,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- claimneuron', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- claimneuron', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -407,7 +407,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- join community fund', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- join community fund', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -434,7 +434,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- combined_tx', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- combined_tx', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })

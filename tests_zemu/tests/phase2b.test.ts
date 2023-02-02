@@ -23,7 +23,7 @@ jest.setTimeout(180000)
 const path = "m/44'/223'/0'/0/0"
 
 describe('Phase2', function () {
-  test.each(DEVICE_MODELS)('sign normal -- split', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- split', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -51,7 +51,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- merge', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- merge', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -79,7 +79,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- set dissolve delay', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- set dissolve delay', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -108,7 +108,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- spawn neuron candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- spawn neuron candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -136,7 +136,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- list neurons candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- list neurons candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -164,7 +164,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- stake maturity candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- stake maturity candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -192,7 +192,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- auto stake maturity candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- auto stake maturity candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -220,7 +220,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- increase dissolving delay candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- increase dissolving delay candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -248,7 +248,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })

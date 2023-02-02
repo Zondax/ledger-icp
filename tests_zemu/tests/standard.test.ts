@@ -24,7 +24,7 @@ import { sha256 } from 'js-sha256'
 jest.setTimeout(60000)
 
 describe('Standard', function () {
-  test.each(DEVICE_MODELS)('can start and stop container', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -33,7 +33,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('main menu', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -43,7 +43,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('get app version', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -63,7 +63,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('get address', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('get address', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -91,7 +91,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('show address', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -125,7 +125,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- token transfer', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- token transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -180,7 +180,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- state transaction read', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- state transaction read', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -234,7 +234,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign expert -- token transfer', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign expert -- token transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -293,7 +293,7 @@ describe('Standard', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign expert -- state transaction read', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign expert -- state transaction read', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
