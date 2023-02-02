@@ -496,6 +496,45 @@ static parser_error_t parser_getItemConfigureDissolving(uint8_t displayIdx,
                                                         char *outVal, uint16_t outValLen,
                                                         uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
+    const uint64_t hash = parser_tx_obj.tx_fields.call.data.candid_manageNeuron.command.configure.operation.hash;
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+
+        if (hash == hash_operation_StartDissolving) {
+            snprintf(outVal, outValLen, "Start Dissolve Neuron");
+        } else if (hash == hash_operation_StopDissolving) {
+            snprintf(outVal, outValLen, "Stop Dissolve Neuron");
+        } else {
+            return parser_unexpected_value;
+        }
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
+                                                           char *outKey, uint16_t outKeyLen,
+                                                           char *outVal, uint16_t outValLen,
+                                                           uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
     const candid_Command_t *command = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command;
 
     if (displayIdx == 0) {
@@ -839,9 +878,12 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
+        case Configure_StartDissolvingCandid:
+        case Configure_StopDissolvingCandid:
+            return parser_getItemConfigureDissolving(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case SNS_Configure_StartDissolving:
         case SNS_Configure_StopDissolving:
-            return parser_getItemConfigureDissolving(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+            return parser_getItemConfigureDissolvingSNS(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case SNS_AddNeuronPermissions:
         case SNS_RemoveNeuronPermissions: {
             return parser_getItemNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);

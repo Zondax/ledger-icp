@@ -90,6 +90,8 @@ typedef enum {
     SpawnCandid = 1001,
     StakeMaturityCandid = 1002,
     Configure_IncreaseDissolveDelayCandid = 1003,
+    Configure_StartDissolvingCandid = 1004,
+    Configure_StopDissolvingCandid = 1005,
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,

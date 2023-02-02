@@ -334,10 +334,10 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                             *mn_type = Configure_IncreaseDissolveDelayCandid;
                             break;
                         case hash_operation_StartDissolving:
-                            *mn_type = isSNS ? SNS_Configure_StartDissolving : Configure_StartDissolving;
+                            *mn_type = isSNS ? SNS_Configure_StartDissolving : Configure_StartDissolvingCandid;
                             break;
                         case hash_operation_StopDissolving:
-                            *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolving;
+                            *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolvingCandid;
                             break;
                         default:
                             return parser_unexpected_value;
@@ -731,6 +731,9 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_percentage_to_spawn ? 1 : 0)
             + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_nonce ? 1 : 0);
         }
+        case Configure_StartDissolvingCandid:
+        case Configure_StopDissolvingCandid:
+            return 2;
         case StakeMaturityCandid:
             // 2 fields + opt(percentage_to_stake)
             return 2
