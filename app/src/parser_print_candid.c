@@ -80,7 +80,7 @@ static parser_error_t parser_getItemLeaveCommunityFund(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Leave Community Fund");
+        pageString(outVal, outValLen, "Leave Community Fund", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -116,7 +116,7 @@ static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Set Dissolve Delay");
+        pageString(outVal, outValLen, "Set Dissolve Delay", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -173,7 +173,7 @@ static parser_error_t parser_getItemChangeAutoStakeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Set Auto Stake Maturity");
+        pageString(outVal, outValLen, "Set Auto Stake Maturity", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -215,7 +215,7 @@ static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayI
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Increase Dissolve Delay");
+        pageString(outVal, outValLen, "Increase Dissolve Delay", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -332,7 +332,7 @@ static parser_error_t parser_getItemStakeMaturityCandid(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Stake Maturity Neuron");
+        pageString(outVal, outValLen, "Stake Maturity Neuron", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -470,7 +470,7 @@ static parser_error_t parser_getItemListUpdateNodeProvider(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Set Node Provider : Reward Account");
+        pageString(outVal, outValLen, "Set Node Provider : Reward Account", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -503,9 +503,9 @@ static parser_error_t parser_getItemConfigureDissolving(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (hash == hash_operation_StartDissolving) {
-            snprintf(outVal, outValLen, "Start Dissolve Neuron");
+            pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
         } else if (hash == hash_operation_StopDissolving) {
-            snprintf(outVal, outValLen, "Stop Dissolve Neuron");
+            pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -541,9 +541,9 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (command->configure.operation.hash == hash_operation_StartDissolving) {
-            snprintf(outVal, outValLen, "Start Dissolve Neuron");
+            pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
         } else if (command->configure.operation.hash == hash_operation_StopDissolving) {
-            snprintf(outVal, outValLen, "Stop Dissolve Neuron");
+            pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -801,7 +801,7 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Stake Maturity Neuron");
+        pageString(outVal, outValLen, "Stake Maturity Neuron", pageIdx, pageCount);
         return parser_ok;
     }
 
