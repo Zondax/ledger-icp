@@ -393,6 +393,15 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
                     case hash_operation_IncreaseDissolveDelay:
                         CHECK_PARSER_ERR(readOperationIncreaseDissolveDelay(ctx, txn, operation))
                         break;
+                    case hash_operation_StartDissolving:
+                    case hash_operation_StopDissolving:
+                        // Check empty record
+                        CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+                        CHECK_PARSER_ERR(readCandidRecordLength(txn))
+                        if (txn->txn_length != 0) {
+                            return parser_unexpected_number_items;
+                        }
+                        break;
 
                     default:
                         ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
