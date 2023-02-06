@@ -21,6 +21,11 @@ using ::testing::TestWithParam;
 
 class JsonTests_Phase1 : public JsonTests_Base {};
 class JsonTests_Phase2 : public JsonTests_Base {};
+class JsonTests_SNS_AddPermission : public JsonTests_Base {};
+class JsonTests_SNS_RemovePermission : public JsonTests_Base {};
+class JsonTests_SNS_NeuronActions : public JsonTests_Base {};
+class JsonTests_SNS_StakeMaturity : public JsonTests_Base {};
+class JsonTests_ICRC : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
         Phase1,
@@ -49,3 +54,83 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_Phase2, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_Phase2, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        AddPermision,
+        JsonTests_SNS_AddPermission,
+        ::testing::ValuesIn(GetJsonTestCases("sns_add_neuron_permission.json")),
+        JsonTests_SNS_AddPermission::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_AddPermission, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_AddPermission, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        RemovePermision,
+        JsonTests_SNS_RemovePermission,
+        ::testing::ValuesIn(GetJsonTestCases("sns_remove_neuron_permission.json")),
+        JsonTests_SNS_RemovePermission::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_RemovePermission, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_RemovePermission, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        NeuronActions,
+        JsonTests_SNS_NeuronActions,
+        ::testing::ValuesIn(GetJsonTestCases("sns_manage_neuron_actions.json")),
+        JsonTests_SNS_NeuronActions::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_NeuronActions, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_NeuronActions, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        NeuronActions,
+        JsonTests_SNS_StakeMaturity,
+        ::testing::ValuesIn(GetJsonTestCases("sns-stake-maturity.json")),
+        JsonTests_SNS_StakeMaturity::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_StakeMaturity, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_StakeMaturity, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        ICRC,
+        JsonTests_ICRC,
+        ::testing::ValuesIn(GetJsonTestCases("icrc.json")),
+        JsonTests_ICRC::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_ICRC, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_ICRC, Expert) { check_testcase(GetParam(), true); }
