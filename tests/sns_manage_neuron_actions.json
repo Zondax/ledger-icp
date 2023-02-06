@@ -10,8 +10,8 @@
       "2 | Neuron Id [2/4] : d76b17 : f626aa : 47829f",
       "2 | Neuron Id [3/4] : 06e523 : 5a0d58 : 0e96d3",
       "2 | Neuron Id [4/4] : 727729 : ea24",
-      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc : i3v6r-j4gpu-dpwti",
-      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x : ktkql-rqe",
+      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
+      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | Amount : 0.50"
     ],
     "output_expert": [
@@ -21,8 +21,8 @@
       "2 | Neuron Id [2/4] : d76b17 : f626aa : 47829f",
       "2 | Neuron Id [3/4] : 06e523 : 5a0d58 : 0e96d3",
       "2 | Neuron Id [4/4] : 727729 : ea24",
-      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc : i3v6r-j4gpu-dpwti",
-      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x : ktkql-rqe",
+      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
+      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | Amount : 0.50"
     ],
     "valid": true,
@@ -80,8 +80,8 @@
       "2 | Neuron Id [2/4] : d76b17 : f626aa : 47829f",
       "2 | Neuron Id [3/4] : 06e523 : 5a0d58 : 0e96d3",
       "2 | Neuron Id [4/4] : 727729 : ea24",
-      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc : i3v6r-j4gpu-dpwti",
-      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x : ktkql-rqe",
+      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
+      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | Amount : All"
     ],
     "output_expert": [
@@ -91,8 +91,8 @@
       "2 | Neuron Id [2/4] : d76b17 : f626aa : 47829f",
       "2 | Neuron Id [3/4] : 06e523 : 5a0d58 : 0e96d3",
       "2 | Neuron Id [4/4] : 727729 : ea24",
-      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc : i3v6r-j4gpu-dpwti",
-      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x : ktkql-rqe",
+      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
+      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | Amount : All"
     ],
     "valid": true,
@@ -148,8 +148,8 @@
       "2 | Neuron Id [2/4] : c71950 : 6487cf : 7a6cf4",
       "2 | Neuron Id [3/4] : 0da763 : 61aeaf : ee5133",
       "2 | Neuron Id [4/4] : e1d9ac : ea3d",
-      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc : i3v6r-j4gpu-dpwti",
-      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x : ktkql-rqe",
+      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
+      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | Amount : 2.00"
     ],
     "output_expert": [
@@ -159,8 +159,8 @@
       "2 | Neuron Id [2/4] : c71950 : 6487cf : 7a6cf4",
       "2 | Neuron Id [3/4] : 0da763 : 61aeaf : ee5133",
       "2 | Neuron Id [4/4] : e1d9ac : ea3d",
-      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc : i3v6r-j4gpu-dpwti",
-      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x : ktkql-rqe",
+      "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
+      "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | Amount : 2.00"
     ],
     "valid": true,
@@ -218,10 +218,10 @@
       "2 | Neuron Id [2/4] : c71950 : 6487cf : 7a6cf4",
       "2 | Neuron Id [3/4] : 0da763 : 61aeaf : ee5133",
       "2 | Neuron Id [4/4] : e1d9ac : ea3d",
-      "3 | Disburse to [1/4] : vvrt6-ymecq-u3umg : 7kb7r-j5jpx-twqwa",
-      "3 | Disburse to [2/4] : 3ykc4-y3cnk-7kwvw : 5bq6z-mafv7-ikfss",
-      "3 | Disburse to [3/4] : zubsx-jpno2-yx6yt : kur4c-t4dok-i22bv",
-      "3 | Disburse to [4/4] : ma5fw-toj3s-t2ree : b7q",
+      "3 | Disburse to [1/4] : vvrt6-ymecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | Disburse to [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
+      "3 | Disburse to [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
+      "3 | Disburse to [4/4] : ma5fw-toj3s-t2ree b7q",
       "4 | Amount : 2.00"
     ],
     "output_expert": [
@@ -231,10 +231,10 @@
       "2 | Neuron Id [2/4] : c71950 : 6487cf : 7a6cf4",
       "2 | Neuron Id [3/4] : 0da763 : 61aeaf : ee5133",
       "2 | Neuron Id [4/4] : e1d9ac : ea3d",
-      "3 | Disburse to [1/4] : vvrt6-ymecq-u3umg : 7kb7r-j5jpx-twqwa",
-      "3 | Disburse to [2/4] : 3ykc4-y3cnk-7kwvw : 5bq6z-mafv7-ikfss",
-      "3 | Disburse to [3/4] : zubsx-jpno2-yx6yt : kur4c-t4dok-i22bv",
-      "3 | Disburse to [4/4] : ma5fw-toj3s-t2ree : b7q",
+      "3 | Disburse to [1/4] : vvrt6-ymecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | Disburse to [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
+      "3 | Disburse to [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
+      "3 | Disburse to [4/4] : ma5fw-toj3s-t2ree b7q",
       "4 | Amount : 2.00"
     ],
     "valid": true,
@@ -341,10 +341,10 @@
       "2 | Neuron Id [2/4] : d76b17 : f626aa : 47829f",
       "2 | Neuron Id [3/4] : 06e523 : 5a0d58 : 0e96d3",
       "2 | Neuron Id [4/4] : 727729 : ea24",
-      "3 | Disburse to [1/4] : kcun3-pzjpf-eihu7 : pwv6m-qnlbt-oszmg",
-      "3 | Disburse to [2/4] : kb26q-rvqms-onmuh : mwiq3-uqfi3-ocq6i",
-      "3 | Disburse to [3/4] : nz7eo-ht4og-kqmsd : 466tm-6qg2o-y3bv2",
-      "3 | Disburse to [4/4] : x64uj-t4hm2-z2r5e : b7q",
+      "3 | Disburse to [1/4] : kcun3-pzjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | Disburse to [2/4] : kb26q-rvqms-onmuh mwiq3-uqfi3-ocq6i",
+      "3 | Disburse to [3/4] : nz7eo-ht4og-kqmsd 466tm-6qg2o-y3bv2",
+      "3 | Disburse to [4/4] : x64uj-t4hm2-z2r5e b7q",
       "4 | Amount : 28.70"
     ],
     "output_expert": [
@@ -354,10 +354,10 @@
       "2 | Neuron Id [2/4] : d76b17 : f626aa : 47829f",
       "2 | Neuron Id [3/4] : 06e523 : 5a0d58 : 0e96d3",
       "2 | Neuron Id [4/4] : 727729 : ea24",
-      "3 | Disburse to [1/4] : kcun3-pzjpf-eihu7 : pwv6m-qnlbt-oszmg",
-      "3 | Disburse to [2/4] : kb26q-rvqms-onmuh : mwiq3-uqfi3-ocq6i",
-      "3 | Disburse to [3/4] : nz7eo-ht4og-kqmsd : 466tm-6qg2o-y3bv2",
-      "3 | Disburse to [4/4] : x64uj-t4hm2-z2r5e : b7q",
+      "3 | Disburse to [1/4] : kcun3-pzjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | Disburse to [2/4] : kb26q-rvqms-onmuh mwiq3-uqfi3-ocq6i",
+      "3 | Disburse to [3/4] : nz7eo-ht4og-kqmsd 466tm-6qg2o-y3bv2",
+      "3 | Disburse to [4/4] : x64uj-t4hm2-z2r5e b7q",
       "4 | Amount : 28.70"
     ],
     "valid": true,
