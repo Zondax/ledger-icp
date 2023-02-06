@@ -754,6 +754,48 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
+                                             char *outKey, uint16_t outKeyLen,
+                                             char *outVal, uint16_t outValLen,
+                                             uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    candid_StakeMaturity_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.stake;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Stake Maturity Neuron");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const size_t canisterIdSize = parser_tx_obj.tx_fields.call.canister_id.len;
+
+        snprintf(outKey, outKeyLen, "Canister Id");
+        return print_canisterId(canisterId, canisterIdSize,
+                                outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Neuron Id ");
+        const uint8_t CHARS_PER_PAGE = 24;
+        uint8_t buffer[100] = {0};
+        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                  parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                  buffer, sizeof(buffer), pageCount);
+        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
+
+        return parser_ok;
+    }
+
+    if (displayIdx == 3 && fields->has_percentage_to_stake) {
+        snprintf(outKey, outKeyLen, "Percentage to stake");
+        snprintf(outVal, outValLen, "%d", fields->percentage_to_stake);
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
                                                      uint8_t displayIdx,
                                                      char *outKey, uint16_t outKeyLen,
@@ -807,7 +849,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         }
         case SNS_Disburse:
             return parser_getItemDisburse(displayIdx, outKey, outKeyLen, outVal, outKeyLen, pageIdx, pageCount);
-
+        case SNS_StakeMaturity:
+            return parser_getItemSNSStakeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
         default:
             return parser_no_data;
