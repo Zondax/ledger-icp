@@ -31,6 +31,15 @@ parser_error_t print_textual(uint8_t *data, uint16_t len, char *outVal, uint16_t
 parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize);
 zxerr_t print_hexstring(char *out, uint16_t outLen, const uint8_t *data, uint16_t dataLen);
 
+parser_error_t subaccount_hexstring(const uint8_t *subaccount, const uint16_t subaccountLen,
+                                    uint8_t *output, const uint16_t outputLen, uint8_t *pageCount);
+
+parser_error_t print_principal(uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen,
+                               uint8_t pageIdx, uint8_t *pageCount);
+
+parser_error_t print_canisterId(uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen,
+                                uint8_t pageIdx, uint8_t *pageCount);
+
 #ifdef __cplusplus
 }
 #endif

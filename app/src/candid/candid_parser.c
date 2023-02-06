@@ -17,6 +17,7 @@
 #include "leb128.h"
 
 #include "candid_helper.h"
+#include "sns_parser.h"
 
 // Good reference:  https://github.com/dfinity/agent-js/tree/main/packages/candid
 // https://github.com/dfinity/candid/blob/master/spec/Candid.md#deserialisation
@@ -47,36 +48,18 @@ parser_error_t getCandidNat64FromVec(const uint8_t *buf, uint64_t *v, uint8_t si
     return parser_ok;
 }
 
-// static parser_error_t getHash(candid_transaction_t *txn, const uint8_t variant, uint64_t *hash) {
-//     if (txn == NULL || hash == NULL) {
-//         return parser_unexpected_error;
-//     }
-//     *hash = 0;
-//     // Get option type implementation
-//     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+parser_error_t getCandidInt32FromVec(const uint8_t *buf, int32_t *v, uint8_t size, uint8_t idx) {
+    if (buf == NULL || v == NULL || idx >= size) {
+        return parser_unexpected_value;
+    }
+    *v = 0;
+    buf = buf + 4 * idx;
 
-//     int64_t type = 0;
-//     CHECK_PARSER_ERR(readCandidType(&txn->ctx, &type))
-//     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, type))
-
-//     uint64_t variantLength = 0;
-//     CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &variantLength))
-//     if (variant >= variantLength) {
-//         return parser_value_out_of_range;
-//     }
-
-//     // Move until requested variant
-//     for (uint64_t i = 0; i < variant; i++) {
-//         int64_t dummyType;
-//         uint64_t tmpHash = 0;
-//         CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, &tmpHash))
-//         CHECK_PARSER_ERR(readCandidType(&txn->ctx, &dummyType))
-//     }
-
-//     CHECK_PARSER_ERR(readCandidLEB128(&txn->ctx, hash))
-//     CHECK_PARSER_ERR(readCandidType(&txn->ctx, &txn->element.implementation))
-//     return parser_ok;
-// }
+    for (uint8_t i = 0; i < 4; i++) {
+        *v += (int32_t) *(buf + i) << 8 * i;
+    }
+    return parser_ok;
+}
 
 parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
     // Create context and auxiliary ctx
@@ -141,8 +124,18 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-    if (txn.txn_length != 3) {
-        return parser_unexpected_value;
+    switch (txn.txn_length)
+    {
+        case 2: // SNS
+            /* code */
+            return readSNSManageNeuron(&ctx, &txn);
+            break;
+        case 3: // NNS
+            /* code */
+            break;
+
+        default:
+            return parser_unexpected_value;
     }
 
     // Check sanity Id

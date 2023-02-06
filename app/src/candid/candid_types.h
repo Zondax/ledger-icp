@@ -75,6 +75,16 @@ typedef enum {
 } txn_hash_fields;
 
 typedef enum {
+    sns_hash_subaccount = 1349681965,
+    sns_hash_command = 2171433291,
+    sns_hash_permissions_to_add = 425878456,
+    sns_hash_principal_id = 3211002892,
+    sns_hash_permissions_to_remove = 3210478349,
+
+    sns_hash_neuron_permission_list = 248806532,
+} sns_hash_fields;
+
+typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
@@ -87,7 +97,22 @@ typedef enum {
     hash_command_StakeMaturity = 3582720395,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
-  } command_variant_hash_e;
+} command_variant_hash_e;
+
+typedef enum {
+    sns_hash_command_Split = 345791162,
+    sns_hash_command_Follow = 774571409,
+    sns_hash_command_DisburseMaturity = 914851348,
+    sns_hash_command_Configure = 1349619708,
+    sns_hash_command_RegisterVote = 1647237574,
+    sns_hash_command_SyncCommand = 2455066893,
+    sns_hash_command_MakeProposal = 3217030240,
+    sns_hash_command_ClaimOrRefreshNeuron = 3582720395,
+    sns_hash_command_RemoveNeuronPermissions = 3664916941,
+    sns_hash_command_AddNeuronPermissions = 3723163536,
+    sns_hash_command_MergeMaturity = 3865893897,
+    sns_hash_command_Disburse = 4121967011,
+} sns_hash_commands;
 
 typedef enum {
     //Check these hashes
@@ -102,6 +127,22 @@ typedef enum {
     hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
+
+// Permissions ENUM
+// https://github.com/dfinity/ic-js/blob/d82310ec5519160b5fa2ec94fd82200485bd3ccc/packages/sns/src/enums/governance.enums.ts#L2
+typedef enum {
+    NEURON_PERMISSION_TYPE_UNSPECIFIED = 0,
+    NEURON_PERMISSION_TYPE_CONFIGURE_DISSOLVE_STATE = 1,
+    NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS = 2,
+    NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL = 3,
+    NEURON_PERMISSION_TYPE_VOTE = 4,
+    NEURON_PERMISSION_TYPE_DISBURSE = 5,
+    NEURON_PERMISSION_TYPE_SPLIT = 6,
+    NEURON_PERMISSION_TYPE_MERGE_MATURITY = 7,
+    NEURON_PERMISSION_TYPE_DISBURSE_MATURITY = 8,
+    NEURON_PERMISSION_TYPE_STAKE_MATURITY = 9,
+    NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION = 10,
+} sns_permissions_e;
 
 typedef struct {
     uint64_t len;
@@ -165,6 +206,19 @@ typedef struct {
 } candid_StakeMaturity_t;
 
 typedef struct {
+    uint8_t list_size;
+    const uint8_t *permissions_list_ptr;
+} sns_NeuronPermissionList_t;
+
+typedef struct {
+    uint8_t has_permissionList;
+    sns_NeuronPermissionList_t permissionList;
+
+    uint8_t has_principal;
+    uint8_t principal[30];
+} sns_NeuronPermissions_t;
+
+typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
@@ -173,6 +227,8 @@ typedef struct {
         candid_Merge_t merge;
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
+
+        sns_NeuronPermissions_t neuronPermissions;
     };
 } candid_Command_t;
 
@@ -194,6 +250,13 @@ typedef struct {
     uint8_t has_neuron_id_or_subaccount;
     candid_Neuron_id_or_subaccount_t neuron_id_or_subaccount;
 } candid_ManageNeuron_t;
+
+typedef struct {
+    sizedBuffer_t subaccount;
+
+    uint8_t has_command;
+    candid_Command_t command;
+} sns_ManageNeuron_t;
 
 
 typedef struct {

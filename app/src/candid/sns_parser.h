@@ -1,7 +1,7 @@
 /*******************************************************************************
-*   (c) 2022 Zondax AG
+*   (c) 2018 - 2023 Zondax AG
 *
-*  Licensed under the Apache License, Version 2.0 (the "License")
+*  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
 *  You may obtain a copy of the License at
 *
@@ -23,15 +23,9 @@ extern "C" {
 #include <zxerror.h>
 #include "candid_types.h"
 #include "parser_common.h"
+#include "candid_helper.h"
 
-parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
-
-parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
-
-parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
-
-parser_error_t getCandidNat64FromVec(const uint8_t *buffer, uint64_t *value, uint8_t size, uint8_t idx);
-parser_error_t getCandidInt32FromVec(const uint8_t *buffer, int32_t *value, uint8_t size, uint8_t idx);
+parser_error_t readSNSManageNeuron(parser_context_t *ctx, candid_transaction_t *txn);
 
 #ifdef __cplusplus
 }

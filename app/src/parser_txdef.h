@@ -90,6 +90,8 @@ typedef enum {
     StakeMaturityCandid = 1002,
     Configure_IncreaseDissolveDelayCandid = 1003,
 
+    SNS_AddNeuronPermissions = 3000,
+    SNS_RemoveNeuronPermissions = 3001,
 } manageNeuron_e;
 
 typedef enum {
@@ -160,6 +162,7 @@ typedef struct {
         candid_ListNeurons_t candid_listNeurons;
         SendRequest SendRequest;
         ListNeurons ListNeurons;
+        sns_ManageNeuron_t sns_manageNeuron;
     } data;
 } call_t;
 
