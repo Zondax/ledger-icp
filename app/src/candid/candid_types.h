@@ -71,6 +71,7 @@ typedef enum {
     hash_nonce = 2680573167,
     hash_percentage_to_stake = 854334011,
     hash_setting_auto_stake_maturity = 3470422224,
+    hash_setting_increse_dissolve_delay = 913088909,
 } txn_hash_fields;
 
 typedef enum {
@@ -91,9 +92,8 @@ typedef enum {
 typedef enum {
     //Check these hashes
     hash_operation_Invalid = 971299358,
-    hash_operation_IncreaseDissolveDelay = 628424947,
     hash_operation_StopDissolving = 1954991536,
-    hash_operation_AddHotKey = 2143729936,
+    hash_operation_IncreaseDissolveDelay = 2143729936,
     hash_operation_RemoveHotKey = 3248805476,
     hash_operation_JoinCommunityFund = 45994902,
     hash_operation_ChangeAutoStakeMaturity = 1906071820,
@@ -121,11 +121,16 @@ typedef struct {
 } candid_SetDissolveTimestamp_t;
 
 typedef struct {
+    uint32_t dissolve_timestamp_seconds;
+} candid_IncreaseDissolveDelay_t;
+
+typedef struct {
     uint64_t which;
     uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
         candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
+        candid_IncreaseDissolveDelay_t increaseDissolveDelay;
     };
 } candid_Operation_t;
 
