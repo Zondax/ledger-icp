@@ -111,13 +111,12 @@ parser_error_t print_principal(uint8_t *data, uint16_t len,
     return parser_ok;
 }
 
-parser_error_t print_canisterId(uint8_t *data, uint16_t len,
+parser_error_t print_canisterId(const uint8_t *data, uint16_t len,
                              char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount) {
     char tmpBuffer[100] = {0};
     uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual((const uint8_t *) data, len, (char *) tmpBuffer,
-                                            &outLen);
+    zxerr_t err = crypto_principalToTextual(data, len, (char *) tmpBuffer, &outLen);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
     }
@@ -208,10 +207,14 @@ parser_error_t subaccount_hexstring(const uint8_t *subaccount, const uint16_t su
     return parser_ok;
 }
 
-static parser_error_t page_with_delimiters(char *input, uint16_t inputLen, char *output, uint16_t outputLen, uint8_t pageIdx, uint8_t *pageCount) {
+static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen, char *output, const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount) {
     const uint8_t CHARS_PER_PAGE = 30;
     const uint8_t CHARS_PER_CHUNK = 5;
     const uint8_t CHUNKS_PER_PAGE = 6;
+
+    if (outputLen < CHARS_PER_PAGE + 2) {
+        return parser_unexpected_buffer_end;
+    }
 
     *pageCount = inputLen / CHARS_PER_PAGE + (inputLen % CHARS_PER_PAGE ? 1 : 0);
     if (pageIdx >= *pageCount) {
@@ -279,7 +282,7 @@ parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t s
                                 ? (CRC_LENGTH + DFINITY_PRINCIPAL_LEN + shrinkBytes + 2)
                                 : (CRC_LENGTH + DFINITY_PRINCIPAL_LEN);
 
-    char buffer[110] = {0};
+    char buffer[120] = {0};
     uint16_t bufferSize = sizeof(buffer);
     crypto_toTextual(tmpArray, tmpArrayLen, buffer, &bufferSize);
 
