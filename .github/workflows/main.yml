@@ -1,10 +1,11 @@
-name: "Test/Build"
+name: Build
 on:
   workflow_dispatch:
   push:
-    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
 
 jobs:
   configure:
@@ -13,13 +14,13 @@ jobs:
       uid_gid: ${{ steps.get-user.outputs.uid_gid }}
     steps:
       - id: get-user
-        run: echo "::set-output name=uid_gid::$(id -u):$(id -g)"
+        run: echo "uid_gid=$(id -u):$(id -g)" >> $GITHUB_OUTPUT
 
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       - name: Install deps
@@ -39,16 +40,30 @@ jobs:
       BOLOS_SDK: ${{ github.workspace }}/deps/nanos-secure-sdk
       BOLOS_ENV: /opt/bolos
       HOME: /home/zondax_circle
+    outputs:
+      size: ${{steps.build.outputs.size}}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       - name: Build Standard app
+        id: build
         shell: bash -l {0}
         run: |
           source $HOME/.cargo/env
           make
+          echo "size=$(python3 deps/ledger-zxlib/scripts/getSize.py s)" >> $GITHUB_OUTPUT
+
+  size_nano_s:
+    needs: build_ledger_nano_S
+    runs-on: ubuntu-latest
+    env:
+      NANOS_LIMIT_SIZE: 136
+    steps:
+      - run: |
+          echo "LNS app size: ${{needs.build_ledger_nano_S.outputs.size}} KiB"
+          [ ${{needs.build_ledger_nano_S.outputs.size}} -le $NANOS_LIMIT_SIZE ]
 
   build_ledger_nano_X:
     needs: configure
@@ -96,7 +111,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       - run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
@@ -106,9 +121,7 @@ jobs:
           sudo apt-get install -y cmake binutils-dev libcurl4-openssl-dev libiberty-dev libelf-dev libdw-dev
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --no-modify-path --default-toolchain none -y;
       - name: Install node
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14.17.0'
+        uses: actions/setup-node@v3
       - name: Install yarn
         run: |
           npm install -g yarn
@@ -125,7 +138,15 @@ jobs:
           make zemu_test
 
   build_package_nanos:
-    needs: [ configure, build, build_ledger_nano_S, build_ledger_nano_X, build_ledger_nano_SP, test_zemu ]
+    needs:
+      [
+        configure,
+        build,
+        build_ledger_nano_S,
+        build_ledger_nano_X,
+        build_ledger_nano_SP,
+        test_zemu,
+      ]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -137,7 +158,7 @@ jobs:
       HOME: /home/zondax_circle
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       - name: Install deps
@@ -154,7 +175,7 @@ jobs:
         id: nanos
         run: |
           pip install ledgerblue
-          echo ::set-output name=tag_name::$(./app/pkg/installer_nanos.sh version)
+          echo "tag_name=$(./app/pkg/installer_nanos.sh version)" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
@@ -168,7 +189,15 @@ jobs:
           prerelease: false
 
   build_package_nanos_plus:
-    needs: [ configure, build, build_ledger_nano_S, build_ledger_nano_X, build_ledger_nano_SP, test_zemu ]
+    needs:
+      [
+        configure,
+        build,
+        build_ledger_nano_S,
+        build_ledger_nano_X,
+        build_ledger_nano_SP,
+        test_zemu,
+      ]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -180,7 +209,7 @@ jobs:
       HOME: /home/zondax_circle
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       - name: Install deps
@@ -197,7 +226,7 @@ jobs:
         id: nanosp
         run: |
           pip install ledgerblue
-          echo ::set-output name=tag_name::$(./app/pkg/installer_nanos_plus.sh version)
+          echo "tag_name=$(./app/pkg/installer_nanos_plus.sh version)" >> $GITHUB_OUTPUT
 
       - name: Update Release
         id: update_release

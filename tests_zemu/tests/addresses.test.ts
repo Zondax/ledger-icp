@@ -71,7 +71,7 @@ const TEST_CASES_BIP32 = [
 ]
 
 describe('Addresses', function () {
-  test.each(DEVICE_MODELS)('get address with seed', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('get address with seed', async function (m) {
     const sim = new Zemu(m.path)
 
     for (const TEST of TEST_CASES) {
@@ -92,14 +92,14 @@ describe('Addresses', function () {
         expect(resp.errorMessage).toEqual('No errors')
 
         expect(resp.principalText).toEqual(TEST.prinipal)
-        expect(resp.address.toString('hex')).toEqual(TEST.address)
+        expect((resp.address ?? []).toString('hex')).toEqual(TEST.address)
       } finally {
         await sim.close()
       }
     }
   })
 
-  test.each(DEVICE_MODELS)('derivation paths', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('derivation paths', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })

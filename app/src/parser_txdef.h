@@ -59,6 +59,7 @@ typedef enum {
     candid_manageneuron = 0xF002,
     candid_updatenodeprovider = 0xF003,
     candid_listneurons = 0xF004,
+    candid_icrc_transfer = 0xF005,
 } method_type_e;
 
 typedef enum {
@@ -88,6 +89,16 @@ typedef enum {
     Merge = 1000,
     SpawnCandid = 1001,
     StakeMaturityCandid = 1002,
+    Configure_IncreaseDissolveDelayCandid = 1003,
+    Configure_StartDissolvingCandid = 1004,
+    Configure_StopDissolvingCandid = 1005,
+
+    SNS_AddNeuronPermissions = 3000,
+    SNS_RemoveNeuronPermissions = 3001,
+    SNS_Configure_StartDissolving = 3002,
+    SNS_Configure_StopDissolving = 3003,
+    SNS_Disburse = 3004,
+    SNS_StakeMaturity = 3005,
 } manageNeuron_e;
 
 typedef enum {
@@ -151,6 +162,8 @@ typedef struct {
     method_type_e method_type;
     method_arg_t method_args;
 
+    uint8_t is_sns;
+
     union {
         ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
         candid_ManageNeuron_t candid_manageNeuron;
@@ -158,6 +171,8 @@ typedef struct {
         candid_ListNeurons_t candid_listNeurons;
         SendRequest SendRequest;
         ListNeurons ListNeurons;
+        sns_ManageNeuron_t sns_manageNeuron;
+        icrc_transfer_t  icrcTransfer;
     } data;
 } call_t;
 

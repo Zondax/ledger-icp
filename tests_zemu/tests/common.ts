@@ -1,9 +1,9 @@
 import { DEFAULT_START_OPTIONS, DeviceModel } from '@zondax/zemu'
+import { resolve } from 'path'
 
-const Resolve = require('path').resolve
-const APP_PATH_S = Resolve('../app/output/app_s.elf')
-const APP_PATH_X = Resolve('../app/output/app_x.elf')
-const APP_PATH_SP = Resolve('../app/output/app_s2.elf')
+const APP_PATH_S = resolve('../app/output/app_s.elf')
+const APP_PATH_X = resolve('../app/output/app_x.elf')
+const APP_PATH_SP = resolve('../app/output/app_s2.elf')
 
 const APP_SEED = 'equip will roof matter pink blind book anxiety banner elbow sun young'
 
