@@ -71,7 +71,34 @@ typedef enum {
     hash_nonce = 2680573167,
     hash_percentage_to_stake = 854334011,
     hash_setting_auto_stake_maturity = 3470422224,
+    hash_setting_increse_dissolve_delay = 913088909,
 } txn_hash_fields;
+
+typedef enum {
+    sns_hash_subaccount = 1349681965,
+    sns_hash_command = 2171433291,
+    sns_hash_permissions_to_add = 425878456,
+    sns_hash_principal_id = 3211002892,
+    sns_hash_permissions_to_remove = 3210478349,
+    sns_hash_operation = 2688582695,
+
+    sns_hash_neuron_permission_list = 248806532,
+
+    sns_hash_disburse_to_account = 1937583785,
+    sns_hash_opt_principal = 947296307,
+    sns_hash_opt_amount = 3573748184,
+} sns_hash_fields;
+
+typedef enum {
+    icrc_hash_to = 25979,
+    icrc_hash_owner = 947296307,
+    icrc_hash_subaccount = 1349681965,
+    icrc_hash_fee = 5094982,
+    icrc_hash_memo = 1213809850,
+    icrc_hash_from_subaccount = 1835347746,
+    icrc_hash_created_at_time = 3258775938,
+    icrc_hash_amount = 3573748184,
+} icrc_hash_fields;
 
 typedef enum {
     hash_command_Spawn = 345247259,
@@ -86,14 +113,28 @@ typedef enum {
     hash_command_StakeMaturity = 3582720395,
     hash_command_MergeMaturity = 3865893897,
     hash_command_Disburse = 4121967011,
-  } command_variant_hash_e;
+} command_variant_hash_e;
+
+typedef enum {
+    sns_hash_command_Split = 345791162,
+    sns_hash_command_Follow = 774571409,
+    sns_hash_command_DisburseMaturity = 914851348,
+    sns_hash_command_Configure = 1647237574,
+    // sns_hash_command_RegisterVote = 1647237574,
+    sns_hash_command_SyncCommand = 2455066893,
+    sns_hash_command_MakeProposal = 3217030240,
+    sns_hash_command_StakeMaturity = 3582720395,
+    sns_hash_command_RemoveNeuronPermissions = 3664916941,
+    sns_hash_command_AddNeuronPermissions = 3723163536,
+    sns_hash_command_MergeMaturity = 3865893897,
+    sns_hash_command_Disburse = 4121967011,
+} sns_hash_commands;
 
 typedef enum {
     //Check these hashes
     hash_operation_Invalid = 971299358,
-    hash_operation_IncreaseDissolveDelay = 628424947,
     hash_operation_StopDissolving = 1954991536,
-    hash_operation_AddHotKey = 2143729936,
+    hash_operation_IncreaseDissolveDelay = 2143729936,
     hash_operation_RemoveHotKey = 3248805476,
     hash_operation_JoinCommunityFund = 45994902,
     hash_operation_ChangeAutoStakeMaturity = 1906071820,
@@ -102,6 +143,22 @@ typedef enum {
     hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
+
+// Permissions ENUM
+// https://github.com/dfinity/ic-js/blob/d82310ec5519160b5fa2ec94fd82200485bd3ccc/packages/sns/src/enums/governance.enums.ts#L2
+typedef enum {
+    NEURON_PERMISSION_TYPE_UNSPECIFIED = 0,
+    NEURON_PERMISSION_TYPE_CONFIGURE_DISSOLVE_STATE = 1,
+    NEURON_PERMISSION_TYPE_MANAGE_PRINCIPALS = 2,
+    NEURON_PERMISSION_TYPE_SUBMIT_PROPOSAL = 3,
+    NEURON_PERMISSION_TYPE_VOTE = 4,
+    NEURON_PERMISSION_TYPE_DISBURSE = 5,
+    NEURON_PERMISSION_TYPE_SPLIT = 6,
+    NEURON_PERMISSION_TYPE_MERGE_MATURITY = 7,
+    NEURON_PERMISSION_TYPE_DISBURSE_MATURITY = 8,
+    NEURON_PERMISSION_TYPE_STAKE_MATURITY = 9,
+    NEURON_PERMISSION_TYPE_MANAGE_VOTING_PERMISSION = 10,
+} sns_permissions_e;
 
 typedef struct {
     uint64_t len;
@@ -121,11 +178,16 @@ typedef struct {
 } candid_SetDissolveTimestamp_t;
 
 typedef struct {
+    uint32_t dissolve_timestamp_seconds;
+} candid_IncreaseDissolveDelay_t;
+
+typedef struct {
     uint64_t which;
     uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
         candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
+        candid_IncreaseDissolveDelay_t increaseDissolveDelay;
     };
 } candid_Operation_t;
 
@@ -160,6 +222,55 @@ typedef struct {
 } candid_StakeMaturity_t;
 
 typedef struct {
+    uint8_t list_size;
+    const uint8_t *permissions_list_ptr;
+} sns_NeuronPermissionList_t;
+
+typedef struct {
+    uint8_t has_permissionList;
+    sns_NeuronPermissionList_t permissionList;
+
+    uint8_t has_principal;
+    uint8_t principal[30];
+} sns_NeuronPermissions_t;
+
+typedef struct {
+    uint8_t has_owner;
+    uint8_t owner[30];
+
+    uint8_t has_subaccount;
+    sizedBuffer_t subaccount;
+} Account_t;
+
+typedef struct {
+    uint8_t icp_canister;
+    Account_t account;
+
+    uint8_t has_fee;
+    uint64_t fee;
+
+    uint8_t has_memo;
+    sizedBuffer_t memo;
+
+    uint8_t has_from_subaccount;
+    sizedBuffer_t from_subaccount;
+
+    uint8_t has_created_at_time;
+    uint64_t created_at_time;
+
+    uint64_t amount;
+
+} icrc_transfer_t;
+
+typedef struct {
+    uint8_t has_account;
+    Account_t account;
+
+    uint8_t has_amount;
+    uint64_t amount;
+} sns_Disburse_t;
+
+typedef struct {
     uint64_t variant;
     uint64_t hash;
     union {
@@ -168,6 +279,9 @@ typedef struct {
         candid_Merge_t merge;
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
+
+        sns_NeuronPermissions_t neuronPermissions;
+        sns_Disburse_t disburse;
     };
 } candid_Command_t;
 
@@ -190,6 +304,12 @@ typedef struct {
     candid_Neuron_id_or_subaccount_t neuron_id_or_subaccount;
 } candid_ManageNeuron_t;
 
+typedef struct {
+    sizedBuffer_t subaccount;
+
+    uint8_t has_command;
+    candid_Command_t command;
+} sns_ManageNeuron_t;
 
 typedef struct {
     uint8_t has_reward_account;

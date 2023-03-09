@@ -15,8 +15,7 @@
  ******************************************************************************* */
 
 import Zemu from '@zondax/zemu'
-import InternetComputerApp from '@zondax/ledger-icp'
-import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
+import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
 jest.setTimeout(180000)
@@ -24,7 +23,7 @@ jest.setTimeout(180000)
 const path = "m/44'/223'/0'/0/0"
 
 describe('Phase2', function () {
-  test.each(DEVICE_MODELS)('sign normal -- split', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- split', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -52,7 +51,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- merge', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- merge', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -80,7 +79,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- set dissolve delay', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- set dissolve delay', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -109,7 +108,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- spawn neuron candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- spawn neuron candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -137,7 +136,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- list neurons candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- list neurons candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -165,7 +164,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- stake maturity candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- stake maturity candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -193,7 +192,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- auto stake maturity candid', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- auto stake maturity candid', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -221,7 +220,35 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- increase dissolving delay candid', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const txBlobStr =
+        'd9d9f7a167636f6e74656e74a6636172675903e94449444c4e6c01dbb701786e006e796e686e786c03bc949d820302dbe2be950903ef9999fe09046c01b9ef938008786d006c02afa3bda10175c2cee0d80c076c006c029cb1fa2503ba89e5c204786b039ef5cc0f099992ccd0010adae1c99903786e0b6c01d7ab010c6c01f6b0989a08036c018eddc3a60d036c01d0e1e9f60c7e6c018dc3b2b303796c01c88ecad50a786b0996a7f7150ef381d4ab020f8cb2f18c0710b09b9ba40709d0fb87af070990f29afe0711e4ac938d0c09f7aacfd80d09c3a2f6c90e126e136c01a78882820a146c02ea99cff20475b2b8d4960b016c01c38fbbd10b016c05f5bbe3900178d2bbf0d9017eb9ef93800878dbe2be950903ef9999fe09786c04efd6e4027198abec81011ab6f798b201ca00a696a48708716e716c02cbe4fdc70471fc91f4f8051a6e1b6c02dbb70101bac7a7fa0d1c6c01bbb4b09703026c01b99d9da50b796d7b6c01cedfa0a804206e216c01e0a9b302786e236c02a9ddf49b0722d8a38ca80d246b0c9b9cd0a40105bab5f1a40106918bacf10208fc9fc683050dc6b3bb9106158db2d592091698a5d0c7091791b2fab80a18e0f8fffd0b198bf3afac0d1e89b8b3b30e1fa3f3c0ad0f256e266b02cd8e8eb90420cebee1d308006e286c03dbb70101cbe2b58b0827f1bb8b880d296c02e4d7bee905758effd6e90e206c02dbb701039df1afe707226e2c6c01f5bbe39001786c01a9ddf49b07226b02fdf59aec0b2ee3b586ff0c2f6e306c03ce9ca6ce012df382ccb30731b9ef938008786c07fed391bd0178dcd0a0ab0378dfbcb4d80478edc6ecab087993e5e481097890b090af0e78ca9ab7d20f786e336c03d889bea60d04b5f6f9e90e03c6f6ebeb0e346c02f9889a5778b2cc99e705786e366c01edbb85f901376e386c02cfbe93a40439c796cdbe0b036c01c2cee0d80c076c020075013b6d3c6c0184aead333d6e7e6d326c02f8b9b6c9043fa4ccf7dd0ac0006c089eb493cf0378befa8dd40479be8fe6e30478ce89be97067886f998bc0978c5cae3d40a7893a190e00c78f5e1d0e70d786d686c018594e2c50bc3006b02bf80e42b2cc6a6e4b90a2c6ec5006c01f0a2cabb0bc6006c0196bdb4e904716b0c93a7e09d021dd881c9c4032ad69ce79d0a2b82ffcfaa0c329e9598a00d359dfa94a40d3ae3c3c5990e3eb1a5aea10ec100f5d9d7a50ec200fad5ddf40ec400db9cebf70ec700d6f4c7ff0fc8006ec9006b0c9b9cd0a40105bab5f1a40106918bacf10208fc9fc683050dc6b3bb9106158db2d592091698a5d0c7091791b2fab80a18e0f8fffd0b198bf3afac0d1e89b8b3b30e1fa3f3c0ad0f256ecb006c03dbb70101cbe2b58b08cc00f1bb8b880d2901cd000100406c4830c8a17a0104010500ea2400006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b172e7bf51d9c01c06b6d6574686f645f6e616d656d6d616e6167655f6e6575726f6e6c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
+      const txBlob = Buffer.from(txBlobStr, 'hex')
+
+      const respRequest = app.sign(path, txBlob, SIGN_VALUES_P2.DEFAULT)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_increase_dissolving_delay_candid`)
+
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
+
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
+    } finally {
+      sim.dumpEvents()
+      await sim.close()
+    }
+  })
+
+  test.concurrent.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })

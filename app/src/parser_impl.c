@@ -302,12 +302,13 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
             }
 
             const candid_Command_t *command = &v->tx_fields.call.data.candid_manageNeuron.command;
+            const bool isSNS = v->tx_fields.call.is_sns;
             switch (command->hash) {
                 case hash_command_Spawn:
                     *mn_type = SpawnCandid;
                     return parser_ok;
                 case hash_command_StakeMaturity:
-                    *mn_type = StakeMaturityCandid;
+                    *mn_type = isSNS ? SNS_StakeMaturity : StakeMaturityCandid;
                     return parser_ok;
                 case hash_command_Split:
                     *mn_type = Split;
@@ -329,11 +330,30 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_ChangeAutoStakeMaturity:
                             *mn_type = Configure_ChangeAutoStakeMaturity;
                             break;
+                        case hash_operation_IncreaseDissolveDelay:
+                            *mn_type = Configure_IncreaseDissolveDelayCandid;
+                            break;
+                        case hash_operation_StartDissolving:
+                            *mn_type = isSNS ? SNS_Configure_StartDissolving : Configure_StartDissolvingCandid;
+                            break;
+                        case hash_operation_StopDissolving:
+                            *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolvingCandid;
+                            break;
                         default:
                             return parser_unexpected_value;
                     }
                     return parser_ok;
                 }
+                case sns_hash_command_AddNeuronPermissions:
+                    *mn_type = SNS_AddNeuronPermissions;
+                    return parser_ok;
+                case sns_hash_command_RemoveNeuronPermissions:
+                    *mn_type = SNS_RemoveNeuronPermissions;
+                    return parser_ok;
+                case sns_hash_command_Disburse:
+                    *mn_type = SNS_Disburse;
+                    return parser_ok;
+
                 default:
                     break;
             }
@@ -349,6 +369,8 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
 parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
     char *method = v->tx_fields.call.method_name.data;
     manageNeuron_e mn_type;
+
+    v->tx_fields.call.is_sns = 0; // we'll set this var later if is sns
 
     // Depending on the method, we may try to read protobuf or candid
 
@@ -375,8 +397,7 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         }
     }
 
-    // Candid
-
+    // Candid NNS + SNS
     if (strcmp(method, "manage_neuron") == 0) {
         v->tx_fields.call.method_type = candid_manageneuron;
         CHECK_PARSER_ERR(readCandidManageNeuron(v, buffer, bufferLen))
@@ -395,6 +416,12 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return parser_ok;
     }
 
+    if (strcmp(method, "icrc1_transfer") == 0) {
+        v->tx_fields.call.method_type = candid_icrc_transfer;
+        CHECK_PARSER_ERR(readCandidICRCTransfer(v, buffer, bufferLen))
+        return parser_ok;
+    }
+
     return parser_unexpected_type;
 }
 
@@ -405,6 +432,14 @@ static bool isCandidTransaction(parser_tx_t *v) {
     }
 
     if (strcmp(method, "update_node_provider") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "list_neurons") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "icrc1_transfer") == 0) {
         return true;
     }
 
@@ -550,11 +585,16 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
         case candid_updatenodeprovider:
         case candid_listneurons:
         case candid_manageneuron: {
+            if (v->tx_fields.call.is_sns) return parser_ok; // sns has dynamic canister id
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
 
         case pb_claimneurons : {
             CHECK_METHOD_WITH_CANISTER("renrkeyaaaaaaaaaaadacai")
+        }
+
+        case candid_icrc_transfer: {
+            return parser_ok;
         }
 
         default: {
@@ -580,7 +620,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
             }
 
             if (v->tx_fields.call.method_type == pb_manageneuron) {
-                ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
+                const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
                 PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0),
                                        parser_unexpected_error);
             }
@@ -615,20 +655,24 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         }
     }
 
+
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
-    uint8_t publicKey[SECP256K1_PK_LEN];
-    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
+    const bool icrc_transfer = v->tx_fields.call.method_type == candid_icrc_transfer;
+    if (!icrc_transfer) {
+        uint8_t publicKey[SECP256K1_PK_LEN];
+        uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
-    MEMZERO(publicKey, sizeof(publicKey));
-    MEMZERO(principalBytes, sizeof(principalBytes));
+        MEMZERO(publicKey, sizeof(publicKey));
+        MEMZERO(principalBytes, sizeof(principalBytes));
 
-    PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
-                           parser_unexpected_error)
+        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+                            parser_unexpected_error)
 
-    PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
+        PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
 
-    if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
-        return parser_unexpected_value;
+        if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+            return parser_unexpected_value;
+        }
     }
 #endif
 
@@ -672,6 +716,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_AddHotKey :
         case MergeMaturity :
         case Configure_IncreaseDissolveDelay:
+        case Configure_IncreaseDissolveDelayCandid:
         case Configure_ChangeAutoStakeMaturity:
         case Configure_SetDissolvedTimestamp: {
             return 3;
@@ -686,6 +731,9 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_percentage_to_spawn ? 1 : 0)
             + (v->tx_fields.call.data.candid_manageNeuron.command.spawn.has_nonce ? 1 : 0);
         }
+        case Configure_StartDissolvingCandid:
+        case Configure_StopDissolvingCandid:
+            return 2;
         case StakeMaturityCandid:
             // 2 fields + opt(percentage_to_stake)
             return 2
@@ -695,6 +743,24 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
             return follow_count > 0 ? 3 + follow_count : 4;
         }
+
+        case SNS_Configure_StartDissolving:
+        case SNS_Configure_StopDissolving:
+            return 3;
+
+        case SNS_AddNeuronPermissions:
+        case SNS_RemoveNeuronPermissions: {
+            if (v->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions.has_permissionList) {
+                return 4 + v->tx_fields.call.data.sns_manageNeuron.command.neuronPermissions.permissionList.list_size;
+            }
+            return 5;
+        }
+
+        case SNS_Disburse:
+            return 5;
+
+        case SNS_StakeMaturity:
+            return 3 + (v->tx_fields.call.data.sns_manageNeuron.command.stake.has_percentage_to_stake ? 1 : 0);
 
         default:
             break;
@@ -732,6 +798,15 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                 }
                 case candid_listneurons:
                     return 1 + v->tx_fields.call.data.candid_listNeurons.neuron_ids_size;
+                case candid_icrc_transfer: {
+                    const call_t *call = &v->tx_fields.call;
+                    const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
+
+                    // Canister ID will be display only when different to ICP
+                    // Fee will be display if available or default if Canister ID is ICP
+                    return 5 + (icp_canisterId ? 0 : 1) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0);
+                }
+
                 default:
                     break;
             }

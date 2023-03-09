@@ -15,16 +15,15 @@
  ******************************************************************************* */
 
 import Zemu from '@zondax/zemu'
-import InternetComputerApp from '@zondax/ledger-icp'
+import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
-import { SIGN_VALUES_P2 } from '@zondax/ledger-icp/dist/common'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 import { sha256 } from 'js-sha256'
 
 jest.setTimeout(180000)
 
 describe('Phase2', function () {
-  test.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- Increase Neuron Timer', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -50,12 +49,12 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
-      const hash = sha256.hex(signatureResponse.preSignHash)
+      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
 
       const pk = Uint8Array.from(Buffer.from(pkhex, 'hex'))
       expect(pk.byteLength).toEqual(65)
       const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      const signature = Uint8Array.from(signatureResponse.signatureRS)
+      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
       //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
       expect(signature.byteLength).toEqual(64)
 
@@ -66,7 +65,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- stake transfer', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- stake transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -93,11 +92,11 @@ describe('Phase2', function () {
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
 
-      const hash = sha256.hex(signatureResponse.preSignHash)
+      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
 
       const pk = Uint8Array.from(Buffer.from(expected_pk, 'hex'))
       const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      const signature = Uint8Array.from(signatureResponse.signatureRS)
+      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
       expect(signature.byteLength).toEqual(64)
 
       const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
@@ -107,7 +106,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- add hotkey', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- add hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -135,7 +134,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- remove hotkey', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- remove hotkey', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -163,7 +162,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- start dissolve', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- start dissolve', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -191,7 +190,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- stop dissolve', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- stop dissolve', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -219,7 +218,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- disburse', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- disburse', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -247,7 +246,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- list neurons', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- list neurons', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -274,7 +273,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- spawn', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- spawn', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -289,7 +288,7 @@ describe('Phase2', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndAccept('.', `${m.prefix.toLowerCase()}-sign_spawn`, m.name === 'nanos' ? 3 : 4)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_spawn`)
 
       const signatureResponse = await respRequest
       console.log(signatureResponse)
@@ -301,7 +300,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- Stake Mature', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- Stake Mature', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -327,7 +326,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- Register Vote', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- Register Vote', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -354,7 +353,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- follow', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- follow', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -381,7 +380,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- claimneuron', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- claimneuron', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -408,7 +407,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- join community fund', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- join community fund', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -435,7 +434,7 @@ describe('Phase2', function () {
     }
   })
 
-  test.each(DEVICE_MODELS)('sign normal -- combined_tx', async function (m) {
+  test.concurrent.each(DEVICE_MODELS)('sign normal -- combined_tx', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
@@ -469,15 +468,15 @@ describe('Phase2', function () {
         ),
       )
 
-      const digest_request = Uint8Array.from(signatureResponse.RequestHash)
-      const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS)
+      const digest_request = Uint8Array.from(signatureResponse.RequestHash ?? [])
+      const signature_request = Uint8Array.from(signatureResponse.RequestSignatureRS ?? [])
       expect(signature_request.byteLength).toEqual(64)
 
       const signatureOk = secp256k1.ecdsaVerify(signature_request, digest_request, pk)
       expect(signatureOk).toEqual(true)
 
-      const digest_statusread = Uint8Array.from(signatureResponse.StatusReadHash)
-      const signature_statusread = Uint8Array.from(signatureResponse.StatusReadSignatureRS)
+      const digest_statusread = Uint8Array.from(signatureResponse.StatusReadHash ?? [])
+      const signature_statusread = Uint8Array.from(signatureResponse.StatusReadSignatureRS ?? [])
       expect(signature_request.byteLength).toEqual(64)
 
       const signatureOk_statusread = secp256k1.ecdsaVerify(signature_statusread, digest_statusread, pk)
