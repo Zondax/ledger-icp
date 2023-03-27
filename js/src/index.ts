@@ -15,15 +15,15 @@
  *  limitations under the License.
  ******************************************************************************* */
 import { PREHASH_LEN, SIGRSLEN } from "./consts";
-import { ICPIns, ResponseAddress, ResponseSign, ResponseSignUpdateCall } from "./types";
+import { type ICPIns, type ResponseAddress, type ResponseSign, type ResponseSignUpdateCall } from "./types";
 
 import GenericApp, {
-  ConstructorParams,
+  type ConstructorParams,
   errorCodeToString,
   LedgerError,
   PAYLOAD_TYPE,
   processErrorResponse,
-  Transport,
+  type Transport,
 } from "@zondax/ledger-js";
 import { processGetAddrResponse } from "./helper";
 
