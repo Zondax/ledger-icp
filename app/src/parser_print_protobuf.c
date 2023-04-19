@@ -15,6 +15,7 @@
 ********************************************************************************/
 #include "parser_print_protobuf.h"
 #include "parser_print_helper.h"
+#include "parser_print_strings.h"
 #include "parser_txdef.h"
 #include <zxformat.h>
 #include <app_mode.h>
@@ -252,7 +253,7 @@ static parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Increase Dissolve  Delay");
+        snprintf(outVal, outValLen, INCREASE_DISSOLVE_DELAY);
         return parser_ok;
     }
 
@@ -306,7 +307,7 @@ static parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Join Community     Fund");
+        snprintf(outVal, outValLen, JOIN_COMMUNITY_FUND);
         return parser_ok;
     }
 
@@ -346,9 +347,9 @@ static parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
         CHECK_PARSER_ERR(getManageNeuronType(&parser_tx_obj, &mn_type))
 
         if (mn_type == Configure_StartDissolving) {
-            snprintf(outVal, outValLen, "Start Dissolve     Neuron");
+            snprintf(outVal, outValLen, START_DISSOLVE_NEURON);
         } else {
-            snprintf(outVal, outValLen, "Stop Dissolve      Neuron");
+            snprintf(outVal, outValLen, STOP_DISSOLVE_NEURON);
         }
         return parser_ok;
     }

@@ -555,19 +555,14 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_canisterId(canisterId, canisterIdSize,
-                                outVal, outValLen, pageIdx, pageCount);
+        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        const uint8_t CHARS_PER_PAGE = 24;
-        uint8_t buffer[100] = {0};
-        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             (uint16_t) parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             buffer, sizeof(buffer), pageCount);
-        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
-
+        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                             outVal, outValLen, pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -600,19 +595,14 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_canisterId(canisterId, canisterIdSize,
-                                outVal, outValLen, pageIdx, pageCount);
+        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        const uint8_t CHARS_PER_PAGE = 24;
-        uint8_t buffer[100] = {0};
-        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             (uint16_t) parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             buffer, sizeof(buffer), pageCount);
-        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
-
+        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                             outVal, outValLen, pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -672,8 +662,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
         const uint8_t canisterIdLen = (uint8_t) call->canister_id.len;
         snprintf(outKey, outKeyLen, "Canister Id");
 
-        return print_canisterId(canisterId, canisterIdLen,
-                                outVal, outValLen, pageIdx, pageCount);
+        return print_textual(canisterId, canisterIdLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -745,19 +734,14 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_canisterId(canisterId, canisterIdSize,
-                                outVal, outValLen, pageIdx, pageCount);
+        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        const uint8_t CHARS_PER_PAGE = 24;
-        uint8_t buffer[100] = {0};
-        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             (uint16_t) parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             buffer, sizeof(buffer), pageCount);
-        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
-
+        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                             outVal, outValLen, pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -765,7 +749,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Disburse to ");
         if (!fields->has_account) {
             return print_textual(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN,
-                                   outVal, outValLen, pageIdx, pageCount);
+                                 outVal, outValLen, pageIdx, pageCount);
         }
         // assume has_account
         const uint8_t *principal = fields->account.has_owner
@@ -776,8 +760,7 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
                                                    fields->account.subaccount.p, (uint16_t) fields->account.subaccount.len,
                                                    outVal, outValLen, pageIdx, pageCount);
         } else {
-            return print_textual(principal, DFINITY_PRINCIPAL_LEN,
-                                 outVal, outValLen, pageIdx, pageCount);
+            return print_textual(principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
         }
     }
     if (displayIdx == 4) {
@@ -810,19 +793,14 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_canisterId(canisterId, canisterIdSize,
-                                outVal, outValLen, pageIdx, pageCount);
+        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        const uint8_t CHARS_PER_PAGE = 24;
-        uint8_t buffer[100] = {0};
-        subaccount_hexstring(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             (uint16_t) parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             buffer, sizeof(buffer), pageCount);
-        snprintf(outVal, CHARS_PER_PAGE + 1, "%s", (const char*) buffer + pageIdx * CHARS_PER_PAGE);
-
+        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                             outVal, outValLen, pageIdx, pageCount);
         return parser_ok;
     }
 
