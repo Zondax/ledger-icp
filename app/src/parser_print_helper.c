@@ -24,6 +24,120 @@
 // 365.25 * 24*60*60 = 31557600
 #define ICP_YEAR_IN_SECONDS ((uint64_t)31557600)
 
+parser_error_t page_principal_with_delimiters(const char *input, const uint16_t inputLen, char *output, const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount) {
+#if defined(TARGET_STAX)
+    const uint8_t LINES_PER_PAGE = 7;
+#elif defined(TARGET_NANOS2) || defined(TARGET_NANOX)
+    const uint8_t LINES_PER_PAGE = 3;
+#else
+    const uint8_t LINES_PER_PAGE = 2;
+#endif
+
+    const uint8_t CHARS_PER_CHUNK = 5;
+    const uint8_t CHARS_PER_PAGE = 15 * LINES_PER_PAGE;
+    const uint8_t CHUNKS_PER_PAGE = 3 * LINES_PER_PAGE;
+
+    if (outputLen < 35) {
+        return parser_unexpected_buffer_end;
+    }
+
+    const size_t inputStrLen = strnlen(input, inputLen); // not including null terminator
+    *pageCount = (uint8_t) (inputStrLen / CHARS_PER_PAGE) + ((inputStrLen % CHARS_PER_PAGE) ? 1 : 0);
+    if (pageIdx >= *pageCount) {
+        return parser_display_idx_out_of_range;
+    }
+
+    input += pageIdx * CHARS_PER_PAGE;
+    for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++) {
+        if (idx % 3 == 0 && idx != 0) {
+#ifdef TARGET_STAX
+            snprintf(output, 2, "\n");
+#else
+            snprintf(output, 2, " ");
+#endif
+            output += 1;
+        }
+
+        const size_t remainingChars = inputStrLen - (pageIdx * CHARS_PER_PAGE) - (idx * CHARS_PER_CHUNK);
+        const bool endOfInput = remainingChars <= 5; // strnlen does not count null terminator
+        const bool skipDash = (idx % 3 == 2);
+
+        if (skipDash || endOfInput) {
+            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, input);
+        } else {
+            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s-", CHARS_PER_CHUNK, input);
+        }
+
+        if (endOfInput) break;
+
+        input += CHARS_PER_CHUNK;
+        output += CHARS_PER_CHUNK + (skipDash ? 0 : 1);
+    }
+
+    return parser_ok;
+}
+
+parser_error_t print_subaccount_hex(const uint8_t *input, const uint64_t inputLen,
+                                    char *output, const uint16_t outputLen,
+                                    const uint8_t pageIdx, uint8_t *pageCount) {
+#if defined(TARGET_STAX)
+    const uint8_t LINES_PER_PAGE = 7;
+#elif defined(TARGET_NANOS2) || defined(TARGET_NANOX)
+    const uint8_t LINES_PER_PAGE = 3;
+#else
+    const uint8_t LINES_PER_PAGE = 2;
+#endif
+
+    const uint8_t CHARS_PER_CHUNK = 8;
+    const uint8_t CHARS_PER_PAGE = 16 * LINES_PER_PAGE;
+    const uint8_t CHUNKS_PER_PAGE = 2 * LINES_PER_PAGE;
+
+    if (outputLen < 35) {
+        return parser_unexpected_buffer_end;
+    }
+
+    char tmpBuf[100] = {0};
+    uint16_t tmpBufLen = sizeof(tmpBuf);
+    const uint16_t inputStrLen = 2 * (uint16_t)inputLen; // 2 chars per byte without null terminator
+    if (tmpBufLen < inputStrLen + 1) { // with null terminator
+        return parser_unexpected_buffer_end;
+    }
+    array_to_hexstr(tmpBuf, tmpBufLen, input, (uint8_t)inputLen);
+
+    *pageCount = (uint8_t) (inputStrLen / CHARS_PER_PAGE) + ((inputStrLen % CHARS_PER_PAGE) ? 1 : 0);
+    if (pageIdx >= *pageCount) {
+        return parser_display_idx_out_of_range;
+    }
+
+    uint16_t tmpBufIdx = pageIdx * CHARS_PER_PAGE;
+    for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++, tmpBufIdx += CHARS_PER_CHUNK) {
+        if (idx % 2 == 0 && idx != 0) {
+#ifdef TARGET_STAX
+            snprintf(output, 2, "\n");
+#else
+            snprintf(output, 2, " ");
+#endif
+            output += 1;
+        }
+
+        const uint16_t remainingChars = inputStrLen - (pageIdx * CHARS_PER_PAGE) - (idx * CHARS_PER_CHUNK);
+        const bool endOfInput = remainingChars <= 8; // without null terminator
+        const bool skipSpace = (idx % 2 == 1);
+
+        if (skipSpace || endOfInput) {
+            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, &tmpBuf[tmpBufIdx]);
+        } else {
+            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s ", CHARS_PER_CHUNK, &tmpBuf[tmpBufIdx]);
+        }
+
+        if (endOfInput) break;
+
+        output += CHARS_PER_CHUNK + (skipSpace ? 0 : 1);
+    }
+
+    return parser_ok;
+}
+
 parser_error_t print_u64(uint64_t value,
                         char *outVal, uint16_t outValLen,
                         uint8_t pageIdx, uint8_t *pageCount) {
@@ -47,7 +161,7 @@ parser_error_t print_ICP(uint64_t value,
     return parser_ok;
 }
 
-parser_error_t print_textual(const uint8_t *data, uint8_t len,
+parser_error_t print_textual(const uint8_t *data, uint16_t len,
                              char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount) {
     char tmpBuffer[100] = {0};
@@ -57,50 +171,7 @@ parser_error_t print_textual(const uint8_t *data, uint8_t len,
         return parser_unexpected_error;
     }
 
-    char buffer[100];
-    MEMZERO(buffer, sizeof(buffer));
-    err = addr_to_textual(buffer, sizeof(buffer), (const char *) tmpBuffer, outLen);   \
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    // Remove trailing dashes
-    if (buffer[17] == '-') buffer[17] = ' ';
-    if (buffer[35] == '-') buffer[35] = ' ';
-    if (buffer[53] == '-') buffer[53] = ' ';
-
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
-    return parser_ok;
-}
-
-parser_error_t print_canisterId(const uint8_t *data, uint8_t len,
-                             char *outVal, uint16_t outValLen,
-                             uint8_t pageIdx, uint8_t *pageCount) {
-    char tmpBuffer[100] = {0};
-    uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual(data, len, (char *) tmpBuffer, &outLen);
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    char buffer[100] = {0};
-    err = addr_to_textual(buffer, sizeof(buffer), (const char *) tmpBuffer, outLen);   \
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    // Remove trailing dashes
-    if (buffer[17] == '-') buffer[17] = ' ';
-    if (buffer[35] == '-') buffer[35] = ' ';
-    if (buffer[53] == '-') buffer[53] = ' ';
-
-    inplace_insert_char(buffer, sizeof(buffer), 18, ':');
-    inplace_insert_char(buffer, sizeof(buffer), 19, ' ');
-
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
-    return parser_ok;
+    return page_principal_with_delimiters(tmpBuffer, outLen, outVal, outValLen, pageIdx, pageCount);
 }
 
 zxerr_t print_hexstring(char *out, uint16_t outLen, const uint8_t *data, uint16_t dataLen) {
@@ -112,105 +183,22 @@ zxerr_t print_hexstring(char *out, uint16_t outLen, const uint8_t *data, uint16_
         return zxerr_out_of_bounds;
     }
 
+    #if defined(TARGET_STAX)
+        const char separator = 0x0A; //new line
+    #else
+        const char separator = 0x20; //space
+    #endif
+
     // insert spaces to force alignment
     CHECK_ZXERR(inplace_insert_char(out, outLen, 8, ' '))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 17, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 17, separator))
     CHECK_ZXERR(inplace_insert_char(out, outLen, 26, ' '))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 35, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 35, separator))
     CHECK_ZXERR(inplace_insert_char(out, outLen, 44, ' '))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 53, ' '))
+    CHECK_ZXERR(inplace_insert_char(out, outLen, 53, separator))
     CHECK_ZXERR(inplace_insert_char(out, outLen, 62, ' '))
 
     return zxerr_ok;
-}
-
-
-parser_error_t subaccount_hexstring(const uint8_t *subaccount, const uint16_t subaccountLen,
-                                    uint8_t *output, const uint16_t outputLen, uint8_t *pageCount) {
-
-    if (subaccount == NULL || output == NULL || pageCount == NULL) {
-        return parser_unexpected_error;
-    }
-
-    const uint8_t chunksRem = (subaccountLen % 3) ? 1 : 0;
-    const uint16_t chunks = subaccountLen / 3 + chunksRem;
-
-    const uint8_t pageRem = (chunks % 3) ? 1 : 0;
-    const uint16_t pages = chunks / 3 + pageRem;
-    if (pages > 255) {
-        return parser_unexpected_value;
-    }
-    *pageCount = (uint8_t) pages;
-
-    const char delimiter[] = " : ";
-
-    if (outputLen < 6 * chunks + (*pageCount * 2 * sizeof(delimiter))) {
-        return parser_unexpected_buffer_end;
-    }
-
-    // Take 3 bytes, convert them to hexstr, add delimiter = " : " and then repeat until the end
-    // 3 chunks per page and do not add delimiter on the last one from each page
-    uint8_t delimiterCount = 0;
-    for (uint16_t i = 0; i < subaccountLen; i+= 3) {
-        const uint16_t bytesToProcess = (subaccountLen - i) >= 3 ? 3 : (subaccountLen - i);
-        for (uint16_t j = 0; j < bytesToProcess; j++) {
-            snprintf((char*) output, 3, "%02x", *subaccount);
-            subaccount++;
-            output += 2;
-        }
-
-        // Reset delimiterCount if needed
-        delimiterCount = (i%9 == 0) ? 0 : delimiterCount;
-
-        if (bytesToProcess == 3 && delimiterCount < 2) {
-            snprintf((char*) output, sizeof(delimiter), delimiter);
-            output += 3;
-            delimiterCount++;
-        }
-    }
-
-    return parser_ok;
-}
-
-static parser_error_t page_with_delimiters(char *input, const uint16_t inputLen, char *output, const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount) {
-    const uint8_t CHARS_PER_PAGE = 30;
-    const uint8_t CHARS_PER_CHUNK = 5;
-    const uint8_t CHUNKS_PER_PAGE = 6;
-
-    if (outputLen < 35) {
-        return parser_unexpected_buffer_end;
-    }
-
-    const size_t inputStrLen = strnlen(input, inputLen);
-    *pageCount = (uint8_t) (inputStrLen / CHARS_PER_PAGE) + ((inputStrLen % CHARS_PER_PAGE) ? 1 : 0);
-    if (pageIdx >= *pageCount) {
-        return parser_display_idx_out_of_range;
-    }
-
-    input += pageIdx * CHARS_PER_PAGE;
-    for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++) {
-        if (idx == 3) {
-            snprintf(output, 2, " ");
-            output += 1;
-        }
-
-        const size_t remainingChars = inputStrLen - (pageIdx * CHARS_PER_PAGE) - (idx * CHARS_PER_CHUNK);
-        const bool endOfInput = remainingChars < 6;
-        const bool skipDash = (idx == 2 || idx == 5);
-
-        if (skipDash || endOfInput) {
-            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, input);
-        } else {
-            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s-", CHARS_PER_CHUNK, input);
-        }
-
-        if (endOfInput) break;
-
-        input += CHARS_PER_CHUNK;
-        output += CHARS_PER_CHUNK + (skipDash ? 0 : 1);
-    }
-
-    return parser_ok;
 }
 
 parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen,
@@ -254,7 +242,7 @@ parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t s
     uint16_t bufferSize = sizeof(buffer);
     crypto_toTextual(tmpArray, tmpArrayLen, buffer, &bufferSize);
 
-    return page_with_delimiters(buffer, sizeof(buffer), outVal, outValLen, pageIdx, pageCount);
+    return page_principal_with_delimiters(buffer, sizeof(buffer), outVal, outValLen, pageIdx, pageCount);
 }
 
 parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize) {

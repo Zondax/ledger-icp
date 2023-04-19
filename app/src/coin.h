@@ -61,8 +61,15 @@ typedef enum {
 #define VIEW_ADDRESS_OFFSET_TEXT            (SECP256K1_PK_LEN + DFINITY_PRINCIPAL_LEN)
 #define COIN_SUPPORTED_TX_VERSION           0
 
+#if defined(TARGET_STAX)
+#define MENU_MAIN_APP_LINE1                 "Internet Computer"
+#define MENU_MAIN_APP_LINE2                 "ICP"
+#define CUSTOM_ADDRESS_TEXT                 "Verify Internet\nComputer address"
+#else
 #define MENU_MAIN_APP_LINE1                 "Internet"
 #define MENU_MAIN_APP_LINE2                 "Computer"
+#endif
+
 #define MENU_MAIN_APP_LINE2_SECRET          "???"
 #define APPVERSION_LINE1                    "Version"
 #define APPVERSION_LINE2                    "v" APPVERSION

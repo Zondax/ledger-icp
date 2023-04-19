@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include "coin.h"
+#include "parser_print_helper.h"
 #include "zxerror.h"
 #include "zxmacros.h"
 #include "app_mode.h"
@@ -37,7 +38,7 @@ zxerr_t addr_getItem(int8_t displayIdx,
                      char *outKey, uint16_t outKeyLen,
                      char *outVal, uint16_t outValLen,
                      uint8_t pageIdx, uint8_t *pageCount) {
-    char buffer[300];
+    char buffer[50] = {0};
     snprintf(buffer, sizeof(buffer), "addr_getItem %d/%d", displayIdx, pageIdx);
     zemu_log_stack(buffer);
     if (action_addrResponseLen < VIEW_PRINCIPAL_OFFSET_TEXT || IO_APDU_BUFFER_SIZE < action_addrResponseLen) {
@@ -46,38 +47,16 @@ zxerr_t addr_getItem(int8_t displayIdx,
 
     switch (displayIdx) {
         case 0:
-            snprintf(outKey, outKeyLen, "Principal ");
-            CHECK_ZXERR(addr_to_textual(buffer, sizeof(buffer),
-                                        (const char *) G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
-                                        action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT));
-
-            // Remove trailing dashes
-            if (buffer[17] == '-') buffer[17] = ' ';
-            if (buffer[35] == '-') buffer[35] = ' ';
-            if (buffer[53] == '-') buffer[53] = ' ';
-
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
+            snprintf(outKey, outKeyLen, "Address ");
+            print_subaccount_hex(G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, DFINITY_SUBACCOUNT_LEN,
+                                 outVal, outValLen, pageIdx, pageCount);
             return zxerr_ok;
 
         case 1:
-            snprintf(outKey, outKeyLen, "Address ");
-            MEMZERO(buffer, sizeof(buffer));
-            array_to_hexstr(buffer, sizeof(buffer), G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT,
-                            DFINITY_SUBACCOUNT_LEN);
-
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
-            // insert spaces to force alignment
-            inplace_insert_char(buffer, sizeof(buffer), 8, ' ');
-            inplace_insert_char(buffer, sizeof(buffer), 17, ' ');
-            inplace_insert_char(buffer, sizeof(buffer), 26, ' ');
-            inplace_insert_char(buffer, sizeof(buffer), 35, ' ');
-            inplace_insert_char(buffer, sizeof(buffer), 44, ' ');
-            inplace_insert_char(buffer, sizeof(buffer), 53, ' ');
-            inplace_insert_char(buffer, sizeof(buffer), 62, ' ');
-#endif
-
-            pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+            snprintf(outKey, outKeyLen, "Principal ");
+            page_principal_with_delimiters((const char*)G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
+                                           action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT,
+                                           outVal, outValLen, pageIdx, pageCount);
             return zxerr_ok;
 
         case 2: {
