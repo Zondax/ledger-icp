@@ -81,7 +81,7 @@ describe('Addresses', function () {
       }
 
       try {
-        await sim.start({ ...defaultOptions_withseed, model: m.name })
+        await sim.start({ ...defaultOptions_withseed, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
         const app = new InternetComputerApp(sim.getTransport())
 
         const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -102,7 +102,7 @@ describe('Addresses', function () {
   test.concurrent.each(DEVICE_MODELS)('derivation paths', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       for (const TEST of TEST_CASES_BIP32) {
@@ -113,9 +113,7 @@ describe('Addresses', function () {
       }
       // Enable expert mode
       console.log('Set expert mode')
-      await sim.clickRight()
-      await sim.clickBoth()
-      await sim.clickLeft()
+      await sim.toggleExpertMode()
 
       for (const TEST of TEST_CASES_BIP32) {
         const resp = await app.getAddressAndPubKey(TEST.path)
