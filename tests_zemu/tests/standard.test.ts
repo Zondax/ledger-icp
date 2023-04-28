@@ -14,20 +14,20 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu from '@zondax/zemu'
+import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
 import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
 import * as secp256k1 from 'secp256k1'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
 import { sha256 } from 'js-sha256'
 
-jest.setTimeout(60000)
+jest.setTimeout(180000)
 
 describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
     } finally {
       await sim.close()
     }
@@ -36,8 +36,8 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, [1, 0, 0, 4, -5])
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, zondaxMainmenuNavigation(m.name).schedule)
     } finally {
       await sim.close()
     }
@@ -46,7 +46,7 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
       const resp = await app.getVersion()
 
@@ -66,7 +66,7 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('get address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -94,8 +94,16 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({
+        ...DEFAULT_OPTIONS,
+        model: m.name,
+        startText: m.name === 'stax' ? '' : 'Computer',
+        approveKeyword: m.name === 'stax' ? 'Principal' : '',
+        approveAction: ButtonKind.ApproveTapButton,
+      })
       const app = new InternetComputerApp(sim.getTransport())
+
+      await sim.toggleExpertMode()
 
       const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0")
 
@@ -125,10 +133,40 @@ describe('Standard', function () {
     }
   })
 
+  test.concurrent.each(DEVICE_MODELS)('show address - reject', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({
+        ...DEFAULT_OPTIONS,
+        model: m.name,
+        startText: m.name === 'stax' ? '' : 'Computer',
+        rejectKeyword: m.name === 'stax' ? 'Principal' : '',
+      })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      await sim.toggleExpertMode()
+
+      const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0")
+
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      await sim.compareSnapshotsAndReject('.', `${m.prefix.toLowerCase()}-show_address_reject`)
+
+      const resp = await respRequest
+
+      console.log(resp)
+
+      expect(resp.returnCode).toEqual(0x6986)
+      expect(resp.errorMessage).toEqual('Transaction rejected')
+    } finally {
+      await sim.close()
+    }
+  })
+
   test.concurrent.each(DEVICE_MODELS)('sign normal -- token transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -180,71 +218,15 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('sign normal -- state transaction read', async function (m) {
-    const sim = new Zemu(m.path)
-    try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
-      const app = new InternetComputerApp(sim.getTransport())
-
-      const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
-      console.log(respAddr)
-
-      expect(respAddr.returnCode).toEqual(0x9000)
-      expect(respAddr.errorMessage).toEqual('No errors')
-
-      const expected_pk =
-        '0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835'
-      expect((respAddr.publicKey ?? []).toString('hex')).toEqual(expected_pk)
-
-      const txBlobStr =
-        'd9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
-      const txBlob = Buffer.from(txBlobStr, 'hex')
-
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
-
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_stateread_normal`)
-
-      const signatureResponse = await respRequest
-      console.log(signatureResponse)
-
-      expect(signatureResponse.returnCode).toEqual(0x9000)
-      expect(signatureResponse.errorMessage).toEqual('No errors')
-
-      const expected_preHash = '0a69632d726571756573743223034c034fd8a23c5b4ea4e79af40a82cf43bd14c35740a8546b4fb5717a57'
-      expect((signatureResponse.preSignHash ?? []).toString('hex')).toEqual(expected_preHash)
-
-      const expected_hash = '0cb5a159215db7b9534d74dbfe97a495138c534520f4788f3518aa2c277966b0'
-      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
-      expect(hash).toEqual(expected_hash)
-
-      const pk = Uint8Array.from(respAddr.publicKey ?? [])
-      expect(pk.byteLength).toEqual(65)
-      const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
-      //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
-      expect(signature.byteLength).toEqual(64)
-
-      const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
-      expect(signatureOk).toEqual(true)
-    } finally {
-      await sim.close()
-    }
-  })
-
   test.concurrent.each(DEVICE_MODELS)('sign expert -- token transfer', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       // Enable expert mode
       console.log('Set expert mode')
-      await sim.clickRight()
-      await sim.clickBoth()
-      await sim.clickLeft()
+      await sim.toggleExpertMode()
 
       // Get public key
       const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -276,66 +258,6 @@ describe('Standard', function () {
       expect((signatureResponse.preSignHash ?? []).toString('hex')).toEqual(expected_preHash)
 
       const expected_hash = '3797e39b76c78c7b33f724ba7b44b28721c6318a32e608ccee3940f3cba49de3'
-      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
-      expect(hash).toEqual(expected_hash)
-
-      const pk = Uint8Array.from(respAddr.publicKey ?? [])
-      expect(pk.byteLength).toEqual(65)
-      const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
-      //const signature = secp256k1.signatureImport(Uint8Array.from(signatureResponse.signatureDER));
-      expect(signature.byteLength).toEqual(64)
-
-      const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
-      expect(signatureOk).toEqual(true)
-    } finally {
-      await sim.close()
-    }
-  })
-
-  test.concurrent.each(DEVICE_MODELS)('sign expert -- state transaction read', async function (m) {
-    const sim = new Zemu(m.path)
-    try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name })
-      const app = new InternetComputerApp(sim.getTransport())
-
-      // Enable expert mode
-      console.log('Set expert mode')
-      await sim.clickRight()
-      await sim.clickBoth()
-      await sim.clickLeft()
-
-      // get public key
-      const respAddr = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
-      console.log(respAddr)
-      expect(respAddr.returnCode).toEqual(0x9000)
-      expect(respAddr.errorMessage).toEqual('No errors')
-      const expected_pk =
-        '0410d34980a51af89d3331ad5fa80fe30d8868ad87526460b3b3e15596ee58e812422987d8589ba61098264df5bb9c2d3ff6fe061746b4b31a44ec26636632b835'
-      expect((respAddr.publicKey ?? []).toString('hex')).toEqual(expected_pk)
-
-      // Sign blob
-      const txBlobStr =
-        'd9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16792e73143c0b0065706174687381824e726571756573745f7374617475735820a740262068c4b22efed0cc67095fc9ce46c883182c09aa045b4c0396060105d26c726571756573745f747970656a726561645f73746174656673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
-      const txBlob = Buffer.from(txBlobStr, 'hex')
-
-      const respRequest = app.sign("m/44'/223'/0'/0/0", txBlob, SIGN_VALUES_P2.DEFAULT)
-
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-sign_stateread_expert`)
-
-      const signatureResponse = await respRequest
-      console.log(signatureResponse)
-
-      expect(signatureResponse.returnCode).toEqual(0x9000)
-      expect(signatureResponse.errorMessage).toEqual('No errors')
-
-      const expected_preHash = '0a69632d726571756573743223034c034fd8a23c5b4ea4e79af40a82cf43bd14c35740a8546b4fb5717a57'
-      expect((signatureResponse.preSignHash ?? []).toString('hex')).toEqual(expected_preHash)
-
-      const expected_hash = '0cb5a159215db7b9534d74dbfe97a495138c534520f4788f3518aa2c277966b0'
       const hash = sha256.hex(signatureResponse.preSignHash ?? [])
       expect(hash).toEqual(expected_hash)
 

@@ -37,7 +37,7 @@ zxerr_t crypto_extractPublicKey(const uint32_t path[HDPATH_LEN_DEFAULT],
 
 zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal);
 
-zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, char *textual, uint16_t *outLen);
+zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint16_t addressLen, char *textual, uint16_t *outLen);
 
 zxerr_t crypto_toTextual(uint8_t *input, uint16_t inputLen, char *output, uint16_t *outputLen);
 
@@ -45,7 +45,7 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrLe
 
 zxerr_t addr_to_textual(char *s_out, uint16_t s_max, const char *text_in, uint16_t text_in_len);
 
-void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc);
+void crc32_small(const void *data, uint16_t n_bytes, uint32_t *crc);
 
 zxerr_t compressLEB128(uint64_t input, uint16_t maxSize,
                        uint8_t *output, uint16_t *outLen);

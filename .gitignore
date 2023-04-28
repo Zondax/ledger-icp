@@ -56,7 +56,6 @@ dkms.conf
 \cmake-build-debug
 \.idea/
 /tmp/
-/deps/nano2-sdk/
 
 # Created by cmake
 googletest-download/
@@ -77,8 +76,8 @@ cmake-build-fuzz/
 /app/debug/
 /app/obj/
 /build
+app/build
 
-\deps/*
 !\deps/nanos-secure-sdk
 !\deps/nanox-secure-sdk
 !\deps/ledger-zxlib

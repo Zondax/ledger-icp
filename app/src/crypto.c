@@ -44,7 +44,7 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #define SIGNATURE_SIZE_S 32
 #define SIGNATURE_SIZE_RS 64
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 #include "cx.h"
 
 zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen){
@@ -360,7 +360,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
                               sizeof_field(signature_t, der_signature),
                               &info);
 
-                err_convert_e err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
+                err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
                 if (err_c != no_error) {
                     MEMZERO(signatureBuffer, signatureMaxlen);
                     err = zxerr_unknown;
@@ -575,15 +575,15 @@ uint32_t crc32_for_byte(uint8_t rbyte) {
     return r ^ (uint32_t) 0xFF000000L;
 }
 
-void crc32_small(const void *data, uint8_t n_bytes, uint32_t *crc) {
-    for (uint8_t i = 0; i < n_bytes; ++i) {
+void crc32_small(const void *data, uint16_t n_bytes, uint32_t *crc) {
+    for (uint16_t i = 0; i < n_bytes; ++i) {
         uint8_t index = ((uint8_t) *crc ^ ((uint8_t *) data)[i]);
         uint32_t crcbyte = crc32_for_byte(index);
         *crc = crcbyte ^ *crc >> 8;
     }
 }
 
-zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint8_t addressLen, char *textual, uint16_t *outLen) {
+zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint16_t addressLen, char *textual, uint16_t *outLen) {
     uint8_t input[33] = {0};
     if (addressLen >= sizeof (input) + 4) {
         return zxerr_buffer_too_small;

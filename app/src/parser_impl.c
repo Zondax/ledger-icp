@@ -656,7 +656,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
     const bool icrc_transfer = v->tx_fields.call.method_type == candid_icrc_transfer;
     if (!icrc_transfer) {
         uint8_t publicKey[SECP256K1_PK_LEN];

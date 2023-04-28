@@ -22,6 +22,8 @@
 #include <os.h>
 #include <ux.h>
 
+#include "app_mode.h"
+#include "parser_impl.h"
 #include "view.h"
 #include "view_internal.h"
 #include "actions.h"
@@ -31,6 +33,98 @@
 #include "coin.h"
 #include "zxmacros.h"
 #include "secret.h"
+
+static bool tx_initialized = false;
+
+__Z_INLINE void extractHDPath(uint32_t rx, uint32_t offset) {
+    if ((rx - offset) < sizeof(uint32_t) * HDPATH_LEN_DEFAULT) {
+        THROW(APDU_CODE_WRONG_LENGTH);
+    }
+
+    MEMCPY(hdPath, G_io_apdu_buffer + offset, sizeof(uint32_t) * HDPATH_LEN_DEFAULT);
+
+    const bool mainnet = hdPath[0] == HDPATH_0_DEFAULT &&
+                         hdPath[1] == HDPATH_1_DEFAULT;
+
+    const bool testnet = hdPath[0] == HDPATH_0_TESTNET &&
+                         hdPath[1] == HDPATH_1_TESTNET;
+
+    if (!mainnet && !testnet) {
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    const bool is_valid = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) &&
+                          (hdPath[3] == 0x00000000u) &&
+                          ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
+
+    if (!is_valid && !app_mode_expert()) {
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+}
+
+__Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
+    UNUSED(tx);
+    const uint8_t payloadType = G_io_apdu_buffer[OFFSET_PAYLOAD_TYPE];
+
+    if (rx < OFFSET_DATA) {
+        THROW(APDU_CODE_WRONG_LENGTH);
+    }
+
+    if (G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1) {
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
+
+    uint32_t added;
+    switch (payloadType) {
+        case 0:
+            tx_initialize();
+            tx_reset();
+            extractHDPath(rx, OFFSET_DATA);
+            MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
+
+            parser_tx_obj.special_transfer_type = normal_transaction;
+            if (G_io_apdu_buffer[OFFSET_P2] == 1) {
+                parser_tx_obj.special_transfer_type = neuron_stake_transaction;
+            }
+
+            tx_initialized = true;
+            return false;
+        case 1:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1) {
+                THROW(APDU_CODE_DATA_INVALID);
+            }
+            if (!tx_initialized) {
+                THROW(APDU_CODE_TX_NOT_INITIALIZED);
+            }
+            added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
+            if (added != rx - OFFSET_DATA) {
+                tx_initialized = false;
+                THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
+            }
+            return false;
+        case 2:
+            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1) {
+                THROW(APDU_CODE_DATA_INVALID);
+            }
+            if (!tx_initialized) {
+                THROW(APDU_CODE_TX_NOT_INITIALIZED);
+            }
+
+            added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
+            if (added != rx - OFFSET_DATA) {
+                tx_initialized = false;
+                THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
+            }
+            return true;
+
+        default:
+            break;
+    }
+    tx_initialized = false;
+    THROW(APDU_CODE_INVALIDP1P2);
+}
 
 __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
@@ -98,6 +192,26 @@ __Z_INLINE void handleSignCombined(volatile uint32_t *flags, volatile uint32_t *
     view_review_init(tx_getItem, tx_getNumItems, app_sign_combined);
     view_review_show(REVIEW_TXN);
     *flags |= IO_ASYNCH_REPLY;
+}
+
+__Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {
+#ifdef DEBUG
+    G_io_apdu_buffer[0] = 0xFF;
+#else
+    G_io_apdu_buffer[0] = 0;
+#endif
+    G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
+    G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
+    G_io_apdu_buffer[3] = LEDGER_PATCH_VERSION;
+    G_io_apdu_buffer[4] = !IS_UX_ALLOWED;
+
+    G_io_apdu_buffer[5] = (TARGET_ID >> 24) & 0xFF;
+    G_io_apdu_buffer[6] = (TARGET_ID >> 16) & 0xFF;
+    G_io_apdu_buffer[7] = (TARGET_ID >> 8) & 0xFF;
+    G_io_apdu_buffer[8] = (TARGET_ID >> 0) & 0xFF;
+
+    *tx += 9;
+    THROW(APDU_CODE_OK);
 }
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
