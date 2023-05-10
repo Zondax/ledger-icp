@@ -15,6 +15,7 @@
 ********************************************************************************/
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
+#include "parser_print_strings.h"
 #include "candid_parser.h"
 #include "parser_txdef.h"
 #include "timeutils.h"
@@ -215,7 +216,7 @@ static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayI
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        pageString(outVal, outValLen, "Increase Dissolve Delay", pageIdx, pageCount);
+        pageString(outVal, outValLen, INCREASE_DISSOLVE_DELAY, pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -687,7 +688,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     }
 
     if (displayIdx == 4) {
-        const char *title = icp_canisterId ? "Payment (ICP)" : "Payment (Tokens)";
+        const char *title = icp_canisterId ? "Amount (ICP)" : "Amount (Tokens)";
         snprintf(outKey, outKeyLen, "%s", title);
 
         return print_ICP(call->data.icrcTransfer.amount, outVal, outValLen, pageIdx, pageCount);
