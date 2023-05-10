@@ -115,7 +115,7 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     }
 
     if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "Payment (ICP)");
+        snprintf(outKey, outKeyLen, "Amount (ICP)");
         PARSER_ASSERT_OR_ERROR(fields->data.SendRequest.payment.has_receiver_gets, parser_unexpected_number_items)
         return print_ICP(fields->data.SendRequest.payment.receiver_gets.e8s,
                          outVal, outValLen,
@@ -195,7 +195,7 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Payment (ICP)");
+        snprintf(outKey, outKeyLen, "Amount (ICP)");
         PARSER_ASSERT_OR_ERROR(fields->data.SendRequest.payment.has_receiver_gets, parser_unexpected_number_items)
         return print_ICP(fields->data.SendRequest.payment.receiver_gets.e8s,
                          outVal, outValLen,
