@@ -10,7 +10,7 @@
       "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Payment (Tokens) : 1.00",
+      "4 | Amount (Tokens) : 1.00",
       "5 | Memo : 0"
     ],
     "valid": false,
@@ -42,7 +42,7 @@
       "2 | From account [4/4] : ma5fw-toj3s-t2ree b7q",
       "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Payment (Tokens) : 1.00",
+      "4 | Amount (Tokens) : 1.00",
       "5 | Maximum fee (Tokens) : 0.0001",
       "6 | Memo : 0"
     ],
@@ -112,7 +112,7 @@
       "3 | To account [2/4] : kb26q-rvqms-onmuh mwiq3-uqfi3-ocq6i",
       "3 | To account [3/4] : nz7eo-ht4og-kqmsd 466tm-6qg2o-y3bv2",
       "3 | To account [4/4] : x64uj-t4hm2-z2r5e b7q",
-      "4 | Payment (Tokens) : 3.30",
+      "4 | Amount (Tokens) : 3.30",
       "5 | Maximum fee (Tokens) : 0.0001",
       "6 | Memo : 0"
     ],
@@ -215,7 +215,7 @@
       "3 | To account [2/4] : kb26q-rvqms-onmuh mwiq3-uqfi3-ocq6i",
       "3 | To account [3/4] : nz7eo-ht4og-kqmsd 466tm-6qg2o-y3bv2",
       "3 | To account [4/4] : x64uj-t4hm2-z2r5e b7q",
-      "4 | Payment (Tokens) : 3.30",
+      "4 | Amount (Tokens) : 3.30",
       "5 | Maximum fee (Tokens) : 0.0003",
       "6 | Memo : 11223312"
     ],
@@ -292,7 +292,7 @@
       "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | To account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | To account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
-      "4 | Payment (Tokens) : 3.14",
+      "4 | Amount (Tokens) : 3.14",
       "5 | Memo : 11223312"
     ],
     "valid": true,
@@ -337,7 +337,7 @@
       "3 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "3 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "3 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "4 | Payment (Tokens) : 13.314",
+      "4 | Amount (Tokens) : 13.314",
       "5 | Maximum fee (Tokens) : 0.0002",
       "6 | Memo : 11223312"
     ],
@@ -448,7 +448,7 @@
       "1 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "2 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "2 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "3 | Payment (ICP) : 1.00",
+      "3 | Amount (ICP) : 1.00",
       "4 | Maximum fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
@@ -480,7 +480,7 @@
       "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "3 | Payment (ICP) : 0.314",
+      "3 | Amount (ICP) : 0.314",
       "4 | Maximum fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
@@ -549,7 +549,7 @@
       "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "3 | Payment (ICP) : 0.314",
+      "3 | Amount (ICP) : 0.314",
       "4 | Maximum fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
@@ -651,7 +651,7 @@
       "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "3 | Payment (ICP) : 0.314",
+      "3 | Amount (ICP) : 0.314",
       "4 | Maximum fee (ICP) : 0.0001",
       "5 | Memo : 11223312"
     ],
@@ -729,7 +729,7 @@
       "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "3 | Payment (ICP) : 0.314",
+      "3 | Amount (ICP) : 0.314",
       "4 | Maximum fee (ICP) : 0.001",
       "5 | Memo : 0"
     ],
@@ -798,7 +798,7 @@
       "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "3 | Payment (ICP) : 1.314",
+      "3 | Amount (ICP) : 1.314",
       "4 | Maximum fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
@@ -913,7 +913,7 @@
       "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
       "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
       "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
-      "3 | Payment (ICP) : 1.314",
+      "3 | Amount (ICP) : 1.314",
       "4 | Maximum fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
