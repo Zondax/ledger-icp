@@ -24,15 +24,16 @@
 // 365.25 * 24*60*60 = 31557600
 #define ICP_YEAR_IN_SECONDS ((uint64_t)31557600)
 
-parser_error_t page_principal_with_delimiters(const char *input, const uint16_t inputLen, char *output, const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount) {
 #if defined(TARGET_STAX)
-    const uint8_t LINES_PER_PAGE = 7;
+#include "view_internal.h"
+    const uint8_t LINES_PER_PAGE = MAX_LINES_PER_PAGE_REVIEW;
 #elif defined(TARGET_NANOS2) || defined(TARGET_NANOX)
     const uint8_t LINES_PER_PAGE = 3;
 #else
     const uint8_t LINES_PER_PAGE = 2;
 #endif
 
+parser_error_t page_principal_with_delimiters(const char *input, const uint16_t inputLen, char *output, const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount) {
     const uint8_t CHARS_PER_CHUNK = 5;
     const uint8_t CHARS_PER_PAGE = 15 * LINES_PER_PAGE;
     const uint8_t CHUNKS_PER_PAGE = 3 * LINES_PER_PAGE;
@@ -80,14 +81,6 @@ parser_error_t page_principal_with_delimiters(const char *input, const uint16_t 
 parser_error_t print_subaccount_hex(const uint8_t *input, const uint64_t inputLen,
                                     char *output, const uint16_t outputLen,
                                     const uint8_t pageIdx, uint8_t *pageCount) {
-#if defined(TARGET_STAX)
-    const uint8_t LINES_PER_PAGE = 7;
-#elif defined(TARGET_NANOS2) || defined(TARGET_NANOX)
-    const uint8_t LINES_PER_PAGE = 3;
-#else
-    const uint8_t LINES_PER_PAGE = 2;
-#endif
-
     const uint8_t CHARS_PER_CHUNK = 8;
     const uint8_t CHARS_PER_PAGE = 16 * LINES_PER_PAGE;
     const uint8_t CHUNKS_PER_PAGE = 2 * LINES_PER_PAGE;
