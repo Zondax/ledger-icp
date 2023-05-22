@@ -92,6 +92,7 @@ typedef enum {
     Configure_IncreaseDissolveDelayCandid = 1003,
     Configure_StartDissolvingCandid = 1004,
     Configure_StopDissolvingCandid = 1005,
+    DisburseCandid = 1006,
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,

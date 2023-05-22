@@ -72,6 +72,8 @@ typedef enum {
     hash_percentage_to_stake = 854334011,
     hash_setting_auto_stake_maturity = 3470422224,
     hash_setting_increse_dissolve_delay = 913088909,
+    hash_field_disburse_account = 1937583785,
+    hash_opt_amount = 3573748184,
 } txn_hash_fields;
 
 typedef enum {
@@ -222,6 +224,14 @@ typedef struct {
 } candid_StakeMaturity_t;
 
 typedef struct {
+    uint8_t has_account_identifier;
+    sizedBuffer_t account_identifier;
+
+    uint8_t has_amount;
+    uint64_t amount;
+} candid_Disburse_t;
+
+typedef struct {
     uint8_t list_size;
     const uint8_t *permissions_list_ptr;
 } sns_NeuronPermissionList_t;
@@ -279,9 +289,10 @@ typedef struct {
         candid_Merge_t merge;
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
+        candid_Disburse_t disburse;
 
         sns_NeuronPermissions_t neuronPermissions;
-        sns_Disburse_t disburse;
+        sns_Disburse_t sns_disburse;
     };
 } candid_Command_t;
 

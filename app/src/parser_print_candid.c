@@ -202,6 +202,59 @@ static parser_error_t parser_getItemChangeAutoStakeMaturity(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemDisburseCandid(uint8_t displayIdx,
+                                                   char *outKey, uint16_t outKeyLen,
+                                                   char *outVal, uint16_t outValLen,
+                                                   uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        pageString(outVal, outValLen, "Disburse Neuron", pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron Id");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Disburse To ");
+        if (fields->command.disburse.has_account_identifier) {
+            return page_hexstring_with_delimiters(fields->command.disburse.account_identifier.p,
+                                                  fields->command.disburse.account_identifier.len,
+                                                  outVal, outValLen, pageIdx, pageCount);
+        }
+        snprintf(outVal, outValLen, "Self");
+        return parser_ok;
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Amount (ICP)");
+        if (fields->command.disburse.has_amount) {
+            return print_ICP(fields->command.disburse.amount, outVal, outValLen, pageIdx, pageCount);
+        } else {
+            snprintf(outVal, outValLen, "All");
+            return parser_ok;
+        }
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayIdx,
                                                             char *outKey, uint16_t outKeyLen,
                                                             char *outVal, uint16_t outValLen,
@@ -707,12 +760,12 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
+static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
                                              char *outKey, uint16_t outKeyLen,
                                              char *outVal, uint16_t outValLen,
                                              uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
-    const sns_Disburse_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.disburse;
+    const sns_Disburse_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.sns_disburse;
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -842,6 +895,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case StakeMaturityCandid: {
             return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
+        case DisburseCandid:
+            return parser_getItemDisburseCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
@@ -856,7 +911,7 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
             return parser_getItemNeuronPermissions(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
         case SNS_Disburse:
-            return parser_getItemDisburse(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+            return parser_getItemDisburseSNS(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case SNS_StakeMaturity:
             return parser_getItemSNSStakeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 

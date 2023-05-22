@@ -351,7 +351,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     *mn_type = SNS_RemoveNeuronPermissions;
                     return parser_ok;
                 case sns_hash_command_Disburse:
-                    *mn_type = SNS_Disburse;
+                    *mn_type = isSNS ? SNS_Disburse : DisburseCandid;
                     return parser_ok;
 
                 default:
@@ -722,6 +722,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return 3;
         }
         case RegisterVote :
+        case DisburseCandid:
         case Disburse : {
             return 4;
         }

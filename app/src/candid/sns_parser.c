@@ -262,7 +262,7 @@ __Z_INLINE parser_error_t readSNSCommandNeuronDisburse(parser_context_t *ctx, ca
     }
 
     // Read data
-    sns_Disburse_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron.command.disburse;
+    sns_Disburse_t *val = &ctx->tx_obj->tx_fields.call.data.sns_manageNeuron.command.sns_disburse;
 
     // Read Account
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_account))

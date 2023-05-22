@@ -192,6 +192,63 @@ __Z_INLINE parser_error_t readCommandStakeMaturity(parser_context_t *ctx, candid
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readCommandDisburse(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+    const int64_t disburseRoot = txn->element.implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 2) {
+        return parser_unexpected_value;
+    }
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_field_disburse_account) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_hash) {
+        return parser_unexpected_type;
+    }
+
+    // go back to starting position
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, disburseRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_opt_amount) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+
+    // now let's read
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburse.has_account_identifier))
+    if (val->command.disburse.has_account_identifier) {
+        CHECK_PARSER_ERR(readCandidText(ctx, &val->command.disburse.account_identifier))
+    }
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburse.has_amount))
+    if (val->command.disburse.has_amount) {
+        CHECK_PARSER_ERR(readCandidNat64(ctx, &val->command.disburse.amount))
+    }
+
+    return parser_ok;
+}
+
 __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
     // Check sanity SetDissolvedTimestamp
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -415,6 +472,10 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             }
             case hash_command_StakeMaturity:
                 CHECK_PARSER_ERR(readCommandStakeMaturity(ctx, txn, val))
+                break;
+
+            case hash_command_Disburse:
+                CHECK_PARSER_ERR(readCommandDisburse(ctx, txn, val))
                 break;
 
             default:
