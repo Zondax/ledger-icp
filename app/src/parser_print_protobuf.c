@@ -710,6 +710,22 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx,
                 snprintf(outVal, outValLen, "Node Provider Rewards");
                 return parser_ok;
             }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SNS_DECENTRALIZATION_SALE : {
+                snprintf(outVal, outValLen, "SNS Decentralization Swap");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT : {
+                snprintf(outVal, outValLen, "Subnet Replica Version Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_REPLICA_VERSION_MANAGEMENT : {
+                snprintf(outVal, outValLen, "Replica Version Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SNS_AND_COMMUNITY_FUND : {
+                snprintf(outVal, outValLen, "SNS & Community Fund");
+                return parser_ok;
+            }
             default: {
                 return parser_unexpected_type;
             }

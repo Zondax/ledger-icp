@@ -98,6 +98,7 @@ typedef enum {
     Configure_AddHotkeyCandid = 1009,
     Configure_RemoveHotkeyCandid = 1010,
     RegisterVoteCandid = 1011,
+    FollowCandid = 1012,
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,
