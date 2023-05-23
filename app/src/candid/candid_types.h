@@ -74,6 +74,8 @@ typedef enum {
     hash_setting_increse_dissolve_delay = 913088909,
     hash_field_disburse_account = 1937583785,
     hash_opt_amount = 3573748184,
+    hash_setting_addhotkey = 3570462350,
+    hash_setting_remove_hotkey = 2202409078,
 } txn_hash_fields;
 
 typedef enum {
@@ -137,8 +139,9 @@ typedef enum {
     hash_operation_Invalid = 971299358,
     hash_operation_StopDissolving = 1954991536,
     hash_operation_IncreaseDissolveDelay = 2143729936,
-    hash_operation_RemoveHotKey = 3248805476,
-    hash_operation_JoinCommunityFund = 45994902,
+    hash_operation_AddHotkey = 628424947,
+    hash_operation_RemoveHotkey = 45994902,
+    hash_operation_JoinCommunityFund = 3248805476,
     hash_operation_ChangeAutoStakeMaturity = 1906071820,
 
     hash_operation_StartDissolving = 1977744848,
@@ -184,12 +187,18 @@ typedef struct {
 } candid_IncreaseDissolveDelay_t;
 
 typedef struct {
+    uint8_t has_principal;
+    uint8_t principal[30];
+} candid_AddRemoveHotkey_t;
+
+typedef struct {
     uint64_t which;
     uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
         candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
         candid_IncreaseDissolveDelay_t increaseDissolveDelay;
+        candid_AddRemoveHotkey_t hotkey;
     };
 } candid_Operation_t;
 

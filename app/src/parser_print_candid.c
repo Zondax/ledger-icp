@@ -67,42 +67,6 @@ __Z_INLINE parser_error_t print_permission(int32_t permission, char *outVal, uin
     return parser_ok;
 }
 
-static parser_error_t parser_getItemLeaveCommunityFund(uint8_t displayIdx,
-                                                       char *outKey, uint16_t outKeyLen,
-                                                       char *outVal, uint16_t outValLen,
-                                                       uint8_t pageIdx, uint8_t *pageCount) {
-    *pageCount = 1;
-
-    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Configure, parser_unexpected_value)
-    PARSER_ASSERT_OR_ERROR(fields->command.configure.has_operation, parser_unexpected_value)
-    PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.hash == hash_operation_LeaveCommunityFund,
-                           parser_unexpected_value)
-
-    if (displayIdx == 0) {
-        snprintf(outKey, outKeyLen, "Transaction type");
-        pageString(outVal, outValLen, "Leave Community Fund", pageIdx, pageCount);
-        return parser_ok;
-    }
-
-    if (displayIdx == 1) {
-        snprintf(outKey, outKeyLen, "Neuron ID");
-
-        if (fields->has_id) {
-            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }
-
-        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
-            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
-        }
-
-        //Only accept neuron_id
-        return parser_unexpected_type;
-    }
-
-    return parser_no_data;
-}
-
 static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
                                                          char *outKey, uint16_t outKeyLen,
                                                          char *outVal, uint16_t outValLen,
@@ -306,6 +270,51 @@ static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayI
         CHECK_PARSER_ERR(parser_printDelay(value, buffer, sizeof(buffer)))
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemConfigureAddRemoveHotkeyCandid(uint8_t displayIdx,
+                                                                   char *outKey, uint16_t outKeyLen,
+                                                                   char *outVal, uint16_t outValLen,
+                                                                   uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    const uint64_t hash = parser_tx_obj.tx_fields.call.data.candid_manageNeuron.command.configure.operation.hash;
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+
+        if (hash == hash_operation_AddHotkey) {
+            pageString(outVal, outValLen, "Add Hotkey", pageIdx, pageCount);
+        } else if (hash == hash_operation_RemoveHotkey) {
+            pageString(outVal, outValLen, "Remove Hotkey", pageIdx, pageCount);
+        } else {
+            return parser_unexpected_value;
+        }
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Principal ");
+        return print_textual(fields->command.configure.operation.hotkey.principal,
+                             DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -537,10 +546,10 @@ static parser_error_t parser_getItemListUpdateNodeProvider(uint8_t displayIdx,
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemConfigureDissolving(uint8_t displayIdx,
-                                                        char *outKey, uint16_t outKeyLen,
-                                                        char *outVal, uint16_t outValLen,
-                                                        uint8_t pageIdx, uint8_t *pageCount) {
+static parser_error_t parser_getItemConfigureNoElementsCandid(uint8_t displayIdx,
+                                                              char *outKey, uint16_t outKeyLen,
+                                                              char *outVal, uint16_t outValLen,
+                                                              uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
     const uint64_t hash = parser_tx_obj.tx_fields.call.data.candid_manageNeuron.command.configure.operation.hash;
     const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
@@ -552,6 +561,10 @@ static parser_error_t parser_getItemConfigureDissolving(uint8_t displayIdx,
             pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
         } else if (hash == hash_operation_StopDissolving) {
             pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
+        } else if (hash == hash_operation_JoinCommunityFund) {
+            pageString(outVal, outValLen, JOIN_COMMUNITY_FUND, pageIdx, pageCount);
+        } else if (hash == hash_operation_LeaveCommunityFund) {
+            pageString(outVal, outValLen, "Leave Community Fund", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -874,9 +887,6 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
     CHECK_PARSER_ERR(getManageNeuronType(&parser_tx_obj, &mn_type))
 
     switch (mn_type) {
-        case Configure_LeaveCommunityFund: {
-            return parser_getItemLeaveCommunityFund(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        }
         case Configure_SetDissolvedTimestamp: {
             return parser_getItemSetDissolveTimestamp(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
@@ -900,9 +910,14 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
+        case Configure_AddHotkeyCandid:
+        case Configure_RemoveHotkeyCandid:
+            return parser_getItemConfigureAddRemoveHotkeyCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case Configure_JoinCommunityFundCandid:
+        case Configure_LeaveCommunityFundCandid:
         case Configure_StartDissolvingCandid:
         case Configure_StopDissolvingCandid:
-            return parser_getItemConfigureDissolving(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+            return parser_getItemConfigureNoElementsCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case SNS_Configure_StartDissolving:
         case SNS_Configure_StopDissolving:
             return parser_getItemConfigureDissolvingSNS(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
