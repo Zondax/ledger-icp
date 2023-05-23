@@ -67,6 +67,61 @@ __Z_INLINE parser_error_t print_permission(int32_t permission, char *outVal, uin
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t print_follow_topic(int32_t topic, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
+    switch (topic) {
+        case FOLLOW_TOPIC_UNSPECIFIED:
+            pageString(outVal, outValLen, "Default", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_NEURON_MANAGEMENT:
+            pageString(outVal, outValLen, "Neuron Management", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_EXCHANGE_RATE:
+            pageString(outVal, outValLen, "Exchange Rate", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_NETWORK_ECONOMICS:
+            pageString(outVal, outValLen, "Network Economics", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_GOVERNANCE:
+            pageString(outVal, outValLen, "Governance", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_NODE_ADMIN:
+            pageString(outVal, outValLen, "Node Admin", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_PARTICIPANT_MANAGEMENT:
+            pageString(outVal, outValLen, "Participant Management", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_SUBNET_MANAGEMENT:
+            pageString(outVal, outValLen, "Subnet Management", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_NETWORK_CANISTER_MANAGEMENT:
+            pageString(outVal, outValLen, "Network Canister Management", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_KYC:
+            pageString(outVal, outValLen, "KYC", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_NODE_PROVIDER_REWARDS:
+            pageString(outVal, outValLen, "Node Provider Rewards", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_SNS_DECENTRALIZATION_SALE:
+            pageString(outVal, outValLen, "SNS Decentralization Swap", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT:
+            pageString(outVal, outValLen, "Subnet Replica Version Management", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_REPLICA_VERSION_MANAGEMENT:
+            pageString(outVal, outValLen, "Replica Version Management", pageIdx, pageCount);
+            break;
+        case FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND:
+            pageString(outVal, outValLen, "SNS & Community Fund", pageIdx, pageCount);
+            break;
+
+        default:
+            return parser_unexpected_value;
+    }
+
+    return parser_ok;
+}
+
 static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
                                                          char *outKey, uint16_t outKeyLen,
                                                          char *outVal, uint16_t outValLen,
@@ -257,6 +312,59 @@ static parser_error_t parser_getItemRegisterVoteCandid(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Vote");
         snprintf(outVal, outValLen, fields->command.vote.vote == 1 ? "Yes" : "No");
         return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemFollowCandid(uint8_t displayIdx,
+                                                 char *outKey, uint16_t outKeyLen,
+                                                 char *outVal, uint16_t outValLen,
+                                                 uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        pageString(outVal, outValLen, "Follow", pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Topic");
+        return print_follow_topic(fields->command.follow.topic, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 3 && fields->command.follow.followees_size == 0) {
+        snprintf(outKey, outKeyLen, "Followees");
+        snprintf(outVal, outValLen, "None");
+        return parser_ok;
+    }
+
+    displayIdx -= 2; // now displayIdx 1 ==> Followee 1
+
+    if (displayIdx <= fields->command.follow.followees_size) {
+        snprintf(outKey, outKeyLen, "Followees (%d/%d) ", displayIdx, fields->command.follow.followees_size);
+        uint64_t followee = 0;
+        CHECK_PARSER_ERR(getCandidNat64FromVec(fields->command.follow.followees_ptr, &followee,
+                                               fields->command.follow.followees_size, displayIdx - 1)) // Followee 1 ==> array idx 0
+        return print_u64(followee, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -952,6 +1060,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
             return parser_getItemDisburseCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case RegisterVoteCandid:
             return parser_getItemRegisterVoteCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case FollowCandid:
+            return parser_getItemFollowCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }

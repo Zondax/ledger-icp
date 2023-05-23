@@ -319,6 +319,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case hash_command_RegisterVote:
                     *mn_type = RegisterVoteCandid;
                     return parser_ok;
+                case hash_command_Follow:
+                    *mn_type = FollowCandid;
+                    return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
                         return parser_unexpected_value;
@@ -760,6 +763,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Follow : {
             pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
             return follow_count > 0 ? 3 + follow_count : 4;
+        }
+        case FollowCandid: {
+            uint8_t followees_count = v->tx_fields.call.data.candid_manageNeuron.command.follow.followees_size;
+            return followees_count > 0 ? 3 + followees_count : 4;
         }
 
         case SNS_Configure_StartDissolving:

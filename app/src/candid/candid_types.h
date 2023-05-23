@@ -78,6 +78,8 @@ typedef enum {
     hash_setting_remove_hotkey = 2202409078,
     hash_field_vote = 1314114794,
     hash_field_proposal = 3000310834,
+    hash_field_follow_topic = 338645423,
+    hash_field_follow_followees = 3407357762,
 } txn_hash_fields;
 
 typedef enum {
@@ -150,6 +152,24 @@ typedef enum {
     hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
+
+typedef enum {
+    FOLLOW_TOPIC_UNSPECIFIED = 0,
+    FOLLOW_TOPIC_NEURON_MANAGEMENT = 1,
+    FOLLOW_TOPIC_EXCHANGE_RATE = 2,
+    FOLLOW_TOPIC_NETWORK_ECONOMICS = 3,
+    FOLLOW_TOPIC_GOVERNANCE = 4,
+    FOLLOW_TOPIC_NODE_ADMIN = 5,
+    FOLLOW_TOPIC_PARTICIPANT_MANAGEMENT = 6,
+    FOLLOW_TOPIC_SUBNET_MANAGEMENT = 7,
+    FOLLOW_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8,
+    FOLLOW_TOPIC_KYC = 9,
+    FOLLOW_TOPIC_NODE_PROVIDER_REWARDS = 10,
+    FOLLOW_TOPIC_SNS_DECENTRALIZATION_SALE = 11,
+    FOLLOW_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT = 12,
+    FOLLOW_TOPIC_REPLICA_VERSION_MANAGEMENT = 13,
+    FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND = 14,
+} candid_FollowTopics_e;
 
 // Permissions ENUM
 // https://github.com/dfinity/ic-js/blob/d82310ec5519160b5fa2ec94fd82200485bd3ccc/packages/sns/src/enums/governance.enums.ts#L2
@@ -250,6 +270,13 @@ typedef struct {
 } candid_RegisterVote_t;
 
 typedef struct {
+    int32_t topic;
+
+    uint8_t followees_size;
+    const uint8_t* followees_ptr;
+} candid_Follow_t;
+
+typedef struct {
     uint8_t list_size;
     const uint8_t *permissions_list_ptr;
 } sns_NeuronPermissionList_t;
@@ -309,6 +336,7 @@ typedef struct {
         candid_StakeMaturity_t stake;
         candid_Disburse_t disburse;
         candid_RegisterVote_t vote;
+        candid_Follow_t follow;
 
         sns_NeuronPermissions_t neuronPermissions;
         sns_Disburse_t sns_disburse;

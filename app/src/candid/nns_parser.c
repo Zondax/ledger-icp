@@ -298,6 +298,49 @@ __Z_INLINE parser_error_t readCommandRegisterVote(parser_context_t *ctx, candid_
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+    const int64_t followRoot = txn->element.implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 2) {
+        return parser_unexpected_value;
+    }
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_field_follow_topic ||
+        txn->element.implementation != Int32) {
+        return parser_unexpected_type;
+    }
+
+    // go back to starting position
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, followRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_field_follow_followees) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    if (txn->txn_type != Vector) {
+        return parser_unexpected_type;
+    }
+
+    // now let's read
+    CHECK_PARSER_ERR(readCandidInt32(ctx, &val->command.follow.topic))
+    if (val->command.follow.topic < 0 || val->command.follow.topic > FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND) {
+        return parser_unexpected_value;
+    }
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.follow.followees_size))
+    val->command.follow.followees_ptr = ctx->buffer + ctx->offset;
+    uint64_t tmp_followee = 0;
+    for (uint8_t i = 0; i < val->command.follow.followees_size; i++) {
+        CHECK_PARSER_ERR(readCandidNat64(ctx, &tmp_followee))
+    }
+
+    return parser_ok;
+}
+
 __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
     // Check sanity SetDissolvedTimestamp
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -563,6 +606,10 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
 
             case hash_command_RegisterVote:
                 CHECK_PARSER_ERR(readCommandRegisterVote(ctx, txn, val))
+                break;
+
+            case hash_command_Follow:
+                CHECK_PARSER_ERR(readCommandFollow(ctx, txn, val))
                 break;
 
             default:
