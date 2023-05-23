@@ -93,6 +93,10 @@ typedef enum {
     Configure_StartDissolvingCandid = 1004,
     Configure_StopDissolvingCandid = 1005,
     DisburseCandid = 1006,
+    Configure_JoinCommunityFundCandid = 1007,
+    Configure_LeaveCommunityFundCandid = 1008,
+    Configure_AddHotkeyCandid = 1009,
+    Configure_RemoveHotkeyCandid = 1010,
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,

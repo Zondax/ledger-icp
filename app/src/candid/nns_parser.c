@@ -253,7 +253,7 @@ __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ct
     // Check sanity SetDissolvedTimestamp
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
-    if (txn->txn_length > 1) {
+    if (txn->txn_length != 1) {
         return parser_unexpected_number_items;
     }
 
@@ -269,18 +269,6 @@ __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ct
     if (operation->setDissolveTimestamp.dissolve_timestamp_seconds >= 4102444800) {
         return parser_value_out_of_range;
     }
-
-    return parser_ok;
-}
-
-__Z_INLINE parser_error_t readOperationLeaveCommunityFund(candid_transaction_t *txn) {
-    // Check sanity LeaveCommunityFund
-    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-    CHECK_PARSER_ERR(readCandidRecordLength(txn))
-    if (txn->txn_length != 0) {
-        return parser_unexpected_number_items;
-    }
-    // Empty record
 
     return parser_ok;
 }
@@ -320,6 +308,123 @@ __Z_INLINE parser_error_t readOperationIncreaseDissolveDelay(parser_context_t *c
 
     return parser_ok;
 }
+
+__Z_INLINE parser_error_t readOperationAddRemoveHotkey(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_number_items;
+    }
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_setting_addhotkey &&
+        txn->element.field_hash != hash_setting_remove_hotkey) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    if (txn->element.implementation != Principal) {
+        return parser_unexpected_type;
+    }
+
+    // let's read
+    CHECK_PARSER_ERR(readCandidByte(ctx, &operation->hotkey.has_principal))
+    if (!operation->hotkey.has_principal) {
+        return parser_unexpected_value;
+    }
+    uint8_t has_principal = 0;
+    uint8_t principalSize = 0;
+    CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
+    if (!has_principal) {
+        return parser_unexpected_value;
+    }
+    CHECK_PARSER_ERR(readCandidByte(ctx, &principalSize))
+    if (principalSize != DFINITY_PRINCIPAL_LEN) {
+        return parser_unexpected_value;
+    }
+    CHECK_PARSER_ERR(readCandidBytes(ctx, operation->hotkey.principal, principalSize))
+
+    return parser_ok;
+}
+
+__Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+    // Save this type
+    const int64_t txn_element_implementation = txn->element.implementation;
+
+    // Check sanity Configure
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_operation) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    if (txn->txn_type != Variant) {
+        return parser_unexpected_type;
+    }
+
+    // Read Configure / Operation
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.configure.has_operation))
+    if (!val->command.configure.has_operation) {
+        return parser_unexpected_value;
+    }
+    candid_Operation_t *operation = &val->command.configure.operation;
+    CHECK_PARSER_ERR(readCandidWhichVariant(ctx, &operation->which))
+
+        // Restore saved type
+        txn->element.implementation = txn_element_implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length > 1) {
+        return parser_unexpected_number_items;
+    }
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    CHECK_PARSER_ERR(getHash(txn, operation->which, &operation->hash))
+
+    switch (operation->hash) {
+        case hash_operation_SetDissolvedTimestamp: {
+            CHECK_PARSER_ERR(readOperationSetDissolveTimestamp(ctx, txn, operation))
+            break;
+        }
+        case hash_operation_ChangeAutoStakeMaturity:
+            CHECK_PARSER_ERR(readOperationChangeAutoStakeMaturity(ctx, txn, operation))
+            break;
+        case hash_operation_IncreaseDissolveDelay:
+            CHECK_PARSER_ERR(readOperationIncreaseDissolveDelay(ctx, txn, operation))
+            break;
+        case hash_operation_AddHotkey:
+        case hash_operation_RemoveHotkey:
+            CHECK_PARSER_ERR(readOperationAddRemoveHotkey(ctx, txn, operation))
+            break;
+        case hash_operation_LeaveCommunityFund:
+        case hash_operation_StartDissolving:
+        case hash_operation_StopDissolving:
+        case hash_operation_JoinCommunityFund:
+            // Check empty record
+            CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+            CHECK_PARSER_ERR(readCandidRecordLength(txn))
+            if (txn->txn_length != 0) {
+                return parser_unexpected_number_items;
+            }
+            break;
+
+        default:
+            ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
+            return parser_unexpected_value;
+    }
+    return parser_ok;
+}
+
 parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *txn) {
     if (ctx == NULL || txn == NULL || txn->txn_length != 3) {
         return parser_unexpected_error;
@@ -392,78 +497,7 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             }
 
             case hash_command_Configure: {
-                // Save this type
-                const int64_t txn_element_implementation = txn->element.implementation;
-
-                // Check sanity Configure
-                CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-                CHECK_PARSER_ERR(readCandidRecordLength(txn))
-                if (txn->txn_length != 1) {
-                    return parser_unexpected_value;
-                }
-                txn->element.variant_index = 0;
-                CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-                if (txn->element.field_hash != hash_operation) {
-                    return parser_unexpected_type;
-                }
-
-                CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-                CHECK_PARSER_ERR(readCandidOptional(txn))
-
-                CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-                if (txn->txn_type != Variant) {
-                    return parser_unexpected_type;
-                }
-
-                // Read Configure / Operation
-                CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.configure.has_operation))
-                if (!val->command.configure.has_operation) {
-                    return parser_unexpected_value;
-                }
-                candid_Operation_t *operation = &val->command.configure.operation;
-                CHECK_PARSER_ERR(readCandidWhichVariant(ctx, &operation->which))
-
-                // Restore saved type
-                txn->element.implementation = txn_element_implementation;
-                CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-                CHECK_PARSER_ERR(readCandidRecordLength(txn))
-                if (txn->txn_length > 1) {
-                    return parser_unexpected_number_items;
-                }
-
-                txn->element.variant_index = 0;
-                CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-                CHECK_PARSER_ERR(getHash(txn, operation->which, &operation->hash))
-
-                switch (operation->hash) {
-                    case hash_operation_SetDissolvedTimestamp: {
-                        CHECK_PARSER_ERR(readOperationSetDissolveTimestamp(ctx, txn, operation))
-                        break;
-                    }
-                    case hash_operation_LeaveCommunityFund: {
-                        CHECK_PARSER_ERR(readOperationLeaveCommunityFund(txn))
-                        break;
-                    }
-                    case hash_operation_ChangeAutoStakeMaturity:
-                        CHECK_PARSER_ERR(readOperationChangeAutoStakeMaturity(ctx, txn, operation))
-                        break;
-                    case hash_operation_IncreaseDissolveDelay:
-                        CHECK_PARSER_ERR(readOperationIncreaseDissolveDelay(ctx, txn, operation))
-                        break;
-                    case hash_operation_StartDissolving:
-                    case hash_operation_StopDissolving:
-                        // Check empty record
-                        CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-                        CHECK_PARSER_ERR(readCandidRecordLength(txn))
-                        if (txn->txn_length != 0) {
-                            return parser_unexpected_number_items;
-                        }
-                        break;
-
-                    default:
-                        ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
-                        return parser_unexpected_value;
-                }
+                CHECK_PARSER_ERR(readCommandConfigure(ctx, txn, val))
                 break;
             }
             case hash_command_Spawn: {

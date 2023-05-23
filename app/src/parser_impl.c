@@ -325,7 +325,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                             *mn_type = Configure_SetDissolvedTimestamp;
                             break;
                         case hash_operation_LeaveCommunityFund:
-                            *mn_type = Configure_LeaveCommunityFund;
+                            *mn_type = Configure_LeaveCommunityFundCandid;
                             break;
                         case hash_operation_ChangeAutoStakeMaturity:
                             *mn_type = Configure_ChangeAutoStakeMaturity;
@@ -338,6 +338,15 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                             break;
                         case hash_operation_StopDissolving:
                             *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolvingCandid;
+                            break;
+                        case hash_operation_JoinCommunityFund:
+                            *mn_type = Configure_JoinCommunityFundCandid;
+                            break;
+                        case hash_operation_AddHotkey:
+                            *mn_type = Configure_AddHotkeyCandid;
+                            break;
+                        case hash_operation_RemoveHotkey:
+                            *mn_type = Configure_RemoveHotkeyCandid;
                             break;
                         default:
                             return parser_unexpected_value;
@@ -706,6 +715,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_StopDissolving :
         case Configure_JoinCommunityFund :
         case Configure_LeaveCommunityFund :
+        case Configure_JoinCommunityFundCandid:
+        case Configure_LeaveCommunityFundCandid:
         case Configure_StartDissolving : {
             return 2;
         }
@@ -714,6 +725,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Merge:
         case Configure_RemoveHotKey :
         case Configure_AddHotKey :
+        case Configure_RemoveHotkeyCandid:
+        case Configure_AddHotkeyCandid:
         case MergeMaturity :
         case Configure_IncreaseDissolveDelay:
         case Configure_IncreaseDissolveDelayCandid:
