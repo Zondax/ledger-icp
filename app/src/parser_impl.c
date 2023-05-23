@@ -316,6 +316,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case hash_command_Merge:
                     *mn_type = Merge;
                     return parser_ok;
+                case hash_command_RegisterVote:
+                    *mn_type = RegisterVoteCandid;
+                    return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
                         return parser_unexpected_value;
@@ -735,6 +738,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return 3;
         }
         case RegisterVote :
+        case RegisterVoteCandid:
         case DisburseCandid:
         case Disburse : {
             return 4;

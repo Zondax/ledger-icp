@@ -219,6 +219,49 @@ static parser_error_t parser_getItemDisburseCandid(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemRegisterVoteCandid(uint8_t displayIdx,
+                                                       char *outKey, uint16_t outKeyLen,
+                                                       char *outVal, uint16_t outValLen,
+                                                       uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        pageString(outVal, outValLen, "Register Vote", pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        //Only accept neuron_id
+        return parser_unexpected_type;
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Proposal ID");
+        return print_u64(fields->command.vote.proposal.id, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Vote");
+        snprintf(outVal, outValLen, fields->command.vote.vote == 1 ? "Yes" : "No");
+        return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayIdx,
                                                             char *outKey, uint16_t outKeyLen,
                                                             char *outVal, uint16_t outValLen,
@@ -907,6 +950,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         }
         case DisburseCandid:
             return parser_getItemDisburseCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case RegisterVoteCandid:
+            return parser_getItemRegisterVoteCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case Configure_IncreaseDissolveDelayCandid: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }

@@ -76,6 +76,8 @@ typedef enum {
     hash_opt_amount = 3573748184,
     hash_setting_addhotkey = 3570462350,
     hash_setting_remove_hotkey = 2202409078,
+    hash_field_vote = 1314114794,
+    hash_field_proposal = 3000310834,
 } txn_hash_fields;
 
 typedef enum {
@@ -241,6 +243,13 @@ typedef struct {
 } candid_Disburse_t;
 
 typedef struct {
+    int32_t vote;
+
+    uint8_t has_proposal;
+    candid_NeuronId proposal;
+} candid_RegisterVote_t;
+
+typedef struct {
     uint8_t list_size;
     const uint8_t *permissions_list_ptr;
 } sns_NeuronPermissionList_t;
@@ -299,6 +308,7 @@ typedef struct {
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
         candid_Disburse_t disburse;
+        candid_RegisterVote_t vote;
 
         sns_NeuronPermissions_t neuronPermissions;
         sns_Disburse_t sns_disburse;
