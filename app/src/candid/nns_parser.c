@@ -249,6 +249,55 @@ __Z_INLINE parser_error_t readCommandDisburse(parser_context_t *ctx, candid_tran
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readCommandRegisterVote(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+    const int64_t voteRoot = txn->element.implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 2) {
+        return parser_unexpected_value;
+    }
+
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_field_vote) {
+        return parser_unexpected_type;
+    }
+    if (txn->element.implementation != Int32) {
+        return parser_unexpected_type;
+    }
+
+    // go back to starting position
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, voteRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_field_proposal) {
+        return parser_unexpected_type;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+
+    // now let's read
+    CHECK_PARSER_ERR(readCandidInt32(ctx, &val->command.vote.vote))
+    if (val->command.vote.vote != 1 && val->command.vote.vote != 2) {
+        return parser_unexpected_value;
+    }
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.vote.has_proposal))
+    if (!val->command.vote.has_proposal) {
+        return parser_unexpected_value;
+    }
+    CHECK_PARSER_ERR(readCandidNat64(ctx, &val->command.vote.proposal.id))
+
+    return parser_ok;
+}
+
 __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
     // Check sanity SetDissolvedTimestamp
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -510,6 +559,10 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
 
             case hash_command_Disburse:
                 CHECK_PARSER_ERR(readCommandDisburse(ctx, txn, val))
+                break;
+
+            case hash_command_RegisterVote:
+                CHECK_PARSER_ERR(readCommandRegisterVote(ctx, txn, val))
                 break;
 
             default:
