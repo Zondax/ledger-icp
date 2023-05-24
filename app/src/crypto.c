@@ -542,7 +542,7 @@ zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
 
 //CRC-32(b) || b with b = SHA-224(“\x0Aaccount-id“ || owner || sub-account), where owner is a (29-byte)
 zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
-                                     uint8_t *subAccount, uint16_t subaccountLen,
+                                     const uint8_t *subAccount, uint16_t subaccountLen,
                                      uint8_t *address, uint16_t maxoutLen) {
     if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN ||
         maxoutLen < DFINITY_ADDR_LEN) {

@@ -14,6 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 #include "parser_print_candid.h"
+#include "app_mode.h"
 #include "parser_print_helper.h"
 #include "parser_print_strings.h"
 #include "candid_parser.h"
@@ -120,6 +121,26 @@ __Z_INLINE parser_error_t print_follow_topic(int32_t topic, char *outVal, uint16
     }
 
     return parser_ok;
+}
+
+__Z_INLINE parser_error_t print_accountBytes(sender_t sender,
+                                             const candid_transfer_t *sendrequest,
+                                             char *outVal, uint16_t outValLen,
+                                             uint8_t pageIdx, uint8_t *pageCount) {
+    uint8_t address[32] = {0};
+    uint8_t subaccount[32] = {0};
+    if (sendrequest->has_from_subaccount) {
+        MEMCPY(subaccount, sendrequest->from_subaccount.p, (size_t)sendrequest->from_subaccount.len);
+    }
+
+    zxerr_t err = crypto_principalToSubaccount(sender.data, (uint16_t) sender.len,
+                                               subaccount, sizeof(subaccount),
+                                               address, sizeof(address));
+    if (err != zxerr_ok) {
+        return parser_unexpected_error;
+    }
+
+    return page_hexstring_with_delimiters(address, sizeof(address), outVal, outValLen, pageIdx, pageCount);
 }
 
 static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx,
@@ -845,6 +866,83 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx,
+                                                   char *outKey, uint16_t outKeyLen,
+                                                   char *outVal, uint16_t outValLen,
+                                                   uint8_t pageIdx, uint8_t *pageCount) {
+    MEMZERO(outKey, outKeyLen);
+    MEMZERO(outVal, outValLen);
+    snprintf(outKey, outKeyLen, "?");
+    snprintf(outVal, outValLen, "?");
+    *pageCount = 1;
+
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
+
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, is_stake_tx ? "Stake Neuron" : "Send ICP");
+        return parser_ok;
+    }
+
+    if (app_mode_expert()) {
+        if (displayIdx == 1) {
+            snprintf(outKey, outKeyLen, "Sender ");
+            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (displayIdx == 2) {
+            snprintf(outKey, outKeyLen, "Subaccount ");
+            if (fields->data.candid_transfer.has_from_subaccount) {
+                return page_hexstring_with_delimiters(fields->data.candid_transfer.from_subaccount.p,
+                                                      fields->data.candid_transfer.from_subaccount.len,
+                                                      outVal, outValLen, pageIdx, pageCount);
+            }
+            snprintf(outVal, outValLen, "Not set");
+            return parser_ok;
+        }
+        displayIdx -= 2;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "From account ");
+        return print_accountBytes(fields->sender, &fields->data.candid_transfer,
+                                  outVal, outValLen,
+                                  pageIdx, pageCount);
+    }
+
+    if (is_stake_tx) {
+        displayIdx++; // skip field To account
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "To account ");
+        return page_hexstring_with_delimiters(fields->data.candid_transfer.to, DFINITY_ADDR_LEN, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Amount (ICP)");
+        return print_ICP(fields->data.candid_transfer.amount,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
+
+    if (displayIdx == 4) {
+        snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        return print_ICP(fields->data.candid_transfer.fee,
+                         outVal, outValLen,
+                         pageIdx, pageCount);
+    }
+
+    if (displayIdx == 5) {
+        snprintf(outKey, outKeyLen, "Memo");
+        return print_u64(fields->data.candid_transfer.memo, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
                                                  char *outVal, uint16_t outValLen,
@@ -1121,6 +1219,12 @@ parser_error_t parser_getItemCandid(const parser_context_t *ctx,
                                                     outVal, outValLen,
                                                     pageIdx, pageCount);
         }
+
+        case candid_transfer:
+            return parser_getItemCandidTransfer(displayIdx,
+                                                outKey, outKeyLen,
+                                                outVal, outValLen,
+                                                pageIdx, pageCount);
 
         case candid_icrc_transfer: {
             return parser_getItemICRCTransfer(displayIdx,

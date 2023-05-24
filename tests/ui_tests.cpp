@@ -21,6 +21,7 @@ using ::testing::TestWithParam;
 
 class JsonTests_Phase1 : public JsonTests_Base {};
 class JsonTests_Phase2 : public JsonTests_Base {};
+class JsonTests_Candid_Send : public JsonTests_Base {};
 class JsonTests_SNS_AddPermission : public JsonTests_Base {};
 class JsonTests_SNS_RemovePermission : public JsonTests_Base {};
 class JsonTests_SNS_NeuronActions : public JsonTests_Base {};
@@ -54,6 +55,22 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_Phase2, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_Phase2, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        Candid_Send,
+        JsonTests_Candid_Send,
+        ::testing::ValuesIn(GetJsonTestCases("candid_send.json")),
+        JsonTests_Candid_Send::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_Candid_Send, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_Candid_Send, Expert) { check_testcase(GetParam(), true); }
 
 ////////////////////
 ////////////////////

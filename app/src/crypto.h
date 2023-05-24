@@ -51,7 +51,7 @@ zxerr_t compressLEB128(uint64_t input, uint16_t maxSize,
                        uint8_t *output, uint16_t *outLen);
 
 zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
-                                     uint8_t *subAccount, uint16_t subaccountLen,
+                                     const uint8_t *subAccount, uint16_t subaccountLen,
                                      uint8_t *address, uint16_t maxoutLen);
 
 zxerr_t crypto_sign(uint8_t *signature,

@@ -214,6 +214,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 case candid_manageneuron:
                 case candid_listneurons:
                 case candid_updatenodeprovider:
+                case candid_transfer:
                 case candid_icrc_transfer: {
                     return parser_getItemCandid(ctx, displayIdx,
                                                 outKey, outKeyLen,

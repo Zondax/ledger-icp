@@ -21,6 +21,7 @@ extern "C" {
 
 #include <zxmacros.h>
 #include <zxerror.h>
+#include "coin.h"
 
 typedef enum {
     Null = -1,
@@ -96,6 +97,15 @@ typedef enum {
     sns_hash_opt_principal = 947296307,
     sns_hash_opt_amount = 3573748184,
 } sns_hash_fields;
+
+typedef enum {
+    transfer_hash_to = 25979,
+    transfer_hash_fee = 5094982,
+    transfer_hash_memo = 1213809850,
+    transfer_hash_from_subaccount = 1835347746,
+    transfer_hash_timestamp = 3258775938,
+    transfer_hash_amount = 3573748184,
+} transfer_hash_fields;
 
 typedef enum {
     icrc_hash_to = 25979,
@@ -296,6 +306,20 @@ typedef struct {
     uint8_t has_subaccount;
     sizedBuffer_t subaccount;
 } Account_t;
+
+typedef struct {
+    uint64_t memo;
+    uint64_t amount;
+    uint64_t fee;
+
+    uint8_t has_from_subaccount;
+    sizedBuffer_t from_subaccount;
+
+    uint8_t to[DFINITY_ADDR_LEN];
+
+    uint8_t has_timestamp;
+    uint64_t timestamp;
+} candid_transfer_t;
 
 typedef struct {
     uint8_t icp_canister;
