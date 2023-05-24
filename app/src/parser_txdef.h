@@ -56,6 +56,7 @@ typedef enum {
     pb_listneurons = 0x03,
     pb_claimneurons = 0x04,
 
+    candid_transfer = 0xF001,
     candid_manageneuron = 0xF002,
     candid_updatenodeprovider = 0xF003,
     candid_listneurons = 0xF004,
@@ -180,6 +181,7 @@ typedef struct {
         ListNeurons ListNeurons;
         sns_ManageNeuron_t sns_manageNeuron;
         icrc_transfer_t  icrcTransfer;
+        candid_transfer_t candid_transfer;
     } data;
 } call_t;
 

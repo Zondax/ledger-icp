@@ -389,7 +389,7 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
 
     // Depending on the method, we may try to read protobuf or candid
 
-    if (strcmp(method, "send_pb") == 0 || v->special_transfer_type == neuron_stake_transaction) {
+    if (strcmp(method, "send_pb") == 0) {
         v->tx_fields.call.method_type = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
@@ -437,6 +437,12 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return parser_ok;
     }
 
+    if (strcmp(method, "transfer") == 0) {
+        v->tx_fields.call.method_type = candid_transfer;
+        CHECK_PARSER_ERR(readCandidTransfer(v, buffer, bufferLen))
+        return parser_ok;
+    }
+
     return parser_unexpected_type;
 }
 
@@ -455,6 +461,10 @@ static bool isCandidTransaction(parser_tx_t *v) {
     }
 
     if (strcmp(method, "icrc1_transfer") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "transfer") == 0) {
         return true;
     }
 
@@ -591,6 +601,7 @@ parser_error_t readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 
 parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual) {
     switch (v->tx_fields.call.method_type) {
+        case candid_transfer:
         case pb_sendrequest : {
             CHECK_METHOD_WITH_CANISTER("ryjl3tyaaaaaaaaaaabacai")
         }
@@ -693,13 +704,19 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
 
     bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (is_stake_tx) {
-        uint8_t to_hash[32];
-        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-                                                                          v->tx_fields.call.data.SendRequest.memo.memo,
-                                                                          to_hash, sizeof(to_hash)),
-                               parser_unexpected_error);
+        const bool is_candid = v->tx_fields.call.method_type == candid_transfer;
+        uint8_t to_hash[32] = {0};
+        uint64_t memo = is_candid ? v->tx_fields.call.data.candid_transfer.memo
+                                  : v->tx_fields.call.data.SendRequest.memo.memo;
 
-        const uint8_t *to = v->tx_fields.call.data.SendRequest.to.hash;
+
+        PARSER_ASSERT_OR_ERROR(
+            zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                       memo, to_hash, sizeof(to_hash)),
+            parser_unexpected_error);
+
+        const uint8_t *to = is_candid ? v->tx_fields.call.data.candid_transfer.to
+                                      : v->tx_fields.call.data.SendRequest.to.hash;
 
         if (memcmp(to_hash, to, 32) != 0) {
             zemu_log_stack("wrong data");
@@ -797,6 +814,7 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
     switch (v->txtype) {
         case call: {
             switch (v->tx_fields.call.method_type) {
+                case candid_transfer:
                 case pb_sendrequest: {
                     const bool is_stake_tx = v->special_transfer_type == neuron_stake_transaction;
 
