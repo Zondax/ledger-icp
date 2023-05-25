@@ -185,15 +185,8 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
         }
 
         snprintf(outKey, outKeyLen, "Request ID ");
-        char buffer[100];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      fields->paths.paths[1].data,
-                                      fields->paths.paths[1].len);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
+        return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_ok;

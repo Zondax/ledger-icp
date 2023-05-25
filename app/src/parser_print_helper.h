@@ -29,11 +29,10 @@ parser_error_t print_u64(uint64_t value, char *outVal, uint16_t outValLen, uint8
 parser_error_t print_ICP(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount);
 parser_error_t print_textual(const uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount);
 parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize);
-zxerr_t print_hexstring(char *out, uint16_t outLen, const uint8_t *data, uint16_t dataLen);
 
-parser_error_t print_subaccount_hex(const uint8_t *input, const uint64_t inputLen,
-                                    char *output, const uint16_t outputLen,
-                                    const uint8_t pageIdx, uint8_t *pageCount);
+parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64_t inputLen,
+                                              char *output, const uint16_t outputLen,
+                                              const uint8_t pageIdx, uint8_t *pageCount);
 parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen,
                                                const uint8_t *fromSubaccount, uint16_t fromSubaccountLen,
                                                char *outVal, uint16_t outValLen,

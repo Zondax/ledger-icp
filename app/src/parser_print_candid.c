@@ -477,16 +477,8 @@ static parser_error_t parser_getItemListUpdateNodeProvider(uint8_t displayIdx,
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Reward Account ");
-        char buffer[100];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      fields->account_identifier.p,
-                                      (uint16_t) fields->account_identifier.len);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(fields->account_identifier.p, fields->account_identifier.len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -561,10 +553,9 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             outVal, outValLen, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                              parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -601,10 +592,9 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             outVal, outValLen, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                              parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3 && fields->has_principal) {
@@ -740,10 +730,9 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             outVal, outValLen, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                              parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -799,10 +788,9 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Neuron Id ");
-        print_subaccount_hex(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
-                             parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
-                             outVal, outValLen, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                              parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3 && fields->has_percentage_to_stake) {

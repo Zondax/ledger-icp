@@ -45,18 +45,25 @@ zxerr_t addr_getItem(int8_t displayIdx,
         return zxerr_buffer_too_small;
     }
 
+    parser_error_t err = parser_unexpected_error;
     switch (displayIdx) {
         case 0:
             snprintf(outKey, outKeyLen, "Address ");
-            print_subaccount_hex(G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, DFINITY_SUBACCOUNT_LEN,
-                                 outVal, outValLen, pageIdx, pageCount);
+            err = page_hexstring_with_delimiters(G_io_apdu_buffer + VIEW_ADDRESS_OFFSET_TEXT, DFINITY_SUBACCOUNT_LEN,
+                                                 outVal, outValLen, pageIdx, pageCount);
+            if (err != parser_ok) {
+                return zxerr_unknown;
+            }
             return zxerr_ok;
 
         case 1:
             snprintf(outKey, outKeyLen, "Principal ");
-            page_principal_with_delimiters((const char*)G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
-                                           action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT,
-                                           outVal, outValLen, pageIdx, pageCount);
+            err = page_principal_with_delimiters((const char*)G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
+                                                 action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT,
+                                                 outVal, outValLen, pageIdx, pageCount);
+            if (err != parser_ok) {
+                return zxerr_unknown;
+            }
             return zxerr_ok;
 
         case 2: {
