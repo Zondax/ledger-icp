@@ -78,9 +78,9 @@ parser_error_t page_principal_with_delimiters(const char *input, const uint16_t 
     return parser_ok;
 }
 
-parser_error_t print_subaccount_hex(const uint8_t *input, const uint64_t inputLen,
-                                    char *output, const uint16_t outputLen,
-                                    const uint8_t pageIdx, uint8_t *pageCount) {
+parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64_t inputLen,
+                                              char *output, const uint16_t outputLen,
+                                              const uint8_t pageIdx, uint8_t *pageCount) {
     const uint8_t CHARS_PER_CHUNK = 8;
     const uint8_t CHARS_PER_PAGE = 16 * LINES_PER_PAGE;
     const uint8_t CHUNKS_PER_PAGE = 2 * LINES_PER_PAGE;
@@ -165,33 +165,6 @@ parser_error_t print_textual(const uint8_t *data, uint16_t len,
     }
 
     return page_principal_with_delimiters(tmpBuffer, outLen, outVal, outValLen, pageIdx, pageCount);
-}
-
-zxerr_t print_hexstring(char *out, uint16_t outLen, const uint8_t *data, uint16_t dataLen) {
-    MEMZERO(out, outLen);
-    if (dataLen > 255) return zxerr_out_of_bounds;
-
-    const uint32_t writtenBytes = array_to_hexstr(out, outLen, data, (uint8_t) dataLen);
-    if (writtenBytes != dataLen * 2) {
-        return zxerr_out_of_bounds;
-    }
-
-    #if defined(TARGET_STAX)
-        const char separator = 0x0A; //new line
-    #else
-        const char separator = 0x20; //space
-    #endif
-
-    // insert spaces to force alignment
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 8, ' '))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 17, separator))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 26, ' '))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 35, separator))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 44, ' '))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 53, separator))
-    CHECK_ZXERR(inplace_insert_char(out, outLen, 62, ' '))
-
-    return zxerr_ok;
 }
 
 parser_error_t print_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen,

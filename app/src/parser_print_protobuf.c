@@ -34,15 +34,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
         return parser_unexpected_error;
     }
 
-    char buffer[80];
-    err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) address, 32);
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
-    return parser_ok;
+    return page_hexstring_with_delimiters(address, sizeof(address), outVal, outValLen, pageIdx, pageCount);
 }
 
 static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
@@ -76,18 +68,11 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
 
         if (displayIdx == 2) {
             snprintf(outKey, outKeyLen, "Subaccount ");
-            snprintf(outVal, outValLen, "Not set");
-
             if (fields->data.SendRequest.has_from_subaccount) {
-                char buffer[100];
-                zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                              fields->data.SendRequest.from_subaccount.sub_account, 32);
-                if (err != zxerr_ok) {
-                    return parser_unexpected_error;
-                }
-                pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+                return page_hexstring_with_delimiters(fields->data.SendRequest.from_subaccount.sub_account,
+                                                      32, outVal, outValLen, pageIdx, pageCount);
             }
-
+            snprintf(outVal, outValLen, "Not set");
             return parser_ok;
         }
         displayIdx -= 2;
@@ -103,15 +88,8 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     if (displayIdx == 2) {
         PARSER_ASSERT_OR_ERROR(fields->data.SendRequest.has_to, parser_unexpected_number_items)
         snprintf(outKey, outKeyLen, "To account ");
-
-        char buffer[100];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->data.SendRequest.to.hash, 32);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(fields->data.SendRequest.to.hash, 32,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -170,18 +148,11 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
 
         if (displayIdx == 2) {
             snprintf(outKey, outKeyLen, "Subaccount ");
-            snprintf(outVal, outValLen, "Not set");
-
             if (fields->data.SendRequest.has_from_subaccount) {
-                char buffer[100];
-                zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                              fields->data.SendRequest.from_subaccount.sub_account, 32);
-                if (err != zxerr_ok) {
-                    return parser_unexpected_error;
-                }
-                pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+                return page_hexstring_with_delimiters(fields->data.SendRequest.from_subaccount.sub_account, 32,
+                                                      outVal, outValLen, pageIdx, pageCount);
             }
-
+            snprintf(outVal, outValLen, "Not set");
             return parser_ok;
         }
         displayIdx -= 2;
@@ -535,15 +506,9 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
         PARSER_ASSERT_OR_ERROR(fields->command.disburse.to_account.hash.size == 32, parser_context_unexpected_size)
 
-        char buffer[80];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      (const uint8_t *) fields->command.disburse.to_account.hash.bytes, 32);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(fields->command.disburse.to_account.hash.bytes,
+                                              fields->command.disburse.to_account.hash.size,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
