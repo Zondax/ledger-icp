@@ -128,8 +128,8 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     uint8_t numItems = 0;
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
 
-    char tmpKey[100];
-    char tmpVal[100];
+    char tmpKey[70] = {0};
+    char tmpVal[180] = {0}; // up to 180 in stax
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
@@ -175,7 +175,7 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;

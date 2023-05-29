@@ -39,8 +39,6 @@ zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal);
 
 zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint16_t addressLen, char *textual, uint16_t *outLen);
 
-zxerr_t crypto_toTextual(uint8_t *input, uint16_t inputLen, char *output, uint16_t *outputLen);
-
 zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t bufferLen, uint16_t *addrLen);
 
 zxerr_t addr_to_textual(char *s_out, uint16_t s_max, const char *text_in, uint16_t text_in_len);

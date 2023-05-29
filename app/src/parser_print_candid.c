@@ -485,8 +485,8 @@ static parser_error_t parser_getItemConfigureAddRemoveHotkeyCandid(uint8_t displ
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Principal ");
-        return print_textual(fields->command.configure.operation.hotkey.principal,
-                             DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(fields->command.configure.operation.hotkey.principal,
+                               DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -540,10 +540,10 @@ static parser_error_t parser_getItemSpawnCandid(uint8_t displayIdx,
 
         //Paged fields need space ending
         snprintf(outKey, outKeyLen, "Controller ");
-        return print_textual(fields->command.spawn.new_controller,
-                             29,
-                             outVal, outValLen,
-                             pageIdx, pageCount);
+        return print_principal(fields->command.spawn.new_controller,
+                               DFINITY_PRINCIPAL_LEN,
+                               outVal, outValLen,
+                               pageIdx, pageCount);
     }
 
     if (fields->command.spawn.has_nonce &&
@@ -786,7 +786,7 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -825,7 +825,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -837,7 +837,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
 
     if (displayIdx == 3 && fields->has_principal) {
         snprintf(outKey, outKeyLen, "Principal Id ");
-        return print_textual(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
@@ -889,7 +889,7 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
@@ -968,7 +968,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
         const uint8_t canisterIdLen = (uint8_t) call->canister_id.len;
         snprintf(outKey, outKeyLen, "Canister Id");
 
-        return print_textual(canisterId, canisterIdLen, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(canisterId, canisterIdLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -978,8 +978,8 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
         const uint8_t *fromSubaccount = call->data.icrcTransfer.from_subaccount.p;
         const uint16_t fromSubaccountLen = (uint16_t) call->data.icrcTransfer.from_subaccount.len;
 
-        return print_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen,
-                                               outVal, outValLen, pageIdx, pageCount);
+        return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -988,8 +988,8 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
         const uint8_t *subaccount = call->data.icrcTransfer.account.subaccount.p;
         const uint16_t subaccountLen = (uint16_t) call->data.icrcTransfer.account.subaccount.len;
 
-        return print_principal_with_subaccount(owner, DFINITY_PRINCIPAL_LEN, subaccount, subaccountLen,
-                                               outVal, outValLen, pageIdx, pageCount);
+        return page_principal_with_subaccount(owner, DFINITY_PRINCIPAL_LEN, subaccount, subaccountLen,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 4) {
@@ -1040,7 +1040,7 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -1053,19 +1053,19 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Disburse to ");
         if (!fields->has_account) {
-            return print_textual(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN,
-                                 outVal, outValLen, pageIdx, pageCount);
+            return print_principal(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN,
+                                   outVal, outValLen, pageIdx, pageCount);
         }
         // assume has_account
         const uint8_t *principal = fields->account.has_owner
             ? fields->account.owner
             : parser_tx_obj.tx_fields.call.sender.data;
         if (fields->account.has_subaccount) {
-            return print_principal_with_subaccount(principal, DFINITY_PRINCIPAL_LEN,
-                                                   fields->account.subaccount.p, (uint16_t) fields->account.subaccount.len,
-                                                   outVal, outValLen, pageIdx, pageCount);
+            return page_principal_with_subaccount(principal, DFINITY_PRINCIPAL_LEN,
+                                                  fields->account.subaccount.p, (uint16_t) fields->account.subaccount.len,
+                                                  outVal, outValLen, pageIdx, pageCount);
         } else {
-            return print_textual(principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
         }
     }
     if (displayIdx == 4) {
@@ -1098,7 +1098,7 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
         const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
 
         snprintf(outKey, outKeyLen, "Canister Id");
-        return print_textual(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
