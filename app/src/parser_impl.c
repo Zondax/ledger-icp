@@ -718,7 +718,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         const uint8_t *to = is_candid ? v->tx_fields.call.data.candid_transfer.to
                                       : v->tx_fields.call.data.SendRequest.to.hash;
 
-        if (memcmp(to_hash, to, 32) != 0) {
+        if (memcmp(to_hash, to, DFINITY_ADDR_LEN) != 0) {
             zemu_log_stack("wrong data");
             return parser_invalid_address;
         }

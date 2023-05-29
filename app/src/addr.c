@@ -58,9 +58,9 @@ zxerr_t addr_getItem(int8_t displayIdx,
 
         case 1:
             snprintf(outKey, outKeyLen, "Principal ");
-            err = page_principal_with_delimiters((const char*)G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
-                                                 action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT,
-                                                 outVal, outValLen, pageIdx, pageCount);
+            err = page_textual_with_delimiters((const char*)G_io_apdu_buffer + VIEW_PRINCIPAL_OFFSET_TEXT,
+                                               action_addrResponseLen - VIEW_PRINCIPAL_OFFSET_TEXT,
+                                               outVal, outValLen, pageIdx, pageCount);
             if (err != parser_ok) {
                 return zxerr_unknown;
             }

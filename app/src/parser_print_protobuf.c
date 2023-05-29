@@ -21,7 +21,7 @@
 #include <app_mode.h>
 
 __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
-                                             SendRequest *sendrequest,
+                                             const SendRequest *sendrequest,
                                              char *outVal, uint16_t outValLen,
                                              uint8_t pageIdx, uint8_t *pageCount) {
     uint8_t address[32];
@@ -47,7 +47,7 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    call_t *fields = &parser_tx_obj.tx_fields.call;
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (is_stake_tx) {
@@ -63,14 +63,14 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
             snprintf(outKey, outKeyLen, "Subaccount ");
             if (fields->data.SendRequest.has_from_subaccount) {
                 return page_hexstring_with_delimiters(fields->data.SendRequest.from_subaccount.sub_account,
-                                                      32, outVal, outValLen, pageIdx, pageCount);
+                                                      DFINITY_ADDR_LEN, outVal, outValLen, pageIdx, pageCount);
             }
             snprintf(outVal, outValLen, "Not set");
             return parser_ok;
@@ -127,7 +127,7 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    call_t *fields = &parser_tx_obj.tx_fields.call;
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (!is_stake_tx) {
@@ -143,7 +143,7 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
@@ -388,8 +388,8 @@ static parser_error_t parser_getItemSpawn(uint8_t displayIdx,
         PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size <= 29,
                                parser_value_out_of_range)
 
-        return print_textual(fields->command.spawn.new_controller.serialized_id.bytes,
-                             29,
+        return print_principal(fields->command.spawn.new_controller.serialized_id.bytes,
+                             DFINITY_PRINCIPAL_LEN,
                              outVal, outValLen,
                              pageIdx, pageCount);
     }
@@ -448,7 +448,7 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                    parser_unexpected_number_items)
             PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size <= 29,
                                    parser_value_out_of_range)
-            return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
+            return print_principal(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
                                  outVal, outValLen, pageIdx, pageCount);
         }
 
@@ -458,7 +458,7 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                 fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size <= 29,
                 parser_value_out_of_range)
 
-        return print_textual(
+        return print_principal(
                 fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.bytes, 29,
                 outVal, outValLen, pageIdx, pageCount);
     }

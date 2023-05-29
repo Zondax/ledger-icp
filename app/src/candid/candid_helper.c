@@ -13,7 +13,6 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-#define APP_TESTING 0
 #define CANDID_TESTING 0
 
 #include "candid_helper.h"
