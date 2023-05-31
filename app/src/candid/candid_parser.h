@@ -32,6 +32,8 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
 
 parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
 
+parser_error_t readCandidTransfer(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize);
+
 parser_error_t getCandidNat64FromVec(const uint8_t *buffer, uint64_t *value, uint8_t size, uint8_t idx);
 parser_error_t getCandidInt32FromVec(const uint8_t *buffer, int32_t *value, uint8_t size, uint8_t idx);
 

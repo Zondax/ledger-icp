@@ -21,6 +21,7 @@ extern "C" {
 
 #include <zxmacros.h>
 #include <zxerror.h>
+#include "coin.h"
 
 typedef enum {
     Null = -1,
@@ -72,6 +73,14 @@ typedef enum {
     hash_percentage_to_stake = 854334011,
     hash_setting_auto_stake_maturity = 3470422224,
     hash_setting_increse_dissolve_delay = 913088909,
+    hash_field_disburse_account = 1937583785,
+    hash_opt_amount = 3573748184,
+    hash_setting_addhotkey = 3570462350,
+    hash_setting_remove_hotkey = 2202409078,
+    hash_field_vote = 1314114794,
+    hash_field_proposal = 3000310834,
+    hash_field_follow_topic = 338645423,
+    hash_field_follow_followees = 3407357762,
 } txn_hash_fields;
 
 typedef enum {
@@ -88,6 +97,15 @@ typedef enum {
     sns_hash_opt_principal = 947296307,
     sns_hash_opt_amount = 3573748184,
 } sns_hash_fields;
+
+typedef enum {
+    transfer_hash_to = 25979,
+    transfer_hash_fee = 5094982,
+    transfer_hash_memo = 1213809850,
+    transfer_hash_from_subaccount = 1835347746,
+    transfer_hash_timestamp = 3258775938,
+    transfer_hash_amount = 3573748184,
+} transfer_hash_fields;
 
 typedef enum {
     icrc_hash_to = 25979,
@@ -135,14 +153,33 @@ typedef enum {
     hash_operation_Invalid = 971299358,
     hash_operation_StopDissolving = 1954991536,
     hash_operation_IncreaseDissolveDelay = 2143729936,
-    hash_operation_RemoveHotKey = 3248805476,
-    hash_operation_JoinCommunityFund = 45994902,
+    hash_operation_AddHotkey = 628424947,
+    hash_operation_RemoveHotkey = 45994902,
+    hash_operation_JoinCommunityFund = 3248805476,
     hash_operation_ChangeAutoStakeMaturity = 1906071820,
 
     hash_operation_StartDissolving = 1977744848,
     hash_operation_LeaveCommunityFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
+
+typedef enum {
+    FOLLOW_TOPIC_UNSPECIFIED = 0,
+    FOLLOW_TOPIC_NEURON_MANAGEMENT = 1,
+    FOLLOW_TOPIC_EXCHANGE_RATE = 2,
+    FOLLOW_TOPIC_NETWORK_ECONOMICS = 3,
+    FOLLOW_TOPIC_GOVERNANCE = 4,
+    FOLLOW_TOPIC_NODE_ADMIN = 5,
+    FOLLOW_TOPIC_PARTICIPANT_MANAGEMENT = 6,
+    FOLLOW_TOPIC_SUBNET_MANAGEMENT = 7,
+    FOLLOW_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8,
+    FOLLOW_TOPIC_KYC = 9,
+    FOLLOW_TOPIC_NODE_PROVIDER_REWARDS = 10,
+    FOLLOW_TOPIC_SNS_DECENTRALIZATION_SALE = 11,
+    FOLLOW_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT = 12,
+    FOLLOW_TOPIC_REPLICA_VERSION_MANAGEMENT = 13,
+    FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND = 14,
+} candid_FollowTopics_e;
 
 // Permissions ENUM
 // https://github.com/dfinity/ic-js/blob/d82310ec5519160b5fa2ec94fd82200485bd3ccc/packages/sns/src/enums/governance.enums.ts#L2
@@ -182,12 +219,18 @@ typedef struct {
 } candid_IncreaseDissolveDelay_t;
 
 typedef struct {
+    uint8_t has_principal;
+    uint8_t principal[30];
+} candid_AddRemoveHotkey_t;
+
+typedef struct {
     uint64_t which;
     uint64_t hash;
     union {
         candid_SetDissolveTimestamp_t setDissolveTimestamp;
         candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
         candid_IncreaseDissolveDelay_t increaseDissolveDelay;
+        candid_AddRemoveHotkey_t hotkey;
     };
 } candid_Operation_t;
 
@@ -222,6 +265,28 @@ typedef struct {
 } candid_StakeMaturity_t;
 
 typedef struct {
+    uint8_t has_account_identifier;
+    sizedBuffer_t account_identifier;
+
+    uint8_t has_amount;
+    uint64_t amount;
+} candid_Disburse_t;
+
+typedef struct {
+    int32_t vote;
+
+    uint8_t has_proposal;
+    candid_NeuronId proposal;
+} candid_RegisterVote_t;
+
+typedef struct {
+    int32_t topic;
+
+    uint8_t followees_size;
+    const uint8_t* followees_ptr;
+} candid_Follow_t;
+
+typedef struct {
     uint8_t list_size;
     const uint8_t *permissions_list_ptr;
 } sns_NeuronPermissionList_t;
@@ -241,6 +306,20 @@ typedef struct {
     uint8_t has_subaccount;
     sizedBuffer_t subaccount;
 } Account_t;
+
+typedef struct {
+    uint64_t memo;
+    uint64_t amount;
+    uint64_t fee;
+
+    uint8_t has_from_subaccount;
+    sizedBuffer_t from_subaccount;
+
+    uint8_t to[DFINITY_ADDR_LEN];
+
+    uint8_t has_timestamp;
+    uint64_t timestamp;
+} candid_transfer_t;
 
 typedef struct {
     uint8_t icp_canister;
@@ -279,9 +358,12 @@ typedef struct {
         candid_Merge_t merge;
         candid_Configure_t configure;
         candid_StakeMaturity_t stake;
+        candid_Disburse_t disburse;
+        candid_RegisterVote_t vote;
+        candid_Follow_t follow;
 
         sns_NeuronPermissions_t neuronPermissions;
-        sns_Disburse_t disburse;
+        sns_Disburse_t sns_disburse;
     };
 } candid_Command_t;
 

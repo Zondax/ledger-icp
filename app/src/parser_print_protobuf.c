@@ -21,7 +21,7 @@
 #include <app_mode.h>
 
 __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
-                                             SendRequest *sendrequest,
+                                             const SendRequest *sendrequest,
                                              char *outVal, uint16_t outValLen,
                                              uint8_t pageIdx, uint8_t *pageCount) {
     uint8_t address[32];
@@ -34,15 +34,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender,
         return parser_unexpected_error;
     }
 
-    char buffer[80];
-    err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) address, 32);
-    if (err != zxerr_ok) {
-        return parser_unexpected_error;
-    }
-
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-
-    return parser_ok;
+    return page_hexstring_with_delimiters(address, sizeof(address), outVal, outValLen, pageIdx, pageCount);
 }
 
 static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
@@ -55,7 +47,7 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    call_t *fields = &parser_tx_obj.tx_fields.call;
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (is_stake_tx) {
@@ -71,23 +63,16 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
             snprintf(outKey, outKeyLen, "Subaccount ");
-            snprintf(outVal, outValLen, "Not set");
-
             if (fields->data.SendRequest.has_from_subaccount) {
-                char buffer[100];
-                zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                              fields->data.SendRequest.from_subaccount.sub_account, 32);
-                if (err != zxerr_ok) {
-                    return parser_unexpected_error;
-                }
-                pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+                return page_hexstring_with_delimiters(fields->data.SendRequest.from_subaccount.sub_account,
+                                                      DFINITY_ADDR_LEN, outVal, outValLen, pageIdx, pageCount);
             }
-
+            snprintf(outVal, outValLen, "Not set");
             return parser_ok;
         }
         displayIdx -= 2;
@@ -103,15 +88,8 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     if (displayIdx == 2) {
         PARSER_ASSERT_OR_ERROR(fields->data.SendRequest.has_to, parser_unexpected_number_items)
         snprintf(outKey, outKeyLen, "To account ");
-
-        char buffer[100];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer), (uint8_t *) fields->data.SendRequest.to.hash, 32);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(fields->data.SendRequest.to.hash, 32,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -149,7 +127,7 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    call_t *fields = &parser_tx_obj.tx_fields.call;
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
     if (!is_stake_tx) {
@@ -165,23 +143,16 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
     if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         if (displayIdx == 2) {
             snprintf(outKey, outKeyLen, "Subaccount ");
-            snprintf(outVal, outValLen, "Not set");
-
             if (fields->data.SendRequest.has_from_subaccount) {
-                char buffer[100];
-                zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                              fields->data.SendRequest.from_subaccount.sub_account, 32);
-                if (err != zxerr_ok) {
-                    return parser_unexpected_error;
-                }
-                pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+                return page_hexstring_with_delimiters(fields->data.SendRequest.from_subaccount.sub_account, 32,
+                                                      outVal, outValLen, pageIdx, pageCount);
             }
-
+            snprintf(outVal, outValLen, "Not set");
             return parser_ok;
         }
         displayIdx -= 2;
@@ -417,8 +388,8 @@ static parser_error_t parser_getItemSpawn(uint8_t displayIdx,
         PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size <= 29,
                                parser_value_out_of_range)
 
-        return print_textual(fields->command.spawn.new_controller.serialized_id.bytes,
-                             29,
+        return print_principal(fields->command.spawn.new_controller.serialized_id.bytes,
+                             DFINITY_PRINCIPAL_LEN,
                              outVal, outValLen,
                              pageIdx, pageCount);
     }
@@ -477,7 +448,7 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                                    parser_unexpected_number_items)
             PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size <= 29,
                                    parser_value_out_of_range)
-            return print_textual(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
+            return print_principal(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
                                  outVal, outValLen, pageIdx, pageCount);
         }
 
@@ -487,7 +458,7 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx,
                 fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size <= 29,
                 parser_value_out_of_range)
 
-        return print_textual(
+        return print_principal(
                 fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.bytes, 29,
                 outVal, outValLen, pageIdx, pageCount);
     }
@@ -535,15 +506,9 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
 
         PARSER_ASSERT_OR_ERROR(fields->command.disburse.to_account.hash.size == 32, parser_context_unexpected_size)
 
-        char buffer[80];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      (const uint8_t *) fields->command.disburse.to_account.hash.bytes, 32);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-        return parser_ok;
+        return page_hexstring_with_delimiters(fields->command.disburse.to_account.hash.bytes,
+                                              fields->command.disburse.to_account.hash.size,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -743,6 +708,22 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx,
             }
             case ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS : {
                 snprintf(outVal, outValLen, "Node Provider Rewards");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SNS_DECENTRALIZATION_SALE : {
+                snprintf(outVal, outValLen, "SNS Decentralization Swap");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT : {
+                snprintf(outVal, outValLen, "Subnet Replica Version Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_REPLICA_VERSION_MANAGEMENT : {
+                snprintf(outVal, outValLen, "Replica Version Management");
+                return parser_ok;
+            }
+            case ic_nns_governance_pb_v1_Topic_TOPIC_SNS_AND_COMMUNITY_FUND : {
+                snprintf(outVal, outValLen, "SNS & Community Fund");
                 return parser_ok;
             }
             default: {

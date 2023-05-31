@@ -411,3 +411,148 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
 
     return parser_ok;
 }
+
+parser_error_t readCandidTransfer(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    // Create context and auxiliary ctx
+    CREATE_CTX(ctx, tx, input, inputSize)
+    candid_transaction_t txn;
+    txn.ctx.buffer = ctx.buffer;
+    txn.ctx.bufferLen = ctx.bufferLen;
+    txn.ctx.tx_obj = ctx.tx_obj;
+
+    CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
+    CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    if (txn.txn_length != 6) {
+        return parser_unexpected_value;
+    }
+
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.element.field_hash != transfer_hash_to || txn.txn_type != Vector) {
+        return parser_unexpected_type;
+    }
+    // To is vec u8, OK
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != transfer_hash_fee) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+    // Fee is u64, OK
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 2;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != transfer_hash_memo) {
+        return parser_unexpected_type;
+    }
+    if (txn.element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+    // Memo is u64, OK
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 3;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != transfer_hash_from_subaccount) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    if (txn.txn_type != Vector) {
+        return parser_unexpected_type;
+    }
+    // From_subaccount is opt vec u8, OK
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 4;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != transfer_hash_timestamp) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+    // Timestamp is opt u64, OK
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 5;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.field_hash != transfer_hash_amount) {
+        return parser_unexpected_type;
+    }
+
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    txn.element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    if (txn.element.implementation != Nat64) {
+        return parser_unexpected_type;
+    }
+    // amount is u64, OK
+
+    // let's read!
+    candid_transfer_t *transfer = &ctx.tx_obj->tx_fields.call.data.candid_transfer;
+
+    // Read to (AccountIdentifier)
+    uint8_t ownerSize = 0;
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &ownerSize))
+    if (ownerSize != DFINITY_ADDR_LEN) {
+        return parser_unexpected_value;
+    }
+    CHECK_PARSER_ERR(readCandidBytes(&ctx, transfer->to, ownerSize))
+
+    // Read fee (u64)
+    CHECK_PARSER_ERR(readCandidNat64(&ctx, &transfer->fee))
+
+    // Read memo (u64)
+    CHECK_PARSER_ERR(readCandidNat64(&ctx, &transfer->memo))
+
+    // Read from_subaccount (opt vec u8)
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &transfer->has_from_subaccount))
+    if (transfer->has_from_subaccount) {
+        CHECK_PARSER_ERR(readCandidText(&ctx, &transfer->from_subaccount))
+    }
+
+    // Read timestamp (opt u64)
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &transfer->has_timestamp))
+    if (transfer->has_timestamp) {
+        CHECK_PARSER_ERR(readCandidNat64(&ctx, &transfer->timestamp))
+    }
+
+    // Read amount
+    CHECK_PARSER_ERR(readCandidNat64(&ctx, &transfer->amount))
+
+    if (ctx.bufferLen - ctx.offset > 0) {
+        return parser_unexpected_characters;
+    }
+
+    return parser_ok;
+}

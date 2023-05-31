@@ -30,7 +30,11 @@ typedef enum _ic_nns_governance_pb_v1_Topic {
     ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_MANAGEMENT = 7,
     ic_nns_governance_pb_v1_Topic_TOPIC_NETWORK_CANISTER_MANAGEMENT = 8,
     ic_nns_governance_pb_v1_Topic_TOPIC_KYC = 9,
-    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS = 10
+    ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS = 10,
+    ic_nns_governance_pb_v1_Topic_TOPIC_SNS_DECENTRALIZATION_SALE = 11,
+    ic_nns_governance_pb_v1_Topic_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT = 12,
+    ic_nns_governance_pb_v1_Topic_TOPIC_REPLICA_VERSION_MANAGEMENT = 13,
+    ic_nns_governance_pb_v1_Topic_TOPIC_SNS_AND_COMMUNITY_FUND = 14,
 } ic_nns_governance_pb_v1_Topic;
 
 typedef enum _ic_nns_governance_pb_v1_GovernanceError_ErrorType {

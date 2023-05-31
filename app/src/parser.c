@@ -128,8 +128,8 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     uint8_t numItems = 0;
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
 
-    char tmpKey[100];
-    char tmpVal[100];
+    char tmpKey[70] = {0};
+    char tmpVal[180] = {0}; // up to 180 in stax
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
@@ -175,7 +175,7 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;
@@ -185,15 +185,8 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
         }
 
         snprintf(outKey, outKeyLen, "Request ID ");
-        char buffer[100];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      fields->paths.paths[1].data,
-                                      fields->paths.paths[1].len);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
+        return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_ok;
@@ -221,6 +214,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 case candid_manageneuron:
                 case candid_listneurons:
                 case candid_updatenodeprovider:
+                case candid_transfer:
                 case candid_icrc_transfer: {
                     return parser_getItemCandid(ctx, displayIdx,
                                                 outKey, outKeyLen,

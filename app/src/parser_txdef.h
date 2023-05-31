@@ -56,6 +56,7 @@ typedef enum {
     pb_listneurons = 0x03,
     pb_claimneurons = 0x04,
 
+    candid_transfer = 0xF001,
     candid_manageneuron = 0xF002,
     candid_updatenodeprovider = 0xF003,
     candid_listneurons = 0xF004,
@@ -92,6 +93,13 @@ typedef enum {
     Configure_IncreaseDissolveDelayCandid = 1003,
     Configure_StartDissolvingCandid = 1004,
     Configure_StopDissolvingCandid = 1005,
+    DisburseCandid = 1006,
+    Configure_JoinCommunityFundCandid = 1007,
+    Configure_LeaveCommunityFundCandid = 1008,
+    Configure_AddHotkeyCandid = 1009,
+    Configure_RemoveHotkeyCandid = 1010,
+    RegisterVoteCandid = 1011,
+    FollowCandid = 1012,
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,
@@ -173,6 +181,7 @@ typedef struct {
         ListNeurons ListNeurons;
         sns_ManageNeuron_t sns_manageNeuron;
         icrc_transfer_t  icrcTransfer;
+        candid_transfer_t candid_transfer;
     } data;
 } call_t;
 

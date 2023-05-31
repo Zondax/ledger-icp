@@ -1,12 +1,14 @@
-// Generated from IC repo commit c9b2f9653afc2da47e5bd527c192090b860acbf0 'rs/sns/governance/canister/governance.did' by import-candid
+// Generated from IC repo commit 26b480f775222265f4369bc485d502a140f15564 'rs/sns/governance/canister/governance.did' by import-candid
 type Account = record { owner : opt principal; subaccount : opt Subaccount };
 type Action = variant {
   ManageNervousSystemParameters : NervousSystemParameters;
   AddGenericNervousSystemFunction : NervousSystemFunction;
   RemoveGenericNervousSystemFunction : nat64;
   UpgradeSnsToNextVersion : record {};
+  RegisterDappCanisters : RegisterDappCanisters;
   TransferSnsTreasuryFunds : TransferSnsTreasuryFunds;
   UpgradeSnsControlledCanister : UpgradeSnsControlledCanister;
+  DeregisterDappCanisters : DeregisterDappCanisters;
   Unspecified : record {};
   ManageSnsMetadata : ManageSnsMetadata;
   ExecuteGenericNervousSystemFunction : ExecuteGenericNervousSystemFunction;
@@ -47,10 +49,10 @@ type ClaimSwapNeuronsRequest = record {
   neuron_parameters : vec NeuronParameters;
 };
 type ClaimSwapNeuronsResponse = record {
-  skipped_claims : nat32;
-  successful_claims : nat32;
-  failed_claims : nat32;
+  claim_swap_neurons_result : opt ClaimSwapNeuronsResult;
 };
+type ClaimSwapNeuronsResult = variant { Ok : ClaimedSwapNeurons; Err : int32 };
+type ClaimedSwapNeurons = record { swap_neurons : vec SwapNeuron };
 type Command = variant {
   Split : Split;
   Follow : Follow;
@@ -88,6 +90,7 @@ type Command_2 = variant {
   RegisterVote : RegisterVote;
   SyncCommand : record {};
   MakeProposal : Proposal;
+  FinalizeDisburseMaturity : FinalizeDisburseMaturity;
   ClaimOrRefreshNeuron : ClaimOrRefresh;
   RemoveNeuronPermissions : RemoveNeuronPermissions;
   AddNeuronPermissions : AddNeuronPermissions;
@@ -103,15 +106,21 @@ type DefiniteCanisterSettingsArgs = record {
   memory_allocation : nat;
   compute_allocation : nat;
 };
+type DeregisterDappCanisters = record {
+  canister_ids : vec principal;
+  new_controllers : vec principal;
+};
 type Disburse = record { to_account : opt Account; amount : opt Amount };
 type DisburseMaturity = record {
   to_account : opt Account;
   percentage_to_disburse : nat32;
 };
-type DisburseMaturityResponse = record {
-  transfer_block_height : nat64;
-  amount_disbursed_e8s : nat64;
+type DisburseMaturityInProgress = record {
+  timestamp_of_disbursement_seconds : nat64;
+  amount_e8s : nat64;
+  account_to_disburse_to : opt Account;
 };
+type DisburseMaturityResponse = record { amount_disbursed_e8s : nat64 };
 type DisburseResponse = record { transfer_block_height : nat64 };
 type DissolveState = variant {
   DissolveDelaySeconds : nat64;
@@ -120,6 +129,10 @@ type DissolveState = variant {
 type ExecuteGenericNervousSystemFunction = record {
   function_id : nat64;
   payload : vec nat8;
+};
+type FinalizeDisburseMaturity = record {
+  amount_to_be_disbursed_e8s : nat64;
+  to_account : opt Account;
 };
 type Follow = record { function_id : nat64; followees : vec NeuronId };
 type Followees = record { followees : vec NeuronId };
@@ -133,12 +146,16 @@ type GenericNervousSystemFunction = record {
   validator_method_name : opt text;
   target_method_name : opt text;
 };
+type GetMaturityModulationResponse = record {
+  maturity_modulation : opt MaturityModulation;
+};
 type GetMetadataResponse = record {
   url : opt text;
   logo : opt text;
   name : opt text;
   description : opt text;
 };
+type GetModeResponse = record { mode : opt int32 };
 type GetNeuron = record { neuron_id : opt NeuronId };
 type GetNeuronResponse = record { result : opt Result };
 type GetProposal = record { proposal_id : opt ProposalId };
@@ -154,8 +171,10 @@ type Governance = record {
   root_canister_id : opt principal;
   id_to_nervous_system_functions : vec record { nat64; NervousSystemFunction };
   metrics : opt GovernanceCachedMetrics;
+  maturity_modulation : opt MaturityModulation;
   mode : int32;
   parameters : opt NervousSystemParameters;
+  is_finalizing_disburse_maturity : opt bool;
   deployed_version : opt Version;
   sns_initialization_parameters : text;
   latest_reward_event : opt RewardEvent;
@@ -215,6 +234,10 @@ type ManageSnsMetadata = record {
   name : opt text;
   description : opt text;
 };
+type MaturityModulation = record {
+  current_basis_points : opt int32;
+  updated_at_timestamp_seconds : opt nat64;
+};
 type MemoAndController = record { controller : opt principal; memo : nat64 };
 type MergeMaturity = record { percentage_to_merge : nat32 };
 type MergeMaturityResponse = record {
@@ -247,6 +270,7 @@ type NervousSystemParameters = record {
   max_age_bonus_percentage : opt nat64;
   neuron_grantable_permissions : opt NeuronPermissionList;
   voting_rewards_parameters : opt VotingRewardsParameters;
+  maturity_modulation_disabled : opt bool;
   max_number_of_principals_per_neuron : opt nat64;
 };
 type Neuron = record {
@@ -261,6 +285,8 @@ type Neuron = record {
   aging_since_timestamp_seconds : nat64;
   dissolve_state : opt DissolveState;
   voting_power_percentage_multiplier : nat64;
+  vesting_period_seconds : opt nat64;
+  disburse_maturity_in_progress : vec DisburseMaturityInProgress;
   followees : vec record { nat64; Followees };
   neuron_fees_e8s : nat64;
 };
@@ -272,10 +298,11 @@ type NeuronInFlightCommand = record {
 type NeuronParameters = record {
   controller : opt principal;
   dissolve_delay_seconds : opt nat64;
-  memo : opt nat64;
   source_nns_neuron_id : opt nat64;
   stake_e8s : opt nat64;
+  followees : vec NeuronId;
   hotkey : opt principal;
+  neuron_id : opt NeuronId;
 };
 type NeuronPermission = record {
   "principal" : opt principal;
@@ -303,6 +330,7 @@ type ProposalData = record {
   ballots : vec record { text; Ballot };
   reward_event_round : nat64;
   failed_timestamp_seconds : nat64;
+  reward_event_end_timestamp_seconds : opt nat64;
   proposal_creation_timestamp_seconds : nat64;
   initial_voting_period_seconds : nat64;
   reject_cost_e8s : nat64;
@@ -316,6 +344,7 @@ type ProposalData = record {
   executed_timestamp_seconds : nat64;
 };
 type ProposalId = record { id : nat64 };
+type RegisterDappCanisters = record { canister_ids : vec principal };
 type RegisterVote = record { vote : int32; proposal : opt ProposalId };
 type RemoveNeuronPermissions = record {
   permissions_to_remove : opt NeuronPermissionList;
@@ -324,7 +353,9 @@ type RemoveNeuronPermissions = record {
 type Result = variant { Error : GovernanceError; Neuron : Neuron };
 type Result_1 = variant { Error : GovernanceError; Proposal : ProposalData };
 type RewardEvent = record {
+  rounds_since_last_distribution : opt nat64;
   actual_timestamp_seconds : nat64;
+  end_timestamp_seconds : opt nat64;
   distributed_e8s_equivalent : nat64;
   round : nat64;
   settled_proposals : vec ProposalId;
@@ -339,6 +370,7 @@ type StakeMaturityResponse = record {
   staked_maturity_e8s : nat64;
 };
 type Subaccount = record { subaccount : vec nat8 };
+type SwapNeuron = record { id : opt NeuronId; status : int32 };
 type Tally = record {
   no : nat64;
   yes : nat64;
@@ -360,7 +392,9 @@ type UpgradeInProgress = record {
 };
 type UpgradeSnsControlledCanister = record {
   new_canister_wasm : vec nat8;
+  mode : opt int32;
   canister_id : opt principal;
+  canister_upgrade_arg : opt vec nat8;
 };
 type Version = record {
   archive_wasm_hash : vec nat8;
@@ -379,8 +413,12 @@ type VotingRewardsParameters = record {
 type WaitForQuietState = record { current_deadline_timestamp_seconds : nat64 };
 service : (Governance) -> {
   claim_swap_neurons : (ClaimSwapNeuronsRequest) -> (ClaimSwapNeuronsResponse);
+  fail_stuck_upgrade_in_progress : (record {}) -> (record {});
   get_build_metadata : () -> (text) query;
+  get_latest_reward_event : () -> (RewardEvent) query;
+  get_maturity_modulation : (record {}) -> (GetMaturityModulationResponse);
   get_metadata : (record {}) -> (GetMetadataResponse) query;
+  get_mode : (record {}) -> (GetModeResponse) query;
   get_nervous_system_parameters : (null) -> (NervousSystemParameters) query;
   get_neuron : (GetNeuron) -> (GetNeuronResponse) query;
   get_proposal : (GetProposal) -> (GetProposalResponse) query;
