@@ -328,7 +328,7 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
 
     // now let's read
     CHECK_PARSER_ERR(readCandidInt32(ctx, &val->command.follow.topic))
-    if (val->command.follow.topic < 0 || val->command.follow.topic > FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND) {
+    if (val->command.follow.topic < 0 || val->command.follow.topic > FOLLOW_TOPIC_SNS_AND_NEURONS_FUND) {
         return parser_unexpected_value;
     }
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.follow.followees_size))
@@ -498,10 +498,10 @@ __Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_tra
         case hash_operation_RemoveHotkey:
             CHECK_PARSER_ERR(readOperationAddRemoveHotkey(ctx, txn, operation))
             break;
-        case hash_operation_LeaveCommunityFund:
+        case hash_operation_LeaveNeuronsFund:
         case hash_operation_StartDissolving:
         case hash_operation_StopDissolving:
-        case hash_operation_JoinCommunityFund:
+        case hash_operation_JoinNeuronsFund:
             // Check empty record
             CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
             CHECK_PARSER_ERR(readCandidRecordLength(txn))
