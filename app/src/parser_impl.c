@@ -330,8 +330,8 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_SetDissolvedTimestamp:
                             *mn_type = Configure_SetDissolvedTimestamp;
                             break;
-                        case hash_operation_LeaveCommunityFund:
-                            *mn_type = Configure_LeaveCommunityFundCandid;
+                        case hash_operation_LeaveNeuronsFund:
+                            *mn_type = Configure_LeaveNeuronsFundCandid;
                             break;
                         case hash_operation_ChangeAutoStakeMaturity:
                             *mn_type = Configure_ChangeAutoStakeMaturity;
@@ -345,8 +345,8 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_StopDissolving:
                             *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolvingCandid;
                             break;
-                        case hash_operation_JoinCommunityFund:
-                            *mn_type = Configure_JoinCommunityFundCandid;
+                        case hash_operation_JoinNeuronsFund:
+                            *mn_type = Configure_JoinNeuronsFundCandid;
                             break;
                         case hash_operation_AddHotkey:
                             *mn_type = Configure_AddHotkeyCandid;
@@ -736,10 +736,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
 
     switch (mn_type) {
         case Configure_StopDissolving :
-        case Configure_JoinCommunityFund :
-        case Configure_LeaveCommunityFund :
-        case Configure_JoinCommunityFundCandid:
-        case Configure_LeaveCommunityFundCandid:
+        case Configure_JoinNeuronsFund :
+        case Configure_LeaveNeuronsFund :
+        case Configure_JoinNeuronsFundCandid:
+        case Configure_LeaveNeuronsFundCandid:
         case Configure_StartDissolving : {
             return 2;
         }

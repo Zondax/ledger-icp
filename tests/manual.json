@@ -9349,20 +9349,20 @@
     "output": ["0 | Transaction type : Claim Neurons"]
   },
   {
-    "name": "Join Community Fund",
+    "name": "Join Neurons Fund",
     "index": 1040,
     "blob": "d9d9f7a167636f6e74656e74a663617267486202107b12023a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16ba67d2b864bf406b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581dd899978f029508f4fa5fce3d2539de5aade6d229efcc458233deee7502",
     "output": [
-      "0 | Transaction type : Join Community     Fund",
+      "0 | Transaction type : Join Neurons' Fund",
       "1 | Neuron ID : 123"
     ]
   },
   {
-    "name": "Join Community Fund",
+    "name": "Join Neurons Fund",
     "index": 1041,
     "blob": "d9d9f7a167636f6e74656e74a66361726749620310c80312023a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16ba68220c1cfe006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581dd899978f029508f4fa5fce3d2539de5aade6d229efcc458233deee7502",
     "output": [
-      "0 | Transaction type : Join Community     Fund",
+      "0 | Transaction type : Join Neurons' Fund",
       "1 | Neuron ID : 456"
     ]
   }

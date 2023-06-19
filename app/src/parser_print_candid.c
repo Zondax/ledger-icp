@@ -112,8 +112,8 @@ __Z_INLINE parser_error_t print_follow_topic(int32_t topic, char *outVal, uint16
         case FOLLOW_TOPIC_REPLICA_VERSION_MANAGEMENT:
             pageString(outVal, outValLen, "Replica Version Management", pageIdx, pageCount);
             break;
-        case FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND:
-            pageString(outVal, outValLen, "SNS & Community Fund", pageIdx, pageCount);
+        case FOLLOW_TOPIC_SNS_AND_NEURONS_FUND:
+            pageString(outVal, outValLen, "SNS & Neurons' Fund", pageIdx, pageCount);
             break;
 
         default:
@@ -733,10 +733,10 @@ static parser_error_t parser_getItemConfigureNoElementsCandid(uint8_t displayIdx
             pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
         } else if (hash == hash_operation_StopDissolving) {
             pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
-        } else if (hash == hash_operation_JoinCommunityFund) {
-            pageString(outVal, outValLen, JOIN_COMMUNITY_FUND, pageIdx, pageCount);
-        } else if (hash == hash_operation_LeaveCommunityFund) {
-            pageString(outVal, outValLen, "Leave Community Fund", pageIdx, pageCount);
+        } else if (hash == hash_operation_JoinNeuronsFund) {
+            pageString(outVal, outValLen, "Join Neurons' Fund", pageIdx, pageCount);
+        } else if (hash == hash_operation_LeaveNeuronsFund) {
+            pageString(outVal, outValLen, "Leave Neurons' Fund", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -1166,8 +1166,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Configure_AddHotkeyCandid:
         case Configure_RemoveHotkeyCandid:
             return parser_getItemConfigureAddRemoveHotkeyCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        case Configure_JoinCommunityFundCandid:
-        case Configure_LeaveCommunityFundCandid:
+        case Configure_JoinNeuronsFundCandid:
+        case Configure_LeaveNeuronsFundCandid:
         case Configure_StartDissolvingCandid:
         case Configure_StopDissolvingCandid:
             return parser_getItemConfigureNoElementsCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);

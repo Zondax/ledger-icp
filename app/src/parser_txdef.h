@@ -73,8 +73,8 @@ typedef enum {
     Configure_AddHotKey = 2004,
     Configure_RemoveHotKey = 2005,
     Configure_SetDissolvedTimestamp = 2006,
-    Configure_JoinCommunityFund = 2007,
-    Configure_LeaveCommunityFund = 2008,
+    Configure_JoinNeuronsFund = 2007,
+    Configure_LeaveNeuronsFund = 2008,
     Configure_ChangeAutoStakeMaturity = 2009,
 
 ////
@@ -94,8 +94,8 @@ typedef enum {
     Configure_StartDissolvingCandid = 1004,
     Configure_StopDissolvingCandid = 1005,
     DisburseCandid = 1006,
-    Configure_JoinCommunityFundCandid = 1007,
-    Configure_LeaveCommunityFundCandid = 1008,
+    Configure_JoinNeuronsFundCandid = 1007,
+    Configure_LeaveNeuronsFundCandid = 1008,
     Configure_AddHotkeyCandid = 1009,
     Configure_RemoveHotkeyCandid = 1010,
     RegisterVoteCandid = 1011,

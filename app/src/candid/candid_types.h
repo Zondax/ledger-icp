@@ -155,11 +155,11 @@ typedef enum {
     hash_operation_IncreaseDissolveDelay = 2143729936,
     hash_operation_AddHotkey = 628424947,
     hash_operation_RemoveHotkey = 45994902,
-    hash_operation_JoinCommunityFund = 3248805476,
+    hash_operation_JoinNeuronsFund = 3248805476,
     hash_operation_ChangeAutoStakeMaturity = 1906071820,
 
     hash_operation_StartDissolving = 1977744848,
-    hash_operation_LeaveCommunityFund = 3675510135,
+    hash_operation_LeaveNeuronsFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
 } operation_variant_hash_e;
 
@@ -178,7 +178,7 @@ typedef enum {
     FOLLOW_TOPIC_SNS_DECENTRALIZATION_SALE = 11,
     FOLLOW_TOPIC_SUBNET_REPLICA_VERSION_MANAGEMENT = 12,
     FOLLOW_TOPIC_REPLICA_VERSION_MANAGEMENT = 13,
-    FOLLOW_TOPIC_SNS_AND_COMMUNITY_FUND = 14,
+    FOLLOW_TOPIC_SNS_AND_NEURONS_FUND = 14,
 } candid_FollowTopics_e;
 
 // Permissions ENUM
