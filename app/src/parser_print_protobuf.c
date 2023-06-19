@@ -268,7 +268,7 @@ static parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx,
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
+static parser_error_t parser_getItemJoinNeuronsFund(uint8_t displayIdx,
                                                       char *outKey, uint16_t outKeyLen,
                                                       char *outVal, uint16_t outValLen,
                                                       uint8_t pageIdx, uint8_t *pageCount) {
@@ -278,7 +278,7 @@ static parser_error_t parser_getItemJoinCommunityFund(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, JOIN_COMMUNITY_FUND);
+        snprintf(outVal, outValLen, "Join Neurons' Fund");
         return parser_ok;
     }
 
@@ -723,7 +723,7 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx,
                 return parser_ok;
             }
             case ic_nns_governance_pb_v1_Topic_TOPIC_SNS_AND_COMMUNITY_FUND : {
-                snprintf(outVal, outValLen, "SNS & Community Fund");
+                snprintf(outVal, outValLen, "SNS & Neurons' Fund");
                 return parser_ok;
             }
             default: {
@@ -795,9 +795,9 @@ static parser_error_t parser_getItemManageNeuron(uint8_t displayIdx,
         case Configure_IncreaseDissolveDelay:
             return parser_getItemIncreaseNeuronTimer(displayIdx,
                                                      outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        case Configure_JoinCommunityFund :
-            return parser_getItemJoinCommunityFund(displayIdx,
-                                                   outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case Configure_JoinNeuronsFund :
+            return parser_getItemJoinNeuronsFund(displayIdx,
+                                                 outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case Configure_StopDissolving :
         case Configure_StartDissolving : {
             return parser_getItemStartStopDissolve(displayIdx,

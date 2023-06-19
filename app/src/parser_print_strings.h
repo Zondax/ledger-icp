@@ -20,12 +20,10 @@ extern "C" {
 #endif
 
 #if defined(TARGET_STAX)
-    #define JOIN_COMMUNITY_FUND "Join Community Fund"
     #define INCREASE_DISSOLVE_DELAY "Increase Dissolve\nDelay"
     #define START_DISSOLVE_NEURON "Start Dissolve Neuron"
     #define STOP_DISSOLVE_NEURON "Stop Dissolve Neuron"
 #else
-    #define JOIN_COMMUNITY_FUND "Join Community     Fund"
     #define INCREASE_DISSOLVE_DELAY "Increase Dissolve  Delay"
     #define START_DISSOLVE_NEURON "Start Dissolve     Neuron"
     #define STOP_DISSOLVE_NEURON "Stop Dissolve      Neuron"
