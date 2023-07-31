@@ -691,7 +691,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         MEMZERO(publicKey, sizeof(publicKey));
         MEMZERO(principalBytes, sizeof(principalBytes));
 
-        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(publicKey, sizeof(publicKey)) == zxerr_ok,
                             parser_unexpected_error)
 
         PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
