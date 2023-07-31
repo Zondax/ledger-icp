@@ -26,6 +26,7 @@ class JsonTests_SNS_AddPermission : public JsonTests_Base {};
 class JsonTests_SNS_RemovePermission : public JsonTests_Base {};
 class JsonTests_SNS_NeuronActions : public JsonTests_Base {};
 class JsonTests_SNS_StakeMaturity : public JsonTests_Base {};
+class JsonTests_SNS_SetDissolveDelay : public JsonTests_Base {};
 class JsonTests_ICRC : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
@@ -135,6 +136,22 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_SNS_StakeMaturity, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_SNS_StakeMaturity, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        NeuronActions,
+        JsonTests_SNS_SetDissolveDelay,
+        ::testing::ValuesIn(GetJsonTestCases("sns_set_dissolve_delay.json")),
+        JsonTests_SNS_SetDissolveDelay::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_SNS_SetDissolveDelay, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_SNS_SetDissolveDelay, Expert) { check_testcase(GetParam(), true); }
 
 ////////////////////
 ////////////////////
