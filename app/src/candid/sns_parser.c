@@ -160,6 +160,26 @@ __Z_INLINE parser_error_t readSNSCommandNeuronConfigure(parser_context_t *ctx, c
                 return parser_unexpected_number_items;
             }
             break;
+        case hash_operation_SetDissolvedTimestamp:
+            CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+            CHECK_PARSER_ERR(readCandidRecordLength(txn))
+            if (txn->txn_length != 1) {
+                return parser_unexpected_number_items;
+            }
+            txn->element.variant_index = 0;
+            CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+            if (txn->element.field_hash != hash_dissolve_timestamp_seconds || txn->element.implementation != Nat64) {
+                return parser_unexpected_type;
+            }
+
+            // Read SetDissolvedTimestamp
+            CHECK_PARSER_ERR(readCandidNat64(ctx, &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
+
+            if (operation->setDissolveTimestamp.dissolve_timestamp_seconds >= YEAR_2100_IN_SECONDS) {
+                return parser_value_out_of_range;
+            }
+            break;
+
         default:
             ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
             return parser_unexpected_value;

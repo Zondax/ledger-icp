@@ -328,7 +328,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     }
                     switch (command->configure.operation.hash) {
                         case hash_operation_SetDissolvedTimestamp:
-                            *mn_type = Configure_SetDissolvedTimestamp;
+                            *mn_type = isSNS ? SNS_Configure_SetDissolveDelay : Configure_SetDissolvedTimestamp;
                             break;
                         case hash_operation_LeaveNeuronsFund:
                             *mn_type = Configure_LeaveNeuronsFundCandid;
@@ -755,6 +755,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_SetDissolvedTimestamp: {
             return 3;
         }
+        case SNS_Configure_SetDissolveDelay:
         case RegisterVote :
         case RegisterVoteCandid:
         case DisburseCandid:

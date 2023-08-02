@@ -107,6 +107,7 @@ typedef enum {
     SNS_Configure_StopDissolving = 3003,
     SNS_Disburse = 3004,
     SNS_StakeMaturity = 3005,
+    SNS_Configure_SetDissolveDelay = 3006,
 } manageNeuron_e;
 
 typedef enum {
