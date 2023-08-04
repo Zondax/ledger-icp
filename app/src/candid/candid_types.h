@@ -23,6 +23,8 @@ extern "C" {
 #include <zxerror.h>
 #include "coin.h"
 
+#define YEAR_2100_IN_SECONDS 4102444800
+
 typedef enum {
     Null = -1,
     Bool = -2,

@@ -358,7 +358,7 @@ __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ct
     // Read SetDissolvedTimestamp
     CHECK_PARSER_ERR(readCandidNat64(ctx, &operation->setDissolveTimestamp.dissolve_timestamp_seconds))
 
-    if (operation->setDissolveTimestamp.dissolve_timestamp_seconds >= 4102444800) {
+    if (operation->setDissolveTimestamp.dissolve_timestamp_seconds >= YEAR_2100_IN_SECONDS) {
         return parser_value_out_of_range;
     }
 

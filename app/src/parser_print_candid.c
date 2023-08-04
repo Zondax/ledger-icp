@@ -1116,6 +1116,56 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemSNSSetDissolveDelay(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        pageString(outVal, outValLen, "Set Dissolve Delay", pageIdx, pageCount);
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        const uint8_t *canisterId = (uint8_t*) &parser_tx_obj.tx_fields.call.canister_id.data;
+        const uint8_t canisterIdSize = (uint8_t) parser_tx_obj.tx_fields.call.canister_id.len;
+
+        snprintf(outKey, outKeyLen, "Canister Id");
+        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Neuron Id ");
+        return page_hexstring_with_delimiters(parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.p,
+                                              parser_tx_obj.tx_fields.call.data.sns_manageNeuron.subaccount.len,
+                                              outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 3) {
+        snprintf(outKey, outKeyLen, "Dissolve Time");
+        uint64_t dissolve_timestamp_seconds = parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.configure.operation.setDissolveTimestamp.dissolve_timestamp_seconds;
+
+        timedata_t td = {0};
+        zxerr_t zxerr = decodeTime(&td, dissolve_timestamp_seconds);
+        if (zxerr != zxerr_ok) {
+            return parser_unexpected_value;
+        }
+
+        char tmpBuffer[30] = {0};
+        // YYYYmmdd HH:MM:SS
+        snprintf(tmpBuffer, sizeof(tmpBuffer), "%04d-%02d-%02d %02d:%02d:%02d UTC",
+                 td.tm_year, td.tm_mon, td.tm_day,
+                 td.tm_hour, td.tm_min, td.tm_sec
+        );
+
+        pageString(outVal, outValLen, tmpBuffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+    return parser_no_data;
+}
+
 __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx,
                                                      uint8_t displayIdx,
                                                      char *outKey, uint16_t outKeyLen,
@@ -1182,6 +1232,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
             return parser_getItemDisburseSNS(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case SNS_StakeMaturity:
             return parser_getItemSNSStakeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        case SNS_Configure_SetDissolveDelay:
+            return parser_getItemSNSSetDissolveDelay(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
         default:
             return parser_no_data;

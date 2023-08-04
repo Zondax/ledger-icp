@@ -328,7 +328,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     }
                     switch (command->configure.operation.hash) {
                         case hash_operation_SetDissolvedTimestamp:
-                            *mn_type = Configure_SetDissolvedTimestamp;
+                            *mn_type = isSNS ? SNS_Configure_SetDissolveDelay : Configure_SetDissolvedTimestamp;
                             break;
                         case hash_operation_LeaveNeuronsFund:
                             *mn_type = Configure_LeaveNeuronsFundCandid;
@@ -683,15 +683,14 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
 
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
-    const bool icrc_transfer = v->tx_fields.call.method_type == candid_icrc_transfer;
-    if (!icrc_transfer) {
+    if (v->txtype != call || v->tx_fields.call.method_type != candid_icrc_transfer) {
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
         MEMZERO(publicKey, sizeof(publicKey));
         MEMZERO(principalBytes, sizeof(principalBytes));
 
-        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(publicKey, sizeof(publicKey)) == zxerr_ok,
                             parser_unexpected_error)
 
         PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
@@ -702,8 +701,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 #endif
 
-    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
-    if (is_stake_tx) {
+    if (v->txtype == call && parser_tx_obj.special_transfer_type == neuron_stake_transaction) {
         const bool is_candid = v->tx_fields.call.method_type == candid_transfer;
         uint8_t to_hash[32] = {0};
         uint64_t memo = is_candid ? v->tx_fields.call.data.candid_transfer.memo
@@ -757,6 +755,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_SetDissolvedTimestamp: {
             return 3;
         }
+        case SNS_Configure_SetDissolveDelay:
         case RegisterVote :
         case RegisterVoteCandid:
         case DisburseCandid:
