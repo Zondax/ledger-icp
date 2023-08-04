@@ -683,8 +683,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
 
 
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
-    const bool icrc_transfer = v->tx_fields.call.method_type == candid_icrc_transfer;
-    if (!icrc_transfer) {
+    if (v->txtype != call || v->tx_fields.call.method_type != candid_icrc_transfer) {
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
@@ -702,8 +701,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 #endif
 
-    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
-    if (is_stake_tx) {
+    if (v->txtype == call && parser_tx_obj.special_transfer_type == neuron_stake_transaction) {
         const bool is_candid = v->tx_fields.call.method_type == candid_transfer;
         uint8_t to_hash[32] = {0};
         uint64_t memo = is_candid ? v->tx_fields.call.data.candid_transfer.memo
