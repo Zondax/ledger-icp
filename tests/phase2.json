@@ -12,7 +12,8 @@
       "0 | Transaction type : Split Neuron",
       "1 | Neuron ID : 123",
       "2 | Amount (ICP) : 0.00000123"
-    ]
+    ],
+    "valid": true
   },
   {
     "index": 2,

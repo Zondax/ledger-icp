@@ -34,8 +34,8 @@ zxerr_t inplace_insert_char(char *s, uint16_t sMaxLen, uint16_t pos, char separa
 
 zxerr_t number_inplace_thousands(char *s, uint16_t sMaxLen, char separator) {
     const size_t len = strlen(s);
-    if (len > sMaxLen) {
-        return zxerr_encoding_failed;
+    if (len >= sMaxLen) {
+        return zxerr_buffer_too_small;
     }
 
     // find decimal point
