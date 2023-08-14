@@ -31,14 +31,14 @@ uint32_t base32_encode(const uint8_t *data,
     uint32_t count = 0;
     if (length > 0) {
         uint32_t buffer = data[0];
-        uint32_t next = 1;
-        uint32_t bitsLeft = 8;
-        while (count < resultLen && (bitsLeft > 0 || next < length)) {
-            if (bitsLeft < 5) {
+        uint32_t next = 1u;
+        uint32_t bitsLeft = 8u;
+        while ((count < resultLen) && ((bitsLeft > 0) || (next < length))) {
+            if (bitsLeft < 5u) {
                 if (next < length) {
-                    buffer <<= 8;
-                    buffer |= data[next++] & 0xFF;
-                    bitsLeft += 8;
+                    buffer <<= 8u;
+                    buffer |= data[next++] & 0xFFu;
+                    bitsLeft += 8u;
                 } else {
                     uint32_t pad = 5u - bitsLeft;
                     buffer <<= pad;
@@ -46,7 +46,7 @@ uint32_t base32_encode(const uint8_t *data,
                 }
             }
             uint32_t index = 0x1Fu & (buffer >> (bitsLeft - 5u));
-            bitsLeft -= 5;
+            bitsLeft -= 5u;
             result[count++] = "abcdefghijklmnopqrstuvwxyz234567"[index];
         }
     }

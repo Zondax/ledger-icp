@@ -19,7 +19,10 @@
 #include "base32.h"
 
 // 365.25 * 24*60*60 = 31557600
-#define ICP_YEAR_IN_SECONDS ((uint64_t)31557600)
+#define ICP_MINUTE_IN_SECONDS (uint64_t)(60)
+#define ICP_HOUR_IN_SECONDS (uint64_t)(ICP_MINUTE_IN_SECONDS * 60)
+#define ICP_DAY_IN_SECONDS  (uint64_t)(ICP_HOUR_IN_SECONDS * 24)
+#define ICP_YEAR_IN_SECONDS (uint64_t)(ICP_DAY_IN_SECONDS * 365.25)
 
 #if defined(TARGET_STAX)
 #include "view_internal.h"
@@ -292,7 +295,7 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
     }
     value %= ICP_YEAR_IN_SECONDS;
 
-    uint64_t days = value / (uint64_t) (60 * 60 * 24);
+    uint64_t days = value / ICP_DAY_IN_SECONDS;
     if (days > 0) {
         if (index > 0) {
             PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end)
@@ -304,9 +307,9 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
         MEMCPY(buffer + index, (char *) "d", 1);
         index += 1;
     }
-    value %= (uint64_t) (60 * 60 * 24);
+    value %= ICP_DAY_IN_SECONDS;
 
-    uint64_t hours = value / (uint64_t) (60 * 60);
+    uint64_t hours = value / ICP_HOUR_IN_SECONDS;
     if (hours > 0) {
         if (index > 0) {
             PARSER_ASSERT_OR_ERROR(index + 2 < bufferSize, parser_unexpected_buffer_end)

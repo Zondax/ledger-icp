@@ -181,7 +181,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
 
             uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
-            for (uint8_t index = 0; index < fields->paths.arrayLen ; index++){
+            for (size_t index = 0; index < fields->paths.arrayLen ; index++){
                     cx_hash_sha256((uint8_t *)fields->paths.paths[index].data, fields->paths.paths[index].len, arrayBuffer + index * CX_SHA256_SIZE, CX_SHA256_SIZE);
             }
             cx_hash_sha256(arrayBuffer, fields->paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
