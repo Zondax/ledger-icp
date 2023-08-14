@@ -32,7 +32,6 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
-#include "secret.h"
 
 static bool tx_initialized = false;
 

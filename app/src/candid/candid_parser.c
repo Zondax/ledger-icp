@@ -371,7 +371,7 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
         CHECK_PARSER_ERR(readCandidNat(&ctx, &icrc->memo.len))
 
         icrc->memo.p = ctx.buffer + ctx.offset;
-        for (uint8_t i = 0; i < icrc->memo.len; i++) {
+        for (uint64_t i = 0; i < icrc->memo.len; i++) {
             CHECK_PARSER_ERR(readCandidByte(&ctx, &tmp))
         }
     }
@@ -401,7 +401,10 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     const size_t canisterIdSize = ctx.tx_obj->tx_fields.call.canister_id.len;
     char canister_textual[50] = {0};
     uint16_t outLen = sizeof(canister_textual);
-    if (canisterIdSize > 255) return parser_unexpected_value;
+    if (canisterIdSize > 255) {
+        return parser_unexpected_value;
+    }
+
     crypto_principalToTextual(canisterId,
                               (uint8_t) canisterIdSize,
                               canister_textual,

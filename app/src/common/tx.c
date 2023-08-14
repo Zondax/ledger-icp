@@ -70,7 +70,7 @@ uint8_t *tx_get_buffer() {
 }
 
 const char *tx_parse() {
-    uint8_t err = parser_parse(
+    parser_error_t err = parser_parse(
             &ctx_parsed_tx,
             tx_get_buffer(),
             tx_get_buffer_length());

@@ -86,9 +86,9 @@ const char *parser_getErrorDescription(parser_error_t err) {
         case parser_init_context_empty:
             return "Initialized empty context";
         case parser_display_idx_out_of_range:
-            return "display_idx_out_of_range";
+            return "Display index out of range";
         case parser_display_page_out_of_range:
-            return "display_page_out_of_range";
+            return "Display page out of range";
         case parser_unexpected_error:
             return "Unexepected internal error";
             // cbor
@@ -212,7 +212,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     size_t arrayLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&content_paths, &arrayLen));
 
-    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
+    if (arrayLen == 0 || arrayLen > PATH_MAX_ARRAY) {
         return parser_value_out_of_range;
     }
     stateRead->paths.arrayLen = arrayLen;
@@ -725,12 +725,10 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
 }
 
 uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
-    if (v->txtype != call || v->tx_fields.call.method_type != pb_manageneuron) {
-        assert("invalid context");
-    }
-
     manageNeuron_e mn_type;
-    CHECK_PARSER_ERR(getManageNeuronType(v, &mn_type))
+    if (getManageNeuronType(v, &mn_type) != parser_ok) {
+        return 0;
+    }
 
     switch (mn_type) {
         case Configure_StopDissolving :

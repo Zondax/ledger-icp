@@ -15,18 +15,18 @@
 ********************************************************************************/
 #pragma once
 
+#include <stdint.h>
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define CLA                             0x11
+#define CLA                             0x11u
 
-#include <stdint.h>
-#include <stddef.h>
+#define INS_SIGN_COMBINED               0x03u
 
-#define INS_SIGN_COMBINED               0x03
-
-#define HDPATH_LEN_DEFAULT   5
+#define HDPATH_LEN_DEFAULT   5u
 
 #define HDPATH_0_DEFAULT     (0x80000000u | 0x2cu)
 #define HDPATH_1_DEFAULT     (0x80000000u | 0xdfu)
@@ -39,13 +39,13 @@ extern "C" {
 
 #define HDPATH_RESTRICTED_MASK  0xFFFFFF00u
 
-#define SECP256K1_PK_LEN            65
-#define DFINITY_ADDR_LEN            32
-#define DFINITY_SUBACCOUNT_LEN      32
-#define DFINITY_PRINCIPAL_LEN       29
-#define DFINITY_TEXTUAL_SIZE        100
+#define SECP256K1_PK_LEN            65u
+#define DFINITY_ADDR_LEN            32u
+#define DFINITY_SUBACCOUNT_LEN      32u
+#define DFINITY_PRINCIPAL_LEN       29u
+#define DFINITY_TEXTUAL_SIZE        100u
 
-#define MAX_CHARS_PER_VALUE_LINE    (18)
+#define MAX_CHARS_PER_VALUE_LINE    18u
 
 typedef enum {
     addr_secp256k1 = 0,

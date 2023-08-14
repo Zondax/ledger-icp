@@ -160,7 +160,7 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    if (displayIdx < 0 || displayIdx >= numItems) {
+    if (displayIdx >= numItems) {
         return parser_no_data;
     }
 
@@ -180,7 +180,7 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
 
         displayIdx -= 2;
 
-        if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
+        if (displayIdx >= fields->paths.arrayLen) {
             return parser_no_data;
         }
 
