@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@zondax/ledger-icp": "link:../js",
-    "@zondax/zemu": "^0.44.0"
+    "@zondax/zemu": "^0.44.2"
   },
   "devDependencies": {
     "@types/jest": "^29.2.3",
