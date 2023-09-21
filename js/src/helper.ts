@@ -1,6 +1,6 @@
 import { errorCodeToString } from "@zondax/ledger-js";
 import { ADDRLEN, PKLEN, PRINCIPAL_LEN } from "./consts";
-import { ResponseAddress } from "./types";
+import { type ResponseAddress } from "./types";
 
 export function processGetAddrResponse(response: Buffer): ResponseAddress {
   const errorCodeData = response.subarray(-2);

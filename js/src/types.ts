@@ -1,4 +1,4 @@
-import { INSGeneric, ResponseBase } from "@zondax/ledger-js";
+import { type INSGeneric, type ResponseBase } from "@zondax/ledger-js";
 
 export interface ICPIns extends INSGeneric {
   GET_VERSION: 0x00;

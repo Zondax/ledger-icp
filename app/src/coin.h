@@ -15,16 +15,18 @@
 ********************************************************************************/
 #pragma once
 
+#include <stdint.h>
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define CLA                             0x11
+#define CLA                             0x11u
 
-#include <stdint.h>
-#include <stddef.h>
+#define INS_SIGN_COMBINED               0x03u
 
-#define HDPATH_LEN_DEFAULT   5
+#define HDPATH_LEN_DEFAULT   5u
 
 #define HDPATH_0_DEFAULT     (0x80000000u | 0x2cu)
 #define HDPATH_1_DEFAULT     (0x80000000u | 0xdfu)
@@ -43,7 +45,7 @@ extern "C" {
 #define DFINITY_PRINCIPAL_LEN       29u
 #define DFINITY_TEXTUAL_SIZE        100u
 
-#define MAX_CHARS_PER_VALUE_LINE    (18)
+#define MAX_CHARS_PER_VALUE_LINE    18u
 
 typedef enum {
     addr_secp256k1 = 0,
@@ -59,8 +61,15 @@ typedef enum {
 #define VIEW_ADDRESS_OFFSET_TEXT            (SECP256K1_PK_LEN + DFINITY_PRINCIPAL_LEN)
 #define COIN_SUPPORTED_TX_VERSION           0
 
+#if defined(TARGET_STAX)
+#define MENU_MAIN_APP_LINE1                 "Internet Computer"
+#define MENU_MAIN_APP_LINE2                 "ICP"
+#define CUSTOM_ADDRESS_TEXT                 "Verify Internet\nComputer address"
+#else
 #define MENU_MAIN_APP_LINE1                 "Internet"
 #define MENU_MAIN_APP_LINE2                 "Computer"
+#endif
+
 #define MENU_MAIN_APP_LINE2_SECRET          "???"
 #define APPVERSION_LINE1                    "Version"
 #define APPVERSION_LINE2                    "v" APPVERSION

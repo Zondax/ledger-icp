@@ -30,7 +30,7 @@
 #include "parser_print_helper.h"
 #include "parser_print_protobuf.h"
 
-#if defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 // For some reason NanoX requires this function
 void __assert_fail(__Z_UNUSED const char * assertion, __Z_UNUSED const char * file, __Z_UNUSED unsigned int line, __Z_UNUSED const char * function){
     while(1) {};
@@ -103,7 +103,7 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     MEMZERO(request_hash, sizeof(request_hash));
     PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(request_hash, call), parser_unexpected_error)
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     PARSER_ASSERT_OR_ERROR(memcmp(request_hash, request_id_stateread, 32) == 0, parser_context_invalid_chars)
     MEMCPY(G_io_apdu_buffer, request_hash, 32);
@@ -128,8 +128,8 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     uint8_t numItems = 0;
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
 
-    char tmpKey[100];
-    char tmpVal[100];
+    char tmpKey[70] = {0};
+    char tmpVal[180] = {0}; // up to 180 in stax
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
@@ -160,7 +160,7 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
     CHECK_APP_CANARY()
 
-    if (displayIdx < 0 || displayIdx >= numItems) {
+    if (displayIdx >= numItems) {
         return parser_no_data;
     }
 
@@ -175,25 +175,18 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_textual(fields->sender.data, (uint8_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;
 
-        if (displayIdx < 0 || displayIdx >= fields->paths.arrayLen) {
+        if (displayIdx >= fields->paths.arrayLen) {
             return parser_no_data;
         }
 
         snprintf(outKey, outKeyLen, "Request ID ");
-        char buffer[100];
-        zxerr_t err = print_hexstring(buffer, sizeof(buffer),
-                                      fields->paths.paths[1].data,
-                                      fields->paths.paths[1].len);
-        if (err != zxerr_ok) {
-            return parser_unexpected_error;
-        }
-
-        pageString(outVal, outValLen, (char *) buffer, pageIdx, pageCount);
+        return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len,
+                                              outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_ok;
@@ -221,6 +214,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 case candid_manageneuron:
                 case candid_listneurons:
                 case candid_updatenodeprovider:
+                case candid_transfer:
                 case candid_icrc_transfer: {
                     return parser_getItemCandid(ctx, displayIdx,
                                                 outKey, outKeyLen,

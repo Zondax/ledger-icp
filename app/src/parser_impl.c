@@ -86,9 +86,9 @@ const char *parser_getErrorDescription(parser_error_t err) {
         case parser_init_context_empty:
             return "Initialized empty context";
         case parser_display_idx_out_of_range:
-            return "display_idx_out_of_range";
+            return "Display index out of range";
         case parser_display_page_out_of_range:
-            return "display_page_out_of_range";
+            return "Display page out of range";
         case parser_unexpected_error:
             return "Unexepected internal error";
             // cbor
@@ -212,7 +212,7 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
     size_t arrayLen = 0;
     CHECK_CBOR_MAP_ERR(cbor_value_get_array_length(&content_paths, &arrayLen));
 
-    if (arrayLen <= 0 || arrayLen > PATH_MAX_ARRAY) {
+    if (arrayLen == 0 || arrayLen > PATH_MAX_ARRAY) {
         return parser_value_out_of_range;
     }
     stateRead->paths.arrayLen = arrayLen;
@@ -316,16 +316,22 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case hash_command_Merge:
                     *mn_type = Merge;
                     return parser_ok;
+                case hash_command_RegisterVote:
+                    *mn_type = RegisterVoteCandid;
+                    return parser_ok;
+                case hash_command_Follow:
+                    *mn_type = FollowCandid;
+                    return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
                         return parser_unexpected_value;
                     }
                     switch (command->configure.operation.hash) {
                         case hash_operation_SetDissolvedTimestamp:
-                            *mn_type = Configure_SetDissolvedTimestamp;
+                            *mn_type = isSNS ? SNS_Configure_SetDissolveDelay : Configure_SetDissolvedTimestamp;
                             break;
-                        case hash_operation_LeaveCommunityFund:
-                            *mn_type = Configure_LeaveCommunityFund;
+                        case hash_operation_LeaveNeuronsFund:
+                            *mn_type = Configure_LeaveNeuronsFundCandid;
                             break;
                         case hash_operation_ChangeAutoStakeMaturity:
                             *mn_type = Configure_ChangeAutoStakeMaturity;
@@ -339,6 +345,15 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_StopDissolving:
                             *mn_type = isSNS ? SNS_Configure_StopDissolving : Configure_StopDissolvingCandid;
                             break;
+                        case hash_operation_JoinNeuronsFund:
+                            *mn_type = Configure_JoinNeuronsFundCandid;
+                            break;
+                        case hash_operation_AddHotkey:
+                            *mn_type = Configure_AddHotkeyCandid;
+                            break;
+                        case hash_operation_RemoveHotkey:
+                            *mn_type = Configure_RemoveHotkeyCandid;
+                            break;
                         default:
                             return parser_unexpected_value;
                     }
@@ -351,7 +366,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     *mn_type = SNS_RemoveNeuronPermissions;
                     return parser_ok;
                 case sns_hash_command_Disburse:
-                    *mn_type = SNS_Disburse;
+                    *mn_type = isSNS ? SNS_Disburse : DisburseCandid;
                     return parser_ok;
 
                 default:
@@ -374,7 +389,7 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
 
     // Depending on the method, we may try to read protobuf or candid
 
-    if (strcmp(method, "send_pb") == 0 || v->special_transfer_type == neuron_stake_transaction) {
+    if (strcmp(method, "send_pb") == 0) {
         v->tx_fields.call.method_type = pb_sendrequest;
         return _parser_pb_SendRequest(v, buffer, bufferLen);
     }
@@ -422,6 +437,12 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return parser_ok;
     }
 
+    if (strcmp(method, "transfer") == 0) {
+        v->tx_fields.call.method_type = candid_transfer;
+        CHECK_PARSER_ERR(readCandidTransfer(v, buffer, bufferLen))
+        return parser_ok;
+    }
+
     return parser_unexpected_type;
 }
 
@@ -440,6 +461,10 @@ static bool isCandidTransaction(parser_tx_t *v) {
     }
 
     if (strcmp(method, "icrc1_transfer") == 0) {
+        return true;
+    }
+
+    if (strcmp(method, "transfer") == 0) {
         return true;
     }
 
@@ -576,6 +601,7 @@ parser_error_t readEnvelope(const parser_context_t *c, parser_tx_t *v) {
 
 parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textual) {
     switch (v->tx_fields.call.method_type) {
+        case candid_transfer:
         case pb_sendrequest : {
             CHECK_METHOD_WITH_CANISTER("ryjl3tyaaaaaaaaaaabacai")
         }
@@ -656,16 +682,15 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2)
-    const bool icrc_transfer = v->tx_fields.call.method_type == candid_icrc_transfer;
-    if (!icrc_transfer) {
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
+    if (v->txtype != call || v->tx_fields.call.method_type != candid_icrc_transfer) {
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
         MEMZERO(publicKey, sizeof(publicKey));
         MEMZERO(principalBytes, sizeof(principalBytes));
 
-        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(hdPath, publicKey, sizeof(publicKey)) == zxerr_ok,
+        PARSER_ASSERT_OR_ERROR(crypto_extractPublicKey(publicKey, sizeof(publicKey)) == zxerr_ok,
                             parser_unexpected_error)
 
         PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
@@ -676,17 +701,22 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 #endif
 
-    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
-    if (is_stake_tx) {
-        uint8_t to_hash[32];
-        PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-                                                                          v->tx_fields.call.data.SendRequest.memo.memo,
-                                                                          to_hash, sizeof(to_hash)),
-                               parser_unexpected_error);
+    if (v->txtype == call && parser_tx_obj.special_transfer_type == neuron_stake_transaction) {
+        const bool is_candid = v->tx_fields.call.method_type == candid_transfer;
+        uint8_t to_hash[32] = {0};
+        uint64_t memo = is_candid ? v->tx_fields.call.data.candid_transfer.memo
+                                  : v->tx_fields.call.data.SendRequest.memo.memo;
 
-        const uint8_t *to = v->tx_fields.call.data.SendRequest.to.hash;
 
-        if (memcmp(to_hash, to, 32) != 0) {
+        PARSER_ASSERT_OR_ERROR(
+            zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                       memo, to_hash, sizeof(to_hash)),
+            parser_unexpected_error);
+
+        const uint8_t *to = is_candid ? v->tx_fields.call.data.candid_transfer.to
+                                      : v->tx_fields.call.data.SendRequest.to.hash;
+
+        if (memcmp(to_hash, to, DFINITY_ADDR_LEN) != 0) {
             zemu_log_stack("wrong data");
             return parser_invalid_address;
         }
@@ -695,17 +725,17 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
 }
 
 uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
-    if (v->txtype != call || v->tx_fields.call.method_type != pb_manageneuron) {
-        assert("invalid context");
-    }
-
     manageNeuron_e mn_type;
-    CHECK_PARSER_ERR(getManageNeuronType(v, &mn_type))
+    if (getManageNeuronType(v, &mn_type) != parser_ok) {
+        return 0;
+    }
 
     switch (mn_type) {
         case Configure_StopDissolving :
-        case Configure_JoinCommunityFund :
-        case Configure_LeaveCommunityFund :
+        case Configure_JoinNeuronsFund :
+        case Configure_LeaveNeuronsFund :
+        case Configure_JoinNeuronsFundCandid:
+        case Configure_LeaveNeuronsFundCandid:
         case Configure_StartDissolving : {
             return 2;
         }
@@ -714,6 +744,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Merge:
         case Configure_RemoveHotKey :
         case Configure_AddHotKey :
+        case Configure_RemoveHotkeyCandid:
+        case Configure_AddHotkeyCandid:
         case MergeMaturity :
         case Configure_IncreaseDissolveDelay:
         case Configure_IncreaseDissolveDelayCandid:
@@ -721,7 +753,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_SetDissolvedTimestamp: {
             return 3;
         }
+        case SNS_Configure_SetDissolveDelay:
         case RegisterVote :
+        case RegisterVoteCandid:
+        case DisburseCandid:
         case Disburse : {
             return 4;
         }
@@ -742,6 +777,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Follow : {
             pb_size_t follow_count = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.command.follow.followees_count;
             return follow_count > 0 ? 3 + follow_count : 4;
+        }
+        case FollowCandid: {
+            uint8_t followees_count = v->tx_fields.call.data.candid_manageNeuron.command.follow.followees_size;
+            return followees_count > 0 ? 3 + followees_count : 4;
         }
 
         case SNS_Configure_StartDissolving:
@@ -772,6 +811,7 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
     switch (v->txtype) {
         case call: {
             switch (v->tx_fields.call.method_type) {
+                case candid_transfer:
                 case pb_sendrequest: {
                     const bool is_stake_tx = v->special_transfer_type == neuron_stake_transaction;
 
