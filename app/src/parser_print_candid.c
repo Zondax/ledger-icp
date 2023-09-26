@@ -1011,8 +1011,13 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
 
     if (displayIdx == 6) {
         snprintf(outKey, outKeyLen, "Memo");
-        if (call->data.icrcTransfer.has_memo) {
-            uint64_t memo = uint64_from_BEarray(call->data.icrcTransfer.memo.p);
+        if (call->data.icrcTransfer.has_memo && call->data.icrcTransfer.memo.len != 0) {
+            uint64_t memo = 0;
+            // we already checked that len is, at max, 8
+            for (uint8_t i = 0; i < (uint8_t)call->data.icrcTransfer.memo.len; i++) {
+                memo <<= 8u;
+                memo += call->data.icrcTransfer.memo.p[i];
+            }
             return print_u64(memo, outVal, outValLen, pageIdx, pageCount);
         }
         snprintf(outVal, outValLen, "0");

@@ -369,6 +369,10 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     if (icrc->has_memo) {
         uint8_t tmp = 0;
         CHECK_PARSER_ERR(readCandidNat(&ctx, &icrc->memo.len))
+        // should not be bigger than uint64
+        if (icrc->memo.len > 8) {
+            return parser_unexpected_value;
+        }
 
         icrc->memo.p = ctx.buffer + ctx.offset;
         for (uint64_t i = 0; i < icrc->memo.len; i++) {
