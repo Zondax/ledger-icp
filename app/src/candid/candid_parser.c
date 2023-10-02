@@ -345,12 +345,11 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     // Read to (Account)
     CHECK_PARSER_ERR(readCandidByte(&ctx, &icrc->account.has_owner))
     if (icrc->account.has_owner) {
-        uint8_t ownerSize = 0;
-        CHECK_PARSER_ERR(readCandidByte(&ctx, &ownerSize))
-        if (ownerSize != DFINITY_PRINCIPAL_LEN) {
+        CHECK_PARSER_ERR(readCandidByte(&ctx, &icrc->account.owner.len))
+        if (icrc->account.owner.len > DFINITY_PRINCIPAL_LEN) {
             return parser_unexpected_value;
         }
-        CHECK_PARSER_ERR(readCandidBytes(&ctx, icrc->account.owner, ownerSize))
+        CHECK_PARSER_ERR(readCandidBytes(&ctx, icrc->account.owner.ptr, icrc->account.owner.len))
     }
 
     CHECK_PARSER_ERR(readCandidByte(&ctx, &icrc->account.has_subaccount))

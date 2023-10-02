@@ -1013,5 +1013,35 @@
       ],
       "created_at_time": ["1675249266635000064"]
     }
+  },
+  {
+    "index": 14,
+    "name": "ICRC1 Transfer - Short principal",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758714449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011c735f8ada317380cd998707a17e99a0b3d0a396e6540a2bc599f537020001904e000001000011a4c4149c1680c2d72f6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b1786dd34da2d25006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581df1305df1b074e88adb99dc2f56f12d63208165f24dea7e60ae6cf6cf02",
+    "output": [
+      "0 | Transaction type : Send ICP",
+      "1 | From account [1/2] : q2fbu-chrgb-o7dmd u5cfn-xgo4f-5lpcl",
+      "1 | From account [2/2] : ldeca-wl4sn-5j7gb ltm63-hqe",
+      "2 | To account [1/2] : ttwhn-ittl6-fnuml tqdgz-tbyhu-f7jti",
+      "2 | To account [2/2] : ft2cr-znzsu-biv4l gpvg4-ba",
+      "3 | Amount (ICP) : 1.00",
+      "4 | Maximum fee (ICP) : 0.0001",
+      "5 | Memo : 0"
+    ],
+    "valid": true,
+    "isICP": true,
+    "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
+    "caller": "q2fbu-chrgb-o7dmd-u5cfn-xgo4f-5lpcl-ldeca-wl4sn-5j7gb-ltm63-hqe",
+    "candid_request": {
+      "to": {
+        "owner": "ttwhn-ittl6-fnuml-tqdgz-tbyhu-f7jti-ft2cr-znzsu-biv4l-gpvg4-ba",
+        "subaccount": []
+      },
+      "amount": "100000000",
+      "fee": ["10000"],
+      "memo": [],
+      "from_subaccount": [],
+      "created_at_time": ["1629200000000000000"]
+    }
   }
 ]

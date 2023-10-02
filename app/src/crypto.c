@@ -462,8 +462,7 @@ uint64_t change_endianness(uint64_t value) {
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
                                        const uint64_t neuron_creation_memo,
                                        uint8_t *address, uint16_t maxoutLen) {
-    if (principalLen != DFINITY_PRINCIPAL_LEN ||
-        maxoutLen < DFINITY_ADDR_LEN) {
+    if (principalLen > DFINITY_PRINCIPAL_LEN || maxoutLen < DFINITY_ADDR_LEN) {
         return zxerr_invalid_crypto_settings;
     }
     stake_account account;
@@ -472,7 +471,7 @@ zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t princi
     stake_account_pre_hash *pre_hash = &account.hash_fields.pre_hash;
     pre_hash->prefix_byte = 0x0C;
     MEMCPY(pre_hash->prefix_string, (uint8_t *) "neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
-    MEMCPY(pre_hash->principal, principal, DFINITY_PRINCIPAL_LEN);
+    MEMCPY(pre_hash->principal, principal, principalLen);
     pre_hash->memo_be = change_endianness(neuron_creation_memo);
 
     stake_account_hash *final_hash = &account.hash_fields.stake_hash;
@@ -525,7 +524,7 @@ zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal) {
 zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principalLen,
                                      const uint8_t *subAccount, uint16_t subaccountLen,
                                      uint8_t *address, uint16_t maxoutLen) {
-    if (principalLen != DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN ||
+    if (principalLen > DFINITY_PRINCIPAL_LEN || subaccountLen != DFINITY_SUBACCOUNT_LEN ||
         maxoutLen < DFINITY_ADDR_LEN) {
         return zxerr_invalid_crypto_settings;
     }
@@ -533,11 +532,11 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
     MEMZERO(hashinput, sizeof(hashinput));
     hashinput[0] = 0x0a;
     MEMCPY(&hashinput[1], (uint8_t *) "account-id", SUBACCOUNT_PREFIX_SIZE - 1);
-    MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, DFINITY_PRINCIPAL_LEN);
-    MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN, subAccount, DFINITY_SUBACCOUNT_LEN);
+    MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE, principal, principalLen);
+    MEMCPY(hashinput + SUBACCOUNT_PREFIX_SIZE + principalLen, subAccount, DFINITY_SUBACCOUNT_LEN);
 
     CHECK_ZXERR(
-            hash_sha224(hashinput, SUBACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN, address + 4,
+            hash_sha224(hashinput, SUBACCOUNT_PREFIX_SIZE + principalLen + DFINITY_SUBACCOUNT_LEN, address + 4,
                         (maxoutLen - 4)));
 
     uint32_t crc = 0;

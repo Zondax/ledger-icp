@@ -485,8 +485,9 @@ static parser_error_t parser_getItemConfigureAddRemoveHotkeyCandid(uint8_t displ
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Principal ");
-        return print_principal(fields->command.configure.operation.hotkey.principal,
-                               DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(fields->command.configure.operation.hotkey.principal.ptr,
+                               fields->command.configure.operation.hotkey.principal.len,
+                               outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -540,8 +541,8 @@ static parser_error_t parser_getItemSpawnCandid(uint8_t displayIdx,
 
         //Paged fields need space ending
         snprintf(outKey, outKeyLen, "Controller ");
-        return print_principal(fields->command.spawn.new_controller,
-                               DFINITY_PRINCIPAL_LEN,
+        return print_principal(fields->command.spawn.new_controller.ptr,
+                               fields->command.spawn.new_controller.len,
                                outVal, outValLen,
                                pageIdx, pageCount);
     }
@@ -837,7 +838,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
 
     if (displayIdx == 3 && fields->has_principal) {
         snprintf(outKey, outKeyLen, "Principal Id ");
-        return print_principal(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(fields->principal.ptr, fields->principal.len, outVal, outValLen, pageIdx, pageCount);
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
@@ -986,11 +987,11 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
 
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "To account ");
-        const uint8_t *owner = call->data.icrcTransfer.account.owner;
+        const candid_Principal_t *owner = &call->data.icrcTransfer.account.owner;
         const uint8_t *subaccount = call->data.icrcTransfer.account.subaccount.p;
         const uint16_t subaccountLen = (uint16_t) call->data.icrcTransfer.account.subaccount.len;
 
-        return page_principal_with_subaccount(owner, DFINITY_PRINCIPAL_LEN, subaccount, subaccountLen,
+        return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen,
                                               outVal, outValLen, pageIdx, pageCount);
     }
 
@@ -1065,10 +1066,13 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
         }
         // assume has_account
         const uint8_t *principal = fields->account.has_owner
-            ? fields->account.owner
+            ? fields->account.owner.ptr
             : parser_tx_obj.tx_fields.call.sender.data;
+        const uint8_t principalLen = fields->account.has_owner
+            ? fields->account.owner.len
+            : DFINITY_PRINCIPAL_LEN;
         if (fields->account.has_subaccount) {
-            return page_principal_with_subaccount(principal, DFINITY_PRINCIPAL_LEN,
+            return page_principal_with_subaccount(principal, principalLen,
                                                   fields->account.subaccount.p, (uint16_t) fields->account.subaccount.len,
                                                   outVal, outValLen, pageIdx, pageCount);
         } else {
