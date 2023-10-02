@@ -318,9 +318,9 @@ static parser_error_t parser_getItemStartStopDissolve(uint8_t displayIdx,
         CHECK_PARSER_ERR(getManageNeuronType(&parser_tx_obj, &mn_type))
 
         if (mn_type == Configure_StartDissolving) {
-            snprintf(outVal, outValLen, START_DISSOLVE_NEURON);
+            snprintf(outVal, outValLen, "Start Dissolving");
         } else {
-            snprintf(outVal, outValLen, STOP_DISSOLVE_NEURON);
+            snprintf(outVal, outValLen, "Stop Dissolving");
         }
         return parser_ok;
     }

@@ -567,7 +567,7 @@ static parser_error_t parser_getItemStakeMaturityCandid(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        pageString(outVal, outValLen, "Stake Maturity Neuron", pageIdx, pageCount);
+        pageString(outVal, outValLen, "Stake Maturity", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -730,9 +730,9 @@ static parser_error_t parser_getItemConfigureNoElementsCandid(uint8_t displayIdx
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (hash == hash_operation_StartDissolving) {
-            pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Start Dissolving", pageIdx, pageCount);
         } else if (hash == hash_operation_StopDissolving) {
-            pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Stop Dissolving", pageIdx, pageCount);
         } else if (hash == hash_operation_JoinNeuronsFund) {
             pageString(outVal, outValLen, "Join Neurons' Fund", pageIdx, pageCount);
         } else if (hash == hash_operation_LeaveNeuronsFund) {
@@ -772,9 +772,9 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (command->configure.operation.hash == hash_operation_StartDissolving) {
-            pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Start Dissolving", pageIdx, pageCount);
         } else if (command->configure.operation.hash == hash_operation_StopDissolving) {
-            pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Stop Dissolving", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -811,9 +811,9 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (command->hash == sns_hash_command_AddNeuronPermissions) {
-            pageString(outVal, outValLen, "Add Neuron Permissions", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Add Permissions", pageIdx, pageCount);
         } else if (command->hash == sns_hash_command_RemoveNeuronPermissions) {
-            pageString(outVal, outValLen, "Remove Neuron Permissions", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Remove Permissions", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -953,9 +953,11 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         if (icp_canisterId) {
-            snprintf(outKey, outKeyLen, "Send ICP");
+            snprintf(outKey, outKeyLen, "Transaction type");
+            snprintf(outVal, outValLen, "Send ICP");
         } else {
-            snprintf(outKey, outKeyLen, "Send Tokens");
+            snprintf(outKey, outKeyLen, "Transaction type");
+            snprintf(outVal, outValLen, "Send Tokens");
         }
         return parser_ok;
     }
@@ -1094,7 +1096,7 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        pageString(outVal, outValLen, "Stake Maturity Neuron", pageIdx, pageCount);
+        pageString(outVal, outValLen, "Stake Maturity", pageIdx, pageCount);
         return parser_ok;
     }
 
