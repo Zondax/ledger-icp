@@ -28,6 +28,7 @@ class JsonTests_SNS_NeuronActions : public JsonTests_Base {};
 class JsonTests_SNS_StakeMaturity : public JsonTests_Base {};
 class JsonTests_SNS_SetDissolveDelay : public JsonTests_Base {};
 class JsonTests_ICRC : public JsonTests_Base {};
+class JsonTests_Deprecated : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
         Phase1,
@@ -168,3 +169,19 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_ICRC, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_ICRC, Expert) { check_testcase(GetParam(), true); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P (
+        Deprecated,
+        JsonTests_Deprecated,
+        ::testing::ValuesIn(GetJsonTestCases("deprecated.json")),
+        JsonTests_Deprecated::PrintToStringParamName()
+);
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_Deprecated, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_Deprecated, Expert) { check_testcase(GetParam(), true); }

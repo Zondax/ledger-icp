@@ -525,54 +525,6 @@ static parser_error_t parser_getItemDisburse(uint8_t displayIdx,
     return parser_no_data;
 }
 
-static parser_error_t parser_getItemMergeMaturity(uint8_t displayIdx,
-                                                  char *outKey, uint16_t outKeyLen,
-                                                  char *outVal, uint16_t outValLen,
-                                                  uint8_t pageIdx, uint8_t *pageCount) {
-    *pageCount = 1;
-
-    const ic_nns_governance_pb_v1_ManageNeuron *fields = &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
-
-    if (displayIdx == 0) {
-        snprintf(outKey, outKeyLen, "Transaction type");
-        snprintf(outVal, outValLen, "Stake Maturity");
-        return parser_ok;
-    }
-
-    if (displayIdx == 1) {
-        snprintf(outKey, outKeyLen, "Neuron ID");
-        PARSER_ASSERT_OR_ERROR(!(fields->has_id && (fields->which_neuron_id_or_subaccount == 12 ||
-                                                    fields->which_neuron_id_or_subaccount == 11)),
-                               parser_unexpected_number_items)
-
-        if (fields->has_id) {
-            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
-        }
-
-        if (fields->which_neuron_id_or_subaccount == 12) {
-            return print_u64(fields->neuron_id_or_subaccount.neuron_id.id, outVal, outValLen, pageIdx, pageCount);
-        }
-
-        //Only accept neuron_id
-        return parser_unexpected_type;
-    }
-
-    if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Percentage");
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
-        uint64_t value = 0;
-        MEMCPY(&value, &fields->command.merge_maturity.percentage_to_merge, 4);
-
-        if (value > 100) {
-            return parser_unexpected_value;
-        }
-
-        return print_u64(value, outVal, outValLen, pageIdx, pageCount);
-    }
-    return parser_no_data;
-}
-
 static parser_error_t parser_getItemRegisterVote(uint8_t displayIdx,
                                                  char *outKey, uint16_t outKeyLen,
                                                  char *outVal, uint16_t outValLen,
@@ -813,9 +765,6 @@ static parser_error_t parser_getItemManageNeuron(uint8_t displayIdx,
 
         case Disburse :
             return parser_getItemDisburse(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-
-        case MergeMaturity :
-            return parser_getItemMergeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
         case RegisterVote :
             return parser_getItemRegisterVote(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);

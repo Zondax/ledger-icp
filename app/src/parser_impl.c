@@ -287,10 +287,8 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case Spawn:
                 case Follow:
                 case RegisterVote:
-                case MergeMaturity: {
                     *mn_type = command;
                     return parser_ok;
-                }
 
                 default: {
                     return parser_unexpected_type;
@@ -769,7 +767,6 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_AddHotKey :
         case Configure_RemoveHotkeyCandid:
         case Configure_AddHotkeyCandid:
-        case MergeMaturity :
         case Configure_IncreaseDissolveDelay:
         case Configure_IncreaseDissolveDelayCandid:
         case Configure_ChangeAutoStakeMaturity:
