@@ -951,11 +951,12 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     *pageCount = 1;
     call_t *call = &parser_tx_obj.tx_fields.call;
     const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
     if (displayIdx == 0) {
         if (icp_canisterId) {
             snprintf(outKey, outKeyLen, "Transaction type");
-            snprintf(outVal, outValLen, "Send ICP");
+            snprintf(outVal, outValLen, is_stake_tx ? "Stake Neuron" : "Send ICP" );
         } else {
             snprintf(outKey, outKeyLen, "Transaction type");
             snprintf(outVal, outValLen, "Send Tokens");
@@ -985,6 +986,9 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
                                               outVal, outValLen, pageIdx, pageCount);
     }
 
+    if (is_stake_tx) {
+        displayIdx++; // skip field To account
+    }
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "To account ");
         const candid_Principal_t *owner = &call->data.icrcTransfer.account.owner;

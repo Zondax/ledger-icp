@@ -459,6 +459,29 @@ uint64_t change_endianness(uint64_t value) {
     return result;
 }
 
+zxerr_t crypto_computeStakeSubaccount(const uint8_t *principal, uint16_t principalLen,
+                                      const uint8_t *memo, uint16_t memoLen,
+                                      uint8_t *subaccount, uint16_t subaccountLen) {
+    if (principalLen > DFINITY_PRINCIPAL_LEN || subaccountLen < DFINITY_SUBACCOUNT_LEN ||
+        memoLen > sizeof(uint64_t)) {
+        return zxerr_invalid_crypto_settings;
+    }
+
+    uint8_t preHash[1 + STAKEACCOUNT_PREFIX_SIZE + DFINITY_PRINCIPAL_LEN + sizeof(uint64_t)] = {0};
+    uint16_t preHashLen = 0;
+    preHash[0] = 0x0C;
+    preHashLen++;
+    memmove(preHash + preHashLen, "neuron-stake", STAKEACCOUNT_PREFIX_SIZE);
+    preHashLen += STAKEACCOUNT_PREFIX_SIZE;
+    memmove(preHash + preHashLen, principal, principalLen);
+    preHashLen += principalLen;
+    memmove(preHash + preHashLen, memo, memoLen);
+    preHashLen += memoLen;
+
+    cx_hash_sha256((uint8_t *) preHash, preHashLen, subaccount, 32);
+    return zxerr_ok;
+}
+
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
                                        const uint64_t neuron_creation_memo,
                                        uint8_t *address, uint16_t maxoutLen) {
