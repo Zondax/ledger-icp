@@ -15,6 +15,7 @@
 ********************************************************************************/
 
 #include <zxmacros.h>
+#include "crypto.h"
 #include "parser_impl.h"
 #include "parser_txdef.h"
 #include "cbor.h"
@@ -286,10 +287,8 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case Spawn:
                 case Follow:
                 case RegisterVote:
-                case MergeMaturity: {
                     *mn_type = command;
                     return parser_ok;
-                }
 
                 default: {
                     return parser_unexpected_type;
@@ -702,23 +701,45 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
 #endif
 
     if (v->txtype == call && parser_tx_obj.special_transfer_type == neuron_stake_transaction) {
-        const bool is_candid = v->tx_fields.call.method_type == candid_transfer;
         uint8_t to_hash[32] = {0};
-        uint64_t memo = is_candid ? v->tx_fields.call.data.candid_transfer.memo
-                                  : v->tx_fields.call.data.SendRequest.memo.memo;
-
-
-        PARSER_ASSERT_OR_ERROR(
-            zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
-                                                       memo, to_hash, sizeof(to_hash)),
-            parser_unexpected_error);
-
-        const uint8_t *to = is_candid ? v->tx_fields.call.data.candid_transfer.to
-                                      : v->tx_fields.call.data.SendRequest.to.hash;
-
-        if (memcmp(to_hash, to, DFINITY_ADDR_LEN) != 0) {
-            zemu_log_stack("wrong data");
-            return parser_invalid_address;
+        if (v->tx_fields.call.method_type == candid_icrc_transfer) {
+            const icrc_transfer_t *fields = &v->tx_fields.call.data.icrcTransfer;
+            if (fields->icp_canister == 0 || fields->account.has_owner == 0 ||
+                fields->account.has_subaccount == 0 ||
+                fields->account.subaccount.len != DFINITY_SUBACCOUNT_LEN ||
+                fields->has_memo == 0 || fields->memo.len == 0) {
+                return parser_invalid_address;
+            }
+            // stands for rrkah-fqaaa-aaaaa-aaaaq-cai principal
+            uint8_t governanceCanister[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01};
+            if (fields->account.owner.len != sizeof(governanceCanister) ||
+                memcmp(governanceCanister, fields->account.owner.ptr, 10) != 0) {
+                zemu_log_stack("wrong principal");
+                return parser_invalid_address;
+            }
+            PARSER_ASSERT_OR_ERROR(
+                zxerr_ok == crypto_computeStakeSubaccount(sender, v->tx_fields.call.sender.len,
+                                                          fields->memo.p, fields->memo.len,
+                                                          to_hash, sizeof(to_hash)),
+                parser_unexpected_error);
+            if (memcmp(to_hash, fields->account.subaccount.p, DFINITY_SUBACCOUNT_LEN) != 0) {
+                zemu_log_stack("wrong data");
+                return parser_invalid_address;
+            }
+        } else {
+            const bool is_candid = v->tx_fields.call.method_type == candid_transfer;
+            uint64_t memo = is_candid ? v->tx_fields.call.data.candid_transfer.memo
+                                      : v->tx_fields.call.data.SendRequest.memo.memo;
+            const uint8_t *to = is_candid ? v->tx_fields.call.data.candid_transfer.to
+                                          : v->tx_fields.call.data.SendRequest.to.hash;
+            PARSER_ASSERT_OR_ERROR(
+                zxerr_ok == crypto_principalToStakeAccount(sender, DFINITY_PRINCIPAL_LEN,
+                                                           memo, to_hash, sizeof(to_hash)),
+                parser_unexpected_error);
+            if (memcmp(to_hash, to, DFINITY_ADDR_LEN) != 0) {
+                zemu_log_stack("wrong data");
+                return parser_invalid_address;
+            }
         }
     }
     return parser_ok;
@@ -746,7 +767,6 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_AddHotKey :
         case Configure_RemoveHotkeyCandid:
         case Configure_AddHotkeyCandid:
-        case MergeMaturity :
         case Configure_IncreaseDissolveDelay:
         case Configure_IncreaseDissolveDelayCandid:
         case Configure_ChangeAutoStakeMaturity:
@@ -841,10 +861,12 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                 case candid_icrc_transfer: {
                     const call_t *call = &v->tx_fields.call;
                     const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
+                    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
                     // Canister ID will be display only when different to ICP
                     // Fee will be display if available or default if Canister ID is ICP
-                    return 5 + (icp_canisterId ? 0 : 1) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0);
+                    // To account is only shown if tx is not stake
+                    return 4 + (icp_canisterId ? 0 : 1) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0) + (is_stake_tx ? 0 : 1);
                 }
 
                 default:

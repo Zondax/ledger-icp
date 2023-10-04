@@ -134,11 +134,11 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
                                               char *outVal, uint16_t outValLen,
                                               uint8_t pageIdx, uint8_t *pageCount) {
 
-    if (sender == NULL || senderLen != DFINITY_PRINCIPAL_LEN || (fromSubaccount != NULL && fromSubaccountLen != DFINITY_SUBACCOUNT_LEN)) {
+    if (sender == NULL || senderLen > DFINITY_PRINCIPAL_LEN || (fromSubaccount != NULL && fromSubaccountLen != DFINITY_SUBACCOUNT_LEN)) {
         return parser_unexpected_error;
     }
 
-    uint8_t initialSubaccZerosLen = 0;
+    uint8_t initialSubaccZerosLen = DFINITY_SUBACCOUNT_LEN;
     if (fromSubaccount != NULL) {
         // we checked that length is exactly DFINITY_SUBACCOUNT_LEN right above
         for (uint8_t i = 0; i < DFINITY_SUBACCOUNT_LEN; i++) {
@@ -164,10 +164,10 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     uint16_t principalLen = sizeof(text);
     zxerr_t err = zxerr_unknown;
     err = crypto_principalToTextual(sender, senderLen, text_ptr, &principalLen);
-    if (err != zxerr_ok || principalLen != 53) {
+    if (err != zxerr_ok || principalLen > 53) {
         return parser_unexpected_error;
     }
-    const uint8_t principalTextLen = 63;
+    const uint8_t principalTextLen = (uint8_t)(principalLen + principalLen / 6);
     for (uint8_t i = 5; i < principalTextLen; i += 6) {
         // two blocks separated with dash, 3rd with SEPARATOR
         if ((i + 1) % 18 == 0) err = inplace_insert_char(text_ptr, sizeof(text), i, SEPARATOR); // line break
@@ -176,9 +176,9 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
             return parser_unexpected_error;
         }
     }
-    // we are sure it's going to be 63
+    // we are sure it's going to be up to 63
     principalLen = (uint16_t)strnlen(text, sizeof(text));
-    snprintf(text_ptr + principalLen, 2, "%c", '-'); // dash for crc checksum
+    *(text_ptr + principalLen) = '-';
     text_ptr += principalLen + 1;
 
     // calculate crc32 checksum
@@ -189,12 +189,11 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     // crc is computed with full subaccount with all zeros at the beginning
     MEMCPY(tmpArray + senderLen, fromSubaccount, fromSubaccountLen);
     uint32_t crc = 0;
-    crc32_small(tmpArray, DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN, &crc);
+    crc32_small(tmpArray, senderLen + fromSubaccountLen, &crc);
     crc_array[0] = (uint8_t) ((crc & 0xFF000000) >> 24);
     crc_array[1] = (uint8_t) ((crc & 0x00FF0000) >> 16);
     crc_array[2] = (uint8_t) ((crc & 0x0000FF00) >> 8);
     crc_array[3] = (uint8_t) ((crc & 0x000000FF) >> 0);
-    // for some reason this function returns -1 if there's an error
     uint8_t crcLen = (uint8_t) base32_encode(crc_array, 4, crc_text, sizeof(crc_text));
     if (crcLen == 0) {
         return parser_unexpected_error;
@@ -202,15 +201,15 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
 
     // print checksum
     MEMCPY(text_ptr, crc_text, crcLen);
-    snprintf(text_ptr + crcLen, 2, "%c", SEPARATOR);
+    *(text_ptr + crcLen) = SEPARATOR;
     text_ptr += crcLen + 1;
 #if !defined(TARGET_STAX) // needed if crc32 length is < 7
     for (uint8_t i = crcLen; i < 7; i++) {
-        snprintf(text_ptr, 2, " ");
-        text_ptr += crcLen + 1;
+        *text_ptr = ' ';
+        text_ptr++;
     }
 #endif
-    crcLen = 8;
+    crcLen = 8; // also counting separator
 
     // print subaccount
     array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen,
@@ -228,7 +227,7 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     }
 
     uint8_t finalStrLen = (uint8_t)strnlen(text, sizeof(text));
-    // [principal (64 chars) | crc32 (8 chars) | subaccount (<=71 chars)]
+    // [principal (<=64 chars) | crc32 (8 chars) | subaccount (<=71 chars)]
     if (finalStrLen > 143) {
         return parser_unexpected_error;
     }

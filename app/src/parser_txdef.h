@@ -82,7 +82,6 @@ typedef enum {
     Spawn = 4,
     Follow = 5,
     RegisterVote = 7,
-    MergeMaturity = 13,
 //    Register_Vote = 10,
     Split = 11,
 //    DisburseToNeuron = 12,

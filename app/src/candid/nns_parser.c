@@ -144,11 +144,10 @@ __Z_INLINE parser_error_t readCommandSpawn(parser_context_t *ctx, candid_transac
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.spawn.has_controller))
     if (val->command.spawn.has_controller) {
         uint8_t has_principal = 0;
-        uint8_t principalSize = 0;
         CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
-        if(has_principal) {
-            CHECK_PARSER_ERR(readCandidByte(ctx, &principalSize))
-            CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.spawn.new_controller, principalSize))
+        if (has_principal) {
+            CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.spawn.new_controller.len))
+            CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.spawn.new_controller.ptr, val->command.spawn.new_controller.len))
         }
     }
 
@@ -425,16 +424,15 @@ __Z_INLINE parser_error_t readOperationAddRemoveHotkey(parser_context_t *ctx, ca
         return parser_unexpected_value;
     }
     uint8_t has_principal = 0;
-    uint8_t principalSize = 0;
     CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
     if (!has_principal) {
         return parser_unexpected_value;
     }
-    CHECK_PARSER_ERR(readCandidByte(ctx, &principalSize))
-    if (principalSize != DFINITY_PRINCIPAL_LEN) {
+    CHECK_PARSER_ERR(readCandidByte(ctx, &operation->hotkey.principal.len))
+    if (operation->hotkey.principal.len > DFINITY_PRINCIPAL_LEN) {
         return parser_unexpected_value;
     }
-    CHECK_PARSER_ERR(readCandidBytes(ctx, operation->hotkey.principal, principalSize))
+    CHECK_PARSER_ERR(readCandidBytes(ctx, operation->hotkey.principal.ptr, operation->hotkey.principal.len))
 
     return parser_ok;
 }
