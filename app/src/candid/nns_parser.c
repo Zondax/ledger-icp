@@ -147,6 +147,9 @@ __Z_INLINE parser_error_t readCommandSpawn(parser_context_t *ctx, candid_transac
         CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
         if (has_principal) {
             CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.spawn.new_controller.len))
+            if (val->command.spawn.new_controller.len > DFINITY_PRINCIPAL_LEN) {
+                return parser_unexpected_value;
+            }
             CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.spawn.new_controller.ptr, val->command.spawn.new_controller.len))
         }
     }

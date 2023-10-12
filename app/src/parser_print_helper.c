@@ -164,10 +164,12 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     uint16_t principalLen = sizeof(text);
     zxerr_t err = zxerr_unknown;
     err = crypto_principalToTextual(sender, senderLen, text_ptr, &principalLen);
+    // maximum length without separators is 53
     if (err != zxerr_ok || principalLen > 53) {
         return parser_unexpected_error;
     }
-    const uint8_t principalTextLen = (uint8_t)(principalLen + principalLen / 6);
+    // every 5 chars there's a separator, and last block has no separator after it
+    const uint8_t principalTextLen = (uint8_t)(principalLen + principalLen / 5 - (principalLen % 5 ? 0 : 1));
     for (uint8_t i = 5; i < principalTextLen; i += 6) {
         // two blocks separated with dash, 3rd with SEPARATOR
         if ((i + 1) % 18 == 0) err = inplace_insert_char(text_ptr, sizeof(text), i, SEPARATOR); // line break
@@ -176,8 +178,11 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
             return parser_unexpected_error;
         }
     }
-    // we are sure it's going to be up to 63
+    // we are sure it's going to be up to 63 (53 + 10)
     principalLen = (uint16_t)strnlen(text, sizeof(text));
+    if (principalLen > 63) {
+        return parser_unexpected_value;
+    }
     *(text_ptr + principalLen) = '-';
     text_ptr += principalLen + 1;
 
