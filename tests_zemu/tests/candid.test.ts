@@ -24,13 +24,22 @@ import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
 jest.setTimeout(180000)
 
-const sendStakeBlob =
-  'd9d9f7a167636f6e74656e74a663617267589b4449444c066d7b6c01e0a9b302786e006c01d6f68e8001786e036c06fbca0100c6fcb60201ba89e5c20478a2de94eb060282f3f3910c04d8a38ca80d01010520cec37e3d182336a8903665cce69b0f2b8eacb312f3f02e5366948434f4deead910270000000000007a087082f17eccca01201d02dc69531d6e8375cf08e80e6ecdd73b93b0ff60cc297b8a3fea531c0200000000e87648170000006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b1762552482491cc06b6d6574686f645f6e616d65687472616e736665726c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302'
+const STAKE_TXS = [
+  {
+    name: 'candid_stake_neuron_expert',
+    blob: 'd9d9f7a167636f6e74656e74a663617267589b4449444c066d7b6c01e0a9b302786e006c01d6f68e8001786e036c06fbca0100c6fcb60201ba89e5c20478a2de94eb060282f3f3910c04d8a38ca80d01010520cec37e3d182336a8903665cce69b0f2b8eacb312f3f02e5366948434f4deead910270000000000007a087082f17eccca01201d02dc69531d6e8375cf08e80e6ecdd73b93b0ff60cc297b8a3fea531c0200000000e87648170000006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b1762552482491cc06b6d6574686f645f6e616d65687472616e736665726c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302',
+  },
+  {
+    name: 'candid_stake_icrc_expert',
+    blob: 'd9d9f7a167636f6e74656e74a663617267588a4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105010a00000000000000010101012002b17aa178a9012e8d62e94424dfa548fb7177cd52285c18b52b89ad2046e81801b0ea010108b6aeae0ab22e18ff0001003398164aae3f17c082d43e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b178a8ba59babb8006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802',
+  },
+]
+
 const path = "m/44'/223'/0'/0/0"
 const CANDID_TRANSACTIONS = [
   {
     name: 'candid_send_icp',
-    blob: sendStakeBlob,
+    blob: 'd9d9f7a167636f6e74656e74a663617267589b4449444c066d7b6c01e0a9b302786e006c01d6f68e8001786e036c06fbca0100c6fcb60201ba89e5c20478a2de94eb060282f3f3910c04d8a38ca80d01010520cec37e3d182336a8903665cce69b0f2b8eacb312f3f02e5366948434f4deead910270000000000007a087082f17eccca01201d02dc69531d6e8375cf08e80e6ecdd73b93b0ff60cc297b8a3fea531c0200000000e87648170000006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b1762552482491cc06b6d6574686f645f6e616d65687472616e736665726c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302',
   },
   {
     name: 'candid_split_neuron',
@@ -149,47 +158,49 @@ describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
   })
 })
 
-test.concurrent.each(DEVICE_MODELS)('candid_stake_neuron_expert', async function (m) {
-  const sim = new Zemu(m.path)
-  try {
-    await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
-    const app = new InternetComputerApp(sim.getTransport())
+describe.each(STAKE_TXS)('CANDID_STAKE', function (data) {
+  test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      const app = new InternetComputerApp(sim.getTransport())
 
-    await sim.toggleExpertMode()
+      await sim.toggleExpertMode()
 
-    const respAddr = await app.getAddressAndPubKey(path)
+      const respAddr = await app.getAddressAndPubKey(path)
 
-    const txBlob = Buffer.from(sendStakeBlob, 'hex')
+      const txBlob = Buffer.from(data.blob, 'hex')
 
-    const respRequest = app.sign(path, txBlob, SIGN_VALUES_P2.STAKE_TX)
+      const respRequest = app.sign(path, txBlob, SIGN_VALUES_P2.STAKE_TX)
 
-    // Wait until we are not in the main menu
-    await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-    await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-candid_stake_neuron_expert`)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-${data.name}`)
 
-    const signatureResponse = await respRequest
-    console.log(signatureResponse)
+      const signatureResponse = await respRequest
+      console.log(signatureResponse)
 
-    expect(signatureResponse.returnCode).toEqual(0x9000)
-    expect(signatureResponse.errorMessage).toEqual('No errors')
+      expect(signatureResponse.returnCode).toEqual(0x9000)
+      expect(signatureResponse.errorMessage).toEqual('No errors')
 
-    // Verify signature
-    const hash = sha256.hex(signatureResponse.preSignHash ?? [])
+      // Verify signature
+      const hash = sha256.hex(signatureResponse.preSignHash ?? [])
 
-    const hexPubkey = respAddr.publicKey ?? Buffer.alloc(0)
-    const pk = Uint8Array.from(hexPubkey)
-    expect(pk.byteLength).toEqual(65)
+      const hexPubkey = respAddr.publicKey ?? Buffer.alloc(0)
+      const pk = Uint8Array.from(hexPubkey)
+      expect(pk.byteLength).toEqual(65)
 
-    const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
-    const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
-    expect(signature.byteLength).toEqual(64)
+      const digest = Uint8Array.from(Buffer.from(hash, 'hex'))
+      const signature = Uint8Array.from(signatureResponse.signatureRS ?? [])
+      expect(signature.byteLength).toEqual(64)
 
-    const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
-    expect(signatureOk).toEqual(true)
-  } finally {
-    await sim.close()
-  }
+      const signatureOk = secp256k1.ecdsaVerify(signature, digest, pk)
+      expect(signatureOk).toEqual(true)
+    } finally {
+      await sim.close()
+    }
+  })
 })
 
 test.concurrent.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
