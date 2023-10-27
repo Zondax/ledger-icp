@@ -221,8 +221,13 @@ typedef struct {
 } candid_IncreaseDissolveDelay_t;
 
 typedef struct {
+    uint8_t len;
+    uint8_t ptr[30];
+} candid_Principal_t;
+
+typedef struct {
     uint8_t has_principal;
-    uint8_t principal[30];
+    candid_Principal_t principal;
 } candid_AddRemoveHotkey_t;
 
 typedef struct {
@@ -241,7 +246,7 @@ typedef struct {
     uint32_t percentage_to_spawn;
 
     uint8_t has_controller;
-    uint8_t new_controller[30];
+    candid_Principal_t new_controller;
 
     uint8_t has_nonce;
     uint64_t nonce;
@@ -298,12 +303,12 @@ typedef struct {
     sns_NeuronPermissionList_t permissionList;
 
     uint8_t has_principal;
-    uint8_t principal[30];
+    candid_Principal_t principal;
 } sns_NeuronPermissions_t;
 
 typedef struct {
     uint8_t has_owner;
-    uint8_t owner[30];
+    candid_Principal_t owner;
 
     uint8_t has_subaccount;
     sizedBuffer_t subaccount;

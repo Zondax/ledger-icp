@@ -63,6 +63,10 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
 
 zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype);
 
+zxerr_t crypto_computeStakeSubaccount(const uint8_t *principal, uint16_t principalLen,
+                                      const uint8_t *memo, uint16_t memoLen,
+                                      uint8_t *subaccount, uint16_t subaccountLen);
+
 zxerr_t crypto_principalToStakeAccount(const uint8_t *principal, uint16_t principalLen,
                                        const uint64_t neuron_creation_memo,
                                        uint8_t *address, uint16_t maxoutLen);

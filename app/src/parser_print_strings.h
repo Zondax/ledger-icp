@@ -21,15 +21,9 @@ extern "C" {
 
 #if defined(TARGET_STAX)
     #define INCREASE_DISSOLVE_DELAY "Increase Dissolve\nDelay"
-    #define START_DISSOLVE_NEURON "Start Dissolve Neuron"
-    #define STOP_DISSOLVE_NEURON "Stop Dissolve Neuron"
 #else
     #define INCREASE_DISSOLVE_DELAY "Increase Dissolve  Delay"
-    #define START_DISSOLVE_NEURON "Start Dissolve     Neuron"
-    #define STOP_DISSOLVE_NEURON "Stop Dissolve      Neuron"
 #endif
-
-
 
 #ifdef __cplusplus
 }

@@ -91,14 +91,13 @@ __Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx,
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_principal))
     if (val->has_principal) {
         uint8_t has_principal = 0;
-        uint8_t principalSize = 0;
         CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
-        if(has_principal) {
-            CHECK_PARSER_ERR(readCandidByte(ctx, &principalSize))
-            if (principalSize != DFINITY_PRINCIPAL_LEN) {
+        if (has_principal) {
+            CHECK_PARSER_ERR(readCandidByte(ctx, &val->principal.len))
+            if (val->principal.len > DFINITY_PRINCIPAL_LEN) {
                 return parser_unexpected_value;
             }
-            CHECK_PARSER_ERR(readCandidBytes(ctx, val->principal, principalSize))
+            CHECK_PARSER_ERR(readCandidBytes(ctx, val->principal.ptr, val->principal.len))
         }
     }
 
@@ -290,14 +289,13 @@ __Z_INLINE parser_error_t readSNSCommandNeuronDisburse(parser_context_t *ctx, ca
         CHECK_PARSER_ERR(readCandidByte(ctx, &val->account.has_owner))
         if (val->account.has_owner) {
             uint8_t has_principal = 0;
-            uint8_t principalSize = 0;
             CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
             if (has_principal) {
-                CHECK_PARSER_ERR(readCandidByte(ctx, &principalSize))
-                if (principalSize != DFINITY_PRINCIPAL_LEN) {
+                CHECK_PARSER_ERR(readCandidByte(ctx, &val->account.owner.len))
+                if (val->account.owner.len > DFINITY_PRINCIPAL_LEN) {
                     return parser_unexpected_value;
                 }
-                CHECK_PARSER_ERR(readCandidBytes(ctx, val->account.owner, principalSize))
+                CHECK_PARSER_ERR(readCandidBytes(ctx, val->account.owner.ptr, val->account.owner.len))
             }
         }
 

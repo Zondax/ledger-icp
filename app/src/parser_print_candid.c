@@ -485,8 +485,9 @@ static parser_error_t parser_getItemConfigureAddRemoveHotkeyCandid(uint8_t displ
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Principal ");
-        return print_principal(fields->command.configure.operation.hotkey.principal,
-                               DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(fields->command.configure.operation.hotkey.principal.ptr,
+                               fields->command.configure.operation.hotkey.principal.len,
+                               outVal, outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -540,8 +541,8 @@ static parser_error_t parser_getItemSpawnCandid(uint8_t displayIdx,
 
         //Paged fields need space ending
         snprintf(outKey, outKeyLen, "Controller ");
-        return print_principal(fields->command.spawn.new_controller,
-                               DFINITY_PRINCIPAL_LEN,
+        return print_principal(fields->command.spawn.new_controller.ptr,
+                               fields->command.spawn.new_controller.len,
                                outVal, outValLen,
                                pageIdx, pageCount);
     }
@@ -567,7 +568,7 @@ static parser_error_t parser_getItemStakeMaturityCandid(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        pageString(outVal, outValLen, "Stake Maturity Neuron", pageIdx, pageCount);
+        pageString(outVal, outValLen, "Stake Maturity", pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -730,9 +731,9 @@ static parser_error_t parser_getItemConfigureNoElementsCandid(uint8_t displayIdx
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (hash == hash_operation_StartDissolving) {
-            pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Start Dissolving", pageIdx, pageCount);
         } else if (hash == hash_operation_StopDissolving) {
-            pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Stop Dissolving", pageIdx, pageCount);
         } else if (hash == hash_operation_JoinNeuronsFund) {
             pageString(outVal, outValLen, "Join Neurons' Fund", pageIdx, pageCount);
         } else if (hash == hash_operation_LeaveNeuronsFund) {
@@ -772,9 +773,9 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (command->configure.operation.hash == hash_operation_StartDissolving) {
-            pageString(outVal, outValLen, "Start Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Start Dissolving", pageIdx, pageCount);
         } else if (command->configure.operation.hash == hash_operation_StopDissolving) {
-            pageString(outVal, outValLen, "Stop Dissolve Neuron", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Stop Dissolving", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -811,9 +812,9 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
         snprintf(outKey, outKeyLen, "Transaction type");
 
         if (command->hash == sns_hash_command_AddNeuronPermissions) {
-            pageString(outVal, outValLen, "Add Neuron Permissions", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Add Permissions", pageIdx, pageCount);
         } else if (command->hash == sns_hash_command_RemoveNeuronPermissions) {
-            pageString(outVal, outValLen, "Remove Neuron Permissions", pageIdx, pageCount);
+            pageString(outVal, outValLen, "Remove Permissions", pageIdx, pageCount);
         } else {
             return parser_unexpected_value;
         }
@@ -837,7 +838,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx,
 
     if (displayIdx == 3 && fields->has_principal) {
         snprintf(outKey, outKeyLen, "Principal Id ");
-        return print_principal(fields->principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+        return print_principal(fields->principal.ptr, fields->principal.len, outVal, outValLen, pageIdx, pageCount);
     }
 
     displayIdx -= fields->has_principal ? 4 : 3;
@@ -950,12 +951,15 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     *pageCount = 1;
     call_t *call = &parser_tx_obj.tx_fields.call;
     const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
     if (displayIdx == 0) {
         if (icp_canisterId) {
-            snprintf(outKey, outKeyLen, "Send ICP");
+            snprintf(outKey, outKeyLen, "Transaction type");
+            snprintf(outVal, outValLen, is_stake_tx ? "Stake Neuron" : "Send ICP" );
         } else {
-            snprintf(outKey, outKeyLen, "Send Tokens");
+            snprintf(outKey, outKeyLen, "Transaction type");
+            snprintf(outVal, outValLen, "Send Tokens");
         }
         return parser_ok;
     }
@@ -982,13 +986,16 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
                                               outVal, outValLen, pageIdx, pageCount);
     }
 
+    if (is_stake_tx) {
+        displayIdx++; // skip field To account
+    }
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "To account ");
-        const uint8_t *owner = call->data.icrcTransfer.account.owner;
+        const candid_Principal_t *owner = &call->data.icrcTransfer.account.owner;
         const uint8_t *subaccount = call->data.icrcTransfer.account.subaccount.p;
         const uint16_t subaccountLen = (uint16_t) call->data.icrcTransfer.account.subaccount.len;
 
-        return page_principal_with_subaccount(owner, DFINITY_PRINCIPAL_LEN, subaccount, subaccountLen,
+        return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen,
                                               outVal, outValLen, pageIdx, pageCount);
     }
 
@@ -1011,8 +1018,13 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
 
     if (displayIdx == 6) {
         snprintf(outKey, outKeyLen, "Memo");
-        if (call->data.icrcTransfer.has_memo) {
-            uint64_t memo = uint64_from_BEarray(call->data.icrcTransfer.memo.p);
+        if (call->data.icrcTransfer.has_memo && call->data.icrcTransfer.memo.len != 0) {
+            uint64_t memo = 0;
+            // we already checked that len is, at max, 8
+            for (uint8_t i = 0; i < (uint8_t)call->data.icrcTransfer.memo.len; i++) {
+                memo <<= 8u;
+                memo += call->data.icrcTransfer.memo.p[i];
+            }
             return print_u64(memo, outVal, outValLen, pageIdx, pageCount);
         }
         snprintf(outVal, outValLen, "0");
@@ -1058,10 +1070,13 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
         }
         // assume has_account
         const uint8_t *principal = fields->account.has_owner
-            ? fields->account.owner
+            ? fields->account.owner.ptr
             : parser_tx_obj.tx_fields.call.sender.data;
+        const uint8_t principalLen = fields->account.has_owner
+            ? fields->account.owner.len
+            : DFINITY_PRINCIPAL_LEN;
         if (fields->account.has_subaccount) {
-            return page_principal_with_subaccount(principal, DFINITY_PRINCIPAL_LEN,
+            return page_principal_with_subaccount(principal, principalLen,
                                                   fields->account.subaccount.p, (uint16_t) fields->account.subaccount.len,
                                                   outVal, outValLen, pageIdx, pageCount);
         } else {
@@ -1089,7 +1104,7 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx,
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
-        pageString(outVal, outValLen, "Stake Maturity Neuron", pageIdx, pageCount);
+        pageString(outVal, outValLen, "Stake Maturity", pageIdx, pageCount);
         return parser_ok;
     }
 
