@@ -101,7 +101,6 @@ file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_impl.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/crypto.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/base32.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/protobuf/*.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_print_*.c
         )
 
@@ -156,7 +155,6 @@ set_tests_properties(unittests PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOUR
 if (ENABLE_FUZZING)
     set(FUZZ_TARGETS
             parser_parse
-            parser_protobuf
             )
 
     foreach (target ${FUZZ_TARGETS})
