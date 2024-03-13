@@ -58,6 +58,7 @@ APP_LOAD_PARAMS = --curve secp256k1 $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
 APP_STACK_MIN_SIZE := 3000
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
+RUST_TARGET := thumbv6m-none-eabi
 
 $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
@@ -70,19 +71,19 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
 CFLAGS += -Wvla  -Wno-implicit-fallthrough
 CFLAGS += -I$(MY_DIR)/../deps/tinycbor/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/tinycbor-ledger
+LDFLAGS  += -z muldefs
+LDLIBS   += -Lrust/target/$(RUST_TARGET)/release -lrslib
+APP_SOURCE_PATH += $(MY_DIR)/rust/include
+
+APP_CUSTOM_LINK_DEPENDENCIES = rust
 
 .PHONY: rust
 rust:
-	@echo "No rust code"
-#	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target thumbv6m-none-eabi --release
-
-# Before linking, we need to be sure rust lib is there
-bin/app.elf: rust
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target $(RUST_TARGET) --release
 
 .PHONY: rust_clean
 rust_clean:
-	@echo "No rust code"
-#	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
 
 clean: rust_clean
 
@@ -101,3 +102,7 @@ listvariants:
 .PHONY: version
 version:
 	@echo "v$(APPVERSION)" > app.version
+
+.PHONY: rust_tests
+rust_tests:
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo test
