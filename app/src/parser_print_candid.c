@@ -1201,13 +1201,13 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
     CHECK_PARSER_ERR(getManageNeuronType(&parser_tx_obj, &mn_type))
 
     switch (mn_type) {
-        case Configure_SetDissolvedTimestamp: {
+        case Configure_SetDissolvedDelay: {
             return parser_getItemSetDissolveTimestamp(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
         case Configure_ChangeAutoStakeMaturity: {
             return parser_getItemChangeAutoStakeMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
-        case SpawnCandid: {
+        case Spawn: {
             return parser_getItemSpawnCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
         case Split: {
@@ -1216,25 +1216,25 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Merge: {
             return parser_getItemMerge(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
-        case StakeMaturityCandid: {
+        case StakeMaturity: {
             return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
-        case DisburseCandid:
+        case Disburse:
             return parser_getItemDisburseCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        case RegisterVoteCandid:
+        case RegisterVote:
             return parser_getItemRegisterVoteCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        case FollowCandid:
+        case Follow:
             return parser_getItemFollowCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        case Configure_IncreaseDissolveDelayCandid: {
+        case Configure_IncreaseDissolveDelay: {
             return parser_getItemIncreaseDissolveDelayCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
-        case Configure_AddHotkeyCandid:
-        case Configure_RemoveHotkeyCandid:
+        case Configure_AddHotkey:
+        case Configure_RemoveHotkey:
             return parser_getItemConfigureAddRemoveHotkeyCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-        case Configure_JoinNeuronsFundCandid:
-        case Configure_LeaveNeuronsFundCandid:
-        case Configure_StartDissolvingCandid:
-        case Configure_StopDissolvingCandid:
+        case Configure_JoinNeuronsFund:
+        case Configure_LeaveNeuronsFund:
+        case Configure_StartDissolving:
+        case Configure_StopDissolving:
             return parser_getItemConfigureNoElementsCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         case SNS_Configure_StartDissolving:
         case SNS_Configure_StopDissolving:
