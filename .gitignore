@@ -92,3 +92,9 @@ scan-build/
 tests_zemu/yarn.lock
 
 js/yarn.lock
+app/rust/.cargo/registry/
+app/rust/target/
+app/rust/.cargo/.package-cache
+app/rust/.cargo/.package-cache-mutate
+app/rust/.cargo/git/
+deps/nanopb
