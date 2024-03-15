@@ -6,7 +6,10 @@
 
 extern crate no_std_compat as std;
 
-use bls_signature::PublicKey;
+use bls_signature::verify_bls_signature;
+
+const BLS_SIGNATURE_SIZE: usize = 96;
+const BLS_PUBLIC_KEY_SIZE: usize = 48;
 
 fn debug(_msg: &str) {}
 
@@ -19,13 +22,18 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-// uint16_t bls_sign(const uint8_t *msg, uint16_t msg_len, const uint8_t *sk, uint8_t *sig);
+/// The signature must be exactly 48 bytes (compressed G1 element)
+/// The key must be exactly 96 bytes (compressed G2 element)
 #[no_mangle]
-pub unsafe extern "C" fn bls_sign(
+pub unsafe extern "C" fn verify_bls_sign(
     msg: *const u8,
     msg_len: u16,
-    sk: *const u8,
+    key: *const u8,
     sig: *const u8,
-) -> u16 {
-    PublicKey::BYTES as u16
+) -> u8 {
+    let msg = std::slice::from_raw_parts(msg, msg_len as usize);
+    let key = std::slice::from_raw_parts(key, BLS_PUBLIC_KEY_SIZE);
+    let sig = std::slice::from_raw_parts(sig, BLS_SIGNATURE_SIZE);
+
+    verify_bls_signature(sig, msg, key).is_ok() as u8
 }

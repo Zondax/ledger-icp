@@ -13,9 +13,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 no-std-compat = { version = "0.4.1" }
-# bls_signature = { path = "../../../verify-bls-signatures", default-features = false, package = "ic-verify-bls-signature" }
-# bls_signature = { path = "../verify-bls-signatures", default-features = false, package = "ic-verify-bls-signature" }
-bls_signature = { git = "https://github.com/Zondax/verify-bls-signatures.git", branch = "feat/ledger", package = "ic-verify-bls-signature", default-features = false }
+bls_signature = { git = "https://github.com/dfinity/verify-bls-signatures.git", branch = "jack/add-alloc-feature", package = "ic-verify-bls-signature", default-features = false }
 
 [dev-dependencies]
 no-std-compat = { version = "0.4.1", features = ["std"] }
@@ -23,7 +21,7 @@ serde_json = "1.0.56"
 hex = { version = "0.4" }
 serde-json-core = { version = "0.4.0", features = ["std"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-sha2 = { version = "0.9.1" }
+sha2 = { version = "0.9.1", default-features = false }
 base64 = { version = "0.13.0" }
 
 
