@@ -85,7 +85,7 @@ rust:
 rust_clean:
 	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
 
-clean: rust_clean
+clean:
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.side_loading
 

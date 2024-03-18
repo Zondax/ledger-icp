@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "clean": "ts-node tests/pullImageKillOld.ts",
-    "test": "yarn clean && jest"
+    "test": "yarn clean && jest",
+    "try": "node debug.mjs"
   },
   "dependencies": {
     "@zondax/ledger-icp": "link:../js",

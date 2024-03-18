@@ -13,7 +13,10 @@ crate-type = ["staticlib"]
 
 [dependencies]
 no-std-compat = { version = "0.4.1" }
-bls_signature = { git = "https://github.com/dfinity/verify-bls-signatures.git", branch = "jack/add-alloc-feature", package = "ic-verify-bls-signature", default-features = false }
+# bls_signature = { git = "https://github.com/dfinity/verify-bls-signatures.git", branch = "jack/add-alloc-feature", package = "ic-verify-bls-signature", default-features = false }
+# bls_signature = { git = "https://github.com/Zondax/verify-bls-signatures.git", branch = "debug_pic", package = "ic-verify-bls-signature", default-features = false }
+bls_signature = { path = "../verify-bls-signatures/", package = "ic-verify-bls-signature", default-features = false }
+
 
 [dev-dependencies]
 no-std-compat = { version = "0.4.1", features = ["std"] }
@@ -32,7 +35,7 @@ no-std-compat = { version = "0.4.1", features = ["std"] }
 [profile.release]
 lto = false
 codegen-units = 1
-debug = false
+debug = true
 opt-level = "z"
 
 [profile.dev]
