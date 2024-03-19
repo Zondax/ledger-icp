@@ -42,10 +42,10 @@ async function main() {
     const app = new InternetComputerApp(sim.getTransport())
     await sim.toggleExpertMode()
 
-    // await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+    const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
 
-    const respRequest = app.showAddressAndPubKey("m/44'/223'/0'/0/0")
     const resp = await respRequest
+
     console.log(resp)
   } catch (error) {
     // Handle any errors that occurred during the try block
