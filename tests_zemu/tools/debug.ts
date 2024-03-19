@@ -20,17 +20,18 @@ const APP_PATH_X = resolve('../../app/output/app_x.elf')
 const APP_PATH_SP = resolve('../../app/output/app_s2.elf')
 const APP_PATH_ST = resolve('../../app/output/app_stax.elf')
 
-const models: IDeviceModel[] = [{ name: 'nanosp', prefix: 'SP', path: APP_PATH_SP }]
+const models = { name: 'nanosp', prefix: 'SP', path: APP_PATH_SP }
+// const models = { name: 'nanos', prefix: 'S', path: APP_PATH_S }
 
 async function main() {
   console.log('path: ', models)
-  const sim = new Zemu(models[0].path)
+  const sim = new Zemu(models.path)
 
   try {
     await sim.start({
       ...DEFAULT_OPTIONS,
-      startText: models[0].name === 'stax' ? '' : 'Computer',
-      approveKeyword: models[0].name === 'stax' ? 'Principal' : '',
+      startText: models.name === 'stax' ? '' : 'Computer',
+      approveKeyword: models.name === 'stax' ? 'Principal' : '',
       approveAction: ButtonKind.ApproveTapButton,
     })
 
