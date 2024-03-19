@@ -15,20 +15,15 @@ const DEFAULT_OPTIONS = {
   custom: `-s "${APP_SEED}"`,
 }
 
-const APP_PATH_S = resolve('../app/output/app_s.elf')
-const APP_PATH_X = resolve('../app/output/app_x.elf')
-const APP_PATH_SP = resolve('../../app/bin/app.elf')
-const APP_PATH_ST = resolve('../app/output/app_stax.elf')
+const APP_PATH_S = resolve('../../app/output/app_s.elf')
+const APP_PATH_X = resolve('../../app/output/app_x.elf')
+const APP_PATH_SP = resolve('../../app/output/app_s2.elf')
+const APP_PATH_ST = resolve('../../app/output/app_stax.elf')
 
-const models: IDeviceModel[] = [
-  // { name: 'nanos', prefix: 'S', path: APP_PATH_S },
-  // { name: 'nanox', prefix: 'X', path: APP_PATH_X },
-  { name: 'nanosp', prefix: 'SP', path: APP_PATH_SP },
-  // { name: 'stax', prefix: 'ST', path: APP_PATH_ST },
-]
+const models: IDeviceModel[] = [{ name: 'nanosp', prefix: 'SP', path: APP_PATH_SP }]
 
 async function main() {
-  // const sim = new Zemu(m.path)
+  console.log('path: ', models)
   const sim = new Zemu(models[0].path)
 
   try {
