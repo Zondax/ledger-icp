@@ -17,7 +17,7 @@ const DEFAULT_OPTIONS = {
 
 const APP_PATH_S = resolve('../app/output/app_s.elf')
 const APP_PATH_X = resolve('../app/output/app_x.elf')
-const APP_PATH_SP = resolve('../../app/bir/app.elf')
+const APP_PATH_SP = resolve('../../app/bin/app.elf')
 const APP_PATH_ST = resolve('../app/output/app_stax.elf')
 
 const models: IDeviceModel[] = [
