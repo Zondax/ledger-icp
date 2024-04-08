@@ -34,6 +34,11 @@ pub unsafe extern "C" fn verify_bls_sign(
     key: *const u8,
     sig: *const u8,
 ) -> u8 {
+    // Check for null pointers before converting to slices
+    if msg.is_null() || key.is_null() || sig.is_null() {
+        return false as u8;
+    }
+
     let msg = std::slice::from_raw_parts(msg, msg_len as usize);
     let key = std::slice::from_raw_parts(key, BLS_PUBLIC_KEY_SIZE);
     let sig = std::slice::from_raw_parts(sig, BLS_SIGNATURE_SIZE);
