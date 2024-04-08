@@ -1,5 +1,5 @@
 [package]
-authors = ["Zondax GmbH <info@zondax.ch>"]
+authors = ["Zondax AG <info@zondax.ch>"]
 name = "rslib"
 version = "0.1.0"
 edition = "2021"
@@ -37,6 +37,6 @@ opt-level = "z"
 panic = "abort"
 
 [patch.crates-io]
-# Patch the bls12_381 crate which is a dependency of the verify-bls-signatures, 
+# Patch the bls12_381 crate which is a dependency of the verify-bls-signatures,
 # it contains important PIC and Stack issues.
 bls12_381 = { git = "https://github.com/Zondax/bls12_381.git", branch = "ledger" }
