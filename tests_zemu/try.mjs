@@ -1,6 +1,6 @@
 import TransportNodeHid from '@ledgerhq/hw-transport-node-hid'
 import ledger_logs from '@ledgerhq/logs'
-import AvalancheApp from '@zondax/ledger-icp'
+import IcpApp from '@zondax/ledger-icp'
 
 const APP_DERIVATION = "m/44'/223'/0'/0/0"
 
@@ -16,7 +16,7 @@ async function main() {
   ledger_logs.listen(log => {
     console.log(`${log.type} ${log.message}`)
   })
-  const app = new AvalancheApp.default(transport)
+  const app = new IcpApp.default(transport)
 
   const resp = await get_icp_address(app)
   console.log(resp)

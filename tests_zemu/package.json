@@ -15,11 +15,13 @@
   ],
   "scripts": {
     "clean": "ts-node tests/pullImageKillOld.ts",
-    "test": "yarn clean && jest"
+    "test": "yarn clean && jest",
+    "try": "ts-node try.mjs"
   },
   "dependencies": {
     "@zondax/ledger-icp": "link:../js",
-    "@zondax/zemu": "^0.47.0"
+    "@zondax/zemu": "^0.47.0",
+    "@ledgerhq/hw-transport-node-hid": "6.28.6"
   },
   "devDependencies": {
     "@types/jest": "^29.2.3",
