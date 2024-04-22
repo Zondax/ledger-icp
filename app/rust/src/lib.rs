@@ -8,8 +8,8 @@ extern crate no_std_compat as std;
 
 use bls_signature::verify_bls_signature;
 
-const BLS_SIGNATURE_SIZE: usize = 96;
-const BLS_PUBLIC_KEY_SIZE: usize = 48;
+const BLS_SIGNATURE_SIZE: usize = 48;
+const BLS_PUBLIC_KEY_SIZE: usize = 96;
 
 fn debug(_msg: &str) {}
 
