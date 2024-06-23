@@ -12,8 +12,6 @@ crate-type = ["staticlib"]
 
 [dependencies]
 no-std-compat = { version = "0.4.1" }
-# bls_signature = { git = "https://github.com/dfinity/verify-bls-signatures.git", revision = "c2d3442100f2ca526084df8f7c58dfa125bf54bd", package = "ic-verify-bls-signature", default-features = false }
-# bls_signature = { path = "../verify-bls-signatures/", package = "ic-verify-bls-signature", default-features = false }
 bls_signature = { package = "ic-verify-bls-signature", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
@@ -37,9 +35,3 @@ opt-level = "z"
 
 [profile.dev]
 panic = "abort"
-
-[patch.crates-io]
-# Patch the bls12_381 crate which is a dependency of the verify-bls-signatures,
-# it contains important PIC and Stack issues.
-# bls12_381 = { git = "https://github.com/Zondax/bls12_381.git", branch = "ledger" }
-# ic_bls12_381 = { version = "0.9.1" }
