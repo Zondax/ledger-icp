@@ -11,17 +11,14 @@ name = "rslib"
 crate-type = ["staticlib"]
 
 [dependencies]
+minicbor = { version = "0.24.2", default-features = false }
 no-std-compat = { version = "0.4.1" }
 bls_signature = { package = "ic-verify-bls-signature", version = "0.3.0", default-features = false }
 
 [dev-dependencies]
 no-std-compat = { version = "0.4.1", features = ["std"] }
-serde_json = "1.0.56"
 hex = { version = "0.4" }
-serde-json-core = { version = "0.4.0", features = ["std"] }
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-sha2 = { version = "0.9.1", default-features = false }
-base64 = { version = "0.13.0" }
+minicbor = { version = "0.24.2" }
 
 
 [target.'cfg(fuzzing)'.dependencies]
