@@ -1,4 +1,5 @@
 use minicbor::{decode::Error, Decode, Decoder};
+use sha2::Digest;
 
 use super::{label::Label, raw_value::RawValue};
 const MAX_TREE_DEPTH: usize = 32;
@@ -16,6 +17,10 @@ impl<'a> HashTree<'a> {
     pub fn parse(raw_tree: RawValue<'a>) -> Result<Self, Error> {
         let mut d = Decoder::new(raw_tree.bytes());
         HashTree::decode(&mut d, &mut ())
+    }
+
+    pub fn reconstruct(&self) -> Result<[u8; 32], Error> {
+        reconstruct(self)
     }
 
     #[cfg(test)]
@@ -132,8 +137,62 @@ pub fn lookup_path<'a>(label: &Label<'a>, tree: RawValue<'a>) -> Result<LookupRe
     inner_lookup(label, tree, 1)
 }
 
+fn reconstruct(tree: &HashTree) -> Result<[u8; 32], Error> {
+    let hash = match tree {
+        HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
+        HashTree::Fork(left, right) => {
+            let left = HashTree::parse(*left)?;
+            let right = HashTree::parse(*right)?;
+
+            let left_hash = reconstruct(&left)?;
+            let right_hash = reconstruct(&right)?;
+            let mut concat = [0; 64];
+            concat[..32].copy_from_slice(&left_hash);
+            concat[32..].copy_from_slice(&right_hash);
+            hash_with_domain_sep("ic-hashtree-fork", &concat)
+        }
+        HashTree::Labeled(label, subtree) => {
+            let subtree = HashTree::parse(*subtree)?;
+            let subtree_hash = reconstruct(&subtree)?;
+            // domain.len() + label_max_len + hash_len
+            let mut concat = [0; Label::MAX_LEN + 32];
+            let label_len = label.as_bytes().len();
+            concat[..label_len].copy_from_slice(label.as_bytes());
+            concat[label_len..label_len + 32].copy_from_slice(&subtree_hash);
+            hash_with_domain_sep("ic-hashtree-labeled", &concat[..label_len + 32])
+        }
+        HashTree::Leaf(v) => hash_with_domain_sep("ic-hashtree-leaf", v.bytes()),
+        HashTree::Pruned(h) => {
+            // Skip the CBOR type identifier and length information
+            let hash_start = if h.len() == 34 && h.bytes()[0] == 0x58 && h.bytes()[1] == 0x20 {
+                2
+            } else {
+                0
+            };
+
+            if h.len() - hash_start != 32 {
+                // FIXME: Do not panic
+                panic!("Pruned node hash must be 32 bytes");
+            }
+
+            let mut result = [0; 32];
+            result.copy_from_slice(&h.bytes()[hash_start..]);
+            result
+        }
+    };
+    Ok(hash)
+}
+
+pub fn hash_with_domain_sep(domain: &str, data: &[u8]) -> [u8; 32] {
+    let mut hasher = sha2::Sha256::new();
+    hasher.update([domain.len() as u8]);
+    hasher.update(domain.as_bytes());
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
 #[cfg(test)]
-mod tests {
+mod hash_tree_tests {
     use crate::parser::certificate::Certificate;
 
     use super::*;
@@ -163,13 +222,27 @@ mod tests {
                         );
                         std::println!("Successfully found and matched 'time' leaf data");
                     }
+                    // FIXME: Do not panic
                     _ => panic!("Expected Leaf, found {:?}", value),
                 }
             }
+            // FIXME: Do not panic
             LookupResult::Absent => panic!("'time' path not found in the tree"),
             LookupResult::Unknown => {
+                // FIXME: Do not panic
                 panic!("Unable to determine if 'time' path exists due to pruned nodes")
             }
         }
+    }
+
+    #[test]
+    fn test_reconstruct() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::parse(&data).unwrap();
+
+        let tree = HashTree::parse(*cert.tree()).unwrap();
+        let hash = tree.reconstruct().unwrap();
+        let hash_str = hex::encode(hash);
+        std::println!("Reconstructed hash: {}", hash_str);
     }
 }
