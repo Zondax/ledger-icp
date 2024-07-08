@@ -7,7 +7,10 @@ pub enum Label<'a> {
 }
 
 impl<'a> Label<'a> {
-    fn as_bytes(&self) -> &'a [u8] {
+    // TODO: Check if docs tell something about
+    // max label length
+    pub const MAX_LEN: usize = 32;
+    pub fn as_bytes(&self) -> &'a [u8] {
         match self {
             Label::Blob(b) => b,
             Label::String(s) => s.as_bytes(),
