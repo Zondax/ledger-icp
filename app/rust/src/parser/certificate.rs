@@ -9,6 +9,18 @@ pub struct Certificate<'a> {
     delegation: Option<Delegation<'a>>,
 }
 
+impl<'a> Certificate<'a> {
+    pub fn tree(&self) -> &RawValue<'a> {
+        &self.tree
+    }
+    pub fn signature(&self) -> &RawValue<'a> {
+        &self.signature
+    }
+    pub fn delegation(&self) -> Option<&Delegation<'a>> {
+        self.delegation.as_ref()
+    }
+}
+
 impl<'b, C> Decode<'b, C> for Certificate<'b> {
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
         // Expect a map with 3 entries
