@@ -62,6 +62,9 @@ typedef enum {
     parser_required_method,
     // Special codes
     parser_type_not_found,
+    parser_invalid_label,
+    parser_invalid_delegation,
+    parser_invalid_certificate
 } parser_error_t;
 
 typedef struct {
