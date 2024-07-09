@@ -1,3 +1,4 @@
+use crate::error::ParserError;
 use minicbor::{decode::Error, Decode, Decoder};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
