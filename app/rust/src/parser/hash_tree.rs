@@ -1,6 +1,8 @@
 use minicbor::{decode::Error, Decode, Decoder};
 use sha2::Digest;
 
+use core::cmp::Ordering;
+
 use super::{label::Label, raw_value::RawValue};
 const MAX_TREE_DEPTH: usize = 32;
 
@@ -16,7 +18,26 @@ pub enum HashTree<'a> {
 impl<'a> HashTree<'a> {
     pub fn parse(raw_tree: RawValue<'a>) -> Result<Self, Error> {
         let mut d = Decoder::new(raw_tree.bytes());
-        HashTree::decode(&mut d, &mut ())
+        let tree = HashTree::decode(&mut d, &mut ())?;
+        tree.verify(0)?;
+        Ok(tree)
+    }
+
+    fn verify(&self, depth: usize) -> Result<(), Error> {
+        if depth >= MAX_TREE_DEPTH {
+            return Err(Error::message("Maximum tree depth exceeded"));
+        }
+
+        match self {
+            HashTree::Empty => Ok(()),
+            HashTree::Fork(left, right) => {
+                HashTree::parse(*left)?.verify(depth + 1)?;
+                HashTree::parse(*right)?.verify(depth + 1)
+            }
+            HashTree::Labeled(_, subtree) => HashTree::parse(*subtree)?.verify(depth + 1),
+            HashTree::Leaf(_) => Ok(()),
+            HashTree::Pruned(_) => Ok(()),
+        }
     }
 
     pub fn reconstruct(&self) -> Result<[u8; 32], Error> {
@@ -61,6 +82,8 @@ impl<'a> HashTree<'a> {
         Ok(())
     }
 }
+
+impl<'a> HashTree<'a> {}
 
 impl<'b, C> Decode<'b, C> for HashTree<'b> {
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
@@ -125,7 +148,8 @@ pub fn lookup_path<'a>(label: &Label<'a>, tree: RawValue<'a>) -> Result<LookupRe
                 if &node_label == label {
                     Ok(LookupResult::Found(subtree))
                 } else {
-                    // Continue searching in the subtree
+                    // Continue searching in the subtree, maybe it contains another label
+                    // node that could be the one we are looking for
                     inner_lookup(label, subtree, depth + 1)
                 }
             }
@@ -137,8 +161,6 @@ pub fn lookup_path<'a>(label: &Label<'a>, tree: RawValue<'a>) -> Result<LookupRe
 
     inner_lookup(label, tree, 1)
 }
-
-use core::cmp::Ordering;
 
 pub fn lookup_path_list<'a>(
     path: &[Label<'a>],

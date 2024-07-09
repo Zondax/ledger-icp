@@ -6,6 +6,7 @@
 
 extern crate no_std_compat as std;
 
+mod error;
 mod ffi;
 mod parser;
 
