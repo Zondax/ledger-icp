@@ -40,15 +40,6 @@ impl<'a> Delegation<'a> {
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, Error> {
         let cert = self.cert();
 
-        if cert.delegation().is_some() {
-            return Ok(false);
-        }
-
-        // Delegation must have a public key
-        if !self.public_key().map(|_| true)? {
-            return Ok(false);
-        }
-
         cert.verify(root_key)
     }
 
