@@ -10,6 +10,8 @@ mod error;
 mod ffi;
 mod parser;
 
+pub use parser::*;
+
 fn debug(_msg: &str) {}
 
 #[cfg(not(any(test, fuzzing)))]

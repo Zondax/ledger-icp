@@ -1,11 +1,14 @@
+use bls_signature::verify_bls_signature;
 use minicbor::{decode::Error, Decode, Decoder};
+
+use crate::{hash_tree::hash_with_domain_sep, signature::Signature};
 
 use super::{delegation::Delegation, hash_tree::HashTree, raw_value::RawValue};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Certificate<'a> {
     tree: RawValue<'a>,
-    signature: RawValue<'a>,
+    signature: Signature<'a>,
     delegation: Option<Delegation<'a>>,
 }
 
@@ -24,11 +27,11 @@ impl<'a> Certificate<'a> {
 
         // Integrity checks in certificates
         // check inner trees:
-        HashTree::parse(*cert.tree())?;
+        let _: HashTree = (*cert.tree()).try_into()?;
 
         // check delegation certificate if present
-        if let Some(delegation) = cert.delegation() {
-            Self::parse(delegation.certificate().bytes())?;
+        if let Some(delegation) = cert.delegation {
+            Self::parse(delegation.certificate.bytes())?;
         }
 
         Ok(cert)
@@ -38,22 +41,65 @@ impl<'a> Certificate<'a> {
         &self.tree
     }
 
-    pub fn signature(&self) -> &RawValue<'a> {
-        &self.signature
-    }
-
     pub fn delegation(&self) -> Option<&Delegation<'a>> {
         self.delegation.as_ref()
     }
 
-    pub fn verify(&self) -> bool {
-        false
+    pub fn signature(&self) -> Signature<'a> {
+        self.signature
+    }
+
+    pub fn hash(&self) -> Result<[u8; 32], Error> {
+        let tree: HashTree = self.tree.try_into()?;
+        tree.reconstruct()
+    }
+
+    // The root_public_key is now a parameter to the verify method
+    pub fn verify(&self, root_public_key: &[u8]) -> Result<bool, Error> {
+        // Step 1: Compute root hash of the outer certificate's tree
+        let tree: HashTree = self.tree.try_into()?;
+        let root_hash = tree.reconstruct()?;
+
+        // Step 2: Check delegation
+        if !self.check_delegation(root_public_key)? {
+            return Ok(false);
+        }
+
+        // Step 3: Compute BLS key
+        let pubkey = self.delegation_key(root_public_key)?;
+
+        // Step 4: Verify signature
+        let message = hash_with_domain_sep("ic-state-root", &root_hash);
+        let signature = self.signature.bls_signature()?;
+        Ok(verify_bls_signature(signature, &message, pubkey).is_ok())
+    }
+
+    // verify the inner certificate
+    // the one that comes in the delegation
+    pub fn check_delegation(&self, root_pubkey: &[u8]) -> Result<bool, Error> {
+        let Some(delegation) = self.delegation else {
+            return Ok(true);
+        };
+
+        delegation.verify(root_pubkey)
+    }
+
+    fn delegation_key(&self, root_public_key: &'a [u8]) -> Result<&'a [u8], Error> {
+        match &self.delegation {
+            None => Ok(root_public_key), // Use root_public_key if no delegation
+            Some(d) => {
+                let key = d
+                    .public_key()?
+                    .ok_or(Error::message("Missing public key"))?;
+                key.bls_pubkey()
+            }
+        }
     }
 }
 
 impl<'b, C> Decode<'b, C> for Certificate<'b> {
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
-        // Expect a map with 3 entries
+        // Expect a map with 2/3 entries
         let len = d.map()?.ok_or(Error::message("Expected a map"))?;
 
         // A certificate could have either 2(delegation cert) or 3 entries(root cert)
@@ -64,10 +110,11 @@ impl<'b, C> Decode<'b, C> for Certificate<'b> {
         let mut tree = None;
         let mut signature = None;
         let mut delegation = None;
+
         for _ in 0..len {
             match d.str()? {
                 "tree" => tree = Some(RawValue::decode(d, ctx)?),
-                "signature" => signature = Some(RawValue::decode(d, ctx)?),
+                "signature" => signature = Some(RawValue::decode(d, ctx)?.try_into()?),
                 "delegation" => delegation = Some(Delegation::decode(d, ctx)?),
                 _ => return Err(Error::message("Unexpected key in certificate")),
             }
@@ -82,7 +129,6 @@ impl<'b, C> Decode<'b, C> for Certificate<'b> {
 
 #[cfg(test)]
 mod test_certificate {
-    use crate::parser::hash_tree::HashTree;
 
     use super::*;
 
@@ -94,12 +140,26 @@ mod test_certificate {
     fn parser_cert() {
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::parse(&data).unwrap();
-        HashTree::parse(*cert.tree()).unwrap();
+
+        let sign = cert.signature();
+        let sign = sign.bls_signature().unwrap();
+        std::println!("sign: {:?} - len: {}", sign, sign.len());
     }
 
     #[test]
     fn error_invalid_certificate() {
         let data = hex::decode(INVALID_DATA).unwrap();
         assert!(Certificate::parse(&data).is_err());
+    }
+
+    #[test]
+    fn verify_cert() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::parse(&data).unwrap();
+        let root_hash = hex::encode(cert.hash().unwrap());
+        std::println!("root_hash: {}", root_hash);
+
+        let root_key = [0u8; 96];
+        assert!(cert.verify(&root_key).unwrap());
     }
 }
