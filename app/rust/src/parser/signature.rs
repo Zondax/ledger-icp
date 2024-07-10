@@ -1,17 +1,17 @@
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
+use crate::constants::BLS_SIGNATURE_SIZE;
+
 use super::raw_value::RawValue;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Signature<'a>(RawValue<'a>);
 
 impl<'a> Signature<'a> {
-    pub const BLS_SIGNATURE_SIZE: usize = 48;
-
     pub fn bls_signature(&self) -> Result<&[u8], Error> {
         let mut d = Decoder::new(self.0.bytes());
         let b = d.bytes()?;
-        if b.len() != Self::BLS_SIGNATURE_SIZE {
+        if b.len() != BLS_SIGNATURE_SIZE {
             return Err(Error::message("Invalid BLS signature length"));
         }
         Ok(b)

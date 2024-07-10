@@ -1,19 +1,22 @@
-use minicbor::{data::Type, decode::Error, Decode, Decoder};
+use minicbor::{decode::Error, Decode, Decoder};
+
+use crate::constants::BLS_PUBLIC_KEY_SIZE;
 
 use super::raw_value::RawValue;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PublicKey<'a>(RawValue<'a>);
+pub struct PublicKey<'a>(&'a [u8; BLS_PUBLIC_KEY_SIZE]);
 
 impl<'a> PublicKey<'a> {
-    pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
+    pub fn as_bytes(&self) -> &'a [u8; BLS_PUBLIC_KEY_SIZE] {
+        self.0
+    }
+}
 
-    pub fn bls_pubkey(&self) -> Result<&'a [u8], Error> {
-        let raw_value = self.0.bytes();
-        let mut d = Decoder::new(raw_value);
-
+impl<'b, C> Decode<'b, C> for PublicKey<'b> {
+    fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
         // Decode CBOR wrapper
-        let array_len = d.array().unwrap();
+        let array_len = d.array()?;
         if array_len != Some(2) {
             return Err(Error::message("Expected array of length 2"));
         }
@@ -21,7 +24,7 @@ impl<'a> PublicKey<'a> {
         // Read algorithm identifier
         d.u8()?;
 
-        // read key data
+        // Read key data
         let der_data = d.bytes()?;
 
         // Parse SubjectPublicKeyInfo
@@ -69,31 +72,20 @@ impl<'a> PublicKey<'a> {
 
         // The rest is the actual public key
         let key_data = &der_data[index..];
-
-        if key_data.len() >= Self::BLS_PUBLIC_KEY_SIZE {
-            Ok(&key_data[..Self::BLS_PUBLIC_KEY_SIZE])
-        } else {
-            Err(Error::message("Insufficient key data"))
+        if key_data.len() != BLS_PUBLIC_KEY_SIZE {
+            return Err(Error::message("Insufficient key data"));
         }
+
+        // Use array_ref! to get a reference to a fixed-size array
+        let pubkey = arrayref::array_ref!(key_data, 0, BLS_PUBLIC_KEY_SIZE);
+        Ok(Self(pubkey))
     }
 }
 
 impl<'a> TryFrom<RawValue<'a>> for PublicKey<'a> {
     type Error = Error;
-
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
         let mut d = Decoder::new(value.bytes());
         Self::decode(&mut d, &mut ())
-    }
-}
-
-impl<'b, C> Decode<'b, C> for PublicKey<'b> {
-    fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
-        // Expect Bytes
-        if d.datatype()? != Type::Array {
-            return Err(Error::type_mismatch(Type::Array));
-        }
-
-        Ok(PublicKey(RawValue::decode(d, ctx)?))
     }
 }

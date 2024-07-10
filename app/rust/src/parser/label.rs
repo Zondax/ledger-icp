@@ -18,6 +18,18 @@ impl<'a> Label<'a> {
     }
 }
 
+impl<'a> From<&'a str> for Label<'a> {
+    fn from(s: &'a str) -> Self {
+        Label::String(s)
+    }
+}
+
+impl<'a> From<&'a [u8]> for Label<'a> {
+    fn from(b: &'a [u8]) -> Self {
+        Label::Blob(b)
+    }
+}
+
 impl<'b, C> Decode<'b, C> for Label<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
         match d.datatype()? {
