@@ -16,6 +16,61 @@ pub enum HashTree<'a> {
 }
 
 impl<'a> HashTree<'a> {
+    pub fn is_empty(&self) -> bool {
+        matches!(self, HashTree::Empty)
+    }
+
+    pub fn is_fork(&self) -> bool {
+        matches!(self, HashTree::Fork(_, _))
+    }
+
+    pub fn is_labeled(&self) -> bool {
+        matches!(self, HashTree::Labeled(_, _))
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        matches!(self, HashTree::Leaf(_))
+    }
+
+    pub fn is_pruned(&self) -> bool {
+        matches!(self, HashTree::Pruned(_))
+    }
+
+    pub fn label(&self) -> Option<&Label<'a>> {
+        match self {
+            HashTree::Labeled(label, _) => Some(label),
+            _ => None,
+        }
+    }
+
+    pub fn fork_left(&self) -> Option<&RawValue<'a>> {
+        match self {
+            HashTree::Fork(left, _) => Some(left),
+            _ => None,
+        }
+    }
+
+    pub fn fork_right(&self) -> Option<&RawValue<'a>> {
+        match self {
+            HashTree::Fork(_, right) => Some(right),
+            _ => None,
+        }
+    }
+
+    pub fn value(&self) -> Option<&'a [u8]> {
+        let value = match self {
+            HashTree::Leaf(value) => value,
+            HashTree::Pruned(value) => value,
+            _ => return None,
+        };
+
+        let mut d = Decoder::new(value.bytes());
+        d.bytes().ok()
+    }
+
+    // Traverse all the tree ensuring
+    // at parsing that we can handle its length
+    // without reaching overflows, otherwise we error
     fn check_integrity(&self, depth: usize) -> Result<(), Error> {
         if depth >= MAX_TREE_DEPTH {
             return Err(Error::message("Maximum tree depth exceeded"));
@@ -24,13 +79,13 @@ impl<'a> HashTree<'a> {
         match self {
             HashTree::Empty => Ok(()),
             HashTree::Fork(left, right) => {
-                let tree: HashTree = (*left).try_into()?;
+                let tree: HashTree = left.try_into()?;
                 tree.check_integrity(depth + 1)?;
-                let tree: HashTree = (*right).try_into()?;
+                let tree: HashTree = right.try_into()?;
                 tree.check_integrity(depth + 1)
             }
             HashTree::Labeled(_, subtree) => {
-                let tree: HashTree = (*subtree).try_into()?;
+                let tree: HashTree = subtree.try_into()?;
                 tree.check_integrity(depth + 1)
             }
             HashTree::Leaf(_) => Ok(()),
@@ -61,16 +116,20 @@ impl<'a> HashTree<'a> {
                 }
                 Self::parse_and_print_hash_tree(&subtree, indent + 2)?;
             }
-            HashTree::Leaf(data) => println!(
-                "{}Leaf: {:?}",
-                " ".repeat(indent),
-                &data.bytes()[..std::cmp::min(data.len(), 32)]
-            ),
-            HashTree::Pruned(hash) => println!(
-                "{}Pruned: {:?}",
-                " ".repeat(indent),
-                &hash.bytes()[..std::cmp::min(hash.len(), 32)]
-            ),
+            HashTree::Leaf(data) => {
+                // here data is arraw containing twoo elements:
+                // [hash_tree_variant_tag, CBOR_data]
+                // we are interested in printing CBOR data
+                // and it is just bytes(Blob) according to icp documentation
+                // https://internetcomputer.org/docs/current/references/ic-interface-spec/#certification
+                let mut d = Decoder::new(data.bytes());
+                println!("{}Leaf: {:?}", " ".repeat(indent), d.bytes());
+            }
+            HashTree::Pruned(hash) => {
+                let mut d = Decoder::new(hash.bytes());
+                let h = d.bytes()?;
+                println!("{}Pruned: {:?}", " ".repeat(indent), h)
+            }
         }
 
         Ok(())
@@ -115,12 +174,13 @@ impl<'a> HashTree<'a> {
 
         inner_lookup(label, tree, 1)
     }
+
     pub fn reconstruct(&self) -> Result<[u8; 32], Error> {
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
             HashTree::Fork(left, right) => {
-                let left: HashTree = (*left).try_into()?;
-                let right: HashTree = (*right).try_into()?;
+                let left: HashTree = left.try_into()?;
+                let right: HashTree = right.try_into()?;
 
                 let left_hash = left.reconstruct()?;
                 let right_hash = right.reconstruct()?;
@@ -130,7 +190,7 @@ impl<'a> HashTree<'a> {
                 hash_with_domain_sep("ic-hashtree-fork", &concat)
             }
             HashTree::Labeled(label, subtree) => {
-                let subtree: HashTree = (*subtree).try_into()?;
+                let subtree: HashTree = subtree.try_into()?;
                 let subtree_hash = subtree.reconstruct()?;
                 // domain.len() + label_max_len + hash_len
                 let mut concat = [0; Label::MAX_LEN + 32];
@@ -139,22 +199,20 @@ impl<'a> HashTree<'a> {
                 concat[label_len..label_len + 32].copy_from_slice(&subtree_hash);
                 hash_with_domain_sep("ic-hashtree-labeled", &concat[..label_len + 32])
             }
-            HashTree::Leaf(v) => hash_with_domain_sep("ic-hashtree-leaf", v.bytes()),
-            HashTree::Pruned(h) => {
-                // Skip the CBOR type identifier and length information
-                let hash_start = if h.len() == 34 && h.bytes()[0] == 0x58 && h.bytes()[1] == 0x20 {
-                    2
-                } else {
-                    0
-                };
-
-                if h.len() - hash_start != 32 {
+            HashTree::Leaf(_) => {
+                // Safe as this is a Leaf tree
+                let value = self.value().unwrap();
+                hash_with_domain_sep("ic-hashtree-leaf", value)
+            }
+            HashTree::Pruned(_) => {
+                let hash = self.value().unwrap();
+                if hash.len() != 32 {
                     // FIXME: Do not panic
                     panic!("Pruned node hash must be 32 bytes");
                 }
 
                 let mut result = [0; 32];
-                result.copy_from_slice(&h.bytes()[hash_start..]);
+                result.copy_from_slice(hash);
                 result
             }
         };
@@ -169,6 +227,13 @@ impl<'a> TryFrom<RawValue<'a>> for HashTree<'a> {
         let tree = HashTree::decode(&mut d, &mut ())?;
         tree.check_integrity(0)?;
         Ok(tree)
+    }
+}
+
+impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
+    type Error = Error;
+    fn try_from(value: &RawValue<'a>) -> Result<Self, Self::Error> {
+        (*value).try_into()
     }
 }
 
@@ -212,94 +277,14 @@ pub enum LookupResult<'a> {
     Unknown,
 }
 
-// pub fn lookup_path_list<'a>(
-//     path: &[Label<'a>],
-//     tree: RawValue<'a>,
-// ) -> Result<LookupResult<'a>, Error> {
-//     fn inner_lookup<'a>(
-//         path: &[Label<'a>],
-//         tree: RawValue<'a>,
-//         depth: usize,
-//     ) -> Result<LookupResult<'a>, Error> {
-//         if depth >= MAX_TREE_DEPTH {
-//             return Err(Error::message("Maximum tree depth exceeded"));
-//         }
-//
-//         let current_tree = tree.try_into()?;
-//
-//         if path.is_empty() {
-//             return match current_tree {
-//                 HashTree::Empty => Ok(LookupResult::Absent),
-//                 HashTree::Leaf(_) => Ok(LookupResult::Found(tree)),
-//                 HashTree::Pruned(_) => Ok(LookupResult::Unknown),
-//                 HashTree::Labeled(_, _) | HashTree::Fork(_, _) => Err(Error::message(
-//                     "Path is empty, but tree is not a leaf or empty",
-//                 )),
-//             };
-//         }
-//
-//         match current_tree {
-//             HashTree::Fork(left, right) => match find_label(&path[0], left, right)? {
-//                 LookupResult::Found(subtree) => inner_lookup(&path[1..], subtree, depth + 1),
-//                 other => Ok(other),
-//             },
-//             HashTree::Labeled(node_label, subtree) => match compare_labels(&path[0], &node_label) {
-//                 Ordering::Equal => inner_lookup(&path[1..], subtree, depth + 1),
-//                 _ => Ok(LookupResult::Absent),
-//             },
-//             HashTree::Empty | HashTree::Leaf(_) | HashTree::Pruned(_) => Ok(LookupResult::Absent),
-//         }
-//     }
-//
-//     inner_lookup(path, tree, 0)
-// }
-
-// fn find_label<'a>(
-//     label: &Label,
-//     left: RawValue<'a>,
-//     right: RawValue<'a>,
-// ) -> Result<LookupResult<'a>, Error> {
-//     let left_tree = HashTree::parse(left)?;
-//     let right_tree = HashTree::parse(right)?;
-//
-//     match (&left_tree, &right_tree) {
-//         (HashTree::Labeled(l1, t1), HashTree::Labeled(l2, _)) => match compare_labels(label, l1) {
-//             Ordering::Equal => Ok(LookupResult::Found(*t1)),
-//             Ordering::Less => Ok(LookupResult::Absent),
-//             Ordering::Greater => match compare_labels(label, l2) {
-//                 Ordering::Less => Ok(LookupResult::Absent),
-//                 Ordering::Equal => Ok(LookupResult::Found(right)),
-//                 Ordering::Greater => find_label(label, *t1, right),
-//             },
-//         },
-//         (HashTree::Labeled(l, t), _) => match compare_labels(label, l) {
-//             Ordering::Equal => Ok(LookupResult::Found(*t)),
-//             Ordering::Less => Ok(LookupResult::Absent),
-//             Ordering::Greater => find_label(label, *t, right),
-//         },
-//         (_, HashTree::Labeled(l, t)) => match compare_labels(label, l) {
-//             Ordering::Equal => Ok(LookupResult::Found(*t)),
-//             Ordering::Less => Ok(LookupResult::Absent),
-//             Ordering::Greater => Ok(LookupResult::Absent),
-//         },
-//         (HashTree::Leaf(_), _) | (_, HashTree::Leaf(_)) => Ok(LookupResult::Absent),
-//         (HashTree::Empty, _) | (_, HashTree::Empty) => Ok(LookupResult::Absent),
-//         (HashTree::Pruned(_), _) | (_, HashTree::Pruned(_)) => Ok(LookupResult::Unknown),
-//         (HashTree::Fork(l1, r1), HashTree::Fork(l2, r2)) => match find_label(label, *l1, *r1)? {
-//             LookupResult::Absent => find_label(label, *l2, *r2),
-//             result => Ok(result),
-//         },
-//     }
-// }
-
-// fn compare_labels(a: &Label, b: &Label) -> Ordering {
-//     match (a, b) {
-//         (Label::Blob(a), Label::Blob(b)) => a.cmp(b),
-//         (Label::String(a), Label::String(b)) => a.cmp(b),
-//         (Label::Blob(a), Label::String(b)) => a.cmp(&b.as_bytes()),
-//         (Label::String(a), Label::Blob(b)) => a.as_bytes().cmp(b),
-//     }
-// }
+impl<'a> LookupResult<'a> {
+    pub fn value(&self) -> Option<&RawValue<'a>> {
+        match self {
+            LookupResult::Found(value) => Some(value),
+            _ => None,
+        }
+    }
+}
 
 pub fn hash_with_domain_sep(domain: &str, data: &[u8]) -> [u8; 32] {
     let mut hasher = sha2::Sha256::new();
@@ -327,6 +312,16 @@ mod hash_tree_tests {
         108, 108, 111, 119, 105, 110, 103, 32, 103, 114, 101, 101, 116, 105, 110, 103, 20, 116,
         101, 120, 116, 58, 32, 34, 72, 101, 108, 108, 111, 44, 32, 116, 111, 98, 105, 33, 34,
     ];
+
+    // example tree:
+    //─┬─┬╴"a" ─┬─┬╴"x" ─╴"hello"
+    // │ │      │ └╴Empty
+    // │ │      └╴  "y" ─╴"world"
+    // │ └╴"b" ──╴"good"
+    // └─┬╴"c" ──╴Empty
+    //   └╴"d" ──╴"morning"
+    const TREE: &str =  "8301830183024161830183018302417882034568656c6c6f810083024179820345776f726c6483024162820344676f6f648301830241638100830241648203476d6f726e696e67";
+    const TREE_ROOT_HASH: &str = "eb5c5b2195e62d996b84c9bcc8259d19a83786a2f59e0878cec84c811f669aa0";
 
     #[test]
     fn test_lookup_time() {
@@ -364,9 +359,6 @@ mod hash_tree_tests {
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::parse(&data).unwrap();
 
-        // Create the path for "time"
-        // let path = Label::String("reply");
-        // let path = [Label::String("request_status"), Label::String("reply")];
         let path = Label::String("reply");
 
         HashTree::parse_and_print_hash_tree(cert.tree(), 0).unwrap();
@@ -392,46 +384,69 @@ mod hash_tree_tests {
     }
 
     #[test]
-    fn test_reconstruct() {
-        let data = hex::decode(DATA).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+    fn test_example_tree() {
+        // example tree:
+        //─┬─┬╴"a" ─┬─┬╴"x" ─╴"hello"
+        // │ │      │ └╴Empty
+        // │ │      └╴  "y" ─╴"world"
+        // │ └╴"b" ──╴"good"
+        // └─┬╴"c" ──╴Empty
+        //   └╴"d" ──╴"morning"
+        let tree = hex::decode(TREE).unwrap();
+        let tree = RawValue::from_bytes(&tree).unwrap();
 
-        let tree: HashTree = (*cert.tree()).try_into().unwrap();
-        let hash = tree.reconstruct().unwrap();
-        let hash_str = hex::encode(hash);
-        std::println!("Reconstructed hash: {}", hash_str);
+        // Checking "a" branch
+        let label_a = "a".into();
+        let a_value = HashTree::lookup_path(&label_a, tree).unwrap();
+        let LookupResult::Found(value) = a_value else {
+            panic!("Node not found");
+        };
+        let a_tree: HashTree = value.try_into().unwrap();
+        assert!(a_tree.is_fork());
+
+        let a_empty = a_tree.fork_left().unwrap();
+        let a_empty: HashTree = a_empty.try_into().unwrap();
+        let a_empty: HashTree = (a_empty.fork_right().unwrap()).try_into().unwrap();
+        assert!(a_empty.is_empty());
+
+        //   lookup x
+        let x_value = HashTree::lookup_path(&"x".into(), tree).unwrap();
+        let value = x_value.value().unwrap();
+        let x_value: HashTree = value.try_into().unwrap();
+        assert_eq!(&b"hello", &x_value.value().unwrap());
+
+        //   lookup y
+        let y_value = HashTree::lookup_path(&"y".into(), tree).unwrap();
+        let value = y_value.value().unwrap();
+        let y_value: HashTree = value.try_into().unwrap();
+        assert_eq!(&b"world", &y_value.value().unwrap());
+
+        //   lookup b
+        let b_value = HashTree::lookup_path(&"b".into(), tree).unwrap();
+        let value = b_value.value().unwrap();
+        let b_value: HashTree = value.try_into().unwrap();
+        assert_eq!(&b"good", &b_value.value().unwrap());
+
+        //   lookup c
+        let c_value = HashTree::lookup_path(&"c".into(), tree).unwrap();
+        let value = c_value.value().unwrap();
+        let c_value: HashTree = value.try_into().unwrap();
+        assert!(matches!(c_value, HashTree::Empty));
+
+        //   lookup d
+        let d_value = HashTree::lookup_path(&"d".into(), tree).unwrap();
+        let value = d_value.value().unwrap();
+        let d_value: HashTree = value.try_into().unwrap();
+        assert_eq!(&b"morning", &d_value.value().unwrap());
     }
 
-    // Fork
-    //   Left:
-    //     Fork
-    //       Left:
-    //         Pruned: [88, 32, 11, 188, 199, 16, 146, 218, 60, 226, 98, 184, 21, 77, 57, 139, 154, 97, 20, 190, 232, 127, 28, 11, 114,
-    // 225, 105, 18, 117, 122, 160, 35]
-    //       Right:
-    //         Fork
-    //           Left:
-    //             Pruned: [88, 32, 6, 40, 168, 224, 4, 50, 232, 101, 122, 217, 156, 77, 27, 241, 103, 221, 84, 172, 233, 25, 150, 9, 19
-    // 1, 197, 213, 125, 137, 244, 141, 151]
-    //           Right:
-    //             Labeled (String): request_status
-    //               Labeled (Blob): [78, 160, 87, 196, 98, 146, 254, 219, 87, 61, 53, 49, 157, 209, 204, 171, 63, 181, 214, 162, 177, 6
-    // , 183, 133, 209, 247, 117, 124, 250, 90, 37, 66]
-    //                 Fork
-    //                   Left:
-    //                     Labeled (String): reply
-    //                       Leaf: [88, 180, 68, 73, 68, 76, 11, 107, 2, 188, 138, 1, 1, 197, 254, 210, 1, 8, 108, 2, 239, 206, 231, 128
-    // , 4, 2, 226, 159, 220, 200, 6, 3]
-    //                   Right:
-    //                     Labeled (String): status
-    //                       Leaf: [71, 114, 101, 112, 108, 105, 101, 100]
-    //   Right:
-    //     Fork
-    //       Left:
-    //         Pruned: [88, 32, 137, 26, 243, 232, 152, 47, 26, 195, 210, 149, 194, 155, 159, 223, 237, 197, 35, 1, 192, 63, 189, 73, 12
-    // 1, 103, 108, 1, 5, 145, 132, 6]
-    //       Right:
-    //         Labeled (String): time
-    //           Leaf: [73, 203, 247, 221, 140, 161, 162, 167, 226, 23]
-    //
+    #[test]
+    fn test_reconstruct() {
+        let tree = hex::decode(TREE).unwrap();
+        let tree = RawValue::from_bytes(&tree).unwrap();
+        let tree: HashTree = tree.try_into().unwrap();
+        let hash = tree.reconstruct().unwrap();
+        let hash_str = hex::encode(hash);
+        assert_eq!(hash_str, TREE_ROOT_HASH);
+    }
 }

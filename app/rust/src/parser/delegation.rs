@@ -30,7 +30,7 @@ impl<'a> Delegation<'a> {
         let cert = self.cert();
         // Safe to unwrap as this was checked
         // when Delegation was parsed
-        (*cert.tree()).try_into().unwrap()
+        cert.tree().try_into().unwrap()
     }
 
     fn subnet(&self) -> &'a [u8] {
@@ -55,11 +55,11 @@ impl<'a> Delegation<'a> {
     // Why an option?
     // It is not clear if delegation would always contain a key
     pub fn public_key(&self) -> Result<Option<PublicKey<'a>>, Error> {
-        match self.subnet_public_key()? {
-            LookupResult::Found(pubkey) => Ok(Some(pubkey.try_into()?)),
-            LookupResult::Absent => Ok(None),
-            LookupResult::Unknown => Ok(None),
-        }
+        let value = self.subnet_public_key()?;
+        let Some(value) = value.value() else {
+            return Ok(None);
+        };
+        Ok(Some(PublicKey::try_from(*value)?))
     }
 
     // 1. root_hash: We need to compute this for the inner certificate.

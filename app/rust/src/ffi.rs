@@ -1,7 +1,5 @@
-use crate::pubkey::PublicKey;
+use crate::constants::{BLS_PUBLIC_KEY_SIZE, BLS_SIGNATURE_SIZE};
 use bls_signature::verify_bls_signature;
-
-const BLS_SIGNATURE_SIZE: usize = 48;
 
 /// The signature must be exactly 48 bytes (compressed G1 element)
 /// The key must be exactly 96 bytes (compressed G2 element)
@@ -21,7 +19,7 @@ pub unsafe extern "C" fn verify_bls_sign(
     }
 
     let msg = std::slice::from_raw_parts(msg, msg_len as usize);
-    let key = std::slice::from_raw_parts(key, PublicKey::BLS_PUBLIC_KEY_SIZE);
+    let key = std::slice::from_raw_parts(key, BLS_PUBLIC_KEY_SIZE);
     let sig = std::slice::from_raw_parts(sig, BLS_SIGNATURE_SIZE);
 
     verify_bls_signature(sig, msg, key).is_ok() as u8

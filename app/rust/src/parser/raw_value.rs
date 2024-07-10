@@ -4,8 +4,17 @@ use minicbor::{decode::Error, Decode, Decoder};
 pub struct RawValue<'a>(&'a [u8]);
 
 impl<'a> RawValue<'a> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Error> {
+        let mut d = Decoder::new(bytes);
+        RawValue::decode(&mut d, &mut ())
+    }
+
     pub fn bytes(&self) -> &'a [u8] {
         self.0
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     pub fn len(&self) -> usize {
