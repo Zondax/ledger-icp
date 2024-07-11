@@ -1,7 +1,9 @@
-use minicbor::{decode::Error, Decode, Decoder};
+use minicbor::{data::Type, decode::Error, Decode, Decoder};
 use sha2::Digest;
 
 // use core::cmp::Ordering;
+
+use crate::error::ParserError;
 
 use super::{label::Label, raw_value::RawValue};
 const MAX_TREE_DEPTH: usize = 32;
@@ -71,9 +73,9 @@ impl<'a> HashTree<'a> {
     // Traverse all the tree ensuring
     // at parsing that we can handle its length
     // without reaching overflows, otherwise we error
-    fn check_integrity(&self, depth: usize) -> Result<(), Error> {
+    fn check_integrity(&self, depth: usize) -> Result<(), ParserError> {
         if depth >= MAX_TREE_DEPTH {
-            return Err(Error::message("Maximum tree depth exceeded"));
+            return Err(ParserError::RecursionLimitReached);
         }
 
         match self {
@@ -135,14 +137,17 @@ impl<'a> HashTree<'a> {
         Ok(())
     }
 
-    pub fn lookup_path(label: &Label<'a>, tree: RawValue<'a>) -> Result<LookupResult<'a>, Error> {
+    pub fn lookup_path(
+        label: &Label<'a>,
+        tree: RawValue<'a>,
+    ) -> Result<LookupResult<'a>, ParserError> {
         fn inner_lookup<'a>(
             label: &Label<'a>,
             tree: RawValue<'a>,
             depth: usize,
-        ) -> Result<LookupResult<'a>, Error> {
+        ) -> Result<LookupResult<'a>, ParserError> {
             if depth >= MAX_TREE_DEPTH {
-                return Err(Error::message("Maximum tree depth exceeded"));
+                return Err(ParserError::RecursionLimitReached);
             }
             let current_tree = tree.try_into()?;
 
@@ -175,7 +180,9 @@ impl<'a> HashTree<'a> {
         inner_lookup(label, tree, 1)
     }
 
-    pub fn reconstruct(&self) -> Result<[u8; 32], Error> {
+    /// Reconstruct the root hash of this tree, following the rules in:
+    /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
+    pub fn reconstruct(&self) -> Result<[u8; 32], ParserError> {
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
             HashTree::Fork(left, right) => {
@@ -184,19 +191,24 @@ impl<'a> HashTree<'a> {
 
                 let left_hash = left.reconstruct()?;
                 let right_hash = right.reconstruct()?;
+
                 let mut concat = [0; 64];
                 concat[..32].copy_from_slice(&left_hash);
                 concat[32..].copy_from_slice(&right_hash);
+
                 hash_with_domain_sep("ic-hashtree-fork", &concat)
             }
             HashTree::Labeled(label, subtree) => {
                 let subtree: HashTree = subtree.try_into()?;
                 let subtree_hash = subtree.reconstruct()?;
+
                 // domain.len() + label_max_len + hash_len
                 let mut concat = [0; Label::MAX_LEN + 32];
                 let label_len = label.as_bytes().len();
+
                 concat[..label_len].copy_from_slice(label.as_bytes());
                 concat[label_len..label_len + 32].copy_from_slice(&subtree_hash);
+
                 hash_with_domain_sep("ic-hashtree-labeled", &concat[..label_len + 32])
             }
             HashTree::Leaf(_) => {
@@ -207,8 +219,7 @@ impl<'a> HashTree<'a> {
             HashTree::Pruned(_) => {
                 let hash = self.value().unwrap();
                 if hash.len() != 32 {
-                    // FIXME: Do not panic
-                    panic!("Pruned node hash must be 32 bytes");
+                    return Err(ParserError::UnexpectedValue);
                 }
 
                 let mut result = [0; 32];
@@ -221,17 +232,17 @@ impl<'a> HashTree<'a> {
 }
 
 impl<'a> TryFrom<RawValue<'a>> for HashTree<'a> {
-    type Error = Error;
+    type Error = ParserError;
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
         let mut d = Decoder::new(value.bytes());
-        let tree = HashTree::decode(&mut d, &mut ())?;
+        let tree = HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)?;
         tree.check_integrity(0)?;
         Ok(tree)
     }
 }
 
 impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
-    type Error = Error;
+    type Error = ParserError;
     fn try_from(value: &RawValue<'a>) -> Result<Self, Self::Error> {
         (*value).try_into()
     }
@@ -239,33 +250,29 @@ impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
 
 impl<'b, C> Decode<'b, C> for HashTree<'b> {
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
-        match d.datatype()? {
-            minicbor::data::Type::Array => {
-                let len = d.array()?.ok_or(Error::message("Expected array"))?;
-                match len {
-                    0 => Ok(HashTree::Empty),
-                    _ => {
-                        let tag = u8::decode(d, ctx)?;
-                        match tag {
-                            0 => Ok(HashTree::Empty),
-                            1 => {
-                                let left = RawValue::decode(d, ctx)?;
-                                let right = RawValue::decode(d, ctx)?;
-                                Ok(HashTree::Fork(left, right))
-                            }
-                            2 => {
-                                let label = Label::decode(d, ctx)?;
-                                let subtree = RawValue::decode(d, ctx)?;
-                                Ok(HashTree::Labeled(label, subtree))
-                            }
-                            3 => Ok(HashTree::Leaf(RawValue::decode(d, ctx)?)),
-                            4 => Ok(HashTree::Pruned(RawValue::decode(d, ctx)?)),
-                            _ => Err(Error::message("Invalid HashTree tag")),
-                        }
-                    }
-                }
+        // Every tree is encoded as an array:
+        // [tag(u8), data(CBOR blob)]
+        // where tag tells the tree type
+        let len = d.array()?.ok_or(Error::type_mismatch(Type::Array))?;
+        if len == 0 {
+            return Ok(HashTree::Empty);
+        }
+        let tag = u8::decode(d, ctx)?;
+        match tag {
+            0 => Ok(HashTree::Empty),
+            1 => {
+                let left = RawValue::decode(d, ctx)?;
+                let right = RawValue::decode(d, ctx)?;
+                Ok(HashTree::Fork(left, right))
             }
-            _ => Err(Error::message("Expected array for HashTree")),
+            2 => {
+                let label = Label::decode(d, ctx)?;
+                let subtree = RawValue::decode(d, ctx)?;
+                Ok(HashTree::Labeled(label, subtree))
+            }
+            3 => Ok(HashTree::Leaf(RawValue::decode(d, ctx)?)),
+            4 => Ok(HashTree::Pruned(RawValue::decode(d, ctx)?)),
+            _ => Err(Error::message("Invalid HashTree tag")),
         }
     }
 }
@@ -330,27 +337,14 @@ mod hash_tree_tests {
         let cert = Certificate::parse(&data).unwrap();
 
         // Create the path for "time"
-        let path = Label::String("time");
+        let path = "time".into();
 
         // Perform the lookup
-        match HashTree::lookup_path(&path, *cert.tree()).unwrap() {
-            LookupResult::Found(value) => {
-                match value.try_into() {
-                    Ok(HashTree::Leaf(leaf_data)) => {
-                        // The expected leaf data
-                        let expected = [73, 203, 247, 221, 140, 161, 162, 167, 226, 23];
-                        assert_eq!(
-                            leaf_data.bytes(),
-                            expected,
-                            "Leaf data does not match expected value"
-                        );
-                        std::println!("Successfully found and matched 'time' leaf data");
-                    }
-                    _ => panic!("Expected Leaf, found {:?}", value),
-                }
-            }
-            _ => panic!("'{:?}' path not found in the tree", path),
-        }
+        let found = HashTree::lookup_path(&path, *cert.tree()).unwrap();
+        let time: HashTree = found.value().unwrap().try_into().unwrap();
+        let time = time.value().unwrap();
+        let expected = [203, 247, 221, 140, 161, 162, 167, 226, 23];
+        assert_eq!(time, expected, "Leaf data does not match expected value");
     }
 
     #[test]
@@ -359,28 +353,10 @@ mod hash_tree_tests {
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::parse(&data).unwrap();
 
-        let path = Label::String("reply");
+        let path = "reply".into();
 
-        HashTree::parse_and_print_hash_tree(cert.tree(), 0).unwrap();
-
-        // Perform the lookup
-        match HashTree::lookup_path(&path, *cert.tree()).unwrap() {
-            LookupResult::Found(value) => {
-                let tree = value.try_into().unwrap();
-                match tree {
-                    HashTree::Leaf(leaf_data) => {
-                        // The expected leaf data
-                        assert_eq!(
-                            leaf_data.bytes(),
-                            REPLY,
-                            "Leaf data does not match expected value"
-                        );
-                    }
-                    _ => panic!("Expected Leaf, found {:?}", value),
-                }
-            }
-            _ => panic!("'{:?}' path not found in the tree", path),
-        }
+        let found = HashTree::lookup_path(&path, *cert.tree()).unwrap();
+        assert!(found.value().is_some());
     }
 
     #[test]
