@@ -65,6 +65,11 @@ typedef enum {
     parser_invalid_label,
     parser_invalid_delegation,
     parser_invalid_certificate
+    parser_invalid_tree,
+    parser_minicbor_error,
+    parser_recursion_limit_reached,
+
+
 } parser_error_t;
 
 typedef struct {

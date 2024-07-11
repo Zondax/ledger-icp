@@ -12,6 +12,13 @@ impl<'a> SubnetId<'a> {
         d.bytes().unwrap()
     }
 }
+impl<'a> TryFrom<&RawValue<'a>> for SubnetId<'a> {
+    type Error = Error;
+
+    fn try_from(value: &RawValue<'a>) -> Result<Self, Self::Error> {
+        (*value).try_into()
+    }
+}
 
 impl<'a> TryFrom<RawValue<'a>> for SubnetId<'a> {
     type Error = Error;
