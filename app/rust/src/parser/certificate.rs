@@ -47,7 +47,7 @@ impl<'a> Certificate<'a> {
 
         // check delegation certificate if present
         if let Some(delegation) = cert.delegation {
-            Self::parse(delegation.certificate.bytes())?;
+            let _: Certificate = delegation.certificate.try_into()?;
         }
 
         Ok(cert)
@@ -61,8 +61,8 @@ impl<'a> Certificate<'a> {
         self.delegation.as_ref()
     }
 
-    pub fn signature(&self) -> Signature<'a> {
-        self.signature
+    pub fn signature(&self) -> &[u8] {
+        self.signature.bls_signature()
     }
 
     pub fn hash(&self) -> Result<[u8; 32], ParserError> {
@@ -71,25 +71,29 @@ impl<'a> Certificate<'a> {
     }
 
     // The root_public_key is now a parameter to the verify method
-    pub fn verify(&self, root_public_key: &[u8]) -> Result<bool, ParserError> {
-        // Step 1: Compute root hash of the outer certificate's tree
-        let tree: HashTree = self.tree.try_into()?;
-        let root_hash = tree.reconstruct()?;
-
+    pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
         // this ensure no delegation in delegation.cert
         // that delegation.cert.tree() contains a public key
         // verify the delegation.cert using root key
-        if !self.check_delegation(root_public_key)? {
+        if !self.check_delegation(root_key)? {
             return Ok(false);
         }
 
         // Step 3: Compute BLS key
-        let pubkey = self.delegation_key(root_public_key)?;
+        let pubkey = self.delegation_key(root_key)?;
+
+        self.verify_signature(pubkey)
+    }
+
+    fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
+        // Step 1: Compute root hash
+        let root_hash = self.hash()?;
 
         // Step 4: Verify signature
         let message = hash_with_domain_sep("ic-state-root", &root_hash);
-        let signature = self.signature.bls_signature()?;
+        let signature = self.signature.bls_signature();
+
         Ok(verify_bls_signature(signature, &message, pubkey).is_ok())
     }
 
@@ -99,11 +103,6 @@ impl<'a> Certificate<'a> {
         match &self.delegation {
             None => Ok(true),
             Some(delegation) => {
-                // Verify the delegation's certificate
-                if !delegation.verify(root_key)? {
-                    return Ok(false);
-                }
-
                 // Ensure the delegation's certificate contains the subnet's public key
                 if delegation.public_key()?.is_none() {
                     return Ok(false);
@@ -114,19 +113,35 @@ impl<'a> Certificate<'a> {
                     return Ok(false);
                 }
 
+                // Verify the delegation's certificate
+                // using the root key and not the delegations key,
+                // however the signature is the inner certificate signature
+                // not the outer certificate one.
+                if !delegation.verify(root_key)? {
+                    return Ok(false);
+                }
+
                 Ok(true)
             }
         }
     }
 
-    fn delegation_key(&self, root_public_key: &'a [u8]) -> Result<&'a [u8], ParserError> {
+    fn delegation_key(&self, root_key: &'a [u8]) -> Result<&'a [u8], ParserError> {
         match &self.delegation {
-            None => Ok(root_public_key), // Use root_public_key if no delegation
+            None => Ok(root_key), // Use root_public_key if no delegation
             Some(d) => {
                 let key = d.public_key()?.ok_or(ParserError::UnexpectedValue)?;
                 Ok(key.as_bytes())
             }
         }
+    }
+}
+
+impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
+    type Error = ParserError;
+
+    fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
+        Self::parse(value.bytes())
     }
 }
 
@@ -176,7 +191,6 @@ mod test_certificate {
         let cert = Certificate::parse(&data).unwrap();
 
         let sign = cert.signature();
-        let sign = sign.bls_signature().unwrap();
         std::println!("sign: {:?} - len: {}", sign, sign.len());
     }
 
@@ -199,11 +213,20 @@ mod test_certificate {
         assert_eq!(root_hash, CERT_HASH);
         // compare our root hash with the hash icp library computes
         let icp_cert: IcpCertificate = serde_cbor::from_slice(&data).unwrap();
-        let icp_del = icp_cert.delegation.unwrap();
-        let icp_hash: IcpCertificate = serde_cbor::from_slice(&icp_del.certificate).unwrap();
-        let icp_hash = hex::encode(icp_hash.tree.digest());
+        let delegation = icp_cert.delegation.unwrap();
+        let del_cert: IcpCertificate = serde_cbor::from_slice(&delegation.certificate).unwrap();
+        let icp_hash = hex::encode(del_cert.tree.digest());
 
         assert_eq!(del_cert_hash, icp_hash);
         assert_eq!(del_cert_hash, DEL_CERT_HASH);
+        std::println!("*root_hash: {}", root_hash);
+        std::println!("*del_hash: {}", icp_hash);
+
+        std::println!("icp_raw_signature {:?}", icp_cert.signature);
+        std::println!("icp_signature: {:?}", hex::encode(icp_cert.signature));
+
+        // verify certificate signatures
+        let root_key = [0u8; 32];
+        assert!(cert.verify(&root_key).unwrap());
     }
 }
