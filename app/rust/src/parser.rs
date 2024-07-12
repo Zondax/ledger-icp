@@ -6,6 +6,7 @@ pub mod hash_tree;
 pub mod label;
 pub mod pubkey;
 pub mod raw_value;
+pub mod reply;
 pub mod signature;
 pub mod subnet_id;
 
