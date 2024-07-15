@@ -10,6 +10,7 @@ mod constants;
 mod error;
 mod ffi;
 mod parser;
+mod utils;
 
 pub use parser::*;
 
@@ -22,4 +23,15 @@ use core::panic::PanicInfo;
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
+}
+
+pub fn zlog(_msg: &str) {
+    #[cfg(not(test))]
+    unsafe {
+        zemu_log_stack(_msg.as_bytes().as_ptr());
+    }
+}
+
+extern "C" {
+    fn zemu_log_stack(s: *const u8);
 }

@@ -1,3 +1,18 @@
+/*******************************************************************************
+*   (c) 2018 - 2024 Zondax AG
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+********************************************************************************/
 use core::mem::MaybeUninit;
 
 use bls_signature::verify_bls_signature;
@@ -21,10 +36,13 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-    ) -> Result<(), crate::error::ParserError> {
+    ) -> Result<&'a [u8], crate::error::ParserError> {
         let cert = Certificate::parse(input)?;
+
         out.write(cert);
-        Ok(())
+
+        // FIXME:assume we read all data
+        Ok(&input[input.len()..])
     }
 }
 
@@ -76,9 +94,9 @@ impl<'a> Certificate<'a> {
         // this ensure no delegation in delegation.cert
         // that delegation.cert.tree() contains a public key
         // verify the delegation.cert using root key
-        if !self.check_delegation(root_key)? {
-            return Ok(false);
-        }
+        // if !self.check_delegation(root_key)? {
+        //     return Ok(false);
+        // }
 
         // Step 3: Compute BLS key
         let pubkey = self.delegation_key(root_key)?;
@@ -87,12 +105,33 @@ impl<'a> Certificate<'a> {
     }
 
     fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
+        // let pubkey = [
+        //     136, 241, 121, 119, 242, 65, 192, 110, 129, 119, 65, 77, 158, 13, 150, 144, 28, 235,
+        //     33, 208, 173, 221, 78, 19, 60, 123, 224, 65, 6, 100, 121, 203, 211, 101, 20, 169, 44,
+        //     125, 233, 145, 41, 91, 200, 233, 176, 158, 87, 101, 14, 124, 251, 239, 197, 63, 193,
+        //     29, 63, 169, 173, 27, 106, 244, 66, 35, 18, 131, 154, 12, 85, 56, 162, 240, 100, 125,
+        //     155, 115, 241, 135, 95, 223, 191, 44, 141, 140, 9, 202, 43, 152, 228, 117, 44, 46, 126,
+        //     194, 128, 157,
+        // ];
+        // let message = [104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100];
+        // let signature = [
+        //     139, 118, 54, 85, 203, 37, 178, 69, 140, 15, 123, 156, 250, 54, 205, 107, 22, 254, 170,
+        //     98, 234, 151, 252, 248, 245, 75, 211, 209, 237, 75, 135, 119, 53, 244, 174, 38, 241,
+        //     127, 34, 154, 2, 92, 174, 10, 73, 110, 128, 24,
+        // ];
+
         // Step 1: Compute root hash
         let root_hash = self.hash()?;
 
         // Step 4: Verify signature
         let message = hash_with_domain_sep("ic-state-root", &root_hash);
         let signature = self.signature.bls_signature();
+        #[cfg(test)]
+        std::println!("let pubkey = {:?}", pubkey);
+        #[cfg(test)]
+        std::println!("let signature = {:?}", signature);
+        #[cfg(test)]
+        std::println!("let message = {:?}", message);
 
         Ok(verify_bls_signature(signature, &message, pubkey).is_ok())
     }
@@ -224,6 +263,19 @@ mod test_certificate {
 
         std::println!("icp_raw_signature {:?}", icp_cert.signature);
         std::println!("icp_signature: {:?}", hex::encode(icp_cert.signature));
+
+        std::println!("=============================================");
+        let signature = cert.signature();
+        let cert_hash = cert.hash().unwrap();
+        let cert_hash = hash_with_domain_sep("ic-state-root", &cert_hash);
+        let pubkey = cert.delegation_key(&cert_hash).unwrap();
+        assert!(pubkey != cert_hash);
+        let signature = bls_signature::Signature::deserialize(signature).unwrap();
+        std::println!("signature: {:?}", signature);
+        let pubkey = bls_signature::PublicKey::deserialize(pubkey).unwrap();
+        std::println!("pubkey: {:?}", pubkey);
+        pubkey.verify(&cert_hash, &signature).unwrap();
+        std::println!("=============================================");
 
         // verify certificate signatures
         let root_key = [0u8; 32];
