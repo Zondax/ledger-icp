@@ -6,6 +6,7 @@
 
 extern crate no_std_compat as std;
 
+pub mod candid_types;
 mod constants;
 mod error;
 mod ffi;

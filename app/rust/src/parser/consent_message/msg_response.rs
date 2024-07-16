@@ -15,7 +15,9 @@
 ********************************************************************************/
 use core::ptr::addr_of_mut;
 
-use crate::{error::ParserError, utils::decompress_leb128, FromBytes};
+use crate::{
+    candid_types::parse_type_table, error::ParserError, utils::decompress_leb128, FromBytes,
+};
 
 use super::{msg_error::Error, msg_info::ConsentInfo};
 
@@ -50,6 +52,22 @@ pub enum ConsentMessageResponse<'a> {
     Err(Error<'a>),
 }
 
+impl<'a> ConsentMessageResponse<'a> {
+    pub fn response_type(&self) -> ResponseType {
+        match self {
+            Self::Ok(_) => ResponseType::Ok,
+            Self::Err(_) => ResponseType::Err,
+        }
+    }
+
+    pub fn consent_info(&self) -> Option<&ConsentInfo<'a>> {
+        match self {
+            Self::Ok(info) => Some(info),
+            _ => None,
+        }
+    }
+}
+
 impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
     fn from_bytes_into(
         input: &'a [u8],
@@ -64,9 +82,9 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
         // 2. Parse the type table
         #[cfg(test)]
         {
-            super::candid_types::print_type_table(rem)?;
+            crate::candid_types::print_type_table(rem)?;
         }
-        let rem = super::candid_types::parse_type_table(rem)?;
+        let rem = parse_type_table(rem)?;
 
         // 3. Read the variant index (M part)
         let (rem, variant_index) =

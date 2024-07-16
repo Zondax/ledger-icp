@@ -2,8 +2,10 @@ use crate::{
     error::ParserError,
     utils::{decompress_leb128, decompress_sleb128},
 };
+
+// Only for debug information in testing
 #[cfg(test)]
-use std::{string::String, vec::Vec};
+use std::vec::Vec;
 
 #[repr(i32)]
 enum IDLTypes {
@@ -70,6 +72,59 @@ impl TryFrom<i64> for IDLTypes {
     }
 }
 
+/// Use to read out the bytes that are part of the candid encoded type table.
+/// in candid encoded data we have first T(type table) followed by the actual data
+/// in the M(memory section), and finaly a R(reference) section.
+/// for more documentation about encoding/decoding:
+/// https://github.com/dfinity/candid/blob/master/spec/Candid.md#binary-format
+pub fn parse_type_table(input: &[u8]) -> Result<&[u8], ParserError> {
+    let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
+    let mut current = rem;
+
+    for _ in 0..type_count {
+        let (new_rem, type_code) = decompress_sleb128(current)?;
+        let type_code = IDLTypes::try_from(type_code).map_err(|_| ParserError::UnexpectedType)?;
+        current = new_rem;
+
+        match type_code {
+            IDLTypes::Opt => {
+                let (new_rem, _) = decompress_sleb128(current)?;
+                current = new_rem;
+            }
+            IDLTypes::Vector => {
+                let (new_rem, _) = decompress_sleb128(current)?;
+                current = new_rem;
+            }
+            IDLTypes::Record => {
+                let (new_rem, field_count) =
+                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
+                current = new_rem;
+                for _ in 0..field_count {
+                    let (new_rem, _) =
+                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
+                    let (new_rem, _) = decompress_sleb128(new_rem)?;
+                    current = new_rem;
+                }
+            }
+            IDLTypes::Variant => {
+                let (new_rem, field_count) =
+                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
+                current = new_rem;
+                for _ in 0..field_count {
+                    let (new_rem, _) =
+                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
+                    let (new_rem, _) = decompress_sleb128(new_rem)?;
+                    current = new_rem;
+                }
+            }
+            _ => {}
+        };
+    }
+
+    Ok(current)
+}
+
+#[cfg(test)]
 impl core::fmt::Display for IDLTypes {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let s = match self {
@@ -170,53 +225,6 @@ pub fn print_type_table(input: &[u8]) -> Result<&[u8], ParserError> {
 
     #[cfg(test)]
     print_table(&types);
-
-    Ok(current)
-}
-
-pub fn parse_type_table(input: &[u8]) -> Result<&[u8], ParserError> {
-    let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-    let mut current = rem;
-
-    for _ in 0..type_count {
-        let (new_rem, type_code) = decompress_sleb128(current)?;
-        let type_code = IDLTypes::try_from(type_code).map_err(|_| ParserError::UnexpectedType)?;
-        current = new_rem;
-
-        match type_code {
-            IDLTypes::Opt => {
-                let (new_rem, _) = decompress_sleb128(current)?;
-                current = new_rem;
-            }
-            IDLTypes::Vector => {
-                let (new_rem, _) = decompress_sleb128(current)?;
-                current = new_rem;
-            }
-            IDLTypes::Record => {
-                let (new_rem, field_count) =
-                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                current = new_rem;
-                for _ in 0..field_count {
-                    let (new_rem, _) =
-                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                    let (new_rem, _) = decompress_sleb128(new_rem)?;
-                    current = new_rem;
-                }
-            }
-            IDLTypes::Variant => {
-                let (new_rem, field_count) =
-                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                current = new_rem;
-                for _ in 0..field_count {
-                    let (new_rem, _) =
-                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                    let (new_rem, _) = decompress_sleb128(new_rem)?;
-                    current = new_rem;
-                }
-            }
-            _ => {}
-        };
-    }
 
     Ok(current)
 }

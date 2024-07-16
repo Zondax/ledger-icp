@@ -16,13 +16,15 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
-    constants::{MAX_LINES, MAX_PAGES},
-    error::ParserError,
-    parse_text,
-    utils::decompress_leb128,
-    FromBytes,
+    candid_utils::parse_text,
+    constants::{MAX_CHARS_PER_LINE, MAX_LINES},
+    error::{ParserError, ViewError},
+    utils::{decompress_leb128, handle_ui_message},
+    DisplayableItem, FromBytes,
 };
 
+// We got this after printing the type table
+// using candid_utils::print_type_table function
 const LINE_DISPLAY_MESSAGE_HASH: u64 = 1124872921;
 const GENERIC_DISPLAY_MESSAGE_HASH: u64 = 4082495484;
 
@@ -41,7 +43,7 @@ pub enum MessageType {
 
 #[derive(Debug)]
 #[repr(C)]
-pub enum ConsentMessage<'a> {
+pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
     // Assuming max 4 pages with 5 lines each
     // also lazy parsing, although we ensure
@@ -50,9 +52,99 @@ pub enum ConsentMessage<'a> {
     LineDisplayMessage(&'a [u8]),
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Page<'a> {
-    lines: [&'a str; MAX_LINES],
+impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
+    // TODO: Check that this holds true
+    // the idea snprintf(buffer, "%s\n%s\n", line1, line2)
+    // but in bytes plus null terminator
+    fn render_buffer() -> [u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1] {
+        // Unfortunate we can not use const generic parameters in expresion bellow
+        [0u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1]
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Page<'a, const L: usize> {
+    lines: [&'a str; L],
+    num_lines: usize,
+}
+
+impl<'a, const L: usize> Default for Page<'a, L> {
+    fn default() -> Self {
+        Self {
+            lines: [""; L],
+            num_lines: 0,
+        }
+    }
+}
+
+struct LineDisplayIterator<'b, const L: usize> {
+    current: &'b [u8],
+    page_idx: usize,
+    page_count: u64,
+}
+
+impl<'b, const L: usize> LineDisplayIterator<'b, L> {
+    fn new(data: &'b [u8]) -> Self {
+        // get page count
+        // Safe to unwrap, when this is invoked ConsentMessage was fully parsed
+        let (rem, page_count) = decompress_leb128(data).unwrap();
+
+        Self {
+            current: rem,
+            page_idx: 0,
+            page_count,
+        }
+    }
+}
+
+impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
+    type Item = Page<'b, L>;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.page_idx >= self.page_count as usize {
+            return None;
+        }
+
+        let mut lines = [""; L];
+
+        // item_n indicates the page number we want to show
+        // but we need to parse everything before reaching the
+        // requested page.
+        let (mut rem, line_count) = decompress_leb128(self.current).ok()?;
+
+        // just double check
+        if line_count > L as u64 {
+            return None;
+        }
+
+        for l in lines.iter_mut().take(line_count as usize) {
+            let (new_rem, line) = parse_text(rem).ok()?;
+            // Copy page data(two lines) into our buffer
+            // only if we are at the requested page, otherwise
+            // just pass through the data
+            *l = line;
+            rem = new_rem;
+        }
+
+        self.current = rem;
+        self.page_idx += 1;
+
+        Some(Page {
+            lines,
+            num_lines: line_count as usize,
+        })
+    }
+}
+
+impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
+    /// Creates an iterator over the pages in
+    /// the message
+    pub fn pages_iter(&self) -> Option<impl Iterator<Item = Page<'a, LINES>>> {
+        if let ConsentMessage::LineDisplayMessage(data) = self {
+            Some(LineDisplayIterator::new(data))
+        } else {
+            None
+        }
+    }
 }
 
 impl TryFrom<u64> for MessageType {
@@ -68,16 +160,14 @@ impl TryFrom<u64> for MessageType {
     }
 }
 
-impl<'a> FromBytes<'a> for ConsentMessage<'a> {
+impl<'a, const PAGES: usize, const LINES: usize> FromBytes<'a>
+    for ConsentMessage<'a, PAGES, LINES>
+{
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], ParserError> {
-        let (mut rem, variant) =
-            decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-
-        #[cfg(test)]
-        std::println!("consent_msg_variant: {}", variant);
+        let (rem, variant) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
 
         let message_type = MessageType::try_from(variant)?;
 
@@ -97,32 +187,29 @@ impl<'a> FromBytes<'a> for ConsentMessage<'a> {
                 unsafe {
                     addr_of_mut!((*out).0).write(message_type);
                 }
-                // let pages = unsafe { &mut (*out).pages };
+                // get page count
+                let (mut rem, page_count) = decompress_leb128(rem)?;
 
-                let (page_count, bytes_read) = print_leb128(rem)?;
-
-                #[cfg(test)]
-                std::println!("page_count: {} (bytes read: {})", page_count, bytes_read);
-                rem = &rem[bytes_read..];
-
-                if page_count as usize > MAX_PAGES {
+                // we do not probably need to limit number of pages
+                if page_count as usize > PAGES {
                     return Err(ParserError::ValueOutOfRange);
                 }
 
+                // now iterate over each page to parse the line they contain
+                // ensure data integrity at this level at parsing, so we do not
+                // have to worried about in the UI part
                 for _ in 0..page_count as usize {
-                    let (line_count, bytes_read) = print_leb128(rem)?;
-                    #[cfg(test)]
-                    std::println!("line_count: {} (bytes read: {})", line_count, bytes_read);
-                    rem = &rem[bytes_read..];
+                    let (new_rem, lines_count) = decompress_leb128(rem)?;
+                    // update our slice pointer
+                    rem = new_rem;
 
-                    if line_count as usize > MAX_LINES {
+                    if lines_count as usize > LINES {
                         return Err(ParserError::ValueOutOfRange);
                     }
 
-                    for _ in 0..line_count as usize {
-                        let (new_rem, line) = parse_text(rem)?;
-                        #[cfg(test)]
-                        std::println!("line: {}", line);
+                    for _ in 0..lines_count as usize {
+                        let (new_rem, _) = parse_text(rem)?;
+                        // update our slice pointer
                         rem = new_rem;
                     }
                 }
@@ -131,33 +218,104 @@ impl<'a> FromBytes<'a> for ConsentMessage<'a> {
                 if read > start.len() {
                     return Err(ParserError::UnexpectedBufferEnd);
                 }
+
+                // Copy Line variant data, removing the other boilerplate for parsing message
+                // response
                 let data = &start[0..read];
+
                 unsafe {
                     addr_of_mut!((*out).1).write(data);
                 }
+
                 Ok(rem)
             }
         }
     }
 }
 
-fn print_leb128(input: &[u8]) -> Result<(u64, usize), ParserError> {
-    let mut result = 0;
-    let mut shift = 0;
-    let mut bytes_read = 0;
-
-    for &byte in input {
-        bytes_read += 1;
-        let value = (byte & 0x7f) as u64;
-        result |= value << shift;
-        if byte & 0x80 == 0 {
-            break;
-        }
-        shift += 7;
-        if shift > 63 {
-            return Err(ParserError::UnexpectedError);
+impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
+    for ConsentMessage<'a, PAGES, LINES>
+{
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        match self {
+            ConsentMessage::GenericDisplayMessage(_) => Ok(1),
+            ConsentMessage::LineDisplayMessage(bytes) => {
+                let (_, page_count) = decompress_leb128(bytes).map_err(|_| ViewError::NoData)?;
+                Ok(page_count as u8)
+            }
         }
     }
 
-    Ok((result, bytes_read))
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        let title_bytes = b"Consent Msg Request:";
+        let title_len = title_bytes.len().min(title.len() - 1);
+        title[..title_len].copy_from_slice(&title_bytes[..title_len]);
+        title[title_len] = 0;
+
+        match self {
+            ConsentMessage::GenericDisplayMessage(content) => {
+                let msg = content.as_bytes();
+                handle_ui_message(msg, message, page)
+            }
+            ConsentMessage::LineDisplayMessage(bytes) => {
+                let mut pages: LineDisplayIterator<'_, LINES> = LineDisplayIterator::new(bytes);
+                // now get to the page we are looking for
+                let current_page = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
+
+                let mut render_data = Self::render_buffer();
+                let mut at = 0;
+
+                current_page
+                    .lines
+                    .iter()
+                    .take(current_page.num_lines)
+                    .for_each(|line| {
+                        render_data[at..at + line.len()].copy_from_slice(line.as_bytes());
+                        at += line.len();
+                        // TODO: Not sure if adding a separator would work here
+                        // lets confirm with testing
+                        if at < render_data.len() {
+                            render_data[at] = b'\n';
+                        }
+                    });
+
+                handle_ui_message(&render_data, message, page)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_consent_message {
+    use super::*;
+
+    // Data taken from the provided certificate
+    const LINE_DISPLAY_MSG: &[u8] = &[
+        1, 2, 30, 80, 114, 111, 100, 117, 99, 101, 32, 116, 104, 101, 32, 102, 111, 108, 108, 111,
+        119, 105, 110, 103, 32, 103, 114, 101, 101, 116, 105, 110, 103, 20, 116, 101, 120, 116, 58,
+        32, 34, 72, 101, 108, 108, 111, 44, 32, 116, 111, 98, 105, 33, 34,
+    ];
+
+    const NUM_PAGES: u64 = 1;
+    const PAGES: [&str; 2] = ["Produce the following greeting", "text: \"Hello, tobi!\""];
+
+    #[test]
+    fn test_iterator() {
+        // use a dummy number of lines(4) per page
+        let mut iter: LineDisplayIterator<'_, 4> = LineDisplayIterator::new(LINE_DISPLAY_MSG);
+        let page = iter.next().unwrap();
+        let different = page.lines.iter().zip(PAGES.iter()).any(|(pl, cl)| pl != cl);
+
+        assert!(!different);
+
+        assert!(iter.next().is_none());
+    }
 }

@@ -16,7 +16,10 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
-    error::ParserError, parse_text, parser::parse_opt_int16, utils::decompress_leb128, FromBytes,
+    candid_utils::{parse_opt_i16, parse_text},
+    error::ParserError,
+    utils::decompress_leb128,
+    FromBytes,
 };
 
 #[derive(Debug)]
@@ -33,9 +36,9 @@ impl<'a> FromBytes<'a> for ConsentMessageMetadata<'a> {
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], ParserError> {
         let (rem, _) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-        // read first the utc_offset, its hash it < than the language
 
-        let (rem, utc_offset) = parse_opt_int16(rem)?;
+        // read first the utc_offset, its hash is < than the language hash
+        let (rem, utc_offset) = parse_opt_i16(rem)?;
         let (rem, language) = parse_text(rem)?;
 
         let out = out.as_mut_ptr();

@@ -16,6 +16,14 @@
 use minicbor::decode::Error;
 use nom::error::ErrorKind;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "derive-debug", derive(Debug))]
+pub enum ViewError {
+    Unknown,
+    NoData,
+    Reject,
+}
+
 #[repr(u32)]
 #[derive(Debug, PartialEq)]
 pub enum ParserError {
