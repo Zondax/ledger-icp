@@ -68,6 +68,12 @@ pub struct Page<'a, const L: usize> {
     num_lines: usize,
 }
 
+impl<'a, const L: usize> Page<'a, L> {
+    pub fn lines(&self) -> &[&str] {
+        &self.lines[..self.num_lines]
+    }
+}
+
 impl<'a, const L: usize> Default for Page<'a, L> {
     fn default() -> Self {
         Self {
@@ -312,7 +318,11 @@ mod test_consent_message {
         // use a dummy number of lines(4) per page
         let mut iter: LineDisplayIterator<'_, 4> = LineDisplayIterator::new(LINE_DISPLAY_MSG);
         let page = iter.next().unwrap();
-        let different = page.lines.iter().zip(PAGES.iter()).any(|(pl, cl)| pl != cl);
+        let different = page
+            .lines()
+            .iter()
+            .zip(PAGES.iter())
+            .any(|(pl, cl)| pl != cl);
 
         assert!(!different);
 
