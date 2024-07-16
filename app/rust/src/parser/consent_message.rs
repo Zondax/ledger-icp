@@ -13,6 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+pub mod candid_types;
 pub mod msg;
 pub mod msg_error;
 pub mod msg_info;
