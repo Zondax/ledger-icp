@@ -13,15 +13,19 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use crate::{error::ParserError, FromBytes};
-use core::ptr::addr_of_mut;
+use crate::{
+    constants::{MAX_LINES, MAX_PAGES},
+    error::ParserError,
+    FromBytes,
+};
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use super::{msg::ConsentMessage, msg_metadata::ConsentMessageMetadata};
 
 #[derive(Debug)]
 #[repr(C)]
 pub struct ConsentInfo<'a> {
-    pub message: ConsentMessage<'a>,
+    pub message: ConsentMessage<'a, MAX_PAGES, MAX_LINES>,
     pub metadata: ConsentMessageMetadata<'a>,
 }
 
@@ -36,7 +40,8 @@ impl<'a> FromBytes<'a> for ConsentInfo<'a> {
         let rem = ConsentMessageMetadata::from_bytes_into(input, metadata)?;
 
         // Field with hash 1763119074 points to type 3 which is the consent messagees
-        let message = unsafe { &mut *addr_of_mut!((*out).message).cast() };
+        let message: &mut MaybeUninit<ConsentMessage<'_, MAX_PAGES, MAX_LINES>> =
+            unsafe { &mut *addr_of_mut!((*out).message).cast() };
         let rem = ConsentMessage::from_bytes_into(rem, message)?;
 
         Ok(rem)

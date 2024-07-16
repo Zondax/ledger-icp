@@ -13,13 +13,15 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-pub mod candid_types;
 pub mod msg;
 pub mod msg_error;
 pub mod msg_info;
 pub mod msg_metadata;
 pub mod msg_response;
 
+// refer to:
+// https://github.com/dfinity/wg-identity-authentication/blob/main/topics/ICRC-21/ICRC-21.did#L134
+//
 // type icrc21_consent_info = record {
 //     consent_message: icrc21_consent_message,
 //     metadata: icrc21_consent_message_metadata
@@ -41,5 +43,3 @@ pub mod msg_response;
 //     language: text,
 //     utc_offset_minutes: opt int16
 // };
-
-// Custom error type

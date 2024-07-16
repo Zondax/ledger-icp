@@ -1,3 +1,4 @@
+use crate::candid_utils::parse_text;
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -15,7 +16,7 @@
 ********************************************************************************/
 use crate::error::ParserError;
 use crate::utils::decompress_leb128;
-use crate::{parse_text, FromBytes};
+use crate::FromBytes;
 use core::ptr::addr_of_mut;
 
 #[derive(Clone, Copy, PartialEq, Eq)]

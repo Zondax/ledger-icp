@@ -15,10 +15,9 @@
 ********************************************************************************/
 use core::mem::MaybeUninit;
 
-use nom::bytes::complete::take;
+use crate::error::ViewError;
 
-use crate::{error::ParserError, utils::decompress_leb128};
-
+pub mod candid_utils;
 pub mod certificate;
 pub mod consent_message;
 pub mod delegation;
@@ -65,23 +64,30 @@ pub trait FromBytes<'b>: Sized {
     ) -> Result<&'b [u8], crate::error::ParserError>;
 }
 
-pub fn parse_text(input: &[u8]) -> Result<(&[u8], &str), nom::Err<ParserError>> {
-    let (rem, len) = crate::utils::decompress_leb128(input)?;
-    let (rem, bytes) = take(len as usize)(rem)?;
-    let s = core::str::from_utf8(bytes).map_err(|_| nom::Err::Error(ParserError::InvalidUtf8))?;
+///This trait defines the interface useful in the UI context
+/// so that all the different OperationTypes or other items can handle their own UI
+pub trait DisplayableItem {
+    /// Returns the number of items to display
+    fn num_items(&self) -> Result<u8, ViewError>;
 
-    Ok((rem, s))
-}
-
-fn parse_opt_int16(input: &[u8]) -> Result<(&[u8], Option<i16>), ParserError> {
-    let (rem, opt_tag) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-    match opt_tag {
-        0 => Ok((rem, None)),
-        1 => {
-            let (rem, value) = nom::number::complete::le_i16(rem)
-                .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
-            Ok((rem, Some(value)))
-        }
-        _ => Err(ParserError::UnexpectedValue),
-    }
+    /// This is invoked when a given page is to be displayed
+    ///
+    /// `item_n` is the item of the operation to display;
+    /// guarantee: 0 <= item_n < self.num_items()
+    /// `title` is the title of the item
+    /// `message` is the contents of the item
+    /// `page` is what page we are supposed to display, this is used to split big messages
+    ///
+    /// returns the total number of pages on success
+    ///
+    /// It's a good idea to always put `#[inline(never)]` on top of this
+    /// function's implementation
+    //#[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError>;
 }
