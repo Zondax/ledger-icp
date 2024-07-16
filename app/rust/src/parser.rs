@@ -17,7 +17,7 @@ use core::mem::MaybeUninit;
 
 use nom::bytes::complete::take;
 
-use crate::error::ParserError;
+use crate::{error::ParserError, utils::decompress_leb128};
 
 pub mod certificate;
 pub mod consent_message;
@@ -71,4 +71,17 @@ pub fn parse_text(input: &[u8]) -> Result<(&[u8], &str), nom::Err<ParserError>> 
     let s = core::str::from_utf8(bytes).map_err(|_| nom::Err::Error(ParserError::InvalidUtf8))?;
 
     Ok((rem, s))
+}
+
+fn parse_opt_int16(input: &[u8]) -> Result<(&[u8], Option<i16>), ParserError> {
+    let (rem, opt_tag) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
+    match opt_tag {
+        0 => Ok((rem, None)),
+        1 => {
+            let (rem, value) = nom::number::complete::le_i16(rem)
+                .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
+            Ok((rem, Some(value)))
+        }
+        _ => Err(ParserError::UnexpectedValue),
+    }
 }

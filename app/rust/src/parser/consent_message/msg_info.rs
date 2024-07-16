@@ -31,11 +31,13 @@ impl<'a> FromBytes<'a> for ConsentInfo<'a> {
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], ParserError> {
         let out = out.as_mut_ptr();
-        let message = unsafe { &mut *addr_of_mut!((*out).message).cast() };
-        let rem = ConsentMessage::from_bytes_into(input, message)?;
-
+        // Field with hash 1075439471 points to type 2 the metadata
         let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };
-        let rem = ConsentMessageMetadata::from_bytes_into(rem, metadata)?;
+        let rem = ConsentMessageMetadata::from_bytes_into(input, metadata)?;
+
+        // Field with hash 1763119074 points to type 3 which is the consent messagees
+        let message = unsafe { &mut *addr_of_mut!((*out).message).cast() };
+        let rem = ConsentMessage::from_bytes_into(rem, message)?;
 
         Ok(rem)
     }

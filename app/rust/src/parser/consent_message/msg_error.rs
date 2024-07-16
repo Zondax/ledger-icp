@@ -135,4 +135,3 @@ impl<'a> FromBytes<'a> for Error<'a> {
         }
     }
 }
-
