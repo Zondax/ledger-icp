@@ -89,8 +89,6 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
         // 3. Read the variant index (M part)
         let (rem, variant_index) =
             decompress_leb128(rem).map_err(|_| ParserError::UnexpectedError)?;
-        #[cfg(test)]
-        std::println!("Variant index: {:?}", variant_index);
 
         // after inspecting the type table
         // we know that ok index is 1, and 8 for error

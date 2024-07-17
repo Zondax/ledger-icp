@@ -18,28 +18,3 @@ pub mod msg_error;
 pub mod msg_info;
 pub mod msg_metadata;
 pub mod msg_response;
-
-// refer to:
-// https://github.com/dfinity/wg-identity-authentication/blob/main/topics/ICRC-21/ICRC-21.did#L134
-//
-// type icrc21_consent_info = record {
-//     consent_message: icrc21_consent_message,
-//     metadata: icrc21_consent_message_metadata
-// };
-//
-// type icrc21_consent_message = variant {
-//     // ... (omitting GenericDisplayMessage for brevity)
-//     LineDisplayMessage: record {
-//         pages: vec record {
-//             // Lines of text to be displayed on a single page.
-//             // Must not have more entries (lines) than specified in the icrc21_consent_message_spec.
-//             // Lines must not exceed the number of characters per line specified in the icrc21_consent_message_spec.
-//             lines: vec text;
-//         };
-//     };
-// };
-//
-// type icrc21_consent_message_metadata = record {
-//     language: text,
-//     utc_offset_minutes: opt int16
-// };
