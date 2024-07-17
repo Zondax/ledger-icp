@@ -40,8 +40,6 @@ impl<'a> TryFrom<RawValue<'a>> for Signature<'a> {
 impl<'b, C> Decode<'b, C> for Signature<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
         // Expect Bytes and ensure we have at leaste 48-bytes
-        #[cfg(test)]
-        std::println!("raw_signature {:?}", d.input());
         let b = d.bytes()?;
         if b.len() != BLS_SIGNATURE_SIZE {
             return Err(Error::message("Invalid BLS signature length"));

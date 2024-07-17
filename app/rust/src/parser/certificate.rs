@@ -91,12 +91,13 @@ impl<'a> Certificate<'a> {
     // The root_public_key is now a parameter to the verify method
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
-        // this ensure no delegation in delegation.cert
-        // that delegation.cert.tree() contains a public key
-        // verify the delegation.cert using root key
-        // if !self.check_delegation(root_key)? {
-        //     return Ok(false);
-        // }
+        // TODO: You can comment this if in order to check
+        // the signature of the outer certificate, because
+        // inner certificate(delegation.cert) is verified using
+        // root key which we do not have at hand
+        if !self.check_delegation(root_key)? {
+            return Ok(false);
+        }
 
         // Step 3: Compute BLS key
         let pubkey = self.delegation_key(root_key)?;
@@ -105,39 +106,22 @@ impl<'a> Certificate<'a> {
     }
 
     fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
-        // let pubkey = [
-        //     136, 241, 121, 119, 242, 65, 192, 110, 129, 119, 65, 77, 158, 13, 150, 144, 28, 235,
-        //     33, 208, 173, 221, 78, 19, 60, 123, 224, 65, 6, 100, 121, 203, 211, 101, 20, 169, 44,
-        //     125, 233, 145, 41, 91, 200, 233, 176, 158, 87, 101, 14, 124, 251, 239, 197, 63, 193,
-        //     29, 63, 169, 173, 27, 106, 244, 66, 35, 18, 131, 154, 12, 85, 56, 162, 240, 100, 125,
-        //     155, 115, 241, 135, 95, 223, 191, 44, 141, 140, 9, 202, 43, 152, 228, 117, 44, 46, 126,
-        //     194, 128, 157,
-        // ];
-        // let message = [104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100];
-        // let signature = [
-        //     139, 118, 54, 85, 203, 37, 178, 69, 140, 15, 123, 156, 250, 54, 205, 107, 22, 254, 170,
-        //     98, 234, 151, 252, 248, 245, 75, 211, 209, 237, 75, 135, 119, 53, 244, 174, 38, 241,
-        //     127, 34, 154, 2, 92, 174, 10, 73, 110, 128, 24,
-        // ];
-
-        // Step 1: Compute root hash
+        // Step 1: Compute root hash, this is computed using certificate.tree
+        // This hash is computed correctly as per testing data passed from icp team
+        // we get to the same hash.
         let root_hash = self.hash()?;
 
         // Step 4: Verify signature
         let message = hash_with_domain_sep("ic-state-root", &root_hash);
         let signature = self.signature.bls_signature();
-        #[cfg(test)]
-        std::println!("let pubkey = {:?}", pubkey);
-        #[cfg(test)]
-        std::println!("let signature = {:?}", signature);
-        #[cfg(test)]
-        std::println!("let message = {:?}", message);
 
+        // Call third-party library directly to verify this signature
         Ok(verify_bls_signature(signature, &message, pubkey).is_ok())
     }
 
     // verify the inner certificate
     // the one that comes in the delegation
+    // if delegation is not present, return true
     fn check_delegation(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         match &self.delegation {
             None => Ok(true),
@@ -153,8 +137,9 @@ impl<'a> Certificate<'a> {
                 }
 
                 // Verify the delegation's certificate
-                // using the root key and not the delegations key,
-                // however the signature is the inner certificate signature
+                // using the root key and not the delegation's key,
+                // however the signature to use is the one contained in
+                // the delegation certificate.
                 // not the outer certificate one.
                 if !delegation.verify(root_key)? {
                     return Ok(false);
@@ -165,6 +150,7 @@ impl<'a> Certificate<'a> {
         }
     }
 
+    // The outer certificate uses the delegation key if present, otherwise the root key
     fn delegation_key(&self, root_key: &'a [u8]) -> Result<&'a [u8], ParserError> {
         match &self.delegation {
             None => Ok(root_key), // Use root_public_key if no delegation
@@ -229,8 +215,15 @@ mod test_certificate {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::parse(&data).unwrap();
 
-        let sign = cert.signature();
-        std::println!("sign: {:?} - len: {}", sign, sign.len());
+        std::println!("Certificate: {:?}", cert);
+        std::println!("=============================================");
+        std::println!("Certificate Tree: ");
+        HashTree::parse_and_print_hash_tree(cert.tree(), 0).unwrap();
+        std::println!("=============================================");
+        std::println!("Delegation Certificate Tree: ");
+        let delegation_certificate = cert.delegation().as_ref().unwrap().cert();
+        HashTree::parse_and_print_hash_tree(delegation_certificate.tree(), 0).unwrap();
+        std::println!("=============================================");
     }
 
     #[test]
