@@ -409,6 +409,8 @@ typedef struct {
     uint8_t neuron_ids_size;
     const uint8_t *neuron_ids_ptr;
 
+    uint8_t has_include_empty_neurons_readable_by_caller;
+    uint8_t include_empty_neurons_readable_by_caller;
     uint8_t include_neurons_readable_by_caller;
 } candid_ListNeurons_t;
 

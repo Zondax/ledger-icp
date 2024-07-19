@@ -71,7 +71,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-    if (txn.txn_length != 2) {
+    if (txn.txn_length != 3) {
         return parser_unexpected_value;
     }
     txn.element.variant_index = 0;
@@ -86,6 +86,18 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
 
     txn.element.variant_index = 1;
     CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(&txn))
+    if (txn.element.implementation != Bool) {
+       return parser_unexpected_type;
+    }
+
+    // reset txn
+    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+
+    txn.element.variant_index = 2;
+    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
     if (txn.element.field_hash != hash_include_neurons_readable_by_caller ||
         txn.element.implementation != Bool) {
         return parser_unexpected_type;
@@ -99,6 +111,11 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     val->neuron_ids_ptr = ctx.buffer + ctx.offset;
     for (uint8_t i = 0; i < val->neuron_ids_size; i++) {
         CHECK_PARSER_ERR(readCandidNat64(&ctx, &tmp_neuron_id))
+    }
+
+    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_include_empty_neurons_readable_by_caller))
+    if(val->has_include_empty_neurons_readable_by_caller) {
+        CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_empty_neurons_readable_by_caller))
     }
 
     CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_neurons_readable_by_caller))
