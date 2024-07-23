@@ -88,6 +88,18 @@ impl<'a> Certificate<'a> {
         tree.reconstruct()
     }
 
+    pub fn message(&self) -> Result<[u8; 46], ParserError> {
+        const DOMAIN_SEP: &[u8] = b"ic-state-root";
+        let root_hash = self.hash()?;
+
+        let mut message = [0u8; 46];
+        message[0] = DOMAIN_SEP.len() as u8;
+        message[1..1 + DOMAIN_SEP.len()].copy_from_slice(DOMAIN_SEP);
+        message[1 + DOMAIN_SEP.len()..].copy_from_slice(&root_hash);
+
+        Ok(message)
+    }
+
     // The root_public_key is now a parameter to the verify method
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
@@ -106,13 +118,8 @@ impl<'a> Certificate<'a> {
     }
 
     fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
-        // Step 1: Compute root hash, this is computed using certificate.tree
-        // This hash is computed correctly as per testing data passed from icp team
-        // we get to the same hash.
-        let root_hash = self.hash()?;
-
         // Step 4: Verify signature
-        let message = hash_with_domain_sep("ic-state-root", &root_hash);
+        let message = self.message()?;
         let signature = self.signature.bls_signature();
 
         // Call third-party library directly to verify this signature
@@ -243,7 +250,8 @@ mod test_certificate {
 
         assert_eq!(root_hash, icp_hash);
         assert_eq!(root_hash, CERT_HASH);
-        // compare our root hash with the hash icp library computes
+
+        // compare our delegation root hash with the hash icp library computes
         let icp_cert: IcpCertificate = serde_cbor::from_slice(&data).unwrap();
         let delegation = icp_cert.delegation.unwrap();
         let del_cert: IcpCertificate = serde_cbor::from_slice(&delegation.certificate).unwrap();
@@ -260,14 +268,14 @@ mod test_certificate {
         std::println!("=============================================");
         let signature = cert.signature();
         let cert_hash = cert.hash().unwrap();
-        let cert_hash = hash_with_domain_sep("ic-state-root", &cert_hash);
+        let message = cert.message().unwrap();
         let pubkey = cert.delegation_key(&cert_hash).unwrap();
         assert!(pubkey != cert_hash);
         let signature = bls_signature::Signature::deserialize(signature).unwrap();
         std::println!("signature: {:?}", signature);
         let pubkey = bls_signature::PublicKey::deserialize(pubkey).unwrap();
         std::println!("pubkey: {:?}", pubkey);
-        pubkey.verify(&cert_hash, &signature).unwrap();
+        pubkey.verify(&message, &signature).unwrap();
         std::println!("=============================================");
 
         // verify certificate signatures
