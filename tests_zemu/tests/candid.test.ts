@@ -59,7 +59,7 @@ const CANDID_TRANSACTIONS = [
   },
   {
     name: 'candid_list_neurons',
-    blob: 'd9d9f7a167636f6e74656e74a66361726758294449444c026d786c02acbe9cc50700dabcd1c70d7e01010200c8c056ea395dd500406c4830c8a17a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b172cfa0381138f406b6d6574686f645f6e616d656c6c6973745f6e6575726f6e736c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302',
+    blob: 'd9d9f7a167636f6e74656e74a66361726758334449444c036d786e7e6c03acbe9cc50700ccd2d3bf0c01dabcd1c70d7e01020200c8c056ea395dd500406c4830c8a17a0101006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b17e4dd23029fe8006b6d6574686f645f6e616d656c6c6973745f6e6575726f6e736c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302',
   },
   {
     name: 'candid_stake_maturity',
@@ -119,7 +119,7 @@ describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
   test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText:(m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey(path)
@@ -162,7 +162,7 @@ describe.each(STAKE_TXS)('CANDID_STAKE', function (data) {
   test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       await sim.toggleExpertMode()
