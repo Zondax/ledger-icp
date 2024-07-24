@@ -24,7 +24,7 @@
 #define ICP_DAY_IN_SECONDS  (uint64_t)(ICP_HOUR_IN_SECONDS * 24)
 #define ICP_YEAR_IN_SECONDS (uint64_t)(ICP_DAY_IN_SECONDS * 365.25)
 
-#if defined(TARGET_STAX)
+#if defined(TARGET_STAX) || defined(TARGET_FLEX)
 #include "view_internal.h"
     const uint8_t LINES_PER_PAGE = MAX_LINES_PER_PAGE_REVIEW;
     static const char SEPARATOR = 0x0a; // newline
@@ -208,7 +208,7 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     MEMCPY(text_ptr, crc_text, crcLen);
     *(text_ptr + crcLen) = SEPARATOR;
     text_ptr += crcLen + 1;
-#if !defined(TARGET_STAX) // needed if crc32 length is < 7
+#if !defined(TARGET_STAX) || defined(TARGET_FLEX) // needed if crc32 length is < 7
     for (uint8_t i = crcLen; i < 7; i++) {
         *text_ptr = ' ';
         text_ptr++;
