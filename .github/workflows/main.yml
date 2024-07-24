@@ -16,11 +16,11 @@ jobs:
       - id: get-user
         run: echo "uid_gid=$(id -u):$(id -g)" >> $GITHUB_OUTPUT
 
-  cpp_test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install deps
@@ -29,7 +29,7 @@ jobs:
           make deps
       - run: make cpp_test
 
-  build_ledger_nano_S:
+  build_ledger:
     needs: configure
     runs-on: ubuntu-latest
     container:
@@ -41,7 +41,7 @@ jobs:
       size: ${{steps.build.outputs.size}}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Build Standard app
@@ -52,93 +52,44 @@ jobs:
           echo "size=$(python3 deps/ledger-zxlib/scripts/getSize.py s)" >> $GITHUB_OUTPUT
 
   size_nano_s:
-    needs: build_ledger_nano_S
+    needs: build_ledger
     runs-on: ubuntu-latest
     env:
       NANOS_LIMIT_SIZE: 136
     steps:
       - run: |
-          echo "LNS app size: ${{needs.build_ledger_nano_S.outputs.size}} KiB"
-          [ ${{needs.build_ledger_nano_S.outputs.size}} -le $NANOS_LIMIT_SIZE ]
-
-  build_ledger_nano_X:
-    needs: configure
-    runs-on: ubuntu-latest
-    container:
-      image: zondax/ledger-app-builder:latest
-      options: --user ${{ needs.configure.outputs.uid_gid }}
-      env:
-        BOLOS_SDK: /opt/nanox-secure-sdk
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Build Standard app
-        shell: bash -l {0}
-        run: make
-
-  build_ledger_nano_SP:
-    needs: configure
-    runs-on: ubuntu-latest
-    container:
-      image: zondax/ledger-app-builder:latest
-      options: --user ${{ needs.configure.outputs.uid_gid }}
-      env:
-        BOLOS_SDK: /opt/nanosplus-secure-sdk
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Build Standard app
-        shell: bash -l {0}
-        run: make
-
-  build_ledger_stax:
-    needs: configure
-    runs-on: ubuntu-latest
-    container:
-      image: zondax/ledger-app-builder:latest
-      options: --user ${{ needs.configure.outputs.uid_gid }}
-      env:
-        BOLOS_SDK: /opt/stax-secure-sdk
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Build Standard app
-        shell: bash -l {0}
-        run: make
+          echo "LNS app size: ${{needs.build_ledger.outputs.size}} KiB"
+          [ ${{needs.build_ledger.outputs.size}} -le $NANOS_LIMIT_SIZE ]
 
   test_zemu:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
+      - name: Test
+        run: |
+          id
+          echo $HOME
+          echo $DISPLAY
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
       - name: Install node
         uses: actions/setup-node@v3
       - name: Install yarn
-        run: npm install -g yarn
+        run: |
+          npm install -g yarn
       - name: Build Ledger app and run tests
         run: make test_all
+      - name: Upload Snapshots (only failure)
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: snapshots-tmp
+          path: tests_zemu/snapshots-tmp/
 
   build_package_nanos:
-    needs:
-      [
-        configure,
-        cpp_test,
-        build_ledger_nano_S,
-        build_ledger_nano_X,
-        build_ledger_nano_SP,
-        build_ledger_stax,
-        test_zemu,
-      ]
+    needs: [configure, build, build_ledger, test_zemu]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -148,7 +99,7 @@ jobs:
         BOLOS_SDK: /opt/nanos-secure-sdk
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install deps
@@ -173,17 +124,8 @@ jobs:
           draft: false
           prerelease: false
 
-  build_package_nanos_plus:
-    needs:
-      [
-        configure,
-        cpp_test,
-        build_ledger_nano_S,
-        build_ledger_nano_X,
-        build_ledger_nano_SP,
-        build_ledger_stax,
-        test_zemu,
-      ]
+  build_package_nanosp:
+    needs: [configure, build, build_ledger, test_zemu]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -193,7 +135,7 @@ jobs:
         BOLOS_SDK: /opt/nanosplus-secure-sdk
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install deps
@@ -202,7 +144,7 @@ jobs:
       - name: Build NanoSP
         shell: bash -l {0}
         run: |
-          PRODUCTION_BUILD=0make
+          PRODUCTION_BUILD=0 make
           mv ./app/pkg/installer_s2.sh ./app/pkg/installer_nanos_plus.sh
       - name: Set tag
         id: nanosp
@@ -219,16 +161,7 @@ jobs:
           prerelease: false
 
   build_package_stax:
-    needs:
-      [
-        configure,
-        cpp_test,
-        build_ledger_nano_S,
-        build_ledger_nano_X,
-        build_ledger_nano_SP,
-        build_ledger_stax,
-        test_zemu,
-      ]
+    needs: [configure, build, build_ledger, test_zemu]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -238,7 +171,7 @@ jobs:
         BOLOS_SDK: /opt/stax-secure-sdk
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install deps
@@ -246,7 +179,8 @@ jobs:
 
       - name: Build Stax
         shell: bash -l {0}
-        run: PRODUCTION_BUILD=0 make
+        run: |
+          PRODUCTION_BUILD=0 make
       - name: Set tag
         id: stax
         run: echo "tag_name=$(./app/pkg/installer_stax.sh version)" >> $GITHUB_OUTPUT
@@ -256,7 +190,44 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          files: ./app/pkg/installer_stax.sh
+          files: |
+            ./app/pkg/installer_stax.sh
           tag_name: ${{ steps.stax.outputs.tag_name }}
+          draft: false
+          prerelease: false
+
+  build_package_flex:
+    needs: [configure, build, build_ledger, test_zemu]
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    container:
+      image: zondax/ledger-app-builder:latest
+      options: --user ${{ needs.configure.outputs.uid_gid }}
+      env:
+        BOLOS_SDK: /opt/flex-secure-sdk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install deps
+        run: pip install ledgerblue
+
+      - name: Build Flex
+        shell: bash -l {0}
+        run: |
+          PRODUCTION_BUILD=0 make
+      - name: Set tag
+        id: flex
+        run: echo "tag_name=$(./app/pkg/installer_flex.sh version)" >> $GITHUB_OUTPUT
+      - name: Update Release
+        id: update_release_2
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          files: |
+            ./app/pkg/installer_flex.sh
+          tag_name: ${{ steps.flex.outputs.tag_name }}
           draft: false
           prerelease: false
