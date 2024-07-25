@@ -16,7 +16,7 @@
  *******************************************************************************
  */
 import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
-import Zemu from '@zondax/zemu'
+import Zemu, { isTouchDevice } from '@zondax/zemu'
 import { sha256 } from 'js-sha256'
 import * as secp256k1 from 'secp256k1'
 
@@ -119,7 +119,7 @@ describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
   test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText:(m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey(path)
@@ -162,7 +162,7 @@ describe.each(STAKE_TXS)('CANDID_STAKE', function (data) {
   test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       await sim.toggleExpertMode()

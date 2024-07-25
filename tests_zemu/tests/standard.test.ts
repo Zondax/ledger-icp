@@ -14,7 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { ButtonKind, zondaxMainmenuNavigation } from '@zondax/zemu'
+import Zemu, { ButtonKind, zondaxMainmenuNavigation, isTouchDevice } from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
@@ -24,7 +24,7 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
     } finally {
       await sim.close()
     }
@@ -33,7 +33,7 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-mainmenu`, zondaxMainmenuNavigation(m.name).schedule)
     } finally {
       await sim.close()
@@ -43,7 +43,7 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
       const resp = await app.getVersion()
 
@@ -63,7 +63,7 @@ describe('Standard', function () {
   test.concurrent.each(DEVICE_MODELS)('get address', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -94,8 +94,8 @@ describe('Standard', function () {
       await sim.start({
         ...DEFAULT_OPTIONS,
         model: m.name,
-        startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer',
-        approveKeyword: (m.name === 'stax' || m.name === 'flex') ? 'Principal' : '',
+        startText: isTouchDevice(m.name) ? '' : 'Computer',
+        approveKeyword: isTouchDevice(m.name) ? 'Principal' : '',
         approveAction: ButtonKind.ApproveTapButton,
       })
       const app = new InternetComputerApp(sim.getTransport())
@@ -136,8 +136,8 @@ describe('Standard', function () {
       await sim.start({
         ...DEFAULT_OPTIONS,
         model: m.name,
-        startText: (m.name === 'stax' || m.name === 'flex') ? '' : 'Computer',
-        rejectKeyword: (m.name === 'stax' || m.name === 'flex') ? 'Principal' : '',
+        startText: isTouchDevice(m.name) ? '' : 'Computer',
+        rejectKeyword: isTouchDevice(m.name) ? 'Principal' : '',
       })
       const app = new InternetComputerApp(sim.getTransport())
 
