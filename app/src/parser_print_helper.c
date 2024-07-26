@@ -208,7 +208,7 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     MEMCPY(text_ptr, crc_text, crcLen);
     *(text_ptr + crcLen) = SEPARATOR;
     text_ptr += crcLen + 1;
-#if !defined(TARGET_STAX) || defined(TARGET_FLEX) // needed if crc32 length is < 7
+#if !defined(TARGET_STAX) && !defined(TARGET_FLEX) // needed if crc32 length is < 7
     for (uint8_t i = crcLen; i < 7; i++) {
         *text_ptr = ' ';
         text_ptr++;
