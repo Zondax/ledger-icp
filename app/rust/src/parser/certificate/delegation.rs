@@ -18,11 +18,9 @@ use minicbor::{decode::Error, Decode, Decoder};
 use crate::error::ParserError;
 
 use super::{
-    certificate::Certificate,
     hash_tree::{HashTree, LookupResult},
     pubkey::PublicKey,
-    raw_value::RawValue,
-    subnet_id::SubnetId,
+    Certificate, RawValue, SubnetId,
 };
 
 const DELEGATION_MAP_ENTRIES: u64 = 2;

@@ -13,12 +13,9 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+use crate::error::ParserError;
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 use sha2::Digest;
-
-// use core::cmp::Ordering;
-
-use crate::error::ParserError;
 
 use super::{label::Label, raw_value::RawValue};
 const MAX_TREE_DEPTH: usize = 32;
