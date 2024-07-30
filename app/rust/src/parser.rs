@@ -18,15 +18,10 @@ use core::mem::MaybeUninit;
 use crate::error::ViewError;
 
 pub mod candid_utils;
-pub mod certificate;
+mod certificate;
 pub mod consent_message;
-pub mod delegation;
-pub mod hash_tree;
-pub mod label;
-pub mod pubkey;
-pub mod raw_value;
-pub mod signature;
-pub mod subnet_id;
+
+pub use certificate::*;
 
 ///This trait defines an useful interface to parse
 ///objects from bytes.
