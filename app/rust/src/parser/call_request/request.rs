@@ -1,6 +1,8 @@
-use minicbor::{decode::Error, Decode, Decoder};
+use core::mem::MaybeUninit;
 
-use crate::constants::CALL_REQUEST_TAG;
+use minicbor::{data::Type, decode::Error, Decode, Decoder};
+
+use crate::{constants::CALL_REQUEST_TAG, error::ParserError, FromBytes};
 
 #[derive(Debug, PartialEq)]
 pub struct CallRequest<'a> {
@@ -12,6 +14,50 @@ pub struct CallRequest<'a> {
     pub ingress_expiry: u64,
 }
 
+impl<'a> CallRequest<'a> {
+    pub fn parse(data: &'a [u8]) -> Result<(&'a [u8], Self), ParserError> {
+        let mut decoder = Decoder::new(data);
+        let this =
+            Decode::decode(&mut decoder, &mut ()).map_err(|_| ParserError::InvalidCallRequest)?;
+
+        let consumed = decoder.position();
+
+        Ok((&data[consumed..], this))
+    }
+
+    pub fn arg(&self) -> &[u8] {
+        self.arg
+    }
+    pub fn sender(&self) -> &[u8] {
+        self.sender
+    }
+    pub fn canister_id(&self) -> &[u8] {
+        self.canister_id
+    }
+    pub fn method_name(&self) -> &str {
+        self.method_name
+    }
+    pub fn request_type(&self) -> &str {
+        self.request_type
+    }
+    pub fn ingress_expiry(&self) -> u64 {
+        self.ingress_expiry
+    }
+}
+
+impl<'a> FromBytes<'a> for CallRequest<'a> {
+    fn from_bytes_into(
+        input: &'a [u8],
+        out: &mut MaybeUninit<Self>,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
+        let (rem, cert) = Self::parse(input)?;
+
+        out.write(cert);
+
+        Ok(rem)
+    }
+}
+
 impl<'b, C> Decode<'b, C> for CallRequest<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
         // check tag, which is the same value as certificate, why?
@@ -21,7 +67,7 @@ impl<'b, C> Decode<'b, C> for CallRequest<'b> {
             }
         }
 
-        let len = d.map()?.ok_or(Error::message("Expected a map"))?;
+        let len = d.map()?.ok_or(Error::type_mismatch(Type::Map))?;
         if len != 1 {
             return Err(Error::message("Expected a map with 1 entry"));
         }
