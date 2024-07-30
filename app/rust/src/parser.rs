@@ -17,6 +17,7 @@ use core::mem::MaybeUninit;
 
 use crate::error::ViewError;
 
+pub mod call_request;
 pub mod candid_utils;
 mod certificate;
 pub mod consent_message;
