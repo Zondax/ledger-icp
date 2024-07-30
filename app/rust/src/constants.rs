@@ -20,3 +20,4 @@ pub const MAX_LINES: usize = 2;
 pub const MAX_PAGES: usize = 20;
 pub const MAX_CHARS_PER_LINE: usize = 32;
 pub const CALL_REQUEST_TAG: u64 = 55799;
+pub const CONSENT_MSG_REQUEST_TAG: u64 = 55799;
