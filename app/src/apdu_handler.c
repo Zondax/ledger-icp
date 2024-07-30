@@ -32,6 +32,8 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
+#include "nvdata.h"
+#include "bls.h"
 
 static bool tx_initialized = false;
 
@@ -193,6 +195,68 @@ __Z_INLINE void handleSignCombined(volatile uint32_t *flags, volatile uint32_t *
     *flags |= IO_ASYNCH_REPLY;
 }
 
+__Z_INLINE void handleConsentRequest(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    CHECK_APP_CANARY()
+    zxerr_t err = bls_saveConsentRequest();
+    CHECK_APP_CANARY()
+
+    if (err != zxerr_ok) {
+        bls_nvm_reset();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+    THROW(APDU_CODE_OK);
+}
+
+__Z_INLINE void handleCanisterCall(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    CHECK_APP_CANARY()
+    zxerr_t err = bls_saveCanisterCall();
+    CHECK_APP_CANARY()
+
+    if (err != zxerr_ok) {
+        bls_nvm_reset();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+    THROW(APDU_CODE_OK);
+}
+
+__Z_INLINE void handleRootKey(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    CHECK_APP_CANARY()
+    zxerr_t err = bls_saveRootKey();
+    CHECK_APP_CANARY()
+
+    if (err != zxerr_ok) {
+        bls_nvm_reset();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+    THROW(APDU_CODE_OK);
+}
+
+__Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    CHECK_APP_CANARY()
+    view_review_init(tx_getItem, tx_getNumItems, app_sign_combined);
+    view_review_show(REVIEW_TXN);
+    *flags |= IO_ASYNCH_REPLY;
+}
+
 __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {
 #ifdef DEBUG
     G_io_apdu_buffer[0] = 0xFF;
@@ -237,26 +301,44 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_GET_ADDR: {
-                    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
-                        THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
-                    }
+                    CHECK_PIN_VALIDATED()
                     handleGetAddr(flags, tx, rx);
                     break;
                 }
 
                 case INS_SIGN: {
-                    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
-                        THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
-                    }
+                    CHECK_PIN_VALIDATED()
                     handleSign(flags, tx, rx);
                     break;
                 }
 
                 case INS_SIGN_COMBINED: {
-                    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
-                        THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
-                    }
+                    CHECK_PIN_VALIDATED()
                     handleSignCombined(flags, tx, rx);
+                    break;
+                }
+
+                case INS_CONSENT_REQUEST: {
+                    CHECK_PIN_VALIDATED()
+                    handleConsentRequest(flags, tx, rx);
+                    break;
+                }
+
+                case INS_CANISTER_CALL_TX: {
+                    CHECK_PIN_VALIDATED()
+                    handleCanisterCall(flags, tx, rx);
+                    break;
+                }
+
+                case INS_ROOT_KEY: {
+                    CHECK_PIN_VALIDATED()
+                    handleRootKey(flags, tx, rx);
+                    break;
+                }
+
+                case INS_CERTIFICATE_AND_SIGN: {
+                    CHECK_PIN_VALIDATED()
+                    handleSignBls(flags, tx, rx);
                     break;
                 }
 
