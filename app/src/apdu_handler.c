@@ -251,10 +251,11 @@ __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32
         THROW(APDU_CODE_OK);
     }
 
-    CHECK_APP_CANARY()
-    view_review_init(tx_getItem, tx_getNumItems, app_sign_combined);
-    view_review_show(REVIEW_TXN);
-    *flags |= IO_ASYNCH_REPLY;
+    // CHECK_APP_CANARY()
+    // view_review_init(tx_getItem, tx_getNumItems, app_sign_combined);
+    // view_review_show(REVIEW_TXN);
+    // *flags |= IO_ASYNCH_REPLY;
+    THROW(APDU_CODE_OK);
 }
 
 __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {

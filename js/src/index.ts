@@ -299,7 +299,7 @@ export default class InternetComputerApp extends GenericApp {
   }
 
 
-  async signBls(path: string, consent_request: string, canister_call: string, root_key = null, certificate: string): Promise<ResponseSign>{
+  async signBls(path: string, consent_request: string, canister_call: string, root_key: string, certificate: string): Promise<ResponseSign>{
     // Check if all strings are not empty
     if (!consent_request || !canister_call || !root_key || !certificate) {
       throw new Error("All parameters must be non-empty strings");
