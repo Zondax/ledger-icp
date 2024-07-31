@@ -74,6 +74,7 @@ pub enum ParserError {
     InvalidResponseType,
     InvalidCallRequest,
     InvalidConsentMsgRequest,
+    InvalidCanisterId,
 }
 
 // minicibor error provides a reach

@@ -22,7 +22,10 @@ use crate::{
     constants::CBOR_CERTIFICATE_TAG, error::ParserError, hash_with_domain_sep, FromBytes, Signature,
 };
 
-use super::{delegation::Delegation, hash_tree::HashTree, raw_value::RawValue};
+use super::{
+    canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree,
+    raw_value::RawValue,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Certificate<'a> {
@@ -70,8 +73,8 @@ impl<'a> Certificate<'a> {
         Ok(cert)
     }
 
-    pub fn tree(&self) -> &RawValue<'a> {
-        &self.tree
+    pub fn tree(&self) -> RawValue<'a> {
+        self.tree
     }
 
     pub fn delegation(&self) -> Option<&Delegation<'a>> {
@@ -159,6 +162,38 @@ impl<'a> Certificate<'a> {
             }
         }
     }
+
+    pub fn timestamp(&self) -> Result<Option<u64>, ParserError> {
+        let tree = self.tree();
+        let path = "time".into();
+
+        // Perform the lookup
+        let Some(time) = HashTree::lookup_path(&path, tree)?.value() else {
+            return Ok(None);
+        };
+
+        // inner time value is candid encoded a nat
+        // so we need to parse it as well
+        let (_, timestamp) =
+            crate::utils::decompress_leb128(time).map_err(|_| ParserError::UnexpectedError)?;
+
+        Ok(Some(timestamp))
+    }
+
+    pub fn canister_ranges(&self) -> Option<impl Iterator<Item = (&'a [u8], &'a [u8])>> {
+        let tree = match self.delegation() {
+            None => self.tree(),
+            Some(delegation) => delegation.cert().tree(),
+        };
+
+        let path = "canister_ranges".into();
+        let found = HashTree::lookup_path(&path, tree).ok()?;
+        let data = found.value()?;
+        let mut ranges = MaybeUninit::uninit();
+        CanisterRanges::from_bytes_into(data, &mut ranges).ok()?;
+        let ranges = unsafe { ranges.assume_init() };
+        Some(ranges.iter())
+    }
 }
 
 impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
@@ -217,12 +252,19 @@ mod test_certificate {
         std::println!("Certificate: {:?}", cert);
         std::println!("=============================================");
         std::println!("Certificate Tree: ");
-        HashTree::parse_and_print_hash_tree(cert.tree(), 0).unwrap();
+        HashTree::parse_and_print_hash_tree(&cert.tree(), 0).unwrap();
         std::println!("=============================================");
         std::println!("Delegation Certificate Tree: ");
         let delegation_certificate = cert.delegation().as_ref().unwrap().cert();
-        HashTree::parse_and_print_hash_tree(delegation_certificate.tree(), 0).unwrap();
+        HashTree::parse_and_print_hash_tree(&delegation_certificate.tree(), 0).unwrap();
         std::println!("=============================================");
+
+        std::println!("timestamp: {:?}", cert.timestamp());
+
+        let ranges = cert.canister_ranges().unwrap();
+        for r in ranges {
+            std::println!("Range: {:?}", r);
+        }
     }
 
     #[test]
@@ -272,5 +314,19 @@ mod test_certificate {
         // verify certificate signatures
         let root_key = [0u8; 32];
         assert!(cert.verify(&root_key).unwrap());
+    }
+
+    #[test]
+    fn parse_ranges() {
+        let data = hex::decode(REAL_CERT).unwrap();
+        let cert = Certificate::parse(&data).unwrap();
+        let ranges = cert.canister_ranges().unwrap();
+        let mut num_ranges = 0;
+        for (i, r) in ranges.enumerate() {
+            std::println!("Range{}: {:?}", i, r);
+            num_ranges += 1;
+        }
+
+        assert_eq!(num_ranges, 2);
     }
 }

@@ -64,7 +64,7 @@ impl<'a> Delegation<'a> {
         let Some(value) = value.value() else {
             return Ok(None);
         };
-        Ok(Some(PublicKey::try_from(*value)?))
+        Ok(Some(PublicKey::try_from(value)?))
     }
 
     // 1. subnet_id: This is available in the Delegation structure.
@@ -73,7 +73,7 @@ impl<'a> Delegation<'a> {
         // Step 1: Look up "subnet" in the root of the tree
         let cert = self.cert();
 
-        let subnet_result = HashTree::lookup_path(&"subnet".into(), *cert.tree())?;
+        let subnet_result = HashTree::lookup_path(&"subnet".into(), cert.tree())?;
 
         match subnet_result {
             LookupResult::Found(subnet_value) => {
