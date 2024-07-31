@@ -195,7 +195,7 @@ __Z_INLINE void handleSignCombined(volatile uint32_t *flags, volatile uint32_t *
     *flags |= IO_ASYNCH_REPLY;
 }
 
-__Z_INLINE void handleConsentRequest(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -212,7 +212,7 @@ __Z_INLINE void handleConsentRequest(volatile uint32_t *flags, volatile uint32_t
     THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleCanisterCall(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -229,7 +229,7 @@ __Z_INLINE void handleCanisterCall(volatile uint32_t *flags, volatile uint32_t *
     THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleRootKey(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -246,7 +246,7 @@ __Z_INLINE void handleRootKey(volatile uint32_t *flags, volatile uint32_t *tx, u
     THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }

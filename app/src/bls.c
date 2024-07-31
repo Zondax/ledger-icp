@@ -29,9 +29,10 @@ zxerr_t bls_saveConsentRequest(void) {
     const uint16_t messageLength = tx_get_buffer_length();
 
     // Save consent Call request
+    CHECK_ZXERR(save_consent_request(message, messageLength));
 
     // Save App State
-    set_state(STATE_PROCESSED_CONSENT_REQUEST)
+    set_state(STATE_PROCESSED_CONSENT_REQUEST);
 
     return zxerr_ok;
 }
@@ -47,9 +48,10 @@ zxerr_t bls_saveCanisterCall(void) {
     const uint16_t messageLength = tx_get_buffer_length();
 
     // Save canister call request
+    CHECK_ZXERR(save_canister_call(message, messageLength));
 
     // Save App State
-    set_state(STATE_PROCESSED_CANISTER_CALL_REQUEST)
+    set_state(STATE_PROCESSED_CANISTER_CALL_REQUEST);
 
     return zxerr_ok;
 }
@@ -65,9 +67,10 @@ zxerr_t bls_saveRootKey(void) {
     const uint16_t messageLength = tx_get_buffer_length();
 
     // Save root key
+    CHECK_ZXERR(save_root_key(message, messageLength));
 
     // Save App State
-    set_state(STATE_PROCESSED_ROOT_KEY)
+    set_state(STATE_PROCESSED_ROOT_KEY);
 
     return zxerr_ok;
 }
@@ -82,10 +85,10 @@ zxerr_t bls_sign(void) {
     const uint8_t *certificate = tx_get_buffer();
     const uint16_t CertificateLength = tx_get_buffer_length();
 
-    // Go into parsing
+    // Go into parsing call rust code ?
 
     // Save App State
-    set_state(STATE_INITIAL)
+    set_state(STATE_INITIAL);
 
     return zxerr_ok;
 }

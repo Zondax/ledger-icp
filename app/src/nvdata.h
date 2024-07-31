@@ -17,9 +17,26 @@
 
 #include "coin.h"
 #include "zxerror.h"
+
+// TODO: WE NEED TO DEFINE THIS SIZE ???
+#define MAX_DATA_SIZE   300
+#define ROOT_KEY_LEN    96
+
+typedef struct {
+    uint8_t consent_request[MAX_DATA_SIZE];
+    uint8_t canister_call[MAX_DATA_SIZE];
+    uint8_t root_key[ROOT_KEY_LEN];
+} bls_data_t;
+
 typedef struct {
     uint8_t state;
-} transaction_header_t;
+    uint16_t consent_request_len;
+    uint16_t canister_call_len;
+} bls_header_t;
+
+zxerr_t save_consent_request(uint8_t* data, uint16_t data_len);
+zxerr_t save_canister_call(uint8_t* data, uint16_t data_len);
+zxerr_t save_root_key(uint8_t* data, uint16_t data_len);
 
 void bls_nvm_reset();
 
