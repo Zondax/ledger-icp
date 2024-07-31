@@ -70,7 +70,7 @@ export default class InternetComputerApp extends GenericApp {
       .then(processGetAddrResponse, processErrorResponse);
   }
 
-  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number): Promise<ResponseSign> {
+  async signSendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, txtype: number, ins: number): Promise<ResponseSign> {
     let payloadType = PAYLOAD_TYPE.ADD;
     if (chunkIdx === 1) {
       payloadType = PAYLOAD_TYPE.INIT;
@@ -80,7 +80,7 @@ export default class InternetComputerApp extends GenericApp {
     }
 
     return await this.transport
-      .send(this.CLA, this.INS.SIGN_SECP256K1, payloadType, txtype, chunk, [
+      .send(this.CLA, ins, payloadType, txtype, chunk, [
         LedgerError.NoErrors,
         LedgerError.DataIsInvalid,
         LedgerError.BadKeyHandle,
@@ -125,7 +125,7 @@ export default class InternetComputerApp extends GenericApp {
 
   async sign(path: string, message: Buffer, txtype: number): Promise<ResponseSign> {
     const chunks = this.prepareChunks(path, message);
-    return await this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async (response) => {
+    return await this.signSendChunk(1, chunks.length, chunks[0], txtype % 256, this.INS.SIGN_SECP256K1).then(async (response) => {
       let result: ResponseSign = {
         returnCode: response.returnCode,
         errorMessage: response.errorMessage,
@@ -133,7 +133,7 @@ export default class InternetComputerApp extends GenericApp {
 
       for (let i = 1; i < chunks.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
-        result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256);
+        result = await this.signSendChunk(1 + i, chunks.length, chunks[i], txtype % 256, this.INS.SIGN_SECP256K1);
         if (result.returnCode !== LedgerError.NoErrors) {
           break;
         }
@@ -216,7 +216,7 @@ export default class InternetComputerApp extends GenericApp {
     request.copy(message, 8 + checkStatus.byteLength);
     console.log(message.toString("hex"));
     const chunks = this.prepareChunks(path, message);
-    return await this.signSendChunk(1, chunks.length, chunks[0], txtype % 256).then(async (response) => {
+    return await this.signSendChunk(1, chunks.length, chunks[0], txtype % 256, this.INS.SIGN_SECP256K1).then(async (response) => {
       let result: ResponseSignUpdateCall = {
         returnCode: response.returnCode,
         errorMessage: response.errorMessage,
@@ -232,4 +232,93 @@ export default class InternetComputerApp extends GenericApp {
       return result;
     }, processErrorResponse);
   }
+
+  async sendChunk(chunkIdx: number, chunkNum: number, chunk: Buffer, ins: number){
+    let payloadType = PAYLOAD_TYPE.ADD;
+    const p2 = 0
+    if (chunkIdx === 1) {
+      payloadType = PAYLOAD_TYPE.INIT;
+    }
+    if (chunkIdx === chunkNum) {
+      payloadType = PAYLOAD_TYPE.LAST;
+    }
+
+    return await this.transport
+      .send(this.CLA, ins, payloadType, p2, chunk, [
+        LedgerError.NoErrors,
+        LedgerError.DataIsInvalid,
+        LedgerError.BadKeyHandle,
+        LedgerError.SignVerifyError,
+      ])
+      .then((response: Buffer) => {
+        const errorCodeData = response.subarray(-2);
+        const returnCode = errorCodeData[0] * 256 + errorCodeData[1];
+        let errorMessage = errorCodeToString(returnCode);
+
+        return {
+          returnCode,
+          errorMessage,
+        };
+      }, processErrorResponse);
+  }
+
+  async sendData(path: string, data: string, instruction: number): Promise<ResponseSign> {
+    const chunks = this.prepareChunks(path, Buffer.from(data,"hex"));
+      return await this.sendChunk(1, chunks.length, chunks[0], instruction).then(async (response) => {
+        let result = {
+          returnCode: response.returnCode,
+          errorMessage: response.errorMessage,
+        };
+        for (let i = 1; i < chunks.length; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          result = await this.sendChunk(1 + i, chunks.length, chunks[i], instruction);
+          if (result.returnCode !== LedgerError.NoErrors) {
+            break;
+          }
+        }
+        return result;
+      }, processErrorResponse);
+  }
+
+    async sendCertificateAndSig(path: string, data: string): Promise<ResponseSign> {
+    const chunks = this.prepareChunks(path, Buffer.from(data,"hex"));
+      return await this.signSendChunk(1, chunks.length, chunks[0], 0, this.INS.SAVE_CERITIFACE_AND_SIGN).then(async (response) => {
+        let result = {
+          returnCode: response.returnCode,
+          errorMessage: response.errorMessage,
+        };
+        for (let i = 1; i < chunks.length; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], 0, this.INS.SAVE_CERITIFACE_AND_SIGN);
+          if (result.returnCode !== LedgerError.NoErrors) {
+            break;
+          }
+        }
+        return result;
+      }, processErrorResponse);
+  }
+
+
+  async signBls(path: string, consent_request: string, canister_call: string, root_key = null, certificate: string): Promise<ResponseSign>{
+    // Check if all strings are not empty
+    if (!consent_request || !canister_call || !root_key || !certificate) {
+      throw new Error("All parameters must be non-empty strings");
+    }
+    let result: ResponseSign;
+
+    // Send consent_request
+    result = await this.sendData(path, consent_request, this.INS.SAVE_CONSENT);
+    if (result.returnCode !== LedgerError.NoErrors) return result;
+
+    // Send canister_call
+    result = await this.sendData(path, canister_call, this.INS.SAVE_CANISTER_CALL);
+    if (result.returnCode !== LedgerError.NoErrors) return result;
+
+    // Send root_key
+    result = await this.sendData(path, root_key, this.INS.SAVE_CONSENT);
+    if (result.returnCode !== LedgerError.NoErrors) return result;
+
+    // Send certificate and sign
+    return await this.sendCertificateAndSig(path, certificate)
+ }
 }
