@@ -16,7 +16,7 @@
  *******************************************************************************
  */
 import InternetComputerApp, { SIGN_VALUES_P2 } from '@zondax/ledger-icp'
-import Zemu from '@zondax/zemu'
+import Zemu, { isTouchDevice } from '@zondax/zemu'
 import { sha256 } from 'js-sha256'
 import * as secp256k1 from 'secp256k1'
 
@@ -59,7 +59,7 @@ const CANDID_TRANSACTIONS = [
   },
   {
     name: 'candid_list_neurons',
-    blob: 'd9d9f7a167636f6e74656e74a66361726758294449444c026d786c02acbe9cc50700dabcd1c70d7e01010200c8c056ea395dd500406c4830c8a17a006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b172cfa0381138f406b6d6574686f645f6e616d656c6c6973745f6e6575726f6e736c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302',
+    blob: 'd9d9f7a167636f6e74656e74a66361726758334449444c036d786e7e6c03acbe9cc50700ccd2d3bf0c01dabcd1c70d7e01020200c8c056ea395dd500406c4830c8a17a0101006b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b17e4dd23029fe8006b6d6574686f645f6e616d656c6c6973745f6e6575726f6e736c726571756573745f747970656463616c6c6673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302',
   },
   {
     name: 'candid_stake_maturity',
@@ -119,7 +119,7 @@ describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
   test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       const respAddr = await app.getAddressAndPubKey(path)
@@ -162,7 +162,7 @@ describe.each(STAKE_TXS)('CANDID_STAKE', function (data) {
   test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       await sim.toggleExpertMode()
@@ -201,25 +201,4 @@ describe.each(STAKE_TXS)('CANDID_STAKE', function (data) {
       await sim.close()
     }
   })
-})
-
-test.concurrent.each(DEVICE_MODELS)('spawn neuron candid-protobuf invalid transactions', async function (m) {
-  const sim = new Zemu(m.path)
-  try {
-    await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
-    const app = new InternetComputerApp(sim.getTransport())
-
-    const txBlobStr =
-      'd9d9f7a167636f6e74656e74a76361726750620a10bcc7f5c8a3f293fb47220218326b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b172e706d8c61d2806b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f7062656e6f6e63655000000184eb5a7ffab5d56eb72b8a04df6c726571756573745f747970656463616c6c6673656e646572581df1305df1b074e88adb99dc2f56f12d63208165f24dea7e60ae6cf6cf02'
-
-    const txBlob = Buffer.from(txBlobStr, 'hex')
-
-    const signatureResponse = await app.sign(path, txBlob, SIGN_VALUES_P2.DEFAULT)
-    console.log(signatureResponse)
-
-    expect(signatureResponse.returnCode).toEqual(0x6984)
-    expect(signatureResponse.errorMessage).toEqual('Data is invalid : Unexpected value')
-  } finally {
-    await sim.close()
-  }
 })

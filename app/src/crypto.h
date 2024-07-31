@@ -30,8 +30,6 @@ extern "C" {
 
 extern uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
-bool isTestnet();
-
 zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen);
 
 zxerr_t crypto_computePrincipal(const uint8_t *pubKey, uint8_t *principal);
