@@ -3,6 +3,10 @@ use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use crate::{constants::CONSENT_MSG_REQUEST_TAG, error::ParserError, FromBytes};
 
+// {"content": {"arg": h'4449444C076D7B6C01D880C6D007716C02CBAEB581017AB183E7F1077A6B028BEABFC2067F8EF1C1EE0D026E036C02EFCEE7800401C4FBF2DB05046C03D6FCA70200E1EDEB4A7184F7FEE80A0501060C4449444C00017104746F626905677265657402656E01011E000300',
+// "canister_id": h'00000000006000FD0101', "ingress_expiry": 1712666698482000000,
+// "method_name": "icrc21_canister_call_consent_message", "nonce": h'A3788C1805553FB69B20F08E87E23B13',
+// "request_type": "call", "sender": h'04'}}
 #[derive(Debug, PartialEq)]
 pub struct ConsentMsgRequest<'a> {
     pub arg: &'a [u8],

@@ -4,6 +4,8 @@ use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use crate::{constants::CALL_REQUEST_TAG, error::ParserError, FromBytes};
 
+// {"content": {"arg": h'4449444C00017104746F6269', "canister_id": h'00000000006000FD0101',
+// "ingress_expiry": 1712667140606000000, "method_name": "greet", "request_type": "query", "sender": h'04'}}
 #[derive(Debug, PartialEq)]
 pub struct CallRequest<'a> {
     pub arg: &'a [u8],
