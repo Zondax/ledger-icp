@@ -16,7 +16,10 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
-    candid_types::parse_type_table, error::ParserError, utils::decompress_leb128, FromBytes,
+    candid_types::parse_type_table,
+    error::{ParserError, ViewError},
+    utils::decompress_leb128,
+    DisplayableItem, FromBytes,
 };
 
 use super::{msg_error::Error, msg_info::ConsentInfo};
@@ -45,8 +48,8 @@ struct OkVariant<'a>(ResponseType, ConsentInfo<'a>);
 #[repr(C)]
 struct ErrVariant<'a>(ResponseType, Error<'a>);
 
-#[derive(Debug)]
 #[repr(u8)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ConsentMessageResponse<'a> {
     Ok(ConsentInfo<'a>),
     Err(Error<'a>),
@@ -115,6 +118,30 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
                 Ok(rem)
             }
             _ => Err(ParserError::UnexpectedType),
+        }
+    }
+}
+
+impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        match self {
+            Self::Ok(msg) => msg.num_items(),
+            Self::Err(err) => err.num_items(),
+        }
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        match self {
+            Self::Ok(msg) => msg.render_item(item_n, title, message, page),
+            Self::Err(err) => err.render_item(item_n, title, message, page),
         }
     }
 }

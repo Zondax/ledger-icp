@@ -62,7 +62,8 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Page<'a, const L: usize> {
     lines: [&'a str; L],
     num_lines: usize,

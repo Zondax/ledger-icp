@@ -4,8 +4,12 @@
 #include "parser_common.h"
 #include "parser_txdef.h"
 
-// Signature must be 48 bytes and key 96 bytes
-// Returns 1 if signature is valid, 0 otherwise
-uint8_t verify_bls_sign(const uint8_t *msg, uint16_t msg_len, const uint8_t *sk, uint8_t *sig);
+parser_error_t rs_getNumItems(const parser_context_t *ctx, uint8_t *num_items);
+
+parser_error_t rs_getItem(const parser_context_t *ctx,
+                              int8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen,
+                              char *outValue, uint16_t outValueLen,
+                              uint8_t pageIdx, uint8_t *pageCount);
 
 

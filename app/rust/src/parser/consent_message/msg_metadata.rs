@@ -22,8 +22,8 @@ use crate::{
     FromBytes,
 };
 
-#[derive(Debug)]
 #[repr(C)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ConsentMessageMetadata<'a> {
     pub language: &'a str,
     // offset in minutes
@@ -40,6 +40,10 @@ impl<'a> FromBytes<'a> for ConsentMessageMetadata<'a> {
         // read first the utc_offset, its hash is < than the language hash
         let (rem, utc_offset) = parse_opt_i16(rem)?;
         let (rem, language) = parse_text(rem)?;
+
+        if language.is_empty() || language != "en" {
+            return Err(ParserError::InvalidLanguage);
+        }
 
         let out = out.as_mut_ptr();
 
