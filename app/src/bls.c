@@ -17,6 +17,7 @@
 #include "bls.h"
 #include "nvdata.h"
 #include "tx.h"
+#include "rslib.h"
 
 zxerr_t bls_saveConsentRequest(void) {
     // Test App State
@@ -28,8 +29,14 @@ zxerr_t bls_saveConsentRequest(void) {
     const uint8_t *message = tx_get_buffer();
     const uint16_t messageLength = tx_get_buffer_length();
 
-    // Save consent Call request
-    CHECK_ZXERR(save_consent_request(message, messageLength));
+    //parse consent
+    consent_request_t out_request = {0};
+    if (!parse_consent_request(message, messageLength, &out_request)) {
+        return zxerr_unknown;
+    }
+
+    // Save consent request
+    CHECK_ZXERR(save_consent_request(&out_request));
 
     // Save App State
     set_state(STATE_PROCESSED_CONSENT_REQUEST);
@@ -43,12 +50,18 @@ zxerr_t bls_saveCanisterCall(void) {
         return zxerr_unknown;
     }
 
-    // Get Buffer witn canister call request
+    // Get Buffer with canister call request
     const uint8_t *message = tx_get_buffer();
     const uint16_t messageLength = tx_get_buffer_length();
 
+    //parse canister call
+    canister_call_t out_request = {0};
+    if (!parse_canister_call_request(message, messageLength, &out_request)) {
+        return zxerr_unknown;
+    }
+
     // Save canister call request
-    CHECK_ZXERR(save_canister_call(message, messageLength));
+    CHECK_ZXERR(save_canister_call(&out_request));
 
     // Save App State
     set_state(STATE_PROCESSED_CANISTER_CALL_REQUEST);
