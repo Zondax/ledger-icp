@@ -17,7 +17,8 @@ use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use super::raw_value::RawValue;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct SubnetId<'a>(RawValue<'a>);
 
 impl<'a> SubnetId<'a> {

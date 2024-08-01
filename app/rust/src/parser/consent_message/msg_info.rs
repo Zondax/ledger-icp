@@ -15,15 +15,15 @@
 ********************************************************************************/
 use crate::{
     constants::{MAX_LINES, MAX_PAGES},
-    error::ParserError,
-    FromBytes,
+    error::{ParserError, ViewError},
+    DisplayableItem, FromBytes,
 };
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use super::{msg::ConsentMessage, msg_metadata::ConsentMessageMetadata};
 
-#[derive(Debug)]
 #[repr(C)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ConsentInfo<'a> {
     pub message: ConsentMessage<'a, MAX_PAGES, MAX_LINES>,
     pub metadata: ConsentMessageMetadata<'a>,
@@ -45,5 +45,23 @@ impl<'a> FromBytes<'a> for ConsentInfo<'a> {
         let rem = ConsentMessage::from_bytes_into(rem, message)?;
 
         Ok(rem)
+    }
+}
+
+impl<'a> DisplayableItem for ConsentInfo<'a> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        self.message.num_items()
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        self.message.render_item(item_n, title, message, page)
     }
 }

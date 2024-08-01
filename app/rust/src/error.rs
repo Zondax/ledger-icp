@@ -17,7 +17,7 @@ use minicbor::decode::Error;
 use nom::error::ErrorKind;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "derive-debug", derive(Debug))]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ViewError {
     Unknown,
     NoData,
@@ -25,7 +25,7 @@ pub enum ViewError {
 }
 
 #[repr(u32)]
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum ParserError {
     // Generic errors
     Ok = 0,
@@ -75,6 +75,7 @@ pub enum ParserError {
     InvalidCallRequest,
     InvalidConsentMsgRequest,
     InvalidCanisterId,
+    InvalidLanguage,
 }
 
 // minicibor error provides a reach

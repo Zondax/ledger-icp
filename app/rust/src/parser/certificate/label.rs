@@ -15,7 +15,8 @@
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum Label<'a> {
     Blob(&'a [u8]),
     String(&'a str),

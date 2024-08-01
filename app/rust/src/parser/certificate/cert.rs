@@ -19,7 +19,10 @@ use bls_signature::verify_bls_signature;
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use crate::{
-    constants::CBOR_CERTIFICATE_TAG, error::ParserError, hash_with_domain_sep, FromBytes, Signature,
+    consent_message::msg_response::ConsentMessageResponse,
+    constants::{CBOR_CERTIFICATE_TAG, REPLY_PATH},
+    error::{ParserError, ViewError},
+    hash_with_domain_sep, DisplayableItem, FromBytes, Signature,
 };
 
 use super::{
@@ -27,7 +30,8 @@ use super::{
     raw_value::RawValue,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Certificate<'a> {
     tree: RawValue<'a>,
     signature: Signature<'a>,
@@ -194,6 +198,17 @@ impl<'a> Certificate<'a> {
         let ranges = unsafe { ranges.assume_init() };
         Some(ranges)
     }
+
+    // Safe to unwrap because this reply was parsed already
+    fn msg(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
+        let tree = self.tree();
+        let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
+        let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
+
+        let mut msg = MaybeUninit::uninit();
+        ConsentMessageResponse::from_bytes_into(bytes, &mut msg)?;
+        Ok(unsafe { msg.assume_init() })
+    }
 }
 
 impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
@@ -234,6 +249,26 @@ impl<'b, C> Decode<'b, C> for Certificate<'b> {
     }
 }
 
+impl<'a> DisplayableItem for Certificate<'a> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        let msg = self.msg().map_err(|_| ViewError::Unknown)?;
+        msg.num_items()
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        let msg = self.msg().map_err(|_| ViewError::Unknown)?;
+        msg.render_item(item_n, title, message, page)
+    }
+}
+
 #[cfg(test)]
 mod test_certificate {
 
@@ -261,6 +296,9 @@ mod test_certificate {
         std::println!("=============================================");
 
         std::println!("timestamp: {:?}", cert.timestamp());
+
+        // Check we parse the message(reply field)
+        assert!(cert.msg().is_ok());
     }
 
     #[test]

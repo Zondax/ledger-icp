@@ -1,26 +1,17 @@
-use crate::constants::{BLS_PUBLIC_KEY_SIZE, BLS_SIGNATURE_SIZE};
-use bls_signature::verify_bls_signature;
-
-/// The signature must be exactly 48 bytes (compressed G1 element)
-/// The key must be exactly 96 bytes (compressed G2 element)
-/// # Safety
-/// This function is unsafe because it dereferences raw pointers.
-/// but should be safe as long as input data meets the size requirements.
-#[no_mangle]
-pub unsafe extern "C" fn verify_bls_sign(
-    msg: *const u8,
-    msg_len: u16,
-    key: *const u8,
-    sig: *const u8,
-) -> u8 {
-    // Check for null pointers before converting to slices
-    if msg.is_null() || key.is_null() || sig.is_null() {
-        return false as u8;
-    }
-
-    let msg = std::slice::from_raw_parts(msg, msg_len as usize);
-    let key = std::slice::from_raw_parts(key, BLS_PUBLIC_KEY_SIZE);
-    let sig = std::slice::from_raw_parts(sig, BLS_SIGNATURE_SIZE);
-
-    verify_bls_signature(sig, msg, key).is_ok() as u8
-}
+/*******************************************************************************
+*   (c) 2024 Zondax AG
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+********************************************************************************/
+mod context;
+mod ui;
