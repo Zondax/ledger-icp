@@ -14,6 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 
+mod canister_ranges;
 mod cert;
 mod delegation;
 mod hash_tree;

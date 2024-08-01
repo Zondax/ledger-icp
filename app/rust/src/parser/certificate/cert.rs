@@ -22,7 +22,10 @@ use crate::{
     constants::CBOR_CERTIFICATE_TAG, error::ParserError, hash_with_domain_sep, FromBytes, Signature,
 };
 
-use super::{delegation::Delegation, hash_tree::HashTree, raw_value::RawValue};
+use super::{
+    canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree,
+    raw_value::RawValue,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Certificate<'a> {
@@ -70,8 +73,8 @@ impl<'a> Certificate<'a> {
         Ok(cert)
     }
 
-    pub fn tree(&self) -> &RawValue<'a> {
-        &self.tree
+    pub fn tree(&self) -> RawValue<'a> {
+        self.tree
     }
 
     pub fn delegation(&self) -> Option<&Delegation<'a>> {
@@ -159,6 +162,38 @@ impl<'a> Certificate<'a> {
             }
         }
     }
+
+    pub fn timestamp(&self) -> Result<Option<u64>, ParserError> {
+        let tree = self.tree();
+        let path = "time".into();
+
+        // Perform the lookup
+        let Some(time) = HashTree::lookup_path(&path, tree)?.value() else {
+            return Ok(None);
+        };
+
+        // inner time value is candid encoded a nat
+        // so we need to parse it as well
+        let (_, timestamp) =
+            crate::utils::decompress_leb128(time).map_err(|_| ParserError::UnexpectedError)?;
+
+        Ok(Some(timestamp))
+    }
+
+    pub fn canister_ranges(&self) -> Option<CanisterRanges<'a>> {
+        let tree = match self.delegation() {
+            None => self.tree(),
+            Some(delegation) => delegation.cert().tree(),
+        };
+
+        let path = "canister_ranges".into();
+        let found = HashTree::lookup_path(&path, tree).ok()?;
+        let data = found.value()?;
+        let mut ranges = MaybeUninit::uninit();
+        CanisterRanges::from_bytes_into(data, &mut ranges).ok()?;
+        let ranges = unsafe { ranges.assume_init() };
+        Some(ranges)
+    }
 }
 
 impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
@@ -208,6 +243,7 @@ mod test_certificate {
     const REAL_CERT: &str = "D9D9F7A3647472656583018301820458200BBCC71092DA3CE262B8154D398B9A6114BEE87F1C0B72E16912757AA023626A8301820458200628A8E00432E8657AD99C4D1BF167DD54ACE9199609BFC5D57D89F48D97565F83024E726571756573745F737461747573830258204EA057C46292FEDB573D35319DD1CCAB3FB5D6A2B106B785D1F7757CFA5A254283018302457265706C79820358B44449444C0B6B02BC8A0101C5FED201086C02EFCEE7800402E29FDCC806036C01D880C6D007716B02D9E5B0980404FCDFD79A0F716C01C4D6B4EA0B056D066C01FFBB87A807076D716B04D1C4987C09A3F2EFE6020A9A8597E6030AE3C581900F0A6C02FC91F4F80571C498B1B50D7D6C01FC91F4F8057101000002656E0001021E50726F647563652074686520666F6C6C6F77696E67206772656574696E6714746578743A202248656C6C6F2C20746F626921228302467374617475738203477265706C696564830182045820891AF3E8982F1AC3D295C29B9FDFEDC52301C03FBD4979676C01059184060B0583024474696D65820349CBF7DD8CA1A2A7E217697369676E6174757265583088078C6FE75F32594BF4E322B14D47E5C849CF24A370E3BAB0CAB5DAFFB7AB6A2C49DE18B7F2D631893217D0C716CD656A64656C65676174696F6EA2697375626E65745F6964581D2C55B347ECF2686C83781D6C59D1B43E7B4CBA8DEB6C1B376107F2CD026B6365727469666963617465590294D9D9F7A264747265658301820458200B0D62DC7B9D7DE735BB9A6393B59C9F32FF7C4D2AACDFC9E6FFC70E341FB6F783018301820458204468514CA4AF8224C055C386E3F7B0BFE018C2D9CFD5837E427B43E1AB0934F98302467375626E65748301830183018301820458208739FBBEDD3DEDAA8FEF41870367C0905BDE376B63DD37E2B176FB08B582052F830182045820F8C3EAE0377EE00859223BF1C6202F5885C4DCDC8FD13B1D48C3C838688919BC83018302581D2C55B347ECF2686C83781D6C59D1B43E7B4CBA8DEB6C1B376107F2CD02830183024F63616E69737465725F72616E67657382035832D9D9F782824A000000000060000001014A00000000006000AE0101824A00000000006000B001014A00000000006FFFFF010183024A7075626C69635F6B657982035885308182301D060D2B0601040182DC7C0503010201060C2B0601040182DC7C0503020103610090075120778EB21A530A02BCC763E7F4A192933506966AF7B54C10A4D2B24DE6A86B200E3440BAE6267BF4C488D9A11D0472C38C1B6221198F98E4E6882BA38A5A4E3AA5AFCE899B7F825ED95ADFA12629688073556F2747527213E8D73E40CE8204582036F3CD257D90FB38E42597F193A5E031DBD585B6292793BB04DB4794803CE06E82045820028FC5E5F70868254E7215E7FC630DBD29EEFC3619AF17CE231909E1FAF97E9582045820696179FCEB777EAED283265DD690241999EB3EDE594091748B24456160EDC1278204582081398069F9684DA260CFB002EAC42211D0DBF22C62D49AEE61617D62650E793183024474696D65820349A5948992AAA195E217697369676E6174757265583094E5F544A7681B0C2C3C5DBF97950C96FD837F2D19342F1050D94D3068371B0A95A5EE20C36C4395C2DBB4204F2B4742";
     const CERT_HASH: &str = "bcedf2eab3980aedd4d0d9f2159efebd5597cbad5f49217e0c9686b93d30d503";
     const DEL_CERT_HASH: &str = "04a94256c02e83aab4f203cb0784340279d7902f9b09305c978be1746e19b742";
+    const CANISTER_ID: &str = "00000000006000FD0101";
 
     #[test]
     fn parse_cert() {
@@ -217,12 +253,14 @@ mod test_certificate {
         std::println!("Certificate: {:?}", cert);
         std::println!("=============================================");
         std::println!("Certificate Tree: ");
-        HashTree::parse_and_print_hash_tree(cert.tree(), 0).unwrap();
+        HashTree::parse_and_print_hash_tree(&cert.tree(), 0).unwrap();
         std::println!("=============================================");
         std::println!("Delegation Certificate Tree: ");
         let delegation_certificate = cert.delegation().as_ref().unwrap().cert();
-        HashTree::parse_and_print_hash_tree(delegation_certificate.tree(), 0).unwrap();
+        HashTree::parse_and_print_hash_tree(&delegation_certificate.tree(), 0).unwrap();
         std::println!("=============================================");
+
+        std::println!("timestamp: {:?}", cert.timestamp());
     }
 
     #[test]
@@ -272,5 +310,23 @@ mod test_certificate {
         // verify certificate signatures
         let root_key = [0u8; 32];
         assert!(cert.verify(&root_key).unwrap());
+    }
+
+    #[test]
+    fn check_canister_ranges() {
+        let data = hex::decode(REAL_CERT).unwrap();
+        let cert = Certificate::parse(&data).unwrap();
+        let ranges = cert.canister_ranges().unwrap();
+        let mut num_ranges = 0;
+        for (i, r) in ranges.iter().enumerate() {
+            std::println!("Range{}: {:?}", i, r);
+            num_ranges += 1;
+        }
+
+        assert_eq!(num_ranges, ranges.len());
+        let canister_id = hex::decode(CANISTER_ID).unwrap();
+
+        // the provided canister might be used in case of delegation
+        assert!(ranges.is_canister_in_range(&canister_id));
     }
 }

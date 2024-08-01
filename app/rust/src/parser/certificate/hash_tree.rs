@@ -297,11 +297,22 @@ pub enum LookupResult<'a> {
 }
 
 impl<'a> LookupResult<'a> {
-    pub fn value(&self) -> Option<&RawValue<'a>> {
-        match self {
-            LookupResult::Found(value) => Some(value),
-            _ => None,
-        }
+    // The found value is a leave of a tree,
+    // so we parse back the tree and take the inner data
+    pub fn value(&self) -> Option<&'a [u8]> {
+        let LookupResult::Found(value) = self else {
+            return None;
+        };
+
+        let tree: HashTree = value.try_into().ok()?;
+        tree.value()
+    }
+
+    pub fn raw_value(&self) -> Option<&RawValue<'a>> {
+        let LookupResult::Found(value) = self else {
+            return None;
+        };
+        Some(value)
     }
 }
 
@@ -348,15 +359,13 @@ mod hash_tree_tests {
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::parse(&data).unwrap();
 
-        // Create the path for "time"
-        let path = "time".into();
-
         // Perform the lookup
-        let found = HashTree::lookup_path(&path, *cert.tree()).unwrap();
-        let time: HashTree = found.value().unwrap().try_into().unwrap();
-        let time = time.value().unwrap();
-        let expected = [203, 247, 221, 140, 161, 162, 167, 226, 23];
-        assert_eq!(time, expected, "Leaf data does not match expected value");
+        let time = cert.timestamp().unwrap().unwrap();
+
+        assert_eq!(
+            time, 1712666459237743563,
+            "Leaf data does not match expected value"
+        );
     }
 
     #[test]
@@ -367,8 +376,9 @@ mod hash_tree_tests {
 
         let path = "reply".into();
 
-        let found = HashTree::lookup_path(&path, *cert.tree()).unwrap();
+        let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
         assert!(found.value().is_some());
+        HashTree::parse_and_print_hash_tree(&cert.tree(), 0);
     }
 
     #[test]
@@ -400,32 +410,27 @@ mod hash_tree_tests {
         //   lookup x
         let x_value = HashTree::lookup_path(&"x".into(), tree).unwrap();
         let value = x_value.value().unwrap();
-        let x_value: HashTree = value.try_into().unwrap();
-        assert_eq!(&b"hello", &x_value.value().unwrap());
+        assert_eq!(&b"hello", &value);
 
         //   lookup y
         let y_value = HashTree::lookup_path(&"y".into(), tree).unwrap();
         let value = y_value.value().unwrap();
-        let y_value: HashTree = value.try_into().unwrap();
-        assert_eq!(&b"world", &y_value.value().unwrap());
+        assert_eq!(&b"world", &value);
 
         //   lookup b
         let b_value = HashTree::lookup_path(&"b".into(), tree).unwrap();
         let value = b_value.value().unwrap();
-        let b_value: HashTree = value.try_into().unwrap();
-        assert_eq!(&b"good", &b_value.value().unwrap());
+        assert_eq!(&b"good", &value);
 
         //   lookup c
         let c_value = HashTree::lookup_path(&"c".into(), tree).unwrap();
-        let value = c_value.value().unwrap();
-        let c_value: HashTree = value.try_into().unwrap();
-        assert!(matches!(c_value, HashTree::Empty));
+        let value = c_value.value();
+        assert!(value.is_none());
 
         //   lookup d
         let d_value = HashTree::lookup_path(&"d".into(), tree).unwrap();
         let value = d_value.value().unwrap();
-        let d_value: HashTree = value.try_into().unwrap();
-        assert_eq!(&b"morning", &d_value.value().unwrap());
+        assert_eq!(&b"morning", &value);
     }
 
     #[test]
