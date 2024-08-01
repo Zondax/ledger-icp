@@ -28,7 +28,8 @@ const DELEGATION_MAP_ENTRIES: u64 = 2;
 const SUBNET_ID: &str = "subnet_id";
 const CERTIFICATE: &str = "certificate";
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Delegation<'a> {
     pub subnet_id: SubnetId<'a>,
     pub certificate: RawValue<'a>,
@@ -37,14 +38,22 @@ pub struct Delegation<'a> {
 impl<'a> Delegation<'a> {
     pub fn cert(&self) -> Certificate<'a> {
         // Safe to unwrap because certificate parsing what check before
-        Certificate::parse(self.certificate.bytes()).unwrap()
+        let Ok(cert) = Certificate::parse(self.certificate.bytes()) else {
+            unreachable!();
+        };
+
+        cert
     }
 
     pub fn tree(&self) -> HashTree<'a> {
         let cert = self.cert();
         // Safe to unwrap as this was checked
         // when Delegation was parsed
-        cert.tree().try_into().unwrap()
+        let Ok(tree) = cert.tree().try_into() else {
+            unreachable!();
+        };
+
+        tree
     }
 
     fn subnet(&self) -> &'a [u8] {

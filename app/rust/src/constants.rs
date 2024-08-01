@@ -18,6 +18,7 @@ pub const BLS_SIGNATURE_SIZE: usize = 48;
 pub const MAX_LINES: usize = 2;
 pub const MAX_PAGES: usize = 20;
 pub const MAX_CHARS_PER_LINE: usize = 32;
+pub const REPLY_PATH: &str = "reply";
 
 pub const CBOR_TAG: u64 = 55799;
 pub const CBOR_CERTIFICATE_TAG: u64 = CBOR_TAG;

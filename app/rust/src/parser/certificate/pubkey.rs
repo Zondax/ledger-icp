@@ -19,7 +19,8 @@ use crate::constants::BLS_PUBLIC_KEY_SIZE;
 
 use super::raw_value::RawValue;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct PublicKey<'a>(&'a [u8; BLS_PUBLIC_KEY_SIZE]);
 
 impl<'a> PublicKey<'a> {

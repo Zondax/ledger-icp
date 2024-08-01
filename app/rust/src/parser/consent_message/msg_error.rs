@@ -14,9 +14,9 @@ use crate::candid_utils::parse_text;
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use crate::error::ParserError;
-use crate::utils::decompress_leb128;
-use crate::FromBytes;
+use crate::error::{ParserError, ViewError};
+use crate::utils::{decompress_leb128, handle_ui_message};
+use crate::{DisplayableItem, FromBytes};
 use core::ptr::addr_of_mut;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -41,8 +41,8 @@ impl TryFrom<u64> for ErrorType {
     }
 }
 
-#[derive(Debug)]
 #[repr(C)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ErrorInfo<'a> {
     pub description: &'a str,
 }
@@ -60,6 +60,33 @@ impl<'a> FromBytes<'a> for ErrorInfo<'a> {
     }
 }
 
+impl<'a> DisplayableItem for ErrorInfo<'a> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        Ok(1)
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        let title_bytes = b"Error:";
+        let title_len = title_bytes.len().min(title.len() - 1);
+        title[..title_len].copy_from_slice(&title_bytes[..title_len]);
+        title[title_len] = 0;
+        if item_n != 0 {
+            return Err(ViewError::NoData);
+        }
+
+        let msg = self.description.as_bytes();
+        handle_ui_message(msg, message, page)
+    }
+}
+
 #[repr(C)]
 struct UnsupportedCanisterCallVariant<'a>(ErrorType, ErrorInfo<'a>);
 
@@ -72,8 +99,8 @@ struct InsufficientPaymentVariant<'a>(ErrorType, ErrorInfo<'a>);
 #[repr(C)]
 struct GenericErrorVariant<'a>(ErrorType, u32, &'a str);
 
-#[derive(Debug)]
 #[repr(u8)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum Error<'a> {
     UnsupportedCanisterCall(ErrorInfo<'a>),
     ConsentMessageUnavailable(ErrorInfo<'a>),
@@ -132,6 +159,45 @@ impl<'a> FromBytes<'a> for Error<'a> {
                     addr_of_mut!((*out).2).write(description);
                 }
                 Ok(rem)
+            }
+        }
+    }
+}
+
+impl<'a> DisplayableItem for Error<'a> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        match self {
+            Error::UnsupportedCanisterCall(e)
+            | Error::ConsentMessageUnavailable(e)
+            | Error::InsufficientPayment(e) => e.num_items(),
+            // TODO: Check if it is worth to display error code
+            Error::GenericError { .. } => Ok(1),
+        }
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        match self {
+            // TODO: maybe we just show the variant name as the error message?
+            // description message could contain symbols
+            Error::UnsupportedCanisterCall(e)
+            | Error::ConsentMessageUnavailable(e)
+            | Error::InsufficientPayment(e) => e.render_item(item_n, title, message, page),
+            // TODO: Check if it is worth to display error code
+            Error::GenericError { description, .. } => {
+                let title_bytes = b"Error:";
+                let title_len = title_bytes.len().min(title.len() - 1);
+                title[..title_len].copy_from_slice(&title_bytes[..title_len]);
+                title[title_len] = 0;
+                let msg = description.as_bytes();
+                handle_ui_message(msg, message, page)
             }
         }
     }

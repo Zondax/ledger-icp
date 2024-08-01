@@ -20,7 +20,8 @@ use sha2::Digest;
 use super::{label::Label, raw_value::RawValue};
 const MAX_TREE_DEPTH: usize = 32;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum HashTree<'a> {
     Empty,
     Fork(RawValue<'a>, RawValue<'a>),
@@ -289,7 +290,7 @@ impl<'b, C> Decode<'b, C> for HashTree<'b> {
     }
 }
 
-#[derive(Debug)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum LookupResult<'a> {
     Found(RawValue<'a>),
     Absent,
@@ -378,7 +379,6 @@ mod hash_tree_tests {
 
         let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
         assert!(found.value().is_some());
-        HashTree::parse_and_print_hash_tree(&cert.tree(), 0);
     }
 
     #[test]

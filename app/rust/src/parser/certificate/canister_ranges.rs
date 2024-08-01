@@ -7,13 +7,15 @@ use crate::{constants::CANISTER_RANGES_TAG, error::ParserError, FromBytes};
 const CANISTER_RANGE_SIZE: usize = 2;
 const MAX_PRINCIPAL_SIZE: usize = 29;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct CanisterRanges<'a> {
     len: usize,
     data: &'a [u8],
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 struct CanisterRangeIterator<'a> {
     len: usize,
     current: usize,
