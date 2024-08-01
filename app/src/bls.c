@@ -90,7 +90,7 @@ zxerr_t bls_saveRootKey(void) {
 
 zxerr_t bls_sign(void) {
     // Test App State
-    if (get_state() != STATE_PROCESSED_ROOT_KEY) {
+    if (get_state() != STATE_PROCESSED_ROOT_KEY ) {
         return zxerr_unknown;
     }
 

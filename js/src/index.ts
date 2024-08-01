@@ -299,7 +299,7 @@ export default class InternetComputerApp extends GenericApp {
   }
 
 
-  async signBls(path: string, consent_request: string, canister_call: string, root_key: string, certificate: string): Promise<ResponseSign>{
+  async signBls(path: string, consent_request: string, canister_call: string, certificate: string, root_key?: string): Promise<ResponseSign>{
     // Check if all strings are not empty
     if (!consent_request || !canister_call || !root_key || !certificate) {
       throw new Error("All parameters must be non-empty strings");
@@ -315,8 +315,10 @@ export default class InternetComputerApp extends GenericApp {
     if (result.returnCode !== LedgerError.NoErrors) return result;
 
     // Send root_key
-    result = await this.sendData(path, root_key, this.INS.SAVE_CONSENT);
-    if (result.returnCode !== LedgerError.NoErrors) return result;
+    if (root_key) {
+      result = await this.sendData(path, root_key, this.INS.SAVE_ROOT_KEY);
+      if (result.returnCode !== LedgerError.NoErrors) return result;
+    }
 
     // Send certificate and sign
     return await this.sendCertificateAndSig(path, certificate)

@@ -54,6 +54,7 @@ pub struct consent_request_t {
     pub nonce_len: u16,
 }
 
+#[no_mangle]
 pub unsafe extern "C" fn parse_canister_call_request(
     data: *const u8,
     data_len: u16,
@@ -101,6 +102,7 @@ pub unsafe extern "C" fn parse_canister_call_request(
     }
 }
 
+#[no_mangle]
 pub unsafe extern "C" fn parse_consent_request(
     data: *const u8,
     data_len: u16,
