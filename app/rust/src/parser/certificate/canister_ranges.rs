@@ -32,6 +32,15 @@ impl<'a> CanisterRanges<'a> {
             data: self.data,
         }
     }
+
+    /// Returns true if the given canister is within any of the
+    /// ranges that are part of the certificate.delegation object
+    pub fn is_canister_in_range(&self, canister: &[u8]) -> bool {
+        self.iter().any(|(range_start, range_end)| {
+            // Check if canister is within the current range
+            canister >= range_start && canister <= range_end
+        })
+    }
 }
 
 impl<'a> FromBytes<'a> for CanisterRanges<'a> {
