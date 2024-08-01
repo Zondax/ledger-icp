@@ -25,26 +25,42 @@ bls_data_t NV_CONST
 N_bls_data_impl __attribute__ ((aligned(64)));
 #define N_bls_data (*(NV_VOLATILE bls_data_t *)PIC(&N_bls_data_impl))
 
+canister_call_t NV_CONST
+N_canister_call_impl __attribute__ ((aligned(64)));
+#define N_canister_call (*(NV_VOLATILE canister_call_t *)PIC(&N_canister_call_impl))
+
+consent_request_t NV_CONST
+N_consent_request_impl __attribute__ ((aligned(64)));
+#define N_consent_request (*(NV_VOLATILE consent_request_t *)PIC(&N_consent_request_impl))
+
 bls_header_t bls_header;
 
 // Save data
-zxerr_t save_consent_request(uint8_t* data, uint16_t data_len) {
-    if (data_len == 0 || data_len > MAX_DATA_SIZE) {
+zxerr_t save_consent_request(consent_request_t *structure) {
+    if (structure == NULL) {
         return zxerr_out_of_bounds;
     }
 
-    bls_header.consent_request_len = data_len;
-    MEMCPY_NV((void *)&N_bls_data.consent_request, data, data_len);
+    // Check if the size of the structure is valid
+    if (sizeof(*structure) > sizeof(N_canister_call)) {
+        return zxerr_out_of_bounds; // or another appropriate error
+    }
+
+    MEMCPY_NV((void *)&N_consent_request, structure, sizeof(*structure));
     return zxerr_ok;
 }
 
-zxerr_t save_canister_call(uint8_t* data, uint16_t data_len) {
-    if (data_len == 0 || data_len > MAX_DATA_SIZE) {
+zxerr_t save_canister_call(canister_call_t *structure) {
+    if (structure == NULL) {
         return zxerr_out_of_bounds;
     }
 
-    bls_header.canister_call_len = data_len;
-    MEMCPY_NV((void *)&N_bls_data.canister_call, data, data_len);
+    // Check if the size of the structure is valid
+    if (sizeof(*structure) > sizeof(N_consent_request)) {
+        return zxerr_out_of_bounds; // or another appropriate error
+    }
+
+    MEMCPY_NV((void *)&N_canister_call, structure, sizeof(*structure));
     return zxerr_ok;
 }
 
@@ -59,11 +75,11 @@ zxerr_t save_root_key(uint8_t* data, uint16_t data_len) {
 
 // Retrieve data
 uint8_t *get_consent_request() {
-    return (uint8_t *)&N_bls_data.consent_request;
+    return (uint8_t *)&N_consent_request;
 }
 
 uint8_t *get_canister_call() {
-    return (uint8_t *)&N_bls_data.canister_call;
+    return (uint8_t *)&N_canister_call;
 }
 
 uint8_t *get_root_key() {
