@@ -251,10 +251,20 @@ __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32
         THROW(APDU_CODE_OK);
     }
 
-    // CHECK_APP_CANARY()
-    // view_review_init(tx_getItem, tx_getNumItems, app_sign_combined);
-    // view_review_show(REVIEW_TXN);
-    // *flags |= IO_ASYNCH_REPLY;
+    // Parser Certificate and verify
+    CHECK_APP_CANARY()
+    zxerr_t err = bls_verify();
+    CHECK_APP_CANARY()
+    if (err != zxerr_ok) {
+        bls_nvm_reset();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    CHECK_APP_CANARY()
+    view_review_init(rs_getItem, rs_getNumItems, app_sign_bls);
+    view_review_show(REVIEW_TXN);
+    *flags |= IO_ASYNCH_REPLY;
     THROW(APDU_CODE_OK);
 }
 
