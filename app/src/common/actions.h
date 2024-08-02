@@ -46,7 +46,7 @@ __Z_INLINE void app_sign_bls() {
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     
     //TODO SIGNING
-    //zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen);
+    zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen);
 
     if (err != zxerr_ok || replyLen == 0) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);

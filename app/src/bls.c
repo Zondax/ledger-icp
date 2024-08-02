@@ -35,7 +35,7 @@ zxerr_t bls_saveConsentRequest(void) {
 
     //parse consent
     consent_request_t out_request = {0};
-    if (!parse_consent_request(message, messageLength, &out_request)) {
+    if (parse_consent_request(message, messageLength, &out_request) != parser_ok) {
         return zxerr_unknown;
     }
 
@@ -67,7 +67,7 @@ zxerr_t bls_saveCanisterCall(void) {
 
     //parse canister call
     canister_call_t out_request = {0};
-    if (!parse_canister_call_request(message, messageLength, &out_request)) {
+    if (parse_canister_call_request(message, messageLength, &out_request) != parser_ok) {
         return zxerr_unknown;
     }
 
@@ -93,7 +93,7 @@ zxerr_t bls_saveRootKey(void) {
     if(messageLength != ROOT_KEY_LEN) {
         return zxerr_invalid_crypto_settings;
     }
-    // Save root key from user overwrite default value
+    // Save root key from user overwriting default value
     MEMCPY(root_key, message, ROOT_KEY_LEN);
 
     // Save App State
@@ -110,10 +110,15 @@ zxerr_t bls_verify(void) {
 
     // Get Buffer witn certificate
     const uint8_t *certificate = tx_get_buffer();
-    const uint16_t CertificateLength = tx_get_buffer_length();
+    const uint16_t certificate_len = tx_get_buffer_length();
+    consent_request_t *consent_request = get_consent_request();
+    canister_call_t *call_request = get_canister_call();
 
     //Go into verifications
-
+    if(parser_verify_certificate(certificate, certificate_len, root_key, call_request, consent_request) != parser_ok) {
+        return zxerr_invalid_crypto_settings;
+    }
+    
     // Save App State
     set_state(STATE_INITIAL);
 
