@@ -16,6 +16,7 @@
 
 use crate::{
     call_request::{CallRequest, ConsentMsgRequest},
+    error::ParserError,
     FromBytes,
 };
 
@@ -59,9 +60,9 @@ pub unsafe extern "C" fn parse_canister_call_request(
     data: *const u8,
     data_len: u16,
     out_request: *mut canister_call_t,
-) -> u8 {
+) -> u32 {
     if data.is_null() || out_request.is_null() {
-        return false as u8;
+        return ParserError::NoData as u32;
     }
 
     let msg = std::slice::from_raw_parts(data, data_len as usize);
@@ -94,10 +95,10 @@ pub unsafe extern "C" fn parse_canister_call_request(
             out.sender.copy_from_slice(request.sender);
             out.sender_len = request.sender.len() as u16;
 
-            return true as u8;
+            return ParserError::Ok as u32;
         }
         Err(_) => {
-            return false as u8;
+            return ParserError::InvalidCallRequest as u32;
         }
     }
 }
@@ -107,9 +108,9 @@ pub unsafe extern "C" fn parse_consent_request(
     data: *const u8,
     data_len: u16,
     out_request: *mut consent_request_t,
-) -> u8 {
+) -> u32 {
     if data.is_null() || out_request.is_null() {
-        return false as u8;
+        return ParserError::NoData as u32;
     }
 
     let msg = std::slice::from_raw_parts(data, data_len as usize);
@@ -144,10 +145,21 @@ pub unsafe extern "C" fn parse_consent_request(
             out.nonce.copy_from_slice(request.nonce);
             out.nonce_len = request.nonce.len() as u16;
 
-            return true as u8;
+            return ParserError::Ok as u32;
         }
         Err(_) => {
-            return false as u8;
+            return ParserError::InvalidConsentMsg as u32;
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn parser_verify_certificate(
+    certificate: *const u8,
+    certificate_len: u16,
+    root_key: *const u8,
+    call_request: *const consent_request_t,
+    consent_request: *const consent_request_t,
+) -> u32 {
+    return ParserError::Ok as u32;
 }
