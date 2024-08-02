@@ -25,11 +25,16 @@ typedef struct {
     uint8_t state;
 } bls_header_t;
 
+typedef struct {
+    uint8_t hash[32];
+} sign_hash_t;
+
 zxerr_t save_consent_request(consent_request_t *structure);
 zxerr_t save_canister_call(canister_call_t *structure);
-
+zxerr_t save_hash_to_sign(uint8_t *hash);
 consent_request_t *get_consent_request();
 canister_id_t *get_canister_call();
+uint8_t *get_hash_to_sign();
 
 void bls_nvm_reset();
 

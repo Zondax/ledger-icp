@@ -17,6 +17,9 @@
 #include "bls.h"
 #include "tx.h"
 #include "rslib.h"
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
+#include "cx.h"
+#endif
 // define root key with default value
 uint8_t root_key[ROOT_KEY_LEN] = {0};
 
@@ -54,6 +57,13 @@ zxerr_t bls_saveCanisterCall(void) {
     // Get Buffer with canister call request
     const uint8_t *message = tx_get_buffer();
     const uint16_t messageLength = tx_get_buffer_length();
+
+    uint8_t call_hash[CX_SHA256_SIZE] = {0};
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
+    cx_hash_sha256(message, messageLength, call_hash, CX_SHA256_SIZE);
+#endif
+    // Save hash
+    CHECK_ZXERR(save_hash_to_sign(call_hash));
 
     //parse canister call
     canister_call_t out_request = {0};
