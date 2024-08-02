@@ -78,8 +78,8 @@ consent_request_t *get_consent_request() {
     return (consent_request_t *)&N_consent_request;
 }
 
-canister_id_t *get_canister_call() {
-    return (canister_id_t *)&N_canister_call;
+canister_call_t *get_canister_call() {
+    return (canister_call_t *)&N_canister_call;
 }
 
 uint8_t *get_hash_to_sign() {
