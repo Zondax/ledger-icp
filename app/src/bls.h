@@ -26,7 +26,7 @@ extern uint8_t root_key[ROOT_KEY_LEN];
 zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
 zxerr_t bls_saveRootKey(void);
-zxerr_t bls_sign(void);
+zxerr_t bls_verify(void);
 #ifdef __cplusplus
 }
 #endif

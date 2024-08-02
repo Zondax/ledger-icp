@@ -102,17 +102,17 @@ zxerr_t bls_saveRootKey(void) {
     return zxerr_ok;
 }
 
-zxerr_t bls_sign(void) {
+zxerr_t bls_verify(void) {
     // Two possible states, we saved a root key from user, or there was no root key overwriting
     if ( get_state() != STATE_PROCESSED_ROOT_KEY && get_state() != STATE_PROCESSED_ROOT_KEY) {
         return zxerr_unknown;
     }
 
-    // Get Buffer witn root key
+    // Get Buffer witn certificate
     const uint8_t *certificate = tx_get_buffer();
     const uint16_t CertificateLength = tx_get_buffer_length();
 
-    // Go into parsing call rust code ?
+    //Go into verifications
 
     // Save App State
     set_state(STATE_INITIAL);
