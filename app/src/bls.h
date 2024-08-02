@@ -16,10 +16,12 @@
 #pragma once
 
 #include "zxerror.h"
-
+#include "nvdata.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern uint8_t root_key[ROOT_KEY_LEN];
 
 zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
