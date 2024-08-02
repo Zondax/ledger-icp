@@ -21,10 +21,6 @@
 #include "os.h"
 #include "view.h"
 
-root_key_t NV_CONST
-N_root_key_impl __attribute__ ((aligned(64)));
-#define N_root_key (*(NV_VOLATILE root_key_t *)PIC(&N_root_key_impl))
-
 canister_call_t NV_CONST
 N_canister_call_impl __attribute__ ((aligned(64)));
 #define N_canister_call (*(NV_VOLATILE canister_call_t *)PIC(&N_canister_call_impl))
@@ -64,15 +60,6 @@ zxerr_t save_canister_call(canister_call_t *structure) {
     return zxerr_ok;
 }
 
-zxerr_t save_root_key(uint8_t* data, uint16_t data_len) {
-    if (data_len == 0 || data_len != ROOT_KEY_LEN) {
-        return zxerr_out_of_bounds;
-    }
-    bls_header.user_root_key = 1;
-    MEMCPY_NV((void *)&N_root_key.root_key, data, data_len);
-    return zxerr_ok;
-}
-
 // Retrieve data
 consent_request_t *get_consent_request() {
     return (consent_request_t *)&N_consent_request;
@@ -80,10 +67,6 @@ consent_request_t *get_consent_request() {
 
 canister_id_t *get_canister_call() {
     return (canister_id_t *)&N_canister_call;
-}
-
-uint8_t *get_root_key() {
-    return (uint8_t *)&N_root_key.root_key;
 }
 
 // STATE
@@ -102,10 +85,8 @@ void state_reset() {
 void zeroize_data(){
     canister_call_t tmp_call = {0};
     consent_request_t tmp_consent = {0};
-    uint8_t tmp_root_key[ROOT_KEY_LEN] = {0};
     MEMCPY_NV((void *)&N_canister_call, &tmp_call, sizeof(canister_call_t));
     MEMCPY_NV((void *)&N_consent_request, &tmp_consent, sizeof(consent_request_t));
-    MEMCPY_NV((void *)&N_root_key.root_key, &tmp_root_key, ROOT_KEY_LEN);
 }
 
 void bls_nvm_reset() {

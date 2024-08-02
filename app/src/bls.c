@@ -15,9 +15,10 @@
  ********************************************************************************/
 
 #include "bls.h"
-#include "nvdata.h"
 #include "tx.h"
 #include "rslib.h"
+// define root key with default value
+uint8_t root_key[ROOT_KEY_LEN] = {0};
 
 zxerr_t bls_saveConsentRequest(void) {
     // Test App State
@@ -79,8 +80,11 @@ zxerr_t bls_saveRootKey(void) {
     const uint8_t *message = tx_get_buffer();
     const uint16_t messageLength = tx_get_buffer_length();
 
-    // Save root key
-    CHECK_ZXERR(save_root_key(message, messageLength));
+    if(messageLength != ROOT_KEY_LEN) {
+        return zxerr_invalid_crypto_settings;
+    }
+    // Save root key from user overwrite default value
+    MEMCPY(root_key, message, ROOT_KEY_LEN);
 
     // Save App State
     set_state(STATE_PROCESSED_ROOT_KEY);
@@ -89,8 +93,8 @@ zxerr_t bls_saveRootKey(void) {
 }
 
 zxerr_t bls_sign(void) {
-    // Test App State
-    if (get_state() != STATE_PROCESSED_ROOT_KEY ) {
+    // Two possible states, we saved a root key from user, or there was no root key overwriting
+    if ( get_state() != STATE_PROCESSED_ROOT_KEY && get_state() != STATE_PROCESSED_ROOT_KEY) {
         return zxerr_unknown;
     }
 

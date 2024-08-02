@@ -19,26 +19,17 @@
 #include "zxerror.h"
 #include "rslib.h"
 
-// TODO: WE NEED TO DEFINE THIS SIZE ???
-#define MAX_DATA_SIZE   300
 #define ROOT_KEY_LEN    96
 
 typedef struct {
-    uint8_t root_key[ROOT_KEY_LEN];
-} root_key_t;
-
-typedef struct {
     uint8_t state;
-    uint8_t user_root_key;
 } bls_header_t;
 
 zxerr_t save_consent_request(consent_request_t *structure);
 zxerr_t save_canister_call(canister_call_t *structure);
-zxerr_t save_root_key(uint8_t* data, uint16_t data_len);
 
 consent_request_t *get_consent_request();
 canister_id_t *get_canister_call();
-uint8_t *get_root_key();
 
 void bls_nvm_reset();
 
