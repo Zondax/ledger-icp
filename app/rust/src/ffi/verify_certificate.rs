@@ -13,8 +13,31 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-mod call_request;
-mod consent_request;
-mod context;
-// mod parser_interface;
-mod ui;
+
+use crate::{
+    call_request::{CallRequest, ConsentMsgRequest},
+    error::ParserError,
+    FromBytes,
+};
+
+use core::mem::MaybeUninit;
+use sha2::{Digest, Sha256};
+
+#[no_mangle]
+pub unsafe extern "C" fn parser_verify_certificate(
+    certificate: *const u8,
+    certificate_len: u16,
+    root_key: *const u8,
+    call_request: *const consent_request_t,
+    consent_request: *const consent_request_t,
+) -> u32 {
+    if call_request.is_null()
+        || consent_request.is_null()
+        || certificate.is_null()
+        || root_key.is_null()
+    {
+        return ParserError::NoData as u32;
+    }
+
+    return ParserError::Ok as u32;
+}
