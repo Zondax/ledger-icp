@@ -14,29 +14,10 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{
-    call_request::{CallRequest, ConsentMsgRequest},
-    error::ParserError,
-    FromBytes,
-};
+use crate::{call_request::ConsentMsgRequest, error::ParserError, FromBytes};
 
 use core::mem::MaybeUninit;
 use sha2::{Digest, Sha256};
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct canister_call_t {
-    pub arg_hash: [u8; 32],
-    pub canister_id: [u8; 29],
-    pub canister_id_len: u16,
-    pub ingress_expiry: u64,
-    pub method_name: [u8; 50],
-    pub method_name_len: u16,
-    pub request_type: [u8; 50],
-    pub request_type_len: u16,
-    pub sender: [u8; 50],
-    pub sender_len: u16,
-}
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
@@ -56,54 +37,6 @@ pub struct consent_request_t {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn parse_canister_call_request(
-    data: *const u8,
-    data_len: u16,
-    out_request: *mut canister_call_t,
-) -> u32 {
-    if data.is_null() || out_request.is_null() {
-        return ParserError::NoData as u32;
-    }
-
-    let msg = std::slice::from_raw_parts(data, data_len as usize);
-
-    // Create a MaybeUninit instance for CallRequest
-    let mut call_request = MaybeUninit::<CallRequest>::uninit();
-
-    // Call from_bytes_into and handle the result
-    match CallRequest::from_bytes_into(&msg, &mut call_request) {
-        Ok(_) => {
-            let request = call_request.assume_init();
-
-            // Fill canister_call_t fields from CallRequest
-            let out = &mut *out_request;
-
-            let mut hasher = Sha256::new();
-            hasher.update(request.arg);
-            let result = hasher.finalize();
-
-            out.arg_hash.copy_from_slice(result.as_slice());
-            out.canister_id.copy_from_slice(&request.canister_id);
-            out.canister_id_len = request.canister_id.len() as u16;
-            out.ingress_expiry = request.ingress_expiry;
-            out.method_name
-                .copy_from_slice(request.method_name.as_bytes());
-            out.method_name_len = request.method_name.len() as u16;
-            out.request_type
-                .copy_from_slice(request.request_type.as_bytes());
-            out.request_type_len = request.request_type.len() as u16;
-            out.sender.copy_from_slice(request.sender);
-            out.sender_len = request.sender.len() as u16;
-
-            return ParserError::Ok as u32;
-        }
-        Err(_) => {
-            return ParserError::InvalidCallRequest as u32;
-        }
-    }
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn parse_consent_request(
     data: *const u8,
     data_len: u16,
@@ -119,7 +52,7 @@ pub unsafe extern "C" fn parse_consent_request(
     let mut call_request = MaybeUninit::<ConsentMsgRequest>::uninit();
 
     // Call from_bytes_into and handle the result
-    match ConsentMsgRequest::from_bytes_into(&msg, &mut call_request) {
+    match ConsentMsgRequest::from_bytes_into(msg, &mut call_request) {
         Ok(_) => {
             let request = call_request.assume_init(); // Get the initialized CallRequest
 
@@ -131,7 +64,7 @@ pub unsafe extern "C" fn parse_consent_request(
             let result = hasher.finalize();
 
             out.arg_hash.copy_from_slice(result.as_slice());
-            out.canister_id.copy_from_slice(&request.canister_id);
+            out.canister_id.copy_from_slice(request.canister_id);
             out.canister_id_len = request.canister_id.len() as u16;
             out.ingress_expiry = request.ingress_expiry;
             out.method_name
@@ -145,21 +78,8 @@ pub unsafe extern "C" fn parse_consent_request(
             out.nonce.copy_from_slice(request.nonce);
             out.nonce_len = request.nonce.len() as u16;
 
-            return ParserError::Ok as u32;
+            ParserError::Ok as u32
         }
-        Err(_) => {
-            return ParserError::InvalidConsentMsg as u32;
-        }
+        Err(_) => ParserError::InvalidConsentMsg as u32,
     }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn parser_verify_certificate(
-    certificate: *const u8,
-    certificate_len: u16,
-    root_key: *const u8,
-    call_request: *const consent_request_t,
-    consent_request: *const consent_request_t,
-) -> u32 {
-    return ParserError::Ok as u32;
 }
