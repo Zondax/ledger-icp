@@ -14,4 +14,5 @@
 *  limitations under the License.
 ********************************************************************************/
 mod context;
+mod parser_interface;
 mod ui;
