@@ -21,6 +21,7 @@ use sha2::{Digest, Sha256};
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct consent_request_t {
     pub arg_hash: [u8; 32],
     pub canister_id: [u8; 29],

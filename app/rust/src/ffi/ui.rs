@@ -14,10 +14,11 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{error::ParserError, DisplayableItem};
+use core::mem::MaybeUninit;
+
+use crate::{error::ParserError, Certificate, DisplayableItem, FromBytes};
 
 use super::context::parser_context_t;
-use crate::certificate_from_state;
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_getNumItems(ctx: *const parser_context_t, num_items: *mut u8) -> u32 {
@@ -25,10 +26,18 @@ pub unsafe extern "C" fn rs_getNumItems(ctx: *const parser_context_t, num_items:
         return ParserError::ContextMismatch as u32;
     }
 
-    let tx = certificate_from_state!(ctx as *mut parser_context_t);
-    let obj = tx.assume_init_mut();
+    let ctx = &*ctx;
+    let cert_data = core::slice::from_raw_parts(ctx.buffer, ctx.buffer_len as usize);
 
-    let Ok(num) = obj.num_items() else {
+    let mut cert = MaybeUninit::<Certificate>::uninit();
+
+    let Ok(_) = Certificate::from_bytes_into(cert_data, &mut cert) else {
+        return ParserError::NoData as _;
+    };
+
+    let cert = cert.assume_init_mut();
+
+    let Ok(num) = cert.num_items() else {
         return ParserError::NoData as _;
     };
 
@@ -59,10 +68,18 @@ pub unsafe extern "C" fn rs_getItem(
         return ParserError::ContextMismatch as u32;
     }
 
-    let tx = certificate_from_state!(ctx as *mut parser_context_t);
-    let obj = tx.assume_init_mut();
+    let ctx = &*ctx;
+    let cert_data = core::slice::from_raw_parts(ctx.buffer, ctx.buffer_len as usize);
 
-    match obj.render_item(display_idx, key, value, page_idx) {
+    let mut cert = MaybeUninit::<Certificate>::uninit();
+
+    let Ok(_) = Certificate::from_bytes_into(cert_data, &mut cert) else {
+        return ParserError::NoData as _;
+    };
+
+    let cert = cert.assume_init_mut();
+
+    match cert.render_item(display_idx, key, value, page_idx) {
         Ok(page) => {
             *page_count = page;
             ParserError::Ok as _

@@ -21,6 +21,7 @@ use sha2::{Digest, Sha256};
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 pub struct canister_call_t {
     pub arg_hash: [u8; 32],
     pub canister_id: [u8; 29],
@@ -33,6 +34,7 @@ pub struct canister_call_t {
     pub sender: [u8; 50],
     pub sender_len: u16,
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn parse_canister_call_request(
     data: *const u8,
