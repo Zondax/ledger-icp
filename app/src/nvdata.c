@@ -96,7 +96,7 @@ void set_state(uint8_t state) {
 }
 
 void state_reset() {
-    bls_header.state = STATE_INITIAL;
+    bls_header.state = CERT_STATE_INITIAL;
 }
 
 void zeroize_data(){
