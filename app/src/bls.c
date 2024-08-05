@@ -19,13 +19,14 @@
 #include "rslib.h"
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 #include "cx.h"
+#include "nvdata.h"
 #endif
 // define root key with default value
 uint8_t root_key[ROOT_KEY_LEN] = {0};
 
 zxerr_t bls_saveConsentRequest(void) {
     // Test App State
-    if (get_state() != STATE_INITIAL) {
+    if (get_state() != CERT_STATE_INITIAL) {
         return zxerr_unknown;
     }
 
@@ -43,14 +44,14 @@ zxerr_t bls_saveConsentRequest(void) {
     CHECK_ZXERR(save_consent_request(&out_request));
 
     // Save App State
-    set_state(STATE_PROCESSED_CONSENT_REQUEST);
+    set_state(CERT_STATE_PROCESSED_CONSENT_REQUEST);
 
     return zxerr_ok;
 }
 
 zxerr_t bls_saveCanisterCall(void) {
     // Test App State
-    if (get_state() != STATE_PROCESSED_CONSENT_REQUEST) {
+    if (get_state() != CERT_STATE_PROCESSED_CONSENT_REQUEST) {
         return zxerr_unknown;
     }
 
@@ -75,14 +76,14 @@ zxerr_t bls_saveCanisterCall(void) {
     CHECK_ZXERR(save_canister_call(&out_request));
 
     // Save App State
-    set_state(STATE_PROCESSED_CANISTER_CALL_REQUEST);
+    set_state(CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST);
 
     return zxerr_ok;
 }
 
 zxerr_t bls_saveRootKey(void) {
     // Test App State
-    if (get_state() != STATE_PROCESSED_CANISTER_CALL_REQUEST) {
+    if (get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
         return zxerr_unknown;
     }
 
@@ -97,14 +98,14 @@ zxerr_t bls_saveRootKey(void) {
     MEMCPY(root_key, message, ROOT_KEY_LEN);
 
     // Save App State
-    set_state(STATE_PROCESSED_ROOT_KEY);
+    set_state(CERT_STATE_PROCESSED_ROOT_KEY);
 
     return zxerr_ok;
 }
 
 zxerr_t bls_verify(void) {
     // Two possible states, we saved a root key from user, or there was no root key overwriting
-    if ( get_state() != STATE_PROCESSED_ROOT_KEY && get_state() != STATE_PROCESSED_ROOT_KEY) {
+    if ( get_state() != CERT_STATE_PROCESSED_ROOT_KEY && get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
         return zxerr_unknown;
     }
 
@@ -118,9 +119,11 @@ zxerr_t bls_verify(void) {
     if(parser_verify_certificate(certificate, certificate_len, root_key, call_request, consent_request) != parser_ok) {
         return zxerr_invalid_crypto_settings;
     }
-    
+
     // Save App State
-    set_state(STATE_INITIAL);
+    // TODO: Set state to CERT_STATE_SIGN
+    // and clear any other data
+    set_state(CERT_STATE_INITIAL);
 
     return zxerr_ok;
 }
