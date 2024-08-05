@@ -148,3 +148,46 @@ zxerr_t tx_getItem(int8_t displayIdx,
 
     return zxerr_ok;
 }
+
+/// Return the number of items in the transaction
+zxerr_t tx_certNumItems(uint8_t *num_items) {
+
+    parser_error_t err = parser_certNumItems(&ctx_parsed_tx, num_items);
+
+    if (err != parser_ok) {
+        return zxerr_no_data;
+    }
+
+    return zxerr_ok;
+}
+
+/// Gets an specific item from the transaction (including paging)
+zxerr_t tx_certGetItem(int8_t displayIdx,
+                   char *outKey, uint16_t outKeyLen,
+                   char *outValue, uint16_t outValueLen,
+                   uint8_t pageIdx, uint8_t *pageCount) {
+    uint8_t numItems = 0;
+
+    CHECK_ZXERR(tx_certNumItems(&numItems))
+
+    if (displayIdx < 0 || displayIdx > numItems) {
+        return zxerr_no_data;
+    }
+
+    parser_error_t err = parser_certGetItem(&ctx_parsed_tx,
+                                        displayIdx,
+                                        outKey, outKeyLen,
+                                        outValue, outValueLen,
+                                        pageIdx, pageCount);
+
+    // Convert error codes
+    if (err == parser_no_data ||
+        err == parser_display_idx_out_of_range ||
+        err == parser_display_page_out_of_range)
+        return zxerr_no_data;
+
+    if (err != parser_ok)
+        return zxerr_unknown;
+
+    return zxerr_ok;
+}

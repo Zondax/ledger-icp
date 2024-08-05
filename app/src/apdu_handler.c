@@ -262,7 +262,8 @@ __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32
     }
 
     CHECK_APP_CANARY()
-    view_review_init(rs_getItem, rs_getNumItems, app_sign_bls);
+    // view_review_init(rs_getItem, rs_getNumItems, app_sign_bls);
+    view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
     view_review_show(REVIEW_TXN);
     *flags |= IO_ASYNCH_REPLY;
     THROW(APDU_CODE_OK);
