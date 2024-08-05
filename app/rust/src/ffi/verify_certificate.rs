@@ -16,12 +16,34 @@
 
 use crate::{
     call_request::{CallRequest, ConsentMsgRequest},
+    constants::BLS_PUBLIC_KEY_SIZE,
     error::ParserError,
-    FromBytes,
+    Certificate, FromBytes,
 };
 
 use core::mem::MaybeUninit;
 use sha2::{Digest, Sha256};
+use std::cmp::PartialEq;
+
+use super::{call_request::canister_call_t, consent_request::consent_request_t};
+
+impl PartialEq<consent_request_t> for canister_call_t {
+    fn eq(&self, other: &consent_request_t) -> bool {
+        self.arg_hash == other.arg_hash
+            && self.canister_id[..self.canister_id_len as usize]
+                == other.canister_id[..other.canister_id_len as usize]
+            && self.method_name[..self.method_name_len as usize]
+                == other.method_name[..other.method_name_len as usize]
+            && self.sender[..self.sender_len as usize] == other.sender[..other.sender_len as usize]
+    }
+}
+
+// This allows consent_request_t == canister_call_t to work as well
+impl PartialEq<canister_call_t> for consent_request_t {
+    fn eq(&self, other: &canister_call_t) -> bool {
+        other == self
+    }
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn parser_verify_certificate(
@@ -39,5 +61,27 @@ pub unsafe extern "C" fn parser_verify_certificate(
         return ParserError::NoData as u32;
     }
 
-    return ParserError::Ok as u32;
+    if call_request != consent_request {
+        return ParserError::InvalidCertificate as u32;
+    }
+
+    let data = core::slice::from_raw_parts(certificate, certificate_len as usize);
+    let root_key = core::slice::from_raw_parts(root_key, BLS_PUBLIC_KEY_SIZE);
+
+    let mut cert = MaybeUninit::uninit();
+    let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+        return ParserError::InvalidCertificate as u32;
+    };
+
+    let cert = cert.assume_init();
+
+    match cert.verify(root_key) {
+        Ok(false) => return ParserError::InvalidCertificate as u32,
+        Err(e) => return e as u32,
+        _ => {}
+    }
+
+    // Now store the certificate back in memory for ui usage?
+
+    ParserError::Ok as u32
 }

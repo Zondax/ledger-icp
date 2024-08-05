@@ -97,10 +97,6 @@ impl<'a> Certificate<'a> {
     // The root_public_key is now a parameter to the verify method
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
-        // TODO: You can comment this if in order to check
-        // the signature of the outer certificate, because
-        // inner certificate(delegation.cert) is verified using
-        // root key which we do not have at hand
         if !self.check_delegation(root_key)? {
             return Ok(false);
         }
