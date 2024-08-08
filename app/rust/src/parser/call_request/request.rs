@@ -1,12 +1,19 @@
 use core::mem::MaybeUninit;
+use sha2::{Digest, Sha256};
 
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
-use crate::{constants::CALL_REQUEST_TAG, error::ParserError, FromBytes};
+use crate::{
+    constants::CALL_REQUEST_TAG,
+    error::ParserError,
+    utils::{compress_leb128, hash_blob, hash_str},
+    FromBytes,
+};
 
 // {"content": {"arg": h'4449444C00017104746F6269', "canister_id": h'00000000006000FD0101',
 // "ingress_expiry": 1712667140606000000, "method_name": "greet", "request_type": "query", "sender": h'04'}}
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct CallRequest<'a> {
     pub arg: &'a [u8],
     pub sender: &'a [u8],
@@ -44,6 +51,52 @@ impl<'a> CallRequest<'a> {
     }
     pub fn ingress_expiry(&self) -> u64 {
         self.ingress_expiry
+    }
+
+    /// Computes the request_id which is the hash
+    /// of this struct using independent hash of structured data
+    /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
+    pub fn request_id(&self) -> [u8; 32] {
+        const FIELDS: [(&str, usize); 6] = [
+            ("request_type", 0),
+            ("sender", 1),
+            ("ingress_expiry", 2),
+            ("canister_id", 3),
+            ("method_name", 4),
+            ("arg", 5),
+        ];
+
+        let mut field_hashes = [[0u8; 64]; 6];
+
+        for (i, &(key, field_index)) in FIELDS.iter().enumerate() {
+            let key_hash = hash_str(key);
+            let value_hash = match field_index {
+                0 => hash_str(self.request_type),
+                1 => hash_blob(self.sender),
+                2 => {
+                    let mut buf = [0u8; 10];
+                    let leb = compress_leb128(self.ingress_expiry, &mut buf);
+                    hash_blob(leb)
+                }
+                3 => hash_blob(self.canister_id),
+                4 => hash_str(self.method_name),
+                5 => hash_blob(self.arg),
+                _ => unreachable!(),
+            };
+            field_hashes[i][..32].copy_from_slice(&key_hash);
+            field_hashes[i][32..].copy_from_slice(&value_hash);
+        }
+
+        field_hashes.sort_unstable();
+
+        let mut concatenated = [0u8; 384]; // 6 * 64
+        for (i, hash) in field_hashes.iter().enumerate() {
+            concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
+        }
+
+        let mut hasher = Sha256::new();
+        hasher.update(concatenated);
+        hasher.finalize().into()
     }
 }
 
@@ -130,6 +183,8 @@ mod call_request_test {
         let data = hex::decode(REQUEST).unwrap();
         let mut decoder = Decoder::new(&data);
         let call_request: CallRequest = Decode::decode(&mut decoder, &mut ()).unwrap();
+        std::println!("CallRequest: {:?}", call_request);
+        std::println!("request_Id: {}", hex::encode(call_request.request_id()));
 
         assert_eq!(
             call_request.arg,
