@@ -15,6 +15,41 @@
 ********************************************************************************/
 use crate::error::{ParserError, ViewError};
 
+pub fn compress_leb128(mut value: u64, buf: &mut [u8]) -> &[u8] {
+    let mut i = 0;
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        buf[i] = byte;
+        i += 1;
+        if value == 0 {
+            break;
+        }
+    }
+    &buf[..i]
+}
+
+pub fn compress_sleb128(mut value: i64, buf: &mut [u8]) -> &[u8] {
+    let mut i = 0;
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if (value == 0 && (byte & 0x40) == 0) || (value == -1 && (byte & 0x40) != 0) {
+            buf[i] = byte;
+            i += 1;
+            break;
+        } else {
+            byte |= 0x80;
+            buf[i] = byte;
+            i += 1;
+        }
+    }
+    &buf[..i]
+}
+
 #[inline(never)]
 pub fn decompress_leb128(input: &[u8]) -> Result<(&[u8], u64), ParserError> {
     let mut v = 0;
@@ -71,6 +106,27 @@ pub fn decompress_sleb128(input: &[u8]) -> Result<(&[u8], i64), ParserError> {
     Err(ParserError::UnexpectedError)
 }
 
+// Helper function to hash data with SHA256
+pub fn hash(data: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    let result = hasher.finalize();
+    let mut hash = [0u8; 32];
+    hash.copy_from_slice(&result);
+    hash
+}
+
+pub fn hash_str(s: &str) -> [u8; 32] {
+    hash(s.as_bytes())
+}
+
+// Function to hash binary blobs
+pub fn hash_blob(blob: &[u8]) -> [u8; 32] {
+    hash(blob)
+}
+
 #[inline(never)]
 pub fn handle_ui_message(item: &[u8], out: &mut [u8], page: u8) -> Result<u8, ViewError> {
     crate::zlog("handle_ui_message\x00");
@@ -93,5 +149,54 @@ pub fn handle_ui_message(item: &[u8], out: &mut [u8], page: u8) -> Result<u8, Vi
         out[..item.len()].copy_from_slice(item);
         out[item.len()] = 0; //null terminate
         Ok(1)
+    }
+}
+
+#[cfg(test)]
+mod test_utils {
+    use std::vec;
+
+    use super::*;
+
+    #[test]
+    fn test_compress_decompress_leb128() {
+        let numbers: [u64; 5] = [0, 1, 127, 128, 255];
+        let mut buf = [0u8; 10];
+
+        for &num in &numbers {
+            let compressed = compress_leb128(num, &mut buf);
+            let decompressed = decompress_leb128(compressed).expect("Failed to decompress");
+            assert_eq!(decompressed.1, num, "Failed for number: {}", num);
+        }
+    }
+
+    #[test]
+    fn test_compress_decompress_sleb128() {
+        let numbers: [i64; 5] = [0, 1, -1, 127, -128];
+        let mut buf = [0u8; 10];
+
+        for &num in &numbers {
+            let compressed = compress_sleb128(num, &mut buf);
+            let decompressed = decompress_sleb128(compressed).expect("Failed to decompress");
+            assert_eq!(decompressed.1, num, "Failed for number: {}", num);
+        }
+    }
+
+    #[test]
+    fn test_shortes_leb128_repr() {
+        let test_cases = [
+            (0u64, vec![0x00]),
+            (624485u64, vec![0xE5, 0x8E, 0x26]),
+            (127u64, vec![0x7F]),
+            (128u64, vec![0x80, 0x01]),
+            (255u64, vec![0xFF, 0x01]),
+            (300u64, vec![0xAC, 0x02]),
+        ];
+
+        for (value, expected) in test_cases.iter() {
+            let mut buf = [0u8; 10];
+            let encoded = compress_leb128(*value, &mut buf);
+            assert_eq!(encoded, &expected[..], "Failed for value: {}", value);
+        }
     }
 }
