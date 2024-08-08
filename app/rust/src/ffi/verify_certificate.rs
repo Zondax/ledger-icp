@@ -14,15 +14,9 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{
-    call_request::{CallRequest, ConsentMsgRequest},
-    constants::BLS_PUBLIC_KEY_SIZE,
-    error::ParserError,
-    Certificate, FromBytes,
-};
+use crate::{constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes};
 
 use core::mem::MaybeUninit;
-use sha2::{Digest, Sha256};
 use std::cmp::PartialEq;
 
 use super::{call_request::canister_call_t, consent_request::consent_request_t};
