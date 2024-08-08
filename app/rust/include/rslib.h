@@ -40,6 +40,11 @@ typedef struct {
   uint16_t sender_len;
   uint8_t nonce[50];
   uint16_t nonce_len;
+  // This field is not part of the original
+  // struct, it is just a place holder for the
+  // independent hash of this data, and used during
+  // certificate verification.
+  uint8_t request_id[32];
 } consent_request_t;
 
 // Function to parse a canister call request

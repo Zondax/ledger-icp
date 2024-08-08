@@ -1,4 +1,4 @@
-use nom::bytes::complete::take;
+use nom::bytes::complete::{take, take_until};
 
 use crate::{error::ParserError, utils::decompress_leb128};
 
@@ -11,13 +11,39 @@ pub fn parse_text(input: &[u8]) -> Result<(&[u8], &str), nom::Err<ParserError>> 
     Ok((rem, s))
 }
 
+/// Parse blob from the candid encoded input
+pub fn parse_bytes(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>> {
+    let (rem, len) = crate::utils::decompress_leb128(input)?;
+    #[cfg(test)]
+    std::println!("bytes_len: {}", len);
+    let (rem, bytes) = take(len as usize)(rem)?;
+
+    Ok((rem, bytes))
+}
+
+/// Parses the input to extract the DIDL-prefixed argument data
+fn parse_candid_arg_slice(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>> {
+    // Find the DIDL magic number
+    let (_, didl_start) = take_until("DIDL")(input)?;
+
+    // Extract the slice from DIDL to the end
+    let arg_slice = &input[didl_start.as_ptr() as usize - input.as_ptr() as usize..];
+
+    Ok((&[], arg_slice))
+}
+
 /// Generates parser functions for any Option<Number> from the candid encoded input
 /// Number could be either a u8, ..., u64 or i8, ..., i64
+/// This version is more flexible, returning None for unexpected or missing data
 macro_rules! generate_opt_number {
     ($num_type:ty, $func_name:ident, $le_type:ident) => {
         pub fn $func_name(input: &[u8]) -> Result<(&[u8], Option<$num_type>), ParserError> {
-            let (rem, opt_tag) =
-                decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
+            let Ok((rem, opt_tag)) =
+                decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)
+            else {
+                return Ok((input, None));
+            };
+
             match opt_tag {
                 0 => Ok((rem, None)),
                 1 => {
@@ -25,7 +51,7 @@ macro_rules! generate_opt_number {
                         .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
                     Ok((rem, Some(value)))
                 }
-                _ => Err(ParserError::UnexpectedValue),
+                _ => Ok((input, None)),
             }
         }
     };
