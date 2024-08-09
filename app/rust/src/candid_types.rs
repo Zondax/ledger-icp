@@ -1,14 +1,9 @@
-use crate::{
-    error::ParserError,
-    utils::{decompress_leb128, decompress_sleb128},
-};
-
-// Only for debug information in testing
-#[cfg(test)]
-use std::vec::Vec;
+use crate::error::ParserError;
 
 #[repr(i32)]
-enum IDLTypes {
+#[derive(PartialEq, Copy, Clone)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+pub enum IDLTypes {
     Null = -1,
     Bool = -2,
     Nat = -3,
@@ -72,58 +67,6 @@ impl TryFrom<i64> for IDLTypes {
     }
 }
 
-/// Use to read out the bytes that are part of the candid encoded type table.
-/// in candid encoded data we have first T(type table) followed by the actual data
-/// in the M(memory section), and finaly a R(reference) section.
-/// for more documentation about encoding/decoding:
-/// https://github.com/dfinity/candid/blob/master/spec/Candid.md#binary-format
-pub fn parse_type_table(input: &[u8]) -> Result<&[u8], ParserError> {
-    let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-    let mut current = rem;
-
-    for _ in 0..type_count {
-        let (new_rem, type_code) = decompress_sleb128(current)?;
-        let type_code = IDLTypes::try_from(type_code).map_err(|_| ParserError::UnexpectedType)?;
-        current = new_rem;
-
-        match type_code {
-            IDLTypes::Opt => {
-                let (new_rem, _) = decompress_sleb128(current)?;
-                current = new_rem;
-            }
-            IDLTypes::Vector => {
-                let (new_rem, _) = decompress_sleb128(current)?;
-                current = new_rem;
-            }
-            IDLTypes::Record => {
-                let (new_rem, field_count) =
-                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                current = new_rem;
-                for _ in 0..field_count {
-                    let (new_rem, _) =
-                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                    let (new_rem, _) = decompress_sleb128(new_rem)?;
-                    current = new_rem;
-                }
-            }
-            IDLTypes::Variant => {
-                let (new_rem, field_count) =
-                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                current = new_rem;
-                for _ in 0..field_count {
-                    let (new_rem, _) =
-                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                    let (new_rem, _) = decompress_sleb128(new_rem)?;
-                    current = new_rem;
-                }
-            }
-            _ => {}
-        };
-    }
-
-    Ok(current)
-}
-
 #[cfg(test)]
 impl core::fmt::Display for IDLTypes {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -155,76 +98,4 @@ impl core::fmt::Display for IDLTypes {
         };
         write!(f, "{}", s)
     }
-}
-
-#[cfg(test)]
-fn print_table(table: &[std::string::String]) {
-    std::println!("Type table:");
-    for (i, t) in table.iter().enumerate() {
-        std::println!("{}: {}", i, t);
-    }
-}
-
-#[cfg(test)]
-pub fn print_type_table(input: &[u8]) -> Result<&[u8], ParserError> {
-    let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-    std::println!("type_count: {}", type_count);
-    let mut types = Vec::new();
-    let mut current = rem;
-
-    for _ in 0..type_count {
-        let (new_rem, type_code) = decompress_sleb128(current)?;
-        let type_code = IDLTypes::try_from(type_code).map_err(|_| ParserError::UnexpectedType)?;
-        current = new_rem;
-
-        let type_name = match type_code {
-            IDLTypes::Opt => {
-                let (new_rem, inner_type) = decompress_sleb128(current)?;
-                current = new_rem;
-                std::format!("opt {}", inner_type)
-            }
-            IDLTypes::Vector => {
-                let (new_rem, inner_type) = decompress_sleb128(current)?;
-                current = new_rem;
-                std::format!("vec {}", inner_type)
-            }
-            IDLTypes::Record => {
-                let (new_rem, field_count) =
-                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                current = new_rem;
-                let mut fields = Vec::new();
-                for _ in 0..field_count {
-                    let (new_rem, field_hash) =
-                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                    let (new_rem, field_type) = decompress_sleb128(new_rem)?;
-                    current = new_rem;
-                    fields.push(std::format!("{}: {}", field_hash, field_type));
-                }
-                std::format!("record {{{}}}", fields.join(", "))
-            }
-            IDLTypes::Variant => {
-                let (new_rem, field_count) =
-                    decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                std::println!("variant_field_count: {}", field_count);
-                current = new_rem;
-                let mut fields = Vec::new();
-                for _ in 0..field_count {
-                    let (new_rem, field_hash) =
-                        decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                    let (new_rem, field_type) = decompress_sleb128(new_rem)?;
-                    current = new_rem;
-                    fields.push(std::format!("{}: {}", field_hash, field_type));
-                }
-                std::format!("variant {{{}}}", fields.join(", "))
-            }
-            _ => std::format!("{}", type_code),
-        };
-
-        types.push(type_name);
-    }
-
-    #[cfg(test)]
-    print_table(&types);
-
-    Ok(current)
 }
