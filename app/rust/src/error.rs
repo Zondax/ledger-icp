@@ -76,6 +76,10 @@ pub enum ParserError {
     InvalidConsentMsgRequest,
     InvalidCanisterId,
     InvalidLanguage,
+    TooManyTypes,
+    TooManyFields,
+    FieldNotFound,
+    LEB128Overflow,
 }
 
 // minicibor error provides a reach

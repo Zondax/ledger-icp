@@ -215,6 +215,8 @@ mod call_request_test {
         let arg = msg_req.arg();
         let icrc_msg = arg.icrc21_msg_request();
 
+        std::println!("Icrc21MessageRequest: {:?}", icrc_msg);
+
         assert_eq!(
             msg_req.nonce,
             &[163, 120, 140, 24, 5, 85, 63, 182, 155, 32, 240, 142, 135, 226, 59, 19]

@@ -292,6 +292,12 @@ mod test_certificate {
         std::println!("=============================================");
 
         std::println!("timestamp: {:?}", cert.timestamp());
+        let request_id = [
+            78, 160, 87, 196, 98, 146, 254, 219, 87, 61, 53, 49, 157, 209, 204, 171, 63, 181, 214,
+            162, 177, 6, 183, 133, 209, 247, 117, 124, 250, 90, 37, 66,
+        ];
+
+        std::println!("request_id: {}", hex::encode(request_id));
 
         // Check we parse the message(reply field)
         assert!(cert.msg().is_ok());

@@ -14,8 +14,6 @@ pub fn parse_text(input: &[u8]) -> Result<(&[u8], &str), nom::Err<ParserError>> 
 /// Parse blob from the candid encoded input
 pub fn parse_bytes(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>> {
     let (rem, len) = crate::utils::decompress_leb128(input)?;
-    #[cfg(test)]
-    std::println!("bytes_len: {}", len);
     let (rem, bytes) = take(len as usize)(rem)?;
 
     Ok((rem, bytes))
@@ -38,12 +36,7 @@ fn parse_candid_arg_slice(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<Parse
 macro_rules! generate_opt_number {
     ($num_type:ty, $func_name:ident, $le_type:ident) => {
         pub fn $func_name(input: &[u8]) -> Result<(&[u8], Option<$num_type>), ParserError> {
-            let Ok((rem, opt_tag)) =
-                decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)
-            else {
-                return Ok((input, None));
-            };
-
+            let (rem, opt_tag) = decompress_leb128(input)?;
             match opt_tag {
                 0 => Ok((rem, None)),
                 1 => {
@@ -51,7 +44,7 @@ macro_rules! generate_opt_number {
                         .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
                     Ok((rem, Some(value)))
                 }
-                _ => Ok((input, None)),
+                _ => Err(ParserError::UnexpectedError),
             }
         }
     };

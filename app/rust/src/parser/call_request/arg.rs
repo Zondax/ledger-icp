@@ -1,6 +1,6 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
-use crate::{candid_types::parse_type_table, error::ParserError, FromBytes};
+use crate::{error::ParserError, type_table::parse_type_table, FromBytes, FromTable};
 
 use super::Icrc21ConsentMessageRequest;
 
@@ -19,13 +19,12 @@ impl<'a> FromBytes<'a> for RawArg<'a> {
         let (rem, _) = nom::bytes::complete::tag("DIDL")(input)
             .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
 
-        // 2. Parse the type table
-        let raw_request = parse_type_table(rem).unwrap();
+        let (raw_request, table) = parse_type_table(rem)?;
 
         // 3. Parse message request
         let mut request = MaybeUninit::uninit();
 
-        let rem = Icrc21ConsentMessageRequest::from_bytes_into(raw_request, &mut request)?;
+        let rem = Icrc21ConsentMessageRequest::from_table(raw_request, &mut request, &table, 6)?;
         let out = out.as_mut_ptr();
 
         let len = input.len() - rem.len();
@@ -54,12 +53,12 @@ impl<'a> RawArg<'a> {
             .unwrap();
 
         // 2. Parse the type table
-        let raw_request = parse_type_table(rem).unwrap();
+        let (raw_request, table) = parse_type_table(rem).unwrap();
 
         // 3. Parse message request
         let mut request = MaybeUninit::uninit();
 
-        Icrc21ConsentMessageRequest::from_bytes_into(raw_request, &mut request).unwrap();
+        Icrc21ConsentMessageRequest::from_table(raw_request, &mut request, &table, 6).unwrap();
         unsafe { request.assume_init() }
     }
 }
@@ -67,19 +66,19 @@ impl<'a> RawArg<'a> {
 mod test_arg {
     use super::*;
 
-    const ARG: &str = "
-4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c0
-2efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905
-677265657402656e01011e000300";
+    const ARG: &str = "4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e000300";
 
     #[test]
     fn parse_arg() {
-        let data = hex::decode("4449444C076D7B6C01D880C6D007716C02CBAEB581017AB183E7F1077A6B028BEABFC2067F8EF1C1EE0D026E036C02EFCEE7800401C4FBF2DB05046C03D6FCA70200E1EDEB4A7184F7FEE80A0501060C4449444C00017104746F626905677265657402656E01011E000300").unwrap();
+        let data = hex::decode("4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e000300").unwrap();
         let arg = RawArg::from_bytes(&data).unwrap();
-        std::println!("RawArg: {:?}", arg.icrc21_msg_request());
-        std::println!(
-            "request_id: {:?}",
-            hex::encode(arg.icrc21_msg_request().request_id())
-        );
+        let msg_request = arg.icrc21_msg_request();
+
+        let preferences = msg_request.user_preferences();
+
+        assert_eq!(preferences.chars_per_line(), Some(30));
+        assert_eq!(preferences.lines_per_page(), Some(3));
+
+        std::println!("request_id: {}", hex::encode(msg_request.request_id()));
     }
 }

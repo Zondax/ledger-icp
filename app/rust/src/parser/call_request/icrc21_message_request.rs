@@ -1,10 +1,11 @@
-use core::ptr::addr_of_mut;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use crate::{
     candid_utils::{parse_bytes, parse_text},
     error::ParserError,
+    type_table::TypeTable,
     utils::{decompress_leb128, hash, hash_blob, hash_str},
-    FromBytes,
+    FromTable,
 };
 
 use super::Icrc21ConsentMessageSpec;
@@ -17,6 +18,9 @@ pub struct Icrc21ConsentMessageRequest<'a> {
 }
 
 impl<'a> Icrc21ConsentMessageRequest<'a> {
+    pub fn preferences(&self) -> &Icrc21ConsentMessageSpec<'a> {
+        &self.user_preferences
+    }
     pub fn method(&self) -> &str {
         self.method
     }
@@ -58,35 +62,59 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
     }
 }
 
-impl<'a> FromBytes<'a> for Icrc21ConsentMessageRequest<'a> {
-    fn from_bytes_into(
+impl<'a> FromTable<'a> for Icrc21ConsentMessageRequest<'a> {
+    fn from_table(
         input: &'a [u8],
-        out: &mut core::mem::MaybeUninit<Self>,
+        out: &mut MaybeUninit<Self>,
+        type_table: &TypeTable,
+        type_index: usize,
     ) -> Result<&'a [u8], ParserError> {
-        crate::zlog("Icrc21ConsentMessageRequest::from_bytes_into");
+        let entry = type_table
+            .find_type_entry(type_index)
+            .ok_or(ParserError::FieldNotFound)?;
 
-        // skip type information of args
-        let (rem, _) = decompress_leb128(input)?;
-        let (rem, _) = decompress_leb128(rem)?;
+        let mut rem = input;
+        let mut arg = None;
+        let mut method = None;
+        let mut user_preferences = MaybeUninit::uninit();
 
-        let (rem, bytes) = parse_bytes(rem)?;
-
-        let (rem, method) = parse_text(rem)?;
-
-        let out = out.as_mut_ptr();
-        #[cfg(test)]
-        std::println!("input_spec: {}", hex::encode(rem));
-
-        // Field with hash 1075439471 points to type 2 the metadata
-        let preferences = unsafe { &mut *addr_of_mut!((*out).user_preferences).cast() };
-        let rem = Icrc21ConsentMessageSpec::from_bytes_into(rem, preferences)?;
-
-        unsafe {
-            // skip tag
-            addr_of_mut!((*out).arg).write(bytes);
-            addr_of_mut!((*out).method).write(method);
+        for i in 0..entry.field_count as usize {
+            let (hash, field_type) = entry.fields[i];
+            match hash {
+                4849238 => {
+                    // arg
+                    // skip type information of args
+                    let (new_rem, _) = decompress_leb128(rem)?;
+                    let (new_rem, _) = decompress_leb128(new_rem)?;
+                    let (new_rem, value) = parse_bytes(new_rem)?;
+                    arg = Some(value);
+                    rem = new_rem;
+                }
+                156956385 => {
+                    // method
+                    let (new_rem, value) = parse_text(rem)?;
+                    method = Some(value);
+                    rem = new_rem;
+                }
+                2904537988 => {
+                    // user_preferences
+                    rem = Icrc21ConsentMessageSpec::from_table(
+                        rem,
+                        &mut user_preferences,
+                        type_table,
+                        field_type.as_index().ok_or(ParserError::FieldNotFound)?,
+                    )?;
+                }
+                _ => return Err(ParserError::UnexpectedField),
+            }
         }
 
+        let out_ptr = out.as_mut_ptr();
+        unsafe {
+            addr_of_mut!((*out_ptr).arg).write(arg.ok_or(ParserError::FieldNotFound)?);
+            addr_of_mut!((*out_ptr).method).write(method.ok_or(ParserError::FieldNotFound)?);
+            addr_of_mut!((*out_ptr).user_preferences).write(user_preferences.assume_init());
+        }
         Ok(rem)
     }
 }

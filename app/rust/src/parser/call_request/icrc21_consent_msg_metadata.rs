@@ -1,10 +1,11 @@
-use core::ptr::addr_of_mut;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use crate::{
     candid_utils::{parse_opt_i16, parse_text},
     error::ParserError,
+    type_table::TypeTable,
     utils::{compress_sleb128, hash, hash_str},
-    FromBytes,
+    FromTable,
 };
 
 #[repr(C)]
@@ -45,24 +46,44 @@ impl<'a> Icrc21ConsentMessageMetadata<'a> {
     }
 }
 
-impl<'a> FromBytes<'a> for Icrc21ConsentMessageMetadata<'a> {
-    fn from_bytes_into(
+impl<'a> FromTable<'a> for Icrc21ConsentMessageMetadata<'a> {
+    fn from_table(
         input: &'a [u8],
-        out: &mut core::mem::MaybeUninit<Self>,
+        out: &mut MaybeUninit<Self>,
+        type_table: &TypeTable,
+        type_index: usize,
     ) -> Result<&'a [u8], ParserError> {
-        // Parse language (text)
-        let (rem, language) = parse_text(input)?;
-        if language.is_empty() {
-            return Err(ParserError::InvalidLanguage);
+        let entry = type_table
+            .find_type_entry(type_index)
+            .ok_or(ParserError::FieldNotFound)?;
+
+        let mut rem = input;
+        let mut language = None;
+        let mut utc_offset_minutes = None;
+
+        for i in 0..entry.field_count as usize {
+            let (hash, _) = entry.fields[i];
+            match hash {
+                2047967320 => {
+                    // language
+                    let (new_rem, value) = parse_text(rem)?;
+                    language = Some(value);
+                    rem = new_rem;
+                }
+                271406923 => {
+                    // utc_offset_minutes
+                    let (new_rem, value) = parse_opt_i16(rem)?;
+                    utc_offset_minutes = value;
+                    rem = new_rem;
+                }
+                _ => return Err(ParserError::UnexpectedField),
+            }
         }
 
-        // Parse utc_offset_minutes (opt int16)
-        let (rem, utc_offset_minutes) = parse_opt_i16(rem)?;
-
-        let out = out.as_mut_ptr();
+        let out_ptr = out.as_mut_ptr();
         unsafe {
-            addr_of_mut!((*out).language).write(language);
-            addr_of_mut!((*out).utc_offset_minutes).write(utc_offset_minutes);
+            addr_of_mut!((*out_ptr).language).write(language.ok_or(ParserError::FieldNotFound)?);
+            addr_of_mut!((*out_ptr).utc_offset_minutes).write(utc_offset_minutes);
         }
         Ok(rem)
     }

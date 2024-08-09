@@ -16,8 +16,8 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
-    candid_types::parse_type_table,
     error::{ParserError, ViewError},
+    type_table::parse_type_table,
     utils::decompress_leb128,
     DisplayableItem, FromBytes,
 };
@@ -83,11 +83,11 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
             .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
 
         // 2. Parse the type table
+        let (rem, table) = parse_type_table(rem)?;
         #[cfg(test)]
         {
-            crate::candid_types::print_type_table(rem)?;
+            crate::type_table::print_type_table(&table);
         }
-        let rem = parse_type_table(rem)?;
 
         // 3. Read the variant index (M part)
         let (rem, variant_index) =

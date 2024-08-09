@@ -60,6 +60,15 @@ pub trait FromBytes<'b>: Sized {
     ) -> Result<&'b [u8], crate::error::ParserError>;
 }
 
+pub trait FromTable<'a>: Sized {
+    fn from_table(
+        input: &'a [u8],
+        out: &mut MaybeUninit<Self>,
+        type_table: &crate::type_table::TypeTable,
+        type_index: usize,
+    ) -> Result<&'a [u8], crate::error::ParserError>;
+}
+
 ///This trait defines the interface useful in the UI context
 /// so that all the different OperationTypes or other items can handle their own UI
 pub trait DisplayableItem {

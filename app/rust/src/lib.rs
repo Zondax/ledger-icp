@@ -11,7 +11,8 @@ mod constants;
 mod error;
 mod ffi;
 mod parser;
-mod utils;
+pub mod type_table;
+pub mod utils;
 
 pub use parser::*;
 

@@ -1,9 +1,12 @@
-use core::ptr::addr_of_mut;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
+
+use nom::number::complete::le_u16;
 
 use crate::{
     error::ParserError,
+    type_table::TypeTable,
     utils::{compress_leb128, decompress_leb128, hash, hash_str},
-    FromBytes,
+    FromTable,
 };
 
 use super::Icrc21ConsentMessageMetadata;
@@ -17,6 +20,27 @@ pub struct Icrc21ConsentMessageSpec<'a> {
 }
 
 impl<'a> Icrc21ConsentMessageSpec<'a> {
+    pub fn language(&self) -> &str {
+        self.metadata.language
+    }
+
+    pub fn lines_per_page(&self) -> Option<u16> {
+        match self.device_spec.as_ref()? {
+            DeviceSpec::LineDisplay { lines_per_page, .. } => Some(*lines_per_page),
+            _ => None,
+        }
+    }
+
+    pub fn chars_per_line(&self) -> Option<u16> {
+        match self.device_spec.as_ref()? {
+            DeviceSpec::LineDisplay {
+                characters_per_line,
+                ..
+            } => Some(*characters_per_line),
+            _ => None,
+        }
+    }
+
     // Hashing function for Icrc21ConsentMessageSpec
     pub fn hash(&self) -> [u8; 32] {
         let mut field_hashes = [[0u8; 64]; 2];
@@ -103,23 +127,89 @@ impl DeviceSpec {
     }
 }
 
-impl<'a> FromBytes<'a> for Icrc21ConsentMessageSpec<'a> {
-    fn from_bytes_into(
+impl<'a> FromTable<'a> for Icrc21ConsentMessageSpec<'a> {
+    fn from_table(
         input: &'a [u8],
-        out: &mut core::mem::MaybeUninit<Self>,
+        out: &mut MaybeUninit<Self>,
+        type_table: &TypeTable,
+        type_index: usize,
     ) -> Result<&'a [u8], ParserError> {
-        crate::zlog("Icrc21ConsentMessageSpec::from_bytes_into");
+        let entry = type_table
+            .find_type_entry(type_index)
+            .ok_or(ParserError::FieldNotFound)?;
 
-        let out = out.as_mut_ptr() as *mut Icrc21ConsentMessageSpec;
-        // Field with hash 1075439471 points to type 2 the metadata
-        let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };
-        let rem = Icrc21ConsentMessageMetadata::from_bytes_into(input, metadata)?;
-        #[cfg(test)]
-        std::println!("Metadata");
-        let (rem, variant) = decompress_leb128(rem).map_err(|_| ParserError::UnexpectedError)?;
-        #[cfg(test)]
-        std::println!("device_spec_variant: {}", variant);
+        let mut rem = input;
+        let mut metadata = MaybeUninit::uninit();
+        let mut device_spec = None;
 
+        for i in 0..entry.field_count as usize {
+            let (hash, field_type) = entry.fields[i];
+            match hash {
+                1075439471 => {
+                    // metadata
+
+                    rem = Icrc21ConsentMessageMetadata::from_table(
+                        rem,
+                        &mut metadata,
+                        type_table,
+                        field_type.as_index().ok_or(ParserError::FieldNotFound)?,
+                    )?;
+                }
+                1534901700 => {
+                    // device_spec
+                    let index = field_type.as_index().ok_or(ParserError::FieldNotFound)?;
+                    let (value, new_rem) = parse_opt_device_spec(rem, type_table, index)?;
+                    device_spec = value;
+                    rem = new_rem;
+                }
+                _ => return Err(ParserError::UnexpectedField),
+            }
+        }
+
+        let out_ptr = out.as_mut_ptr();
+        unsafe {
+            addr_of_mut!((*out_ptr).metadata).write(metadata.assume_init());
+            addr_of_mut!((*out_ptr).device_spec).write(device_spec);
+        }
         Ok(rem)
+    }
+}
+
+fn parse_opt_device_spec<'a>(
+    input: &'a [u8],
+    _type_table: &TypeTable,
+    _type_index: usize,
+) -> Result<(Option<DeviceSpec>, &'a [u8]), ParserError> {
+    let (rem, opt_tag) = decompress_leb128(input)?;
+
+    match opt_tag {
+        0 => Ok((None, rem)),
+        1 => {
+            let (rem, variant_tag) = decompress_leb128(rem)?;
+
+            match variant_tag {
+                0 => Ok((Some(DeviceSpec::GenericDisplay), rem)),
+                1 => {
+                    let (rem, characters_per_line) =
+                        le_u16(rem).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
+                            ParserError::UnexpectedError
+                        })?;
+                    let (rem, lines_per_page) =
+                        le_u16(rem).map_err(|_: nom::Err<nom::error::Error<&[u8]>>| {
+                            ParserError::UnexpectedError
+                        })?;
+
+                    Ok((
+                        Some(DeviceSpec::LineDisplay {
+                            characters_per_line,
+                            lines_per_page,
+                        }),
+                        rem,
+                    ))
+                }
+                _ => Err(ParserError::UnexpectedError),
+            }
+        }
+        _ => Err(ParserError::UnexpectedError),
     }
 }
