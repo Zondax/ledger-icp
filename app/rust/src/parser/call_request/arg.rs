@@ -67,17 +67,24 @@ mod test_arg {
     use super::*;
 
     const ARG: &str = "4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e000300";
+    const REQUEST_ARG: &[u8] = &[68, 73, 68, 76, 0, 1, 113, 4, 116, 111, 98, 105];
+    const METHOD: &str = "greet";
+    const CHARS_PER_LINE: u16 = 30;
+    const PAGE_LINES: u16 = 3;
 
     #[test]
     fn parse_arg() {
-        let data = hex::decode("4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e000300").unwrap();
+        let data = hex::decode(ARG).unwrap();
         let arg = RawArg::from_bytes(&data).unwrap();
         let msg_request = arg.icrc21_msg_request();
+        std::println!("{:?}", msg_request);
 
         let preferences = msg_request.user_preferences();
 
-        assert_eq!(preferences.chars_per_line(), Some(30));
-        assert_eq!(preferences.lines_per_page(), Some(3));
+        assert_eq!(preferences.chars_per_line(), Some(CHARS_PER_LINE));
+        assert_eq!(preferences.lines_per_page(), Some(PAGE_LINES));
+        assert_eq!(msg_request.method(), METHOD);
+        assert_eq!(msg_request.arg(), REQUEST_ARG);
 
         std::println!("request_id: {}", hex::encode(msg_request.request_id()));
     }

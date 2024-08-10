@@ -105,13 +105,18 @@ impl DeviceSpec {
                 let mut buf = [0u8; 10];
                 let characters_per_line_leb128 =
                     compress_leb128(*characters_per_line as u64, &mut buf);
+                let value_bytes = characters_per_line.to_le_bytes();
                 field_hashes[field_count][..32].copy_from_slice(&hash_str("characters_per_line"));
-                field_hashes[field_count][32..].copy_from_slice(&hash(characters_per_line_leb128));
+                // field_hashes[field_count][32..].copy_from_slice(&hash(characters_per_line_leb128));
+                field_hashes[field_count][32..].copy_from_slice(&hash(&value_bytes));
+
                 field_count += 1;
 
                 let lines_per_page_leb128 = compress_leb128(*lines_per_page as u64, &mut buf);
+                let value_bytes = lines_per_page.to_le_bytes();
                 field_hashes[field_count][..32].copy_from_slice(&hash_str("lines_per_page"));
-                field_hashes[field_count][32..].copy_from_slice(&hash(lines_per_page_leb128));
+                // field_hashes[field_count][32..].copy_from_slice(&hash(lines_per_page_leb128));
+                field_hashes[field_count][32..].copy_from_slice(&hash(&value_bytes));
                 field_count += 1;
 
                 field_hashes[..field_count].sort_unstable();
