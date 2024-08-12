@@ -91,8 +91,11 @@ pub unsafe extern "C" fn parse_consent_request(
             out.request_type_len = request.request_type.len() as u16;
             out.sender.copy_from_slice(request.sender);
             out.sender_len = request.sender.len() as u16;
-            out.nonce.copy_from_slice(request.nonce);
-            out.nonce_len = request.nonce.len() as u16;
+            out.nonce_len = 0;
+            if let Some(nonce) = request.nonce {
+                out.nonce.copy_from_slice(nonce);
+                out.nonce_len = nonce.len() as u16;
+            }
             out.request_id.copy_from_slice(request_id.as_ref());
 
             ParserError::Ok as u32

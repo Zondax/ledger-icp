@@ -10,6 +10,9 @@ use crate::{
 
 use super::RawArg;
 
+/// This struct holds the canister call consent message request
+/// and tier the icrc21_message_request which is candid encoded
+/// as part of the arg blob.
 // {"content": {"arg": h'4449444C076D7B6C01D880C6D007716C02CBAEB581017AB183E7F1077A6B028BEABFC2067F8EF1C1EE0D026E036C02EFCEE7800401C4FBF2DB05046C03D6FCA70200E1EDEB4A7184F7FEE80A0501060C4449444C00017104746F626905677265657402656E01011E000300',
 // "canister_id": h'00000000006000FD0101', "ingress_expiry": 1712666698482000000,
 // "method_name": "icrc21_canister_call_consent_message", "nonce": h'A3788C1805553FB69B20F08E87E23B13',
@@ -20,7 +23,7 @@ pub struct ConsentMsgRequest<'a> {
     // Bellow arg contains
     // a candid encoded type the Icrc21ConsentMessageRequest
     pub arg: RawArg<'a>,
-    pub nonce: &'a [u8],
+    pub nonce: Option<&'a [u8]>,
     pub sender: &'a [u8],
     pub canister_id: &'a [u8],
     pub method_name: &'a str,
@@ -49,7 +52,7 @@ impl<'a> ConsentMsgRequest<'a> {
         &self.arg
     }
 
-    pub fn nonce(&self) -> &[u8] {
+    pub fn nonce(&self) -> Option<&[u8]> {
         self.nonce
     }
     pub fn sender(&self) -> &[u8] {
@@ -71,16 +74,17 @@ impl<'a> ConsentMsgRequest<'a> {
     /// of this struct using independent hash of structured data
     /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
     pub fn request_id(&self) -> [u8; 32] {
-        const FIELDS: [(&str, usize); 6] = [
+        const MAX_FIELDS: usize = 7;
+        const FIELDS: [(&str, usize); MAX_FIELDS] = [
             ("request_type", 0),
             ("sender", 1),
             ("ingress_expiry", 2),
             ("canister_id", 3),
             ("method_name", 4),
             ("arg", 5),
+            ("nonce", 6),
         ];
-
-        let mut field_hashes = [[0u8; 64]; 6];
+        let mut field_hashes = [[0u8; 64]; MAX_FIELDS];
         let mut field_count = 0;
 
         for &(key, field_index) in &FIELDS {
@@ -95,7 +99,20 @@ impl<'a> ConsentMsgRequest<'a> {
                 }
                 3 => hash_blob(self.canister_id),
                 4 => hash_str(self.method_name),
-                5 => hash_blob(self.arg.raw_data()),
+                5 => {
+                    let args = self.arg.icrc21_msg_request();
+                    args.request_id()
+
+                    // hash_blob(self.arg.raw_data()),
+                }
+                6 => {
+                    // Only include nonce if it's Some
+                    if let Some(nonce) = self.nonce {
+                        hash_blob(nonce)
+                    } else {
+                        continue;
+                    }
+                }
                 _ => unreachable!(),
             };
             field_hashes[field_count][..32].copy_from_slice(&key_hash);
@@ -104,12 +121,10 @@ impl<'a> ConsentMsgRequest<'a> {
         }
 
         field_hashes[..field_count].sort_unstable();
-
-        let mut concatenated = [0u8; 384]; // 6 * 64
+        let mut concatenated = [0u8; MAX_FIELDS * 64];
         for (i, hash) in field_hashes[..field_count].iter().enumerate() {
             concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
         }
-
         hash_blob(&concatenated[..field_count * 64])
     }
 }
@@ -147,10 +162,12 @@ impl<'b, C> Decode<'b, C> for ConsentMsgRequest<'b> {
 
         // Decode content map
         let content_len = d.map()?.ok_or(Error::message("Expected a content map"))?;
-        let max_entries = Self::MAP_ENTRIES;
 
         // Nonce could be an optional argument
-        if content_len != max_entries {
+        // so it could have 6 or 7 map entries depending
+        // on the presence of nonce
+        let max_entries = Self::MAP_ENTRIES;
+        if content_len != max_entries && content_len != max_entries - 1 {
             return Err(Error::message("Expected a content map with 7 entries"));
         }
 
@@ -162,7 +179,7 @@ impl<'b, C> Decode<'b, C> for ConsentMsgRequest<'b> {
         let mut request_type = None;
         let mut ingress_expiry = None;
 
-        for _ in 0..7 {
+        for _ in 0..content_len {
             let key = d.str()?;
             match key {
                 "arg" => arg = Some(d.bytes()?),
@@ -189,7 +206,7 @@ impl<'b, C> Decode<'b, C> for ConsentMsgRequest<'b> {
 
         Ok(ConsentMsgRequest {
             arg,
-            nonce: nonce.ok_or(Error::message("Missing nonce"))?,
+            nonce,
             sender: sender.ok_or(Error::message("Missing sender"))?,
             canister_id: canister_id.ok_or(Error::message("Missing canister_id"))?,
             method_name,
@@ -205,28 +222,27 @@ mod call_request_test {
 
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f6578706972791bf0edf1e9943528006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
     const ARG: &str = "4449444c00017104746f6269";
+    const NONCE: &str = "a3788c1805553fb69b20f08e87e23b13";
     const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
+    const CANISTER_ID: &str = "00000000006000fd0101";
+    const METHOD: &str = "icrc21_canister_call_consent_message";
+    const REQUEST_TYPE: &str = "call";
+    const SENDER: &str = "04";
 
     #[test]
     fn msg_request() {
         let data = hex::decode(REQUEST).unwrap();
         let (_, msg_req) = ConsentMsgRequest::parse(&data).unwrap();
+        let request_id = hex::encode(msg_req.request_id());
+
         std::println!("ConsentMsgRequest: {:?}", msg_req);
-        let arg = msg_req.arg();
-        let icrc_msg = arg.icrc21_msg_request();
 
-        std::println!("Icrc21MessageRequest: {:?}", icrc_msg);
-
-        assert_eq!(
-            msg_req.nonce,
-            &[163, 120, 140, 24, 5, 85, 63, 182, 155, 32, 240, 142, 135, 226, 59, 19]
-        );
-        assert_eq!(msg_req.sender, &[4]);
-        assert_eq!(msg_req.canister_id, &[0, 0, 0, 0, 0, 96, 0, 253, 1, 1]);
-        assert_eq!(icrc_msg.method(), "greet");
-        assert_eq!(hex::encode(icrc_msg.arg()), ARG);
-        assert_eq!(msg_req.method_name, "icrc21_canister_call_consent_message");
-        assert_eq!(msg_req.request_type, "call");
+        assert_eq!(hex::encode(msg_req.sender), SENDER);
+        assert_eq!(hex::encode(msg_req.canister_id), CANISTER_ID);
+        assert_eq!(msg_req.method_name, METHOD);
+        assert_eq!(msg_req.request_type, REQUEST_TYPE);
         assert_eq!(msg_req.ingress_expiry, 17360798124099315712);
+        assert_eq!(hex::encode(msg_req.nonce.unwrap()), NONCE);
+        assert_eq!(request_id, REQUEST_ID);
     }
 }
