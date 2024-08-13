@@ -237,8 +237,14 @@ impl<'b, C> Decode<'b, C> for Certificate<'b> {
                 _ => return Err(Error::message("Unexpected key in certificate")),
             }
         }
+        // Verify that the tree raw value can be parsed sucessfully into a HashTree
+        let raw_tree = tree.ok_or(Error::message("Missing tree"))?;
+        let _: HashTree = raw_tree
+            .try_into()
+            .map_err(|_| Error::message("Invalid tree"))?;
+
         Ok(Certificate {
-            tree: tree.ok_or(Error::message("Missing tree"))?,
+            tree: raw_tree,
             signature: signature.ok_or(Error::message("Missing signature"))?,
             delegation,
         })
@@ -275,6 +281,8 @@ mod test_certificate {
     const CERT_HASH: &str = "bcedf2eab3980aedd4d0d9f2159efebd5597cbad5f49217e0c9686b93d30d503";
     const DEL_CERT_HASH: &str = "04a94256c02e83aab4f203cb0784340279d7902f9b09305c978be1746e19b742";
     const CANISTER_ID: &str = "00000000006000FD0101";
+
+    const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
 
     #[test]
     fn parse_cert() {
@@ -368,5 +376,18 @@ mod test_certificate {
 
         // the provided canister might be used in case of delegation
         assert!(ranges.is_canister_in_range(&canister_id));
+    }
+
+    #[test]
+    fn cert_lookup_request_id() {
+        let data = hex::decode(REAL_CERT).unwrap();
+        let cert = Certificate::parse(&data).unwrap();
+
+        let request_id = hex::decode(REQUEST_ID).unwrap();
+
+        let tree = cert.tree();
+
+        let found = HashTree::lookup_path(&request_id[..].into(), tree).unwrap();
+        assert!(found.raw_value().is_some());
     }
 }

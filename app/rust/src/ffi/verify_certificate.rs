@@ -14,7 +14,10 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes};
+use crate::{
+    constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes, HashTree,
+    LookupResult,
+};
 
 use core::mem::MaybeUninit;
 use std::cmp::PartialEq;
@@ -44,7 +47,7 @@ pub unsafe extern "C" fn parser_verify_certificate(
     certificate: *const u8,
     certificate_len: u16,
     root_key: *const u8,
-    call_request: *const consent_request_t,
+    call_request: *const canister_call_t,
     consent_request: *const consent_request_t,
 ) -> u32 {
     if call_request.is_null()
@@ -55,6 +58,12 @@ pub unsafe extern "C" fn parser_verify_certificate(
         return ParserError::NoData as u32;
     }
 
+    let call_request = &*call_request;
+    let consent_request = &*consent_request;
+
+    // This call the PartialEq implementation
+    // for canister_call_t and consent_request_t
+    // which ensures canister_id, method and args are the same in both
     if call_request != consent_request {
         return ParserError::InvalidCertificate as u32;
     }
@@ -75,7 +84,16 @@ pub unsafe extern "C" fn parser_verify_certificate(
         _ => {}
     }
 
-    // Now store the certificate back in memory for ui usage?
+    let tree = cert.tree();
+    let request_id = consent_request.request_id();
 
+    // Certificate tree must contain a node labeled with the request_id computed
+    // from the consent_msg_request, this ensures that the passed data referes to
+    // the provided certificate
+    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(&request_id[..].into(), tree) else {
+        return ParserError::InvalidCertificate as u32;
+    };
+
+    // Now store the certificate back in memory for ui usage?
     ParserError::Ok as u32
 }
