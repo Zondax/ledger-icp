@@ -85,7 +85,7 @@ pub unsafe extern "C" fn parser_verify_certificate(
     }
 
     let tree = cert.tree();
-    let request_id = consent_request.request_id();
+    let request_id = consent_request.request_id;
 
     // Certificate tree must contain a node labeled with the request_id computed
     // from the consent_msg_request, this ensures that the passed data referes to
