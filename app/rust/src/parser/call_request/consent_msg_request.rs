@@ -75,22 +75,35 @@ impl<'a> ConsentMsgRequest<'a> {
     /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
     pub fn request_id(&self) -> [u8; 32] {
         const MAX_FIELDS: usize = 7;
-        const FIELDS: [(&str, usize); MAX_FIELDS] = [
-            ("request_type", 0),
-            ("sender", 1),
-            ("ingress_expiry", 2),
-            ("canister_id", 3),
-            ("method_name", 4),
-            ("arg", 5),
-            ("nonce", 6),
+        // ("arg".to_string(), hex::decode("4449444C076D7B6C01D880C6D007716C02CBAEB581017AB183E7F1077A6B028BEABFC2067F8EF1C1EE0D026E036C02EFCEE7800401C4FBF2DB05046C03D6FCA70200E1EDEB4A7184F7FEE80A0501060C4449444C00017104746F626905677265657402656E01011E000300").unwrap()),
+        // ("canister_id".to_string(), hex::decode("00000000006000FD0101").unwrap()),
+        // ("ingress_expiry".to_string(), 1712666698482000000u64.to_be_bytes().to_vec()),
+        // ("method_name".to_string(), "icrc21_canister_call_consent_message".as_bytes().to_vec()),
+        // ("nonce".to_string(), hex::decode("A3788C1805553FB69B20F08E87E23B13").unwrap()),
+        // ("request_type".to_string(), "call".as_bytes().to_vec()),
+        // ("sender".to_string(), hex::decode("04").unwrap()),
+        const FIELDS: [&str; MAX_FIELDS] = [
+            "request_type",
+            "sender",
+            "ingress_expiry",
+            "canister_id",
+            "method_name",
+            "arg",
+            "nonce",
         ];
         let mut field_hashes = [[0u8; 64]; MAX_FIELDS];
         let mut field_count = 0;
+        let max_fields = if self.nonce.is_some() {
+            MAX_FIELDS
+        } else {
+            MAX_FIELDS - 1
+        };
 
-        for &(key, field_index) in &FIELDS {
+        for (idx, key) in FIELDS.iter().enumerate().take(max_fields) {
             let key_hash = hash_str(key);
-            let value_hash = match field_index {
-                0 => hash_str(self.request_type),
+
+            let value_hash = match idx {
+                0 => hash_blob(self.request_type.as_bytes()),
                 1 => hash_blob(self.sender),
                 2 => {
                     let mut buf = [0u8; 10];
@@ -98,23 +111,18 @@ impl<'a> ConsentMsgRequest<'a> {
                     hash_blob(leb)
                 }
                 3 => hash_blob(self.canister_id),
-                4 => hash_str(self.method_name),
-                5 => {
-                    let args = self.arg.icrc21_msg_request();
-                    args.request_id()
-
-                    // hash_blob(self.arg.raw_data()),
-                }
+                4 => hash_blob(self.method_name.as_bytes()),
+                5 => hash_blob(self.arg.raw_data()),
                 6 => {
-                    // Only include nonce if it's Some
                     if let Some(nonce) = self.nonce {
                         hash_blob(nonce)
                     } else {
-                        continue;
+                        break;
                     }
                 }
                 _ => unreachable!(),
             };
+
             field_hashes[field_count][..32].copy_from_slice(&key_hash);
             field_hashes[field_count][32..].copy_from_slice(&value_hash);
             field_count += 1;
@@ -122,6 +130,8 @@ impl<'a> ConsentMsgRequest<'a> {
 
         field_hashes[..field_count].sort_unstable();
         let mut concatenated = [0u8; MAX_FIELDS * 64];
+
+        // omit Nonce if no present
         for (i, hash) in field_hashes[..field_count].iter().enumerate() {
             concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
         }
@@ -188,7 +198,18 @@ impl<'b, C> Decode<'b, C> for ConsentMsgRequest<'b> {
                 "canister_id" => canister_id = Some(d.bytes()?),
                 "method_name" => method_name = Some(d.str()?),
                 "request_type" => request_type = Some(d.str()?),
-                "ingress_expiry" => ingress_expiry = Some(d.u64()?),
+
+                "ingress_expiry" => {
+                    let b = d.input();
+                    let pos = d.position();
+                    #[cfg(test)]
+                    std::println!("input: {:?}", &b[pos..]);
+                    let n = d.u64()?;
+                    #[cfg(test)]
+                    std::println!("ingress_expiry: {}", n);
+
+                    ingress_expiry = Some(n);
+                }
                 _ => return Err(Error::message("Unexpected key in content map")),
             }
         }
@@ -228,6 +249,8 @@ mod call_request_test {
     const METHOD: &str = "icrc21_canister_call_consent_message";
     const REQUEST_TYPE: &str = "call";
     const SENDER: &str = "04";
+    const INGRESS_EXPIRY: u64 = 1712666698482000000;
+    // 0x4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542
 
     #[test]
     fn msg_request() {
@@ -241,7 +264,7 @@ mod call_request_test {
         assert_eq!(hex::encode(msg_req.canister_id), CANISTER_ID);
         assert_eq!(msg_req.method_name, METHOD);
         assert_eq!(msg_req.request_type, REQUEST_TYPE);
-        assert_eq!(msg_req.ingress_expiry, 17360798124099315712);
+        assert_eq!(msg_req.ingress_expiry, INGRESS_EXPIRY);
         assert_eq!(hex::encode(msg_req.nonce.unwrap()), NONCE);
         assert_eq!(request_id, REQUEST_ID);
     }
