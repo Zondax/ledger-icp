@@ -85,7 +85,5 @@ mod test_arg {
         assert_eq!(preferences.lines_per_page(), Some(PAGE_LINES));
         assert_eq!(msg_request.method(), METHOD);
         assert_eq!(msg_request.arg(), REQUEST_ARG);
-
-        std::println!("request_id: {}", hex::encode(msg_request.request_id()));
     }
 }

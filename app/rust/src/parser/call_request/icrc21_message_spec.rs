@@ -2,12 +2,7 @@ use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use nom::number::complete::le_u16;
 
-use crate::{
-    error::ParserError,
-    type_table::TypeTable,
-    utils::{compress_leb128, decompress_leb128, hash, hash_str},
-    FromTable,
-};
+use crate::{error::ParserError, type_table::TypeTable, utils::decompress_leb128, FromTable};
 
 use super::Icrc21ConsentMessageMetadata;
 
@@ -40,31 +35,6 @@ impl<'a> Icrc21ConsentMessageSpec<'a> {
             _ => None,
         }
     }
-
-    // Hashing function for Icrc21ConsentMessageSpec
-    pub fn hash(&self) -> [u8; 32] {
-        let mut field_hashes = [[0u8; 64]; 2];
-        let mut field_count = 0;
-
-        field_hashes[field_count][..32].copy_from_slice(&hash_str("metadata"));
-        field_hashes[field_count][32..].copy_from_slice(&self.metadata.hash());
-        field_count += 1;
-
-        if let Some(device_spec) = &self.device_spec {
-            field_hashes[field_count][..32].copy_from_slice(&hash_str("device_spec"));
-            field_hashes[field_count][32..].copy_from_slice(&device_spec.hash());
-            field_count += 1;
-        }
-
-        field_hashes[..field_count].sort_unstable();
-
-        let mut concatenated = [0u8; 128];
-        for (i, hash) in field_hashes[..field_count].iter().enumerate() {
-            concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
-        }
-
-        hash(&concatenated[..field_count * 64])
-    }
 }
 
 // device_spec: opt variant {
@@ -88,48 +58,6 @@ pub enum DeviceSpec {
         characters_per_line: u16,
         lines_per_page: u16,
     },
-}
-
-impl DeviceSpec {
-    // Hashing function for DeviceSpec
-    pub fn hash(&self) -> [u8; 32] {
-        match self {
-            DeviceSpec::GenericDisplay => hash_str("GenericDisplay"),
-            DeviceSpec::LineDisplay {
-                characters_per_line,
-                lines_per_page,
-            } => {
-                let mut field_hashes = [[0u8; 64]; 2];
-                let mut field_count = 0;
-
-                let mut buf = [0u8; 10];
-                let characters_per_line_leb128 =
-                    compress_leb128(*characters_per_line as u64, &mut buf);
-                let value_bytes = characters_per_line.to_le_bytes();
-                field_hashes[field_count][..32].copy_from_slice(&hash_str("characters_per_line"));
-                // field_hashes[field_count][32..].copy_from_slice(&hash(characters_per_line_leb128));
-                field_hashes[field_count][32..].copy_from_slice(&hash(&value_bytes));
-
-                field_count += 1;
-
-                let lines_per_page_leb128 = compress_leb128(*lines_per_page as u64, &mut buf);
-                let value_bytes = lines_per_page.to_le_bytes();
-                field_hashes[field_count][..32].copy_from_slice(&hash_str("lines_per_page"));
-                // field_hashes[field_count][32..].copy_from_slice(&hash(lines_per_page_leb128));
-                field_hashes[field_count][32..].copy_from_slice(&hash(&value_bytes));
-                field_count += 1;
-
-                field_hashes[..field_count].sort_unstable();
-
-                let mut concatenated = [0u8; 128];
-                for (i, hash) in field_hashes[..field_count].iter().enumerate() {
-                    concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
-                }
-
-                hash(&concatenated[..field_count * 64])
-            }
-        }
-    }
 }
 
 impl<'a> FromTable<'a> for Icrc21ConsentMessageSpec<'a> {

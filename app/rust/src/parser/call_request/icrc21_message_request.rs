@@ -4,7 +4,7 @@ use crate::{
     candid_utils::{parse_bytes, parse_text},
     error::ParserError,
     type_table::TypeTable,
-    utils::{decompress_leb128, hash, hash_blob, hash_str},
+    utils::decompress_leb128,
     FromTable,
 };
 
@@ -30,35 +30,6 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
 
     pub fn user_preferences(&self) -> &Icrc21ConsentMessageSpec<'a> {
         &self.user_preferences
-    }
-
-    /// Computes the request_id which is the hash
-    /// of this struct using independent hash of structured data
-    /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
-    pub fn request_id(&self) -> [u8; 32] {
-        let mut field_hashes = [[0u8; 64]; 3];
-        let mut field_count = 0;
-
-        field_hashes[field_count][..32].copy_from_slice(&hash_str("method"));
-        field_hashes[field_count][32..].copy_from_slice(&hash_str(self.method));
-        field_count += 1;
-
-        field_hashes[field_count][..32].copy_from_slice(&hash_str("arg"));
-        field_hashes[field_count][32..].copy_from_slice(&hash_blob(self.arg));
-        field_count += 1;
-
-        field_hashes[field_count][..32].copy_from_slice(&hash_str("user_preferences"));
-        field_hashes[field_count][32..].copy_from_slice(&self.user_preferences.hash());
-        field_count += 1;
-
-        field_hashes[..field_count].sort_unstable();
-
-        let mut concatenated = [0u8; 192];
-        for (i, hash) in field_hashes[..field_count].iter().enumerate() {
-            concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
-        }
-
-        hash(&concatenated[..field_count * 64])
     }
 }
 

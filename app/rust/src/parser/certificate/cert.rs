@@ -306,6 +306,7 @@ mod test_certificate {
         ];
 
         std::println!("request_id: {}", hex::encode(request_id));
+        std::println!("certificate_size: {}", core::mem::size_of::<Certificate>());
 
         // Check we parse the message(reply field)
         assert!(cert.msg().is_ok());

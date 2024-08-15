@@ -1,5 +1,4 @@
 use core::mem::MaybeUninit;
-use sha2::{Digest, Sha256};
 
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
@@ -21,6 +20,7 @@ pub struct CallRequest<'a> {
     pub method_name: &'a str,
     pub request_type: &'a str,
     pub ingress_expiry: u64,
+    pub nonce: Option<&'a [u8]>,
 }
 
 impl<'a> CallRequest<'a> {
@@ -53,50 +53,47 @@ impl<'a> CallRequest<'a> {
         self.ingress_expiry
     }
 
-    /// Computes the request_id which is the hash
-    /// of this struct using independent hash of structured data
-    /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
-    pub fn request_id(&self) -> [u8; 32] {
-        const FIELDS: [(&str, usize); 6] = [
-            ("request_type", 0),
-            ("sender", 1),
-            ("ingress_expiry", 2),
-            ("canister_id", 3),
-            ("method_name", 4),
-            ("arg", 5),
-        ];
+    pub fn nonce(&self) -> Option<&[u8]> {
+        self.nonce
+    }
 
-        let mut field_hashes = [[0u8; 64]; 6];
+    pub fn digest(&self) -> [u8; 32] {
+        use sha2::Digest;
+        let mut hasher = sha2::Sha256::new();
 
-        for (i, &(key, field_index)) in FIELDS.iter().enumerate() {
-            let key_hash = hash_str(key);
-            let value_hash = match field_index {
-                0 => hash_str(self.request_type),
-                1 => hash_blob(self.sender),
-                2 => {
-                    let mut buf = [0u8; 10];
-                    let leb = compress_leb128(self.ingress_expiry, &mut buf);
-                    hash_blob(leb)
-                }
-                3 => hash_blob(self.canister_id),
-                4 => hash_str(self.method_name),
-                5 => hash_blob(self.arg),
-                _ => unreachable!(),
-            };
-            field_hashes[i][..32].copy_from_slice(&key_hash);
-            field_hashes[i][32..].copy_from_slice(&value_hash);
+        // Helper function to hash a field
+        let mut hash_field = |name: &str, value: &[u8]| {
+            hasher.update(hash_str(name));
+            hasher.update(hash_blob(value));
+        };
+
+        // Hash fields in the same order as the C function
+        hash_field("sender", self.sender);
+        hash_field("canister_id", self.canister_id);
+
+        // Hash ingress_expiry (u64)
+        let mut buf = [0u8; 10];
+        hash_field(
+            "ingress_expiry",
+            compress_leb128(self.ingress_expiry, &mut buf),
+        );
+
+        hash_field("method_name", self.method_name.as_bytes());
+        hash_field("request_type", self.request_type.as_bytes());
+
+        // Hash nonce if present
+        if let Some(nonce) = self.nonce {
+            hash_field("nonce", nonce);
         }
 
-        field_hashes.sort_unstable();
+        // Hash arg last
+        hash_field("arg", self.arg);
 
-        let mut concatenated = [0u8; 384]; // 6 * 64
-        for (i, hash) in field_hashes.iter().enumerate() {
-            concatenated[i * 64..(i + 1) * 64].copy_from_slice(hash);
-        }
-
-        let mut hasher = Sha256::new();
-        hasher.update(concatenated);
-        hasher.finalize().into()
+        // Finalize and return the hash
+        let result = hasher.finalize();
+        let mut hash = [0u8; 32];
+        hash.copy_from_slice(&result);
+        hash
     }
 }
 
@@ -134,18 +131,19 @@ impl<'b, C> Decode<'b, C> for CallRequest<'b> {
 
         // Decode content map
         let content_len = d.map()?.ok_or(Error::message("Expected a content map"))?;
-        if content_len != 6 {
-            return Err(Error::message("Expected a content map with 6 entries"));
+        if content_len != 6 && content_len != 7 {
+            return Err(Error::message("Expected a content map with 6/7 entries"));
         }
 
         let mut arg = None;
         let mut sender = None;
+        let mut nonce = None;
         let mut canister_id = None;
         let mut method_name = None;
         let mut request_type = None;
         let mut ingress_expiry = None;
 
-        for _ in 0..6 {
+        for _ in 0..content_len as usize {
             let key = d.str()?;
             match key {
                 "arg" => arg = Some(d.bytes()?),
@@ -154,6 +152,7 @@ impl<'b, C> Decode<'b, C> for CallRequest<'b> {
                 "method_name" => method_name = Some(d.str()?),
                 "request_type" => request_type = Some(d.str()?),
                 "ingress_expiry" => ingress_expiry = Some(d.u64()?),
+                "nonce" => nonce = Some(d.bytes()?),
                 _ => return Err(Error::message("Unexpected key in content map")),
             }
         }
@@ -161,6 +160,7 @@ impl<'b, C> Decode<'b, C> for CallRequest<'b> {
         Ok(CallRequest {
             arg: arg.ok_or(Error::message("Missing arg"))?,
             sender: sender.ok_or(Error::message("Missing sender"))?,
+            nonce,
             canister_id: canister_id.ok_or(Error::message("Missing canister_id"))?,
             method_name: method_name.ok_or(Error::message("Missing method_name"))?,
             request_type: request_type.ok_or(Error::message("Missing request_type"))?,
@@ -184,7 +184,6 @@ mod call_request_test {
         let mut decoder = Decoder::new(&data);
         let call_request: CallRequest = Decode::decode(&mut decoder, &mut ()).unwrap();
         std::println!("CallRequest: {:?}", call_request);
-        std::println!("request_Id: {}", hex::encode(call_request.request_id()));
 
         assert_eq!(
             call_request.arg,

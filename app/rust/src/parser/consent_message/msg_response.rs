@@ -83,10 +83,10 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
             .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
 
         // 2. Parse the type table
-        let (rem, table) = parse_type_table(rem)?;
+        let (rem, _table) = parse_type_table(rem)?;
         #[cfg(test)]
         {
-            crate::type_table::print_type_table(&table);
+            crate::type_table::print_type_table(&_table);
         }
 
         // 3. Read the variant index (M part)
