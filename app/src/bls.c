@@ -128,7 +128,7 @@ zxerr_t bls_saveRootKey(void) {
     return zxerr_ok;
 }
 
-zxerr_t bls_verify(void) {
+zxerr_t bls_verify(parsed_obj_t *cert) {
     // Two possible states, we saved a root key from user, or there was no root key overwriting
     if ( get_state() != CERT_STATE_PROCESSED_ROOT_KEY && get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
         return zxerr_unknown;

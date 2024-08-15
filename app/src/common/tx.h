@@ -58,6 +58,9 @@ zxerr_t tx_getItem(int8_t displayIdx,
 
 
 #if defined(BLS_SIGNATURE)
+
+zxerr_t tx_certVerify();
+
 /// Return the number of items in the transaction
 zxerr_t tx_certNumItems(uint8_t *num_items);
 

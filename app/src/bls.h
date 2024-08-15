@@ -18,6 +18,8 @@
 
 #include "zxerror.h"
 #include "nvdata.h"
+#include "rslib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,7 +27,7 @@ extern "C" {
 zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
 zxerr_t bls_saveRootKey(void);
-zxerr_t bls_verify(void);
+zxerr_t bls_verify(parsed_obj_t *cert);
 uint8_t *bls_root_key();
 #ifdef __cplusplus
 }

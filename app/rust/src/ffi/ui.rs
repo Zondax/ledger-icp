@@ -14,28 +14,19 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use core::mem::MaybeUninit;
+use crate::{certificate_from_state, error::ParserError, DisplayableItem};
 
-use crate::{error::ParserError, Certificate, DisplayableItem, FromBytes};
-
-use super::context::parser_context_t;
+use super::context::parsed_obj_t;
 
 #[no_mangle]
-pub unsafe extern "C" fn rs_getNumItems(ctx: *const parser_context_t, num_items: *mut u8) -> u32 {
+pub unsafe extern "C" fn rs_getNumItems(ctx: *const parsed_obj_t, num_items: *mut u8) -> u32 {
     if num_items.is_null() || ctx.is_null() {
         return ParserError::ContextMismatch as u32;
     }
 
-    let ctx = &*ctx;
-    let cert_data = core::slice::from_raw_parts(ctx.buffer, ctx.buffer_len as usize);
+    let cert = certificate_from_state!(ctx as *mut parsed_obj_t);
 
-    let mut cert = MaybeUninit::<Certificate>::uninit();
-
-    let Ok(_) = Certificate::from_bytes_into(cert_data, &mut cert) else {
-        return ParserError::NoData as _;
-    };
-
-    let cert = cert.assume_init_mut();
+    let cert = cert.assume_init_ref();
 
     let Ok(num) = cert.num_items() else {
         return ParserError::NoData as _;
@@ -48,7 +39,7 @@ pub unsafe extern "C" fn rs_getNumItems(ctx: *const parser_context_t, num_items:
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_getItem(
-    ctx: *const parser_context_t,
+    ctx: *const parsed_obj_t,
     display_idx: u8,
     out_key: *mut i8,
     key_len: u16,
@@ -68,16 +59,9 @@ pub unsafe extern "C" fn rs_getItem(
         return ParserError::ContextMismatch as u32;
     }
 
-    let ctx = &*ctx;
-    let cert_data = core::slice::from_raw_parts(ctx.buffer, ctx.buffer_len as usize);
+    let cert = certificate_from_state!(ctx as *mut parsed_obj_t);
 
-    let mut cert = MaybeUninit::<Certificate>::uninit();
-
-    let Ok(_) = Certificate::from_bytes_into(cert_data, &mut cert) else {
-        return ParserError::NoData as _;
-    };
-
-    let cert = cert.assume_init_mut();
+    let cert = cert.assume_init_ref();
 
     match cert.render_item(display_idx, key, value, page_idx) {
         Ok(page) => {

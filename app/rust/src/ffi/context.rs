@@ -15,29 +15,12 @@
 ********************************************************************************/
 
 // typedef struct {
-//     const uint8_t *buffer;
-//     uint16_t bufferLen;
-//     uint16_t offset;
-//     instruction_t ins;
-//     parser_tx_t tx_obj;
-// } parser_context_t;
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct parser_context_t {
-    pub buffer: *const u8,
-    pub buffer_len: u16,
-    pub offset: u16,
-    pub ins: u8,
-    pub tx_obj: parse_tx_t,
-}
-
-// typedef struct {
 //     uint8_t *state;
 //     uint32_t len;
 // } parser_tx_t;
 #[repr(C)]
 #[allow(non_camel_case_types)]
-pub struct parse_tx_t {
+pub struct parsed_obj_t {
     pub state: *mut u8,
     pub len: u32,
 }
@@ -47,7 +30,7 @@ pub struct parse_tx_t {
 macro_rules! certificate_from_state {
     ($ptr:expr) => {
         unsafe {
-            &mut (*core::ptr::addr_of_mut!((*$ptr).tx_obj.state)
+            &mut (*core::ptr::addr_of_mut!((*$ptr).state)
                 .cast::<core::mem::MaybeUninit<$crate::Certificate>>())
         }
     };

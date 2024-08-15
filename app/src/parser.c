@@ -31,6 +31,8 @@
 #include "parser_print_protobuf.h"
 #include "rslib.h"
 
+
+
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
 // For some reason NanoX requires this function
 void __assert_fail(__Z_UNUSED const char * assertion, __Z_UNUSED const char * file, __Z_UNUSED unsigned int line, __Z_UNUSED const char * function){
@@ -242,13 +244,15 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 }
 
 #if defined(BLS_SIGNATURE)
-parser_error_t parser_certNumItems(const parser_context_t *ctx, uint8_t *num_items) {
+uint8_t parsed_obj_buffer[CERT_OBJ_MAX_SIZE];
+
+parser_error_t parser_certNumItems(const parsed_obj_t *ctx, uint8_t *num_items) {
     CHECK_PARSER_ERR(rs_getNumItems(ctx, num_items));
     PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
     return parser_ok;
 }
 
-parser_error_t parser_certGetItem(const parser_context_t *ctx,
+parser_error_t parser_certGetItem(const parsed_obj_t *ctx,
                               uint8_t displayIdx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,

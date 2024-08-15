@@ -5,10 +5,10 @@ export interface ICPIns extends INSGeneric {
   GET_ADDR_SECP256K1: 0x01;
   SIGN_SECP256K1: 0x02;
   SIGN_COMBINED: 0x03;
-  SAVE_CONSENT: 0x04,
-  SAVE_CANISTER_CALL: 0x05,
-  SAVE_ROOT_KEY: 0x06,
-  SAVE_CERITIFACE_AND_SIGN: 0x07,
+  SAVE_CONSENT: 0x04;
+  SAVE_CANISTER_CALL: 0x05;
+  SAVE_ROOT_KEY: 0x06;
+  SAVE_CERITIFACE_AND_VERIFY: 0x07;
 }
 
 export interface ResponseAddress extends ResponseBase {

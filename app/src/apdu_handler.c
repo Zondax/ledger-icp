@@ -34,98 +34,12 @@
 #include "zxmacros.h"
 #include "nvdata.h"
 #include "bls.h"
+#include "handlers/path.h"
+#include "handlers/process_chunks.h"
+#if defined(BLS_SIGNATURE)
+#include "handlers/handle_bls.h"
+#endif
 
-static bool tx_initialized = false;
-
-__Z_INLINE void extractHDPath(uint32_t rx, uint32_t offset) {
-    if ((rx - offset) < sizeof(uint32_t) * HDPATH_LEN_DEFAULT) {
-        THROW(APDU_CODE_WRONG_LENGTH);
-    }
-
-    MEMCPY(hdPath, G_io_apdu_buffer + offset, sizeof(uint32_t) * HDPATH_LEN_DEFAULT);
-
-    const bool mainnet = hdPath[0] == HDPATH_0_DEFAULT &&
-                         hdPath[1] == HDPATH_1_DEFAULT;
-
-    const bool testnet = hdPath[0] == HDPATH_0_TESTNET &&
-                         hdPath[1] == HDPATH_1_TESTNET;
-
-    if (!mainnet && !testnet) {
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-
-    const bool is_valid = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) &&
-                          (hdPath[3] == 0x00000000u) &&
-                          ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
-
-    if (!is_valid && !app_mode_expert()) {
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-}
-
-__Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
-    UNUSED(tx);
-    const uint8_t payloadType = G_io_apdu_buffer[OFFSET_PAYLOAD_TYPE];
-
-    if (rx < OFFSET_DATA) {
-        THROW(APDU_CODE_WRONG_LENGTH);
-    }
-
-    if (G_io_apdu_buffer[OFFSET_P2] != 0 && G_io_apdu_buffer[OFFSET_P2] != 1) {
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-
-    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
-
-    uint32_t added;
-    switch (payloadType) {
-        case 0:
-            tx_initialize();
-            tx_reset();
-            extractHDPath(rx, OFFSET_DATA);
-            MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
-
-            parser_tx_obj.special_transfer_type = normal_transaction;
-            if (G_io_apdu_buffer[OFFSET_P2] == 1) {
-                parser_tx_obj.special_transfer_type = neuron_stake_transaction;
-            }
-
-            tx_initialized = true;
-            return false;
-        case 1:
-            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1) {
-                THROW(APDU_CODE_DATA_INVALID);
-            }
-            if (!tx_initialized) {
-                THROW(APDU_CODE_TX_NOT_INITIALIZED);
-            }
-            added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
-            if (added != rx - OFFSET_DATA) {
-                tx_initialized = false;
-                THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
-            }
-            return false;
-        case 2:
-            if (is_stake_tx && G_io_apdu_buffer[OFFSET_P2] != 1) {
-                THROW(APDU_CODE_DATA_INVALID);
-            }
-            if (!tx_initialized) {
-                THROW(APDU_CODE_TX_NOT_INITIALIZED);
-            }
-
-            added = tx_append(&(G_io_apdu_buffer[OFFSET_DATA]), rx - OFFSET_DATA);
-            if (added != rx - OFFSET_DATA) {
-                tx_initialized = false;
-                THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
-            }
-            return true;
-
-        default:
-            break;
-    }
-    tx_initialized = false;
-    THROW(APDU_CODE_INVALIDP1P2);
-}
 
 __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
@@ -219,6 +133,7 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     volatile uint16_t sw = 0;
+    zemu_log("HandleAPDU******\n");
 
     BEGIN_TRY
     {
@@ -231,26 +146,31 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
             if (rx < APDU_MIN_LENGTH) {
                 THROW(APDU_CODE_WRONG_LENGTH);
             }
+        ZEMU_LOGF(50, "***INS: %d\n", G_io_apdu_buffer[OFFSET_INS])
 
             switch (G_io_apdu_buffer[OFFSET_INS]) {
                 case INS_GET_VERSION: {
+                zemu_log("version******\n");
                     handle_getversion(flags, tx, rx);
                     break;
                 }
 
                 case INS_GET_ADDR: {
+                zemu_log("addrr******\n");
                     CHECK_PIN_VALIDATED()
                     handleGetAddr(flags, tx, rx);
                     break;
                 }
 
                 case INS_SIGN: {
+                zemu_log("sign******\n");
                     CHECK_PIN_VALIDATED()
                     handleSign(flags, tx, rx);
                     break;
                 }
 
                 case INS_SIGN_COMBINED: {
+                zemu_log("combined******\n");
                     CHECK_PIN_VALIDATED()
                     handleSignCombined(flags, tx, rx);
                     break;
@@ -258,12 +178,14 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
 #if defined(BLS_SIGNATURE)
                 case INS_CONSENT_REQUEST: {
+                zemu_log("consent_request******\n");
                     CHECK_PIN_VALIDATED()
                     handleConsentRequest(flags, tx, rx);
                     break;
                 }
 
                 case INS_CANISTER_CALL_TX: {
+                zemu_log("canister_call******\n");
                     CHECK_PIN_VALIDATED()
                     handleCanisterCall(flags, tx, rx);
                     break;
@@ -276,6 +198,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_CERTIFICATE_AND_SIGN: {
+                zemu_log("certificate_verify******\n");
                     CHECK_PIN_VALIDATED()
                     handleSignBls(flags, tx, rx);
                     break;

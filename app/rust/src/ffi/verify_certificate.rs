@@ -15,14 +15,15 @@
 ********************************************************************************/
 
 use crate::{
-    constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes, HashTree,
-    LookupResult,
+    certificate_from_state, constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate,
+    FromBytes, HashTree, LookupResult,
 };
 
-use core::mem::MaybeUninit;
 use std::cmp::PartialEq;
 
-use super::{call_request::canister_call_t, consent_request::consent_request_t};
+use super::{
+    call_request::canister_call_t, consent_request::consent_request_t, context::parsed_obj_t,
+};
 
 impl PartialEq<consent_request_t> for canister_call_t {
     fn eq(&self, other: &consent_request_t) -> bool {
@@ -49,6 +50,7 @@ pub unsafe extern "C" fn parser_verify_certificate(
     root_key: *const u8,
     call_request: *const canister_call_t,
     consent_request: *const consent_request_t,
+    parsed_cert: *mut parsed_obj_t,
 ) -> u32 {
     if call_request.is_null()
         || consent_request.is_null()
@@ -71,8 +73,9 @@ pub unsafe extern "C" fn parser_verify_certificate(
     let data = core::slice::from_raw_parts(certificate, certificate_len as usize);
     let root_key = core::slice::from_raw_parts(root_key, BLS_PUBLIC_KEY_SIZE);
 
-    let mut cert = MaybeUninit::uninit();
-    let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+    let cert = certificate_from_state!(parsed_cert);
+
+    let Ok(_) = Certificate::from_bytes_into(data, cert) else {
         return ParserError::InvalidCertificate as u32;
     };
 

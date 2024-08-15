@@ -37,8 +37,11 @@
 #include "nvdata.h"
 #include "bls.h"
 #include <stdint.h>
+#include "path.h"
+#include "process_chunks.h"
 
 __Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log("handleConsentRequest****\n");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -56,6 +59,7 @@ __Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile
 }
 
 __Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log("handleCanisterCall****\n");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -73,6 +77,7 @@ __Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile u
 }
 
 __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log("handleRootKey****\n");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -90,13 +95,14 @@ __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32
 }
 
 __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log("handleSignBls****\n");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
 
     // Parser Certificate and verify
     CHECK_APP_CANARY()
-    zxerr_t err = bls_verify();
+    zxerr_t err = tx_certVerify();
 
     CHECK_APP_CANARY()
 

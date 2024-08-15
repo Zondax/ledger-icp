@@ -8,6 +8,13 @@
 
 #define MAX_METHOD_LEN 50
 #define MAX_LANGUAGE_LEN 5
+#define CERT_OBJ_MAX_SIZE 60
+
+
+typedef struct {
+   uint8_t *state;
+   uint32_t len;
+} parsed_obj_t;
 
 
 parser_error_t rs_getNumItems(const parser_context_t *ctx, uint8_t *num_items);
