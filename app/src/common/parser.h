@@ -43,6 +43,14 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount);
 
+parser_error_t parser_certNumItems(const parser_context_t *ctx, uint8_t *num_items);
+
+parser_error_t parser_certGetItem(const parser_context_t *ctx,
+                              uint8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen,
+                              char *outVal, uint16_t outValLen,
+                              uint8_t pageIdx, uint8_t *pageCount);
+
 #ifdef __cplusplus
 }
 #endif

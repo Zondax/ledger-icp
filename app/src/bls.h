@@ -21,8 +21,6 @@
 extern "C" {
 #endif
 
-extern uint8_t root_key[ROOT_KEY_LEN];
-
 zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
 zxerr_t bls_saveRootKey(void);

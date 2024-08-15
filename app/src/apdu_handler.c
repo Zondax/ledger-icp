@@ -254,7 +254,9 @@ __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32
     // Parser Certificate and verify
     CHECK_APP_CANARY()
     zxerr_t err = bls_verify();
+
     CHECK_APP_CANARY()
+
     if (err != zxerr_ok) {
         bls_nvm_reset();
         MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
@@ -262,10 +264,15 @@ __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32
     }
 
     CHECK_APP_CANARY()
+
     // view_review_init(rs_getItem, rs_getNumItems, app_sign_bls);
     view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
     view_review_show(REVIEW_TXN);
     *flags |= IO_ASYNCH_REPLY;
+
+    // Clear nvm data after signing and full certificate review
+    bls_nvm_reset();
+
     THROW(APDU_CODE_OK);
 }
 

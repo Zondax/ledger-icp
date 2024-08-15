@@ -29,6 +29,7 @@
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
 #include "parser_print_protobuf.h"
+#include "rslib.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
 // For some reason NanoX requires this function

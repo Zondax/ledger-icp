@@ -21,6 +21,22 @@
 
 #define ROOT_KEY_LEN    96
 
+// To verify a certificate and sign a payload we need
+// to send consent_request,
+// canister_call, and an optional root_key
+// if this alternative root key is not sent, the application
+// would use the "official" one previously stored in memory(hardcoded)
+// there is not security risk with this as it is a public key
+// and finally the certificate itself
+#define CERT_STATE_INITIAL                           0
+#define CERT_STATE_PROCESSED_CONSENT_REQUEST         1
+#define CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST   2
+#define CERT_STATE_PROCESSED_ROOT_KEY                3
+// Once certificate is verified, and all the checks with call-request anc consent response
+// passes, then, we are ready to sign the call request payload
+#define CERT_STATE_SIGN                              4
+
+
 typedef struct {
     uint8_t state;
 } bls_header_t;
@@ -38,13 +54,3 @@ uint8_t get_state();
 void state_reset();
 
 void set_state(uint8_t state);
-
-#define CERT_STATE_INITIAL                           0
-#define CERT_STATE_PROCESSED_CONSENT_REQUEST         1
-#define CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST   2
-#define CERT_STATE_PROCESSED_ROOT_KEY                3
-// Once certificate is verified, and all the checks with call-request anc consent response
-// passes, then, we are ready to sign the call request payload
-#define CERT_STATE_SIGN                              4
-
-
