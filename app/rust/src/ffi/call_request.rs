@@ -14,26 +14,30 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{call_request::CallRequest, error::ParserError, FromBytes};
+use crate::{call_request::CallRequest, constants::*, error::ParserError, FromBytes};
 
 use core::mem::MaybeUninit;
 use sha2::{Digest, Sha256};
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Default)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct canister_call_t {
     pub arg_hash: [u8; 32],
-    pub canister_id: [u8; 29],
+    pub canister_id: [u8; CANISTER_MAX_LEN],
     pub canister_id_len: u16,
     pub ingress_expiry: u64,
-    pub method_name: [u8; 50],
+    pub method_name: [u8; METHOD_MAX_LEN],
     pub method_name_len: u16,
-    pub request_type: [u8; 50],
+    pub request_type: [u8; REQUEST_MAX_LEN],
     pub request_type_len: u16,
-    pub sender: [u8; 50],
+    pub sender: [u8; SENDER_MAX_LEN],
     pub sender_len: u16,
+    pub nonce: [u8; NONCE_MAX_LEN],
+    pub has_nonce: bool,
+
+    pub hash: [u8; 32],
 }
 
 #[no_mangle]
@@ -61,20 +65,43 @@ pub unsafe extern "C" fn parse_canister_call_request(
 
             let mut hasher = Sha256::new();
             hasher.update(request.arg);
-            let result = hasher.finalize();
+            let hash = hasher.finalize();
 
-            out.arg_hash.copy_from_slice(result.as_slice());
+            out.arg_hash.copy_from_slice(hash.as_slice());
+            if request.canister_id().len() > 29 {
+                return ParserError::ValueOutOfRange as u32;
+            }
+
             out.canister_id.copy_from_slice(request.canister_id);
             out.canister_id_len = request.canister_id.len() as u16;
             out.ingress_expiry = request.ingress_expiry;
+            if request.method_name.len() > 50 {
+                return ParserError::ValueOutOfRange as u32;
+            }
+
             out.method_name
                 .copy_from_slice(request.method_name.as_bytes());
             out.method_name_len = request.method_name.len() as u16;
+
+            if request.request_type.len() > 50 {
+                return ParserError::ValueOutOfRange as u32;
+            }
+
             out.request_type
                 .copy_from_slice(request.request_type.as_bytes());
             out.request_type_len = request.request_type.len() as u16;
+
+            if request.sender.len() > 50 {
+                return ParserError::ValueOutOfRange as u32;
+            }
+
             out.sender.copy_from_slice(request.sender);
             out.sender_len = request.sender.len() as u16;
+
+            if let Some(nonce) = request.nonce {
+                out.has_nonce = true;
+                out.nonce.copy_from_slice(nonce);
+            }
 
             ParserError::Ok as u32
         }

@@ -16,49 +16,41 @@ parser_error_t rs_getItem(const parser_context_t *ctx, int8_t displayIdx,
                           uint16_t outValueLen, uint8_t pageIdx,
                           uint8_t *pageCount);
 
-typedef struct {
-    icrc21_consent_msg_metadata_t metadata;
-    device_spec_t device_spec;
-    bool has_device_spec;
-} icrc21_consent_msg_spec_t;
-
-typedef struct {
-    char method[MAX_METHOD_LEN];
-    uint8_t method_len;
-    uint8_t arg_hash[32];
-    icrc21_consent_msg_spec_t user_preferences;
-
-    uint8_t request_id[32];
-} icrc21_consent_msg_request_t;
 
 // Define the Canister call request structure
 typedef struct {
   uint8_t arg_hash[32];
-  uint8_t canister_id[29];
+  uint8_t canister_id[CANISTER_MAX_LEN + 1];
   uint16_t canister_id_len;
   uint64_t ingress_expiry;
-  uint8_t method_name[50];
+  uint8_t method_name[METHOD_MAX_LEN + 1];
   uint16_t method_name_len;
-  uint8_t request_type[50];
+  uint8_t request_type[REQUEST_MAX_LEN + 1];
   uint16_t request_type_len;
-  uint8_t sender[50];
+  uint8_t sender[SENDER_MAX_LEN + 1];
   uint16_t sender_len;
+  uint8_t nonce[NONCE_MAX_LEN + 1];
+  bool hash_nonce;
+
+  // This holds the sha256 hash of this struct
+  // and is used for signing
+  uint8_t hash[32];
 } canister_call_t;
 
 // Define the Consent request structure
 typedef struct {
   uint8_t arg_hash[32];
-  uint8_t canister_id[29];
+  uint8_t canister_id[CANISTER_MAX_LEN + 1];
   uint16_t canister_id_len;
   uint64_t ingress_expiry;
-  uint8_t method_name[50];
+  uint8_t method_name[METHOD_MAX_LEN + 1];
   uint16_t method_name_len;
-  uint8_t request_type[50];
+  uint8_t request_type[REQUEST_MAX_LEN + 1];
   uint16_t request_type_len;
-  uint8_t sender[50];
+  uint8_t sender[SENDER_MAX_LEN + 1];
   uint16_t sender_len;
-  uint8_t nonce[50];
-  uint16_t nonce_len;
+  uint8_t nonce[NONCE_MAX_LEN + 1];
+  bool hash_nonce;
 
   // Not part of the struct but
   // a place holder for the request_id

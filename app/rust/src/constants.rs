@@ -25,3 +25,9 @@ pub const CBOR_CERTIFICATE_TAG: u64 = CBOR_TAG;
 pub const CALL_REQUEST_TAG: u64 = CBOR_TAG;
 pub const CONSENT_MSG_REQUEST_TAG: u64 = CBOR_TAG;
 pub const CANISTER_RANGES_TAG: u64 = CBOR_TAG;
+
+pub const SENDER_MAX_LEN: usize = 29;
+pub const CANISTER_MAX_LEN: usize = 10;
+pub const REQUEST_MAX_LEN: usize = 10;
+pub const METHOD_MAX_LEN: usize = 20;
+pub const NONCE_MAX_LEN: usize = 32;

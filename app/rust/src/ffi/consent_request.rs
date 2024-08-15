@@ -14,26 +14,28 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{call_request::ConsentMsgRequest, error::ParserError, utils::hash_blob, FromBytes};
+use crate::{
+    call_request::ConsentMsgRequest, constants::*, error::ParserError, utils::hash_blob, FromBytes,
+};
 
 use core::mem::MaybeUninit;
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Default)]
 pub struct consent_request_t {
     pub arg_hash: [u8; 32],
-    pub canister_id: [u8; 29],
+    pub canister_id: [u8; CANISTER_MAX_LEN],
     pub canister_id_len: u16,
     pub ingress_expiry: u64,
-    pub method_name: [u8; 50],
+    pub method_name: [u8; METHOD_MAX_LEN],
     pub method_name_len: u16,
-    pub request_type: [u8; 50],
+    pub request_type: [u8; REQUEST_MAX_LEN],
     pub request_type_len: u16,
-    pub sender: [u8; 50],
+    pub sender: [u8; SENDER_MAX_LEN],
     pub sender_len: u16,
-    pub nonce: [u8; 50],
-    pub nonce_len: u16,
+    pub nonce: [u8; NONCE_MAX_LEN],
+    pub has_nonce: bool,
 
     pub request_id: [u8; 32],
 }
@@ -45,21 +47,7 @@ impl TryFrom<ConsentMsgRequest<'_>> for consent_request_t {
     type Error = ParserError;
 
     fn try_from(request: ConsentMsgRequest<'_>) -> Result<Self, Self::Error> {
-        let mut result = consent_request_t {
-            arg_hash: [0; 32],
-            canister_id: [0; 29],
-            canister_id_len: 0,
-            ingress_expiry: request.ingress_expiry,
-            method_name: [0; 50],
-            method_name_len: 0,
-            request_type: [0; 50],
-            request_type_len: 0,
-            sender: [0; 50],
-            sender_len: 0,
-            nonce: [0; 50],
-            nonce_len: 0,
-            request_id: [0; 32],
-        };
+        let mut result = consent_request_t::default();
 
         // Compute and store request_id
         let request_id = request.request_id();
@@ -71,7 +59,7 @@ impl TryFrom<ConsentMsgRequest<'_>> for consent_request_t {
         result.arg_hash = hash_blob(icrc21.arg());
 
         // Copy canister_id
-        if request.canister_id.len() > 29 {
+        if request.canister_id.len() > CANISTER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
         result.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
@@ -79,14 +67,14 @@ impl TryFrom<ConsentMsgRequest<'_>> for consent_request_t {
 
         // Copy method_name
         // the one encoded in the inner args
-        if request.method_name.len() > 50 {
+        if request.method_name.len() > METHOD_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
         result.method_name[..icrc21.method().len()].copy_from_slice(icrc21.method().as_bytes());
         result.method_name_len = icrc21.method().len() as u16;
 
         // Copy request_type
-        if request.request_type.len() > 50 {
+        if request.request_type.len() > REQUEST_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
         result.request_type[..request.request_type.len()]
@@ -94,7 +82,7 @@ impl TryFrom<ConsentMsgRequest<'_>> for consent_request_t {
         result.request_type_len = request.request_type.len() as u16;
 
         // Copy sender
-        if request.sender.len() > 50 {
+        if request.sender.len() > SENDER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
         result.sender[..request.sender.len()].copy_from_slice(request.sender);
@@ -106,7 +94,7 @@ impl TryFrom<ConsentMsgRequest<'_>> for consent_request_t {
                 return Err(ParserError::ValueOutOfRange);
             }
             result.nonce[..nonce.len()].copy_from_slice(nonce);
-            result.nonce_len = nonce.len() as u16;
+            result.has_nonce = true;
         }
 
         Ok(result)
