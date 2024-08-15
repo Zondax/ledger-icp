@@ -241,6 +241,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
     return parser_unexpected_type;
 }
 
+#if defined(BLS_SIGNATURE)
 parser_error_t parser_certNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     CHECK_PARSER_ERR(rs_getNumItems(ctx, num_items));
     PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
@@ -256,3 +257,4 @@ parser_error_t parser_certGetItem(const parser_context_t *ctx,
     *pageCount = 1;
     return rs_getItem(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 }
+#endif

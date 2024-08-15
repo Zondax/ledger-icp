@@ -14,6 +14,7 @@
  *  limitations under the License.
  ********************************************************************************/
 
+#if defined(BLS_SIGNATURE)
 #include "nvdata.h"
 
 #include "app_main.h"
@@ -93,3 +94,4 @@ void bls_nvm_reset() {
     MEMZERO(&bls_header, sizeof(bls_header_t));
     zeroize_data();
 }
+#endif

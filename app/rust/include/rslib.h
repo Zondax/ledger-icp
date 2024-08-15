@@ -1,3 +1,4 @@
+#if defined(BLS_SIGNATURE)
 #pragma once
 
 #include <stdint.h>
@@ -73,3 +74,4 @@ parser_error_t parser_verify_certificate(const uint8_t *certificate,
                                          const uint8_t *root_key,
                                          canister_call_t *call_request,
                                          consent_request_t *consent_request);
+#endif

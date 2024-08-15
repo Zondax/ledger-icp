@@ -13,6 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#if defined(BLS_SIGNATURE)
 #pragma once
 
 #include "coin.h"
@@ -54,3 +55,4 @@ uint8_t get_state();
 void state_reset();
 
 void set_state(uint8_t state);
+#endif

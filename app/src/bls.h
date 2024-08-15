@@ -13,6 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  ********************************************************************************/
+#if defined(BLS_SIGNATURE)
 #pragma once
 
 #include "zxerror.h"
@@ -25,6 +26,8 @@ zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
 zxerr_t bls_saveRootKey(void);
 zxerr_t bls_verify(void);
+uint8_t *bls_root_key();
 #ifdef __cplusplus
 }
+#endif
 #endif

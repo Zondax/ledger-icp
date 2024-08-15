@@ -57,6 +57,7 @@ zxerr_t tx_getItem(int8_t displayIdx,
                    uint8_t pageIdx, uint8_t *pageCount);
 
 
+#if defined(BLS_SIGNATURE)
 /// Return the number of items in the transaction
 zxerr_t tx_certNumItems(uint8_t *num_items);
 
@@ -65,3 +66,4 @@ zxerr_t tx_certGetItem(int8_t displayIdx,
                    char *outKey, uint16_t outKeyLen,
                    char *outValue, uint16_t outValueLen,
                    uint8_t pageIdx, uint8_t *pageCount);
+#endif

@@ -41,27 +41,6 @@ __Z_INLINE void app_sign() {
     }
 }
 
-__Z_INLINE void app_sign_bls() {
-    uint16_t replyLen = 0;
-
-    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    // retrieve hash to be sign
-    canister_call_t *canister_call = get_canister_call();
-    uint8_t hash[32] = {0};
-    MEMCPY(hash, canister_call->hash, 32);
-
-
-    zxerr_t err = crypto_sign_bls(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen, hash, 32);
-
-    if (err != zxerr_ok || replyLen == 0) {
-        set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
-        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-    } else {
-        set_code(G_io_apdu_buffer, replyLen, APDU_CODE_OK);
-        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, replyLen + 2);
-    }
-}
-
 __Z_INLINE void app_sign_combined() {
     uint16_t replyLen = 0;
 
@@ -108,3 +87,26 @@ __Z_INLINE void app_reply_error() {
     set_code(G_io_apdu_buffer, 0, APDU_CODE_DATA_INVALID);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
+
+#if defined(BLS_SIGNATURE)
+__Z_INLINE void app_sign_bls() {
+    uint16_t replyLen = 0;
+
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    // retrieve hash to be sign
+    canister_call_t *canister_call = get_canister_call();
+    uint8_t hash[32] = {0};
+    MEMCPY(hash, canister_call->hash, 32);
+
+
+    zxerr_t err = crypto_sign_bls(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen, hash, 32);
+
+    if (err != zxerr_ok || replyLen == 0) {
+        set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+    } else {
+        set_code(G_io_apdu_buffer, replyLen, APDU_CODE_OK);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, replyLen + 2);
+    }
+}
+#endif

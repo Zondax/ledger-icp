@@ -75,6 +75,12 @@ RUST_TARGET := thumbv6m-none-eabi
 $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
 
+# Enable bls signature verification for all targets except TARGET_NANOS
+ifneq ($(TARGET_NAME), TARGET_NANOS)
+BLS_SIGNATURE = 1
+RUST_FEATURES += --features "bls-signatures"
+endif
+
 ifndef ICONNAME
 $(error ICONNAME is not set)
 endif
@@ -84,8 +90,15 @@ CFLAGS += -Wvla  -Wno-implicit-fallthrough
 CFLAGS += -I$(MY_DIR)/../deps/tinycbor/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/tinycbor-ledger
 LDFLAGS  += -z muldefs
+
+ifdef BLS_SIGNATURE
 LDLIBS   += -Lrust/target/$(RUST_TARGET)/release -lrslib
+endif
+
 APP_SOURCE_PATH += $(MY_DIR)/rust/include
+
+# Check if BLS_SIGNATURE is set
+ifdef BLS_SIGNATURE
 
 APP_CUSTOM_LINK_DEPENDENCIES = rust
 
@@ -102,6 +115,29 @@ rust_clean:
 
 clean: rust_clean
 
+.PHONY: rust_tests
+rust_tests:
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo test
+else
+# Empty rules when BLS_SIGNATURE is not set
+.PHONY: rust
+rust:
+	@echo "Skipping Rust build (BLS_SIGNATURE not set)"
+
+.PHONY: rust_clean
+rust_clean:
+	@echo "Skipping Rust clean (BLS_SIGNATURE not set)"
+
+.PHONY: rust_tests
+rust_tests:
+	@echo "Skipping Rust tests (BLS_SIGNATURE not set)"
+
+endif
+
+ifdef BLS_SIGNATURE
+clean: rust_clean
+endif
+
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.side_loading
 
 # Import generic rules from the SDK
@@ -117,7 +153,3 @@ listvariants:
 .PHONY: version
 version:
 	@echo "v$(APPVERSION)" > app.version
-
-.PHONY: rust_tests
-rust_tests:
-	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo test

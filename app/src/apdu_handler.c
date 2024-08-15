@@ -195,87 +195,6 @@ __Z_INLINE void handleSignCombined(volatile uint32_t *flags, volatile uint32_t *
     *flags |= IO_ASYNCH_REPLY;
 }
 
-__Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    if (!process_chunk(tx, rx)) {
-        THROW(APDU_CODE_OK);
-    }
-
-    CHECK_APP_CANARY()
-    zxerr_t err = bls_saveConsentRequest();
-    CHECK_APP_CANARY()
-
-    if (err != zxerr_ok) {
-        bls_nvm_reset();
-        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-    THROW(APDU_CODE_OK);
-}
-
-__Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    if (!process_chunk(tx, rx)) {
-        THROW(APDU_CODE_OK);
-    }
-
-    CHECK_APP_CANARY()
-    zxerr_t err = bls_saveCanisterCall();
-    CHECK_APP_CANARY()
-
-    if (err != zxerr_ok) {
-        bls_nvm_reset();
-        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-    THROW(APDU_CODE_OK);
-}
-
-__Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    if (!process_chunk(tx, rx)) {
-        THROW(APDU_CODE_OK);
-    }
-
-    CHECK_APP_CANARY()
-    zxerr_t err = bls_saveRootKey();
-    CHECK_APP_CANARY()
-
-    if (err != zxerr_ok) {
-        bls_nvm_reset();
-        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-    THROW(APDU_CODE_OK);
-}
-
-__Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    if (!process_chunk(tx, rx)) {
-        THROW(APDU_CODE_OK);
-    }
-
-    // Parser Certificate and verify
-    CHECK_APP_CANARY()
-    zxerr_t err = bls_verify();
-
-    CHECK_APP_CANARY()
-
-    if (err != zxerr_ok) {
-        bls_nvm_reset();
-        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-        THROW(APDU_CODE_DATA_INVALID);
-    }
-
-    CHECK_APP_CANARY()
-
-    // view_review_init(rs_getItem, rs_getNumItems, app_sign_bls);
-    view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
-    view_review_show(REVIEW_TXN);
-    *flags |= IO_ASYNCH_REPLY;
-
-    // Clear nvm data after signing and full certificate review
-    bls_nvm_reset();
-
-    THROW(APDU_CODE_OK);
-}
-
 __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {
 #ifdef DEBUG
     G_io_apdu_buffer[0] = 0xFF;
@@ -337,6 +256,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
                 }
 
+#if defined(BLS_SIGNATURE)
                 case INS_CONSENT_REQUEST: {
                     CHECK_PIN_VALIDATED()
                     handleConsentRequest(flags, tx, rx);
@@ -360,6 +280,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     handleSignBls(flags, tx, rx);
                     break;
                 }
+#endif
 
                 default:
                     THROW(APDU_CODE_INS_NOT_SUPPORTED);
