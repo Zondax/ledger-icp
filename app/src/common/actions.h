@@ -22,6 +22,7 @@
 #include <os_io_seproxyhal.h>
 #include "coin.h"
 #include "zxerror.h"
+#include "nvdata.h"
 
 extern uint16_t action_addrResponseLen;
 
@@ -44,9 +45,13 @@ __Z_INLINE void app_sign_bls() {
     uint16_t replyLen = 0;
 
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    
-    //TODO SIGNING
-    zxerr_t err = crypto_sign(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen);
+    // retrieve hash to be sign
+    canister_call_t *canister_call = get_canister_call();
+    uint8_t hash[32] = {0};
+    MEMCPY(hash, canister_call->hash, 32);
+
+
+    zxerr_t err = crypto_sign_bls(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen, hash, 32);
 
     if (err != zxerr_ok || replyLen == 0) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);

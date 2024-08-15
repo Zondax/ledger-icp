@@ -49,6 +49,12 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
                                      const uint8_t *subAccount, uint16_t subaccountLen,
                                      uint8_t *address, uint16_t maxoutLen);
 
+zxerr_t crypto_sign_bls(uint8_t *signatureBuffer,
+                    uint16_t signatureMaxlen,
+                    uint16_t *sigSize,
+                    uint8_t *payload,
+                    uint16_t payloadLen);
+
 zxerr_t crypto_sign(uint8_t *signature,
                     uint16_t signatureMaxlen,
                     uint16_t *sigSize);
