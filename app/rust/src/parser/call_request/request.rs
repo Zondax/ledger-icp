@@ -1,6 +1,6 @@
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
-use minicbor::{data::Type, decode::Error, Decode, Decoder};
+use minicbor::Decoder;
 
 use crate::{
     constants::CALL_REQUEST_TAG,
@@ -24,16 +24,6 @@ pub struct CallRequest<'a> {
 }
 
 impl<'a> CallRequest<'a> {
-    pub fn parse(data: &'a [u8]) -> Result<(&'a [u8], Self), ParserError> {
-        let mut decoder = Decoder::new(data);
-        let this =
-            Decode::decode(&mut decoder, &mut ()).map_err(|_| ParserError::InvalidCallRequest)?;
-
-        let consumed = decoder.position();
-
-        Ok((&data[consumed..], this))
-    }
-
     pub fn arg(&self) -> &[u8] {
         self.arg
     }
@@ -57,6 +47,9 @@ impl<'a> CallRequest<'a> {
         self.nonce
     }
 
+    // Compute the hash of the call request
+    // this is going to be signed
+    // order of the fields is important
     pub fn digest(&self) -> [u8; 32] {
         use sha2::Digest;
         let mut hasher = sha2::Sha256::new();
@@ -102,76 +95,64 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
-        let (rem, cert) = Self::parse(input)?;
+        crate::zlog("CallRequest::from_bytes_into\x00");
+        let out = out.as_mut_ptr();
 
-        out.write(cert);
+        let mut d = Decoder::new(input);
 
-        Ok(rem)
-    }
-}
-
-impl<'b, C> Decode<'b, C> for CallRequest<'b> {
-    fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
-        // check tag, which is the same value as certificate, why?
         if let Ok(tag) = d.tag() {
             if tag.as_u64() != CALL_REQUEST_TAG {
-                return Err(Error::message("Expected tag"));
+                return Err(ParserError::InvalidCallRequest);
             }
         }
 
-        let len = d.map()?.ok_or(Error::type_mismatch(Type::Map))?;
+        let len = d.map()?.ok_or(ParserError::InvalidCallRequest)?;
         if len != 1 {
-            return Err(Error::message("Expected a map with 1 entry"));
+            return Err(ParserError::InvalidCallRequest);
         }
 
-        let key = d.str()?;
-        if key != "content" {
-            return Err(Error::message("Expected 'content' key"));
-        }
+        let _key = d.str()?;
+        // if key != "content" {
+        //     return Err(ParserError::InvalidCallRequest);
+        // }
 
         // Decode content map
-        let content_len = d.map()?.ok_or(Error::message("Expected a content map"))?;
+        let content_len = d.map()?.ok_or(ParserError::CborUnexpected)?;
         if content_len != 6 && content_len != 7 {
-            return Err(Error::message("Expected a content map with 6/7 entries"));
+            return Err(ParserError::InvalidCallRequest);
         }
 
-        let mut arg = None;
-        let mut sender = None;
         let mut nonce = None;
-        let mut canister_id = None;
-        let mut method_name = None;
-        let mut request_type = None;
-        let mut ingress_expiry = None;
 
         for _ in 0..content_len as usize {
             let key = d.str()?;
-            match key {
-                "arg" => arg = Some(d.bytes()?),
-                "sender" => sender = Some(d.bytes()?),
-                "canister_id" => canister_id = Some(d.bytes()?),
-                "method_name" => method_name = Some(d.str()?),
-                "request_type" => request_type = Some(d.str()?),
-                "ingress_expiry" => ingress_expiry = Some(d.u64()?),
-                "nonce" => nonce = Some(d.bytes()?),
-                _ => return Err(Error::message("Unexpected key in content map")),
+            unsafe {
+                match key {
+                    "arg" => addr_of_mut!((*out).arg).write(d.bytes()?),
+                    "nonce" => nonce = Some(d.bytes()?),
+                    "sender" => addr_of_mut!((*out).sender).write(d.bytes()?),
+                    "canister_id" => addr_of_mut!((*out).canister_id).write(d.bytes()?),
+                    "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
+                    "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
+                    "ingress_expiry" => {
+                        let n = d.u64()?;
+
+                        addr_of_mut!((*out).ingress_expiry).write(n);
+                    }
+                    _ => return Err(ParserError::UnexpectedField),
+                }
             }
         }
+        unsafe {
+            addr_of_mut!((*out).nonce).write(nonce);
+        }
 
-        Ok(CallRequest {
-            arg: arg.ok_or(Error::message("Missing arg"))?,
-            sender: sender.ok_or(Error::message("Missing sender"))?,
-            nonce,
-            canister_id: canister_id.ok_or(Error::message("Missing canister_id"))?,
-            method_name: method_name.ok_or(Error::message("Missing method_name"))?,
-            request_type: request_type.ok_or(Error::message("Missing request_type"))?,
-            ingress_expiry: ingress_expiry.ok_or(Error::message("Missing ingress_expiry"))?,
-        })
+        Ok(&input[d.position()..])
     }
 }
 
 #[cfg(test)]
 mod call_request_test {
-    use minicbor::Decoder;
 
     use super::*;
 
@@ -181,8 +162,7 @@ mod call_request_test {
     #[test]
     fn call_parse() {
         let data = hex::decode(REQUEST).unwrap();
-        let mut decoder = Decoder::new(&data);
-        let call_request: CallRequest = Decode::decode(&mut decoder, &mut ()).unwrap();
+        let call_request = CallRequest::from_bytes(&data).unwrap();
         std::println!("CallRequest: {:?}", call_request);
 
         assert_eq!(

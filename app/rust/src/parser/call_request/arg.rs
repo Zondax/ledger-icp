@@ -13,7 +13,7 @@ impl<'a> FromBytes<'a> for RawArg<'a> {
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], ParserError> {
-        crate::zlog("RawArg::from_bytes_into");
+        crate::zlog("RawArg::from_bytes\x00");
 
         // 1. Read the "DIDL" magic number
         let (rem, _) = nom::bytes::complete::tag("DIDL")(input)
