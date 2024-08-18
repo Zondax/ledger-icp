@@ -1,3 +1,5 @@
+use core::ptr::addr_of_mut;
+
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -15,7 +17,7 @@
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
-use crate::constants::BLS_SIGNATURE_SIZE;
+use crate::{constants::BLS_SIGNATURE_SIZE, error::ParserError, FromBytes};
 
 use super::raw_value::RawValue;
 
@@ -35,6 +37,28 @@ impl<'a> TryFrom<RawValue<'a>> for Signature<'a> {
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
         let mut d = Decoder::new(value.bytes());
         Self::decode(&mut d, &mut ())
+    }
+}
+
+impl<'a> FromBytes<'a> for Signature<'a> {
+    fn from_bytes_into(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
+        let mut d = Decoder::new(input);
+        let out = out.as_mut_ptr();
+
+        let b = d.bytes()?;
+
+        if b.len() != BLS_SIGNATURE_SIZE {
+            return Err(ParserError::ValueOutOfRange);
+        }
+
+        unsafe {
+            addr_of_mut!((*out).0).write(arrayref::array_ref!(b, 0, BLS_SIGNATURE_SIZE));
+        }
+
+        Ok(&input[d.position()..])
     }
 }
 

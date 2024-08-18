@@ -1,3 +1,5 @@
+use core::ptr::addr_of_mut;
+
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -14,6 +16,8 @@
 *  limitations under the License.
 ********************************************************************************/
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
+
+use crate::{error::ParserError, FromBytes};
 
 use super::raw_value::RawValue;
 
@@ -42,6 +46,29 @@ impl<'a> TryFrom<RawValue<'a>> for SubnetId<'a> {
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
         let mut d = Decoder::new(value.bytes());
         Self::decode(&mut d, &mut ())
+    }
+}
+
+impl<'a> FromBytes<'a> for SubnetId<'a> {
+    fn from_bytes_into(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
+        let mut d = Decoder::new(input);
+        // Expect Bytes
+        if d.datatype()? != Type::Bytes {
+            return Err(ParserError::UnexpectedType);
+        }
+
+        let raw_value = RawValue::decode(&mut d, &mut ())?;
+
+        let out = out.as_mut_ptr();
+
+        unsafe {
+            addr_of_mut!((*out).0).write(raw_value);
+        }
+
+        Ok(&input[d.position()..])
     }
 }
 

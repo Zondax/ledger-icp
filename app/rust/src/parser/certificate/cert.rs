@@ -55,8 +55,8 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         // Expect a map with 2/3 entries
         let len = d.map()?.ok_or(ParserError::UnexpectedValue)?;
         crate::zlog("read_len\x00");
-        // Expect a map with 2/3 entries
 
+        // Expect a map with 2/3 entries
         // A certificate could have either 2(delegation cert) or 3 entries(root cert)
         if len != 2 && len != 3 {
             crate::zlog("wrong_len\x00");
@@ -329,6 +329,7 @@ impl<'a> DisplayableItem for Certificate<'a> {
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
+        crate::zlog("Certificate::render_item\x00");
         let msg = self.msg().map_err(|_| ViewError::Unknown)?;
         msg.render_item(item_n, title, message, page)
     }
