@@ -14,19 +14,20 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{certificate_from_state, error::ParserError, DisplayableItem};
+use crate::{error::ParserError, DisplayableItem};
 
-use super::context::parsed_obj_t;
+use super::resources::CERTIFICATE;
 
 #[no_mangle]
-pub unsafe extern "C" fn rs_getNumItems(ctx: *const parsed_obj_t, num_items: *mut u8) -> u32 {
-    if num_items.is_null() || ctx.is_null() {
+pub unsafe extern "C" fn rs_getNumItems(num_items: *mut u8) -> u32 {
+    if num_items.is_null() {
         return ParserError::ContextMismatch as u32;
     }
 
-    let cert = certificate_from_state!(ctx as *mut parsed_obj_t);
-
-    let cert = cert.assume_init_ref();
+    let Some(cert) = CERTIFICATE.as_ref() else {
+        crate::zlog("no_cert\x00");
+        return ParserError::NoData as _;
+    };
 
     let Ok(num) = cert.num_items() else {
         return ParserError::NoData as _;
@@ -39,7 +40,6 @@ pub unsafe extern "C" fn rs_getNumItems(ctx: *const parsed_obj_t, num_items: *mu
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_getItem(
-    ctx: *const parsed_obj_t,
     display_idx: u8,
     out_key: *mut i8,
     key_len: u16,
@@ -55,13 +55,10 @@ pub unsafe extern "C" fn rs_getItem(
     let key = core::slice::from_raw_parts_mut(out_key as *mut u8, key_len as usize);
     let value = core::slice::from_raw_parts_mut(out_value as *mut u8, out_len as usize);
 
-    if ctx.is_null() {
-        return ParserError::ContextMismatch as u32;
-    }
-
-    let cert = certificate_from_state!(ctx as *mut parsed_obj_t);
-
-    let cert = cert.assume_init_ref();
+    let Some(cert) = CERTIFICATE.as_ref() else {
+        crate::zlog("no_cert\x00");
+        return ParserError::NoData as _;
+    };
 
     match cert.render_item(display_idx, key, value, page_idx) {
         Ok(page) => {

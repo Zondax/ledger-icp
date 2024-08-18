@@ -169,7 +169,7 @@ zxerr_t tx_certVerify() {
 /// Return the number of items in the transaction
 zxerr_t tx_certNumItems(uint8_t *num_items) {
 
-    parser_error_t err = parser_certNumItems(&parsed_cert, num_items);
+    parser_error_t err = parser_certNumItems(num_items);
 
     if (err != parser_ok) {
         return zxerr_no_data;
@@ -191,8 +191,7 @@ zxerr_t tx_certGetItem(int8_t displayIdx,
         return zxerr_no_data;
     }
 
-    parser_error_t err = parser_certGetItem(&parsed_cert,
-                                        displayIdx,
+    parser_error_t err = parser_certGetItem( displayIdx,
                                         outKey, outKeyLen,
                                         outValue, outValueLen,
                                         pageIdx, pageCount);

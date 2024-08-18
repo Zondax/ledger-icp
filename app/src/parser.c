@@ -246,19 +246,18 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 #if defined(BLS_SIGNATURE)
 uint8_t parsed_obj_buffer[CERT_OBJ_MAX_SIZE];
 
-parser_error_t parser_certNumItems(const parsed_obj_t *ctx, uint8_t *num_items) {
-    CHECK_PARSER_ERR(rs_getNumItems(ctx, num_items));
+parser_error_t parser_certNumItems(uint8_t *num_items) {
+    CHECK_PARSER_ERR(rs_getNumItems(num_items));
     PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
     return parser_ok;
 }
 
-parser_error_t parser_certGetItem(const parsed_obj_t *ctx,
-                              uint8_t displayIdx,
+parser_error_t parser_certGetItem(uint8_t displayIdx,
                               char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount) {
 
     *pageCount = 1;
-    return rs_getItem(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+    return rs_getItem(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 }
 #endif
