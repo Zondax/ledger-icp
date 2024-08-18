@@ -20,10 +20,11 @@ use crate::{
 
 use core::mem::MaybeUninit;
 
+use super::resources::CONSENT_REQUEST_T;
+
 #[repr(C)]
-#[allow(non_camel_case_types)]
 #[derive(PartialEq, Default)]
-pub struct consent_request_t {
+pub struct ConsentRequestT {
     pub arg_hash: [u8; 32],
     pub canister_id: [u8; CANISTER_MAX_LEN],
     pub canister_id_len: u16,
@@ -36,91 +37,99 @@ pub struct consent_request_t {
     pub sender_len: u16,
     pub nonce: [u8; NONCE_MAX_LEN],
     pub has_nonce: bool,
-
     pub request_id: [u8; 32],
 }
 
-// This converts from ConsentMsgRequest to consent_request_t
+// This converts from ConsentMsgRequest to ConsentRequestT
 // also it assigns the inner args and method name of the candid
 // encoded icrc21_consent_message_request
-impl TryFrom<ConsentMsgRequest<'_>> for consent_request_t {
-    type Error = ParserError;
-
-    fn try_from(request: ConsentMsgRequest<'_>) -> Result<Self, Self::Error> {
-        let mut result = consent_request_t::default();
+impl ConsentRequestT {
+    fn fill_from(&mut self, request: ConsentMsgRequest<'_>) -> Result<(), ParserError> {
+        crate::zlog("ConsentRequestT::fill_from\x00");
 
         // Compute and store request_id
         let request_id = request.request_id();
-        result.request_id.copy_from_slice(&request_id);
+        self.request_id.copy_from_slice(&request_id);
+        crate::zlog("request_id\x00");
 
         // Compute arg_hash
         // remember this is the inner hash
         let icrc21 = request.arg().icrc21_msg_request();
-        result.arg_hash = hash_blob(icrc21.arg());
+        let hash = hash_blob(icrc21.arg());
+        self.arg_hash.copy_from_slice(&hash);
+        crate::zlog("inner_hash\x00");
 
         // Copy canister_id
         if request.canister_id.len() > CANISTER_MAX_LEN {
+            crate::zlog("too_long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
-        result.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
-        result.canister_id_len = request.canister_id.len() as u16;
+
+        self.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
+        self.canister_id_len = request.canister_id.len() as u16;
+        crate::zlog("canister_id\x00");
 
         // Copy method_name
         // the one encoded in the inner args
-        if request.method_name.len() > METHOD_MAX_LEN {
+        if icrc21.method().len() > METHOD_MAX_LEN {
+            crate::zlog("method_name too long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
-        result.method_name[..icrc21.method().len()].copy_from_slice(icrc21.method().as_bytes());
-        result.method_name_len = icrc21.method().len() as u16;
+        self.method_name[..icrc21.method().len()].copy_from_slice(icrc21.method().as_bytes());
+        self.method_name_len = icrc21.method().len() as u16;
+        crate::zlog("method_name\x00");
 
         // Copy request_type
         if request.request_type.len() > REQUEST_MAX_LEN {
+            crate::zlog("request_type too long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
-        result.request_type[..request.request_type.len()]
+        self.request_type[..request.request_type.len()]
             .copy_from_slice(request.request_type.as_bytes());
-        result.request_type_len = request.request_type.len() as u16;
+        self.request_type_len = request.request_type.len() as u16;
+        crate::zlog("request_type\x00");
 
         // Copy sender
         if request.sender.len() > SENDER_MAX_LEN {
+            crate::zlog("sender too long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
-        result.sender[..request.sender.len()].copy_from_slice(request.sender);
-        result.sender_len = request.sender.len() as u16;
+        self.sender[..request.sender.len()].copy_from_slice(request.sender);
+        self.sender_len = request.sender.len() as u16;
+        crate::zlog("sender\x00");
 
         // Copy nonce if present
         if let Some(nonce) = request.nonce {
-            if nonce.len() > 50 {
+            if nonce.len() > NONCE_MAX_LEN {
                 return Err(ParserError::ValueOutOfRange);
             }
-            result.nonce[..nonce.len()].copy_from_slice(nonce);
-            result.has_nonce = true;
+            self.nonce[..nonce.len()].copy_from_slice(nonce);
+            self.has_nonce = true;
+            crate::zlog("nonce\x00");
         }
 
-        Ok(result)
+        Ok(())
     }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn parse_consent_request(
-    data: *const u8,
-    data_len: u16,
-    out_request: *mut consent_request_t,
-) -> u32 {
-    if data.is_null() || out_request.is_null() {
+pub unsafe extern "C" fn parse_consent_request(data: *const u8, data_len: u16) -> u32 {
+    crate::zlog("parse_consent_request\x00");
+    if data.is_null() {
         return ParserError::NoData as u32;
     }
 
     let msg = std::slice::from_raw_parts(data, data_len as usize);
 
     // Create a MaybeUninit instance for consent request
-    let mut call_request = MaybeUninit::<ConsentMsgRequest>::uninit();
+    let mut request = MaybeUninit::<ConsentMsgRequest>::uninit();
 
     // Call from_bytes_into and handle the result
-    match ConsentMsgRequest::from_bytes_into(msg, &mut call_request) {
+    match ConsentMsgRequest::from_bytes_into(msg, &mut request) {
         Ok(_) => {
             // Get the initialized CallRequest
-            let request = call_request.assume_init();
+            let request = request.assume_init();
+            crate::zlog("PARSED!!\x00");
 
             // Fill canister_call_t fields from ConsentMsgRequest
             // NOTE: The method name and args of this types are not
@@ -128,13 +137,21 @@ pub unsafe extern "C" fn parse_consent_request(
             // of the candid encoded icrc21_consent_message_request
             // and also store the request_id
             // for later use
-            let out = &mut *out_request;
 
-            let Ok(c_request) = consent_request_t::try_from(request) else {
+            if CONSENT_REQUEST_T.is_some() {
+                crate::zlog("CONSENT_REQUEST_T not empty\x00");
                 return ParserError::InvalidConsentMsg as u32;
-            };
+            }
 
-            *out = c_request;
+            let mut consent_request = ConsentRequestT::default();
+            if let Err(e) = consent_request.fill_from(request) {
+                return e as u32;
+            }
+
+            // Update our consent request
+            CONSENT_REQUEST_T.replace(consent_request);
+
+            // Compute and store request_id
 
             ParserError::Ok as u32
         }

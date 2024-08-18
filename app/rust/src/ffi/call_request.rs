@@ -19,11 +19,12 @@ use crate::{call_request::CallRequest, constants::*, error::ParserError, FromByt
 use core::mem::MaybeUninit;
 use sha2::{Digest, Sha256};
 
+use super::resources::CALL_REQUEST_T;
+
 #[repr(C)]
-#[allow(non_camel_case_types)]
 #[derive(PartialEq, Default)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct canister_call_t {
+pub struct CanisterCallT {
     pub arg_hash: [u8; 32],
     pub canister_id: [u8; CANISTER_MAX_LEN],
     pub canister_id_len: u16,
@@ -37,16 +38,70 @@ pub struct canister_call_t {
     pub nonce: [u8; NONCE_MAX_LEN],
     pub has_nonce: bool,
 
+    // The hash of this call request
+    // which is going to be signed
     pub hash: [u8; 32],
 }
 
+impl CanisterCallT {
+    fn fill_from(&mut self, request: &CallRequest<'_>) -> Result<(), ParserError> {
+        crate::zlog("CanisterCallT::fill_from\x00");
+
+        // Compute the call request hash
+        // to be signed
+        let hash = request.digest();
+        self.hash.copy_from_slice(&hash);
+
+        // Compute arg hash
+        let mut hasher = Sha256::new();
+        hasher.update(request.arg);
+        let arg_hash = hasher.finalize();
+
+        self.arg_hash.copy_from_slice(arg_hash.as_slice());
+
+        if request.canister_id().len() > CANISTER_MAX_LEN {
+            return Err(ParserError::ValueOutOfRange);
+        }
+
+        self.canister_id.copy_from_slice(request.canister_id);
+        self.canister_id_len = request.canister_id.len() as u16;
+        self.ingress_expiry = request.ingress_expiry;
+
+        if request.method_name.len() > METHOD_MAX_LEN {
+            return Err(ParserError::ValueOutOfRange);
+        }
+
+        self.method_name[..request.method_name.len()]
+            .copy_from_slice(request.method_name.as_bytes());
+        self.method_name_len = request.method_name.len() as u16;
+
+        if request.request_type.len() > REQUEST_MAX_LEN {
+            return Err(ParserError::ValueOutOfRange);
+        }
+
+        self.request_type[..request.request_type.as_bytes().len()]
+            .copy_from_slice(request.request_type.as_bytes());
+        self.request_type_len = request.request_type.as_bytes().len() as u16;
+
+        if request.sender.len() > SENDER_MAX_LEN {
+            return Err(ParserError::ValueOutOfRange);
+        }
+
+        self.sender[..request.sender.len()].copy_from_slice(request.sender);
+        self.sender_len = request.sender.len() as u16;
+
+        if let Some(nonce) = request.nonce {
+            self.has_nonce = true;
+            self.nonce.copy_from_slice(nonce);
+        }
+
+        Ok(())
+    }
+}
+
 #[no_mangle]
-pub unsafe extern "C" fn parse_canister_call_request(
-    data: *const u8,
-    data_len: u16,
-    out_request: *mut canister_call_t,
-) -> u32 {
-    if data.is_null() || out_request.is_null() {
+pub unsafe extern "C" fn parse_canister_call_request(data: *const u8, data_len: u16) -> u32 {
+    if data.is_null() {
         return ParserError::NoData as u32;
     }
 
@@ -60,48 +115,17 @@ pub unsafe extern "C" fn parse_canister_call_request(
         Ok(_) => {
             let request = call_request.assume_init();
 
-            // Fill canister_call_t fields from CallRequest
-            let out = &mut *out_request;
-
-            let mut hasher = Sha256::new();
-            hasher.update(request.arg);
-            let hash = hasher.finalize();
-
-            out.arg_hash.copy_from_slice(hash.as_slice());
-            if request.canister_id().len() > 29 {
-                return ParserError::ValueOutOfRange as u32;
+            // Global must be empty at this point
+            if CALL_REQUEST_T.is_some() {
+                return ParserError::InvalidConsentMsg as u32;
+            }
+            let mut call_request = CanisterCallT::default();
+            if let Err(e) = call_request.fill_from(&request) {
+                return e as u32;
             }
 
-            out.canister_id.copy_from_slice(request.canister_id);
-            out.canister_id_len = request.canister_id.len() as u16;
-            out.ingress_expiry = request.ingress_expiry;
-            if request.method_name.len() > 50 {
-                return ParserError::ValueOutOfRange as u32;
-            }
-
-            out.method_name
-                .copy_from_slice(request.method_name.as_bytes());
-            out.method_name_len = request.method_name.len() as u16;
-
-            if request.request_type.len() > 50 {
-                return ParserError::ValueOutOfRange as u32;
-            }
-
-            out.request_type
-                .copy_from_slice(request.request_type.as_bytes());
-            out.request_type_len = request.request_type.len() as u16;
-
-            if request.sender.len() > 50 {
-                return ParserError::ValueOutOfRange as u32;
-            }
-
-            out.sender.copy_from_slice(request.sender);
-            out.sender_len = request.sender.len() as u16;
-
-            if let Some(nonce) = request.nonce {
-                out.has_nonce = true;
-                out.nonce.copy_from_slice(nonce);
-            }
+            // Update our consent request
+            CALL_REQUEST_T.replace(call_request);
 
             ParserError::Ok as u32
         }

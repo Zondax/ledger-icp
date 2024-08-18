@@ -31,6 +31,7 @@ N_consent_request_impl __attribute__ ((aligned(64)));
 #define N_consent_request (*(NV_VOLATILE consent_request_t *)PIC(&N_consent_request_impl))
 
 bls_header_t bls_header;
+static consent_request_t consent_request;
 
 // Save data
 zxerr_t save_consent_request(consent_request_t *structure) {
@@ -44,6 +45,7 @@ zxerr_t save_consent_request(consent_request_t *structure) {
     }
 
     MEMCPY_NV((void *)&N_consent_request, structure, sizeof(*structure));
+    // MEMCPY((void *)&consent_request, structure, sizeof(*structure));
     return zxerr_ok;
 }
 
@@ -64,6 +66,7 @@ zxerr_t save_canister_call(canister_call_t *structure) {
 // Retrieve data
 consent_request_t *get_consent_request() {
     return (consent_request_t *)&N_consent_request;
+    // return &consent_request;
 }
 
 canister_call_t *get_canister_call() {

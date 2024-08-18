@@ -22,11 +22,14 @@ use crate::{
 use std::cmp::PartialEq;
 
 use super::{
-    call_request::canister_call_t, consent_request::consent_request_t, context::parsed_obj_t,
+    call_request::CanisterCallT,
+    consent_request::ConsentRequestT,
+    context::parsed_obj_t,
+    resources::{CALL_REQUEST_T, CONSENT_REQUEST_T},
 };
 
-impl PartialEq<consent_request_t> for canister_call_t {
-    fn eq(&self, other: &consent_request_t) -> bool {
+impl PartialEq<ConsentRequestT> for CanisterCallT {
+    fn eq(&self, other: &ConsentRequestT) -> bool {
         self.arg_hash == other.arg_hash
             && self.canister_id[..self.canister_id_len as usize]
                 == other.canister_id[..other.canister_id_len as usize]
@@ -37,8 +40,8 @@ impl PartialEq<consent_request_t> for canister_call_t {
 }
 
 // This allows consent_request_t == canister_call_t to work as well
-impl PartialEq<canister_call_t> for consent_request_t {
-    fn eq(&self, other: &canister_call_t) -> bool {
+impl PartialEq<CanisterCallT> for ConsentRequestT {
+    fn eq(&self, other: &CanisterCallT) -> bool {
         other == self
     }
 }
@@ -48,25 +51,25 @@ pub unsafe extern "C" fn parser_verify_certificate(
     certificate: *const u8,
     certificate_len: u16,
     root_key: *const u8,
-    call_request: *const canister_call_t,
-    consent_request: *const consent_request_t,
     parsed_cert: *mut parsed_obj_t,
 ) -> u32 {
-    if call_request.is_null()
-        || consent_request.is_null()
-        || certificate.is_null()
-        || root_key.is_null()
-    {
+    crate::zlog("parser_verify_certificate\x00");
+    if certificate.is_null() || root_key.is_null() {
         return ParserError::NoData as u32;
     }
 
-    let call_request = &*call_request;
-    let consent_request = &*consent_request;
+    let Some(call_request) = CALL_REQUEST_T.as_ref() else {
+        return ParserError::NoData as u32;
+    };
+    let Some(consent_request) = CONSENT_REQUEST_T.as_ref() else {
+        return ParserError::NoData as u32;
+    };
 
     // This call the PartialEq implementation
     // for canister_call_t and consent_request_t
     // which ensures canister_id, method and args are the same in both
     if call_request != consent_request {
+        crate::zlog("call_request != consent_request****\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -80,12 +83,14 @@ pub unsafe extern "C" fn parser_verify_certificate(
     };
 
     let cert = cert.assume_init();
+    crate::zlog("cert_parsed****\x00");
 
     match cert.verify(root_key) {
         Ok(false) => return ParserError::InvalidCertificate as u32,
         Err(e) => return e as u32,
         _ => {}
     }
+    crate::zlog("cert_verified****\x00");
 
     let tree = cert.tree();
     let request_id = consent_request.request_id;
@@ -94,6 +99,7 @@ pub unsafe extern "C" fn parser_verify_certificate(
     // from the consent_msg_request, this ensures that the passed data referes to
     // the provided certificate
     let Ok(LookupResult::Found(_)) = HashTree::lookup_path(&request_id[..].into(), tree) else {
+        crate::zlog("request_id mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     };
 

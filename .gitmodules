@@ -19,3 +19,6 @@
 [submodule "deps/stax-secure-sdk"]
 	path = deps/stax-secure-sdk
 	url = https://github.com/LedgerHQ/ledger-secure-sdk.git
+[submodule "deps/ledger-rust"]
+	path = deps/ledger-rust
+	url = https://github.com/Zondax/ledger-rust

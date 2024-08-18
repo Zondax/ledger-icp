@@ -18,4 +18,5 @@ mod consent_request;
 mod context;
 mod verify_certificate;
 // mod parser_interface;
+mod resources;
 mod ui;
