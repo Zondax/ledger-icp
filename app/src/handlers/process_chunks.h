@@ -33,8 +33,8 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
-#include "nvdata.h"
 #include "bls.h"
+#include "nvdata.h"
 
 static bool tx_initialized = false;
 

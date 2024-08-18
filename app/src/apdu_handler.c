@@ -32,7 +32,6 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
-#include "nvdata.h"
 #include "bls.h"
 #include "handlers/path.h"
 #include "handlers/process_chunks.h"
@@ -192,6 +191,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_ROOT_KEY: {
+                zemu_log("ins_root_key******\n");
                     CHECK_PIN_VALIDATED()
                     handleRootKey(flags, tx, rx);
                     break;

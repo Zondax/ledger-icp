@@ -42,11 +42,6 @@ typedef struct {
     uint8_t state;
 } bls_header_t;
 
-zxerr_t save_consent_request(consent_request_t *structure);
-zxerr_t save_canister_call(canister_call_t *structure);
-consent_request_t *get_consent_request();
-canister_call_t *get_canister_call();
-
 void bls_nvm_reset();
 
 // statemachine API

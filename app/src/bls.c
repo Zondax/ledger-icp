@@ -16,11 +16,11 @@
 
 #if defined(BLS_SIGNATURE)
 #include "bls.h"
+#include "nvdata.h"
 #include "tx.h"
 #include "rslib.h"
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
 #include "cx.h"
-#include "nvdata.h"
 #endif
 
 // define root key with default value
@@ -88,14 +88,10 @@ zxerr_t bls_saveCanisterCall(void) {
 
     //parse canister call
     // the hash to be signed would be also computed in this step
-    // and stored as part of this type in nvm memory
-    canister_call_t *out_request = get_canister_call();
+    // and stored as part of this type in memory
     if (rs_parse_canister_call_request(message, messageLength) != parser_ok) {
         return zxerr_unknown;
     }
-
-    // Save canister call request
-    // CHECK_ZXERR(save_canister_call(&out_request));
 
     // Save App State
     set_state(CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST);

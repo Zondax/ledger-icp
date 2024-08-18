@@ -22,7 +22,6 @@
 #include <os_io_seproxyhal.h>
 #include "coin.h"
 #include "zxerror.h"
-#include "nvdata.h"
 
 extern uint16_t action_addrResponseLen;
 
@@ -89,7 +88,6 @@ __Z_INLINE void app_reply_error() {
 }
 
 #if defined(BLS_SIGNATURE)
-#include "nvdata.h"
 #include "bls.h"
 
 __Z_INLINE void app_sign_bls() {

@@ -17,7 +17,6 @@
 #pragma once
 
 #include "zxerror.h"
-#include "nvdata.h"
 #include "rslib.h"
 
 #ifdef __cplusplus

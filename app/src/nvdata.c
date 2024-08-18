@@ -22,56 +22,7 @@
 #include "os.h"
 #include "view.h"
 
-canister_call_t NV_CONST
-N_canister_call_impl __attribute__ ((aligned(64)));
-#define N_canister_call (*(NV_VOLATILE canister_call_t *)PIC(&N_canister_call_impl))
-
-consent_request_t NV_CONST
-N_consent_request_impl __attribute__ ((aligned(64)));
-#define N_consent_request (*(NV_VOLATILE consent_request_t *)PIC(&N_consent_request_impl))
-
 bls_header_t bls_header;
-static consent_request_t consent_request;
-
-// Save data
-zxerr_t save_consent_request(consent_request_t *structure) {
-    if (structure == NULL) {
-        return zxerr_out_of_bounds;
-    }
-
-    // Check if the size of the structure is valid
-    if (sizeof(*structure) > sizeof(N_canister_call)) {
-        return zxerr_out_of_bounds; // or another appropriate error
-    }
-
-    MEMCPY_NV((void *)&N_consent_request, structure, sizeof(*structure));
-    // MEMCPY((void *)&consent_request, structure, sizeof(*structure));
-    return zxerr_ok;
-}
-
-zxerr_t save_canister_call(canister_call_t *structure) {
-    if (structure == NULL) {
-        return zxerr_out_of_bounds;
-    }
-
-    // Check if the size of the structure is valid
-    if (sizeof(*structure) > sizeof(N_consent_request)) {
-        return zxerr_out_of_bounds; // or another appropriate error
-    }
-
-    MEMCPY_NV((void *)&N_canister_call, structure, sizeof(*structure));
-    return zxerr_ok;
-}
-
-// Retrieve data
-consent_request_t *get_consent_request() {
-    return (consent_request_t *)&N_consent_request;
-    // return &consent_request;
-}
-
-canister_call_t *get_canister_call() {
-    return (canister_call_t *)&N_canister_call;
-}
 
 // STATE
 uint8_t get_state() {
@@ -84,17 +35,5 @@ void set_state(uint8_t state) {
 
 void state_reset() {
     bls_header.state = CERT_STATE_INITIAL;
-}
-
-void zeroize_data(){
-    canister_call_t tmp_call = {0};
-    consent_request_t tmp_consent = {0};
-    MEMCPY_NV((void *)&N_canister_call, &tmp_call, sizeof(canister_call_t));
-    MEMCPY_NV((void *)&N_consent_request, &tmp_consent, sizeof(consent_request_t));
-}
-
-void bls_nvm_reset() {
-    MEMZERO(&bls_header, sizeof(bls_header_t));
-    zeroize_data();
 }
 #endif

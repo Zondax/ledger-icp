@@ -34,8 +34,8 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
-#include "nvdata.h"
 #include "bls.h"
+#include "nvdata.h"
 #include <stdint.h>
 #include "path.h"
 #include "process_chunks.h"
@@ -51,7 +51,7 @@ __Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile
     CHECK_APP_CANARY()
 
     if (err != zxerr_ok) {
-        bls_nvm_reset();
+        rs_clear_resources();
         MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
         THROW(APDU_CODE_DATA_INVALID);
     }
@@ -69,7 +69,7 @@ __Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile u
     CHECK_APP_CANARY()
 
     if (err != zxerr_ok) {
-        bls_nvm_reset();
+        rs_clear_resources();
         MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
         THROW(APDU_CODE_DATA_INVALID);
     }
@@ -90,10 +90,11 @@ __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32
     CHECK_APP_CANARY()
 
     if (err != zxerr_ok) {
-        bls_nvm_reset();
+        rs_clear_resources();
         MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
         THROW(APDU_CODE_DATA_INVALID);
     }
+    *tx = 0;
     THROW(APDU_CODE_OK);
 }
 
@@ -110,7 +111,7 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
     CHECK_APP_CANARY()
 
     if (err != zxerr_ok) {
-        bls_nvm_reset();
+        rs_clear_resources();
         MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
         THROW(APDU_CODE_DATA_INVALID);
     }

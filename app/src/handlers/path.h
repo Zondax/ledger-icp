@@ -33,7 +33,6 @@
 #include "crypto.h"
 #include "coin.h"
 #include "zxmacros.h"
-#include "nvdata.h"
 #include "bls.h"
 
 __Z_INLINE void extractHDPath(uint32_t rx, uint32_t offset) {

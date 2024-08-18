@@ -279,7 +279,8 @@ export default class InternetComputerApp extends GenericApp {
   }
 
   async sendData(path: string, data: string, instruction: number): Promise<ResponseSign> {
-    const chunks = this.prepareChunks(path, Buffer.from(data, "hex"));
+    const data_buf = Buffer.from(data, "hex");
+    const chunks = this.prepareChunks(path, data_buf);
     return await this.sendChunk(1, chunks.length, chunks[0], instruction).then(async (response) => {
       let result = {
         returnCode: response.returnCode,
@@ -298,7 +299,7 @@ export default class InternetComputerApp extends GenericApp {
 
   async sendCertificateAndSig(path: string, data: string): Promise<ResponseSign> {
     const chunks = this.prepareChunks(path, Buffer.from(data, "hex"));
-    return await this.signSendChunk(1, chunks.length, chunks[0], 0, this.INS.SAVE_CERITIFACE_AND_SIGN).then(
+    return await this.signSendChunk(1, chunks.length, chunks[0], 0, this.INS.SAVE_CERITIFACE_AND_VERIFY).then(
       async (response) => {
         let result = {
           returnCode: response.returnCode,
@@ -306,7 +307,7 @@ export default class InternetComputerApp extends GenericApp {
         };
         for (let i = 1; i < chunks.length; i += 1) {
           // eslint-disable-next-line no-await-in-loop
-          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], 0, this.INS.SAVE_CERITIFACE_AND_SIGN);
+          result = await this.signSendChunk(1 + i, chunks.length, chunks[i], 0, this.INS.SAVE_CERITIFACE_AND_VERIFY);
           if (result.returnCode !== LedgerError.NoErrors) {
             break;
           }
