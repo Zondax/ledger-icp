@@ -13,25 +13,3 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-
-// typedef struct {
-//     uint8_t *state;
-//     uint32_t len;
-// } parser_tx_t;
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct parsed_obj_t {
-    pub state: *mut u8,
-    pub len: u32,
-}
-
-/// Cast a *mut u8 to a *mut Transaction
-#[macro_export]
-macro_rules! certificate_from_state {
-    ($ptr:expr) => {
-        unsafe {
-            &mut (*core::ptr::addr_of_mut!((*$ptr).state)
-                .cast::<core::mem::MaybeUninit<$crate::Certificate>>())
-        }
-    };
-}

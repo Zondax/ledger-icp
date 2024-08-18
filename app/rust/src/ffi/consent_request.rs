@@ -50,53 +50,43 @@ impl ConsentRequestT {
         // Compute and store request_id
         let request_id = request.request_id();
         self.request_id.copy_from_slice(&request_id);
-        crate::zlog("request_id\x00");
 
         // Compute arg_hash
         // remember this is the inner hash
         let icrc21 = request.arg().icrc21_msg_request();
         let hash = hash_blob(icrc21.arg());
         self.arg_hash.copy_from_slice(&hash);
-        crate::zlog("inner_hash\x00");
 
         // Copy canister_id
         if request.canister_id.len() > CANISTER_MAX_LEN {
-            crate::zlog("too_long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
 
         self.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
         self.canister_id_len = request.canister_id.len() as u16;
-        crate::zlog("canister_id\x00");
 
         // Copy method_name
         // the one encoded in the inner args
         if icrc21.method().len() > METHOD_MAX_LEN {
-            crate::zlog("method_name too long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
         self.method_name[..icrc21.method().len()].copy_from_slice(icrc21.method().as_bytes());
         self.method_name_len = icrc21.method().len() as u16;
-        crate::zlog("method_name\x00");
 
         // Copy request_type
         if request.request_type.len() > REQUEST_MAX_LEN {
-            crate::zlog("request_type too long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
         self.request_type[..request.request_type.len()]
             .copy_from_slice(request.request_type.as_bytes());
         self.request_type_len = request.request_type.len() as u16;
-        crate::zlog("request_type\x00");
 
         // Copy sender
         if request.sender.len() > SENDER_MAX_LEN {
-            crate::zlog("sender too long\x00");
             return Err(ParserError::ValueOutOfRange);
         }
         self.sender[..request.sender.len()].copy_from_slice(request.sender);
         self.sender_len = request.sender.len() as u16;
-        crate::zlog("sender\x00");
 
         // Copy nonce if present
         if let Some(nonce) = request.nonce {
@@ -105,8 +95,8 @@ impl ConsentRequestT {
             }
             self.nonce[..nonce.len()].copy_from_slice(nonce);
             self.has_nonce = true;
-            crate::zlog("nonce\x00");
         }
+        crate::zlog("ConsentRequestT::fill_from: done!\x00");
 
         Ok(())
     }

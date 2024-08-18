@@ -14,18 +14,13 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{
-    certificate_from_state, constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate,
-    FromBytes, HashTree, LookupResult,
-};
+use crate::{constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate};
 
-use core::mem::MaybeUninit;
 use std::cmp::PartialEq;
 
 use super::{
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    context::parsed_obj_t,
     resources::{CALL_REQUEST_T, CERTIFICATE, CONSENT_REQUEST_T},
 };
 
