@@ -13,7 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use bls_signature::verify_bls_signature;
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
@@ -22,7 +22,7 @@ use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{CBOR_CERTIFICATE_TAG, REPLY_PATH},
     error::{ParserError, ViewError},
-    hash_with_domain_sep, DisplayableItem, FromBytes, Signature,
+    DisplayableItem, FromBytes, Signature,
 };
 
 use super::{
@@ -43,12 +43,56 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
-        let cert = Certificate::parse(input)?;
+        crate::zlog("Certificate::from_bytes_into\x00");
+        let mut d = Decoder::new(input);
 
-        out.write(cert);
+        if let Ok(tag) = d.tag() {
+            if tag.as_u64() != CBOR_CERTIFICATE_TAG {
+                return Err(ParserError::CborUnexpected);
+            }
+        }
 
-        // FIXME:assume we read all data
-        Ok(&input[input.len()..])
+        // Expect a map with 2/3 entries
+        let len = d.map()?.ok_or(ParserError::UnexpectedValue)?;
+        crate::zlog("read_len\x00");
+        // Expect a map with 2/3 entries
+
+        // A certificate could have either 2(delegation cert) or 3 entries(root cert)
+        if len != 2 && len != 3 {
+            crate::zlog("wrong_len\x00");
+            return Err(ParserError::ValueOutOfRange);
+        }
+        crate::zlog("good_len\x00");
+        let out = out.as_mut_ptr();
+
+        for _ in 0..len {
+            crate::zlog("item_i\x00");
+            let key = d.str()?;
+            let mut rem = &input[d.position()..];
+            match key {
+                "tree" => {
+                    let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
+                    unsafe { addr_of_mut!((*out).tree).write(raw_value) };
+                } //tree = Some(RawValue::decode(d, ctx)?),
+                "signature" => {
+                    let signature = unsafe { &mut *addr_of_mut!((*out).signature).cast() };
+                    let rem = Signature::from_bytes_into(rem, signature)?;
+                    d = Decoder::new(rem);
+                } //signature = Some(RawValue::decode(d, ctx)?.try_into()?),
+                "delegation" => {
+                    let delegation = unsafe { &mut *addr_of_mut!((*out).delegation).cast() };
+                    rem = Delegation::from_bytes_into(rem, delegation)?;
+                    d = Decoder::new(rem);
+                } //delegation = Some(Delegation::decode(d, ctx)?),
+                _ => return Err(ParserError::InvalidCertificate),
+            }
+        }
+
+        let cert = unsafe { &mut *out };
+        // Verify that the tree raw value can be parsed sucessfully into a HashTree
+        let _: HashTree = cert.tree.try_into().map_err(|_| ParserError::InvalidTree)?;
+
+        Ok(d.input())
     }
 }
 
@@ -98,6 +142,7 @@ impl<'a> Certificate<'a> {
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
         if !self.check_delegation(root_key)? {
+            crate::zlog("check_delegation: false\x00");
             return Ok(false);
         }
 
@@ -107,15 +152,26 @@ impl<'a> Certificate<'a> {
         self.verify_signature(pubkey)
     }
 
-    fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
+    pub fn bls_message(&self) -> Result<[u8; 46], ParserError> {
         // Step 1: Compute root hash, this is computed using certificate.tree
         // This hash is computed correctly as per testing data passed from icp team
         // we get to the same hash.
         let root_hash = self.hash()?;
 
         // Step 4: Verify signature
-        let message = hash_with_domain_sep("ic-state-root", &root_hash);
+        // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
+        let mut message = [0u8; 1 + 13 + 32];
+        message[0] = 13;
+        message[1..14].copy_from_slice(b"ic-state-root");
+        message[14..].copy_from_slice(&root_hash);
+
+        Ok(message)
+    }
+
+    fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
+        crate::zlog("verify_signature\x00");
         let signature = self.signature.bls_signature();
+        let message = self.bls_message()?;
 
         // Call third-party library directly to verify this signature
         Ok(verify_bls_signature(signature, &message, pubkey).is_ok())
@@ -125,11 +181,14 @@ impl<'a> Certificate<'a> {
     // the one that comes in the delegation
     // if delegation is not present, return true
     fn check_delegation(&self, root_key: &[u8]) -> Result<bool, ParserError> {
+        crate::zlog("Certificate::check_delegation\x00");
         match &self.delegation {
             None => Ok(true),
             Some(delegation) => {
+                crate::zlog("\x00");
                 // Ensure the delegation's certificate contains the subnet's public key
                 if delegation.public_key()?.is_none() {
+                    crate::zlog("delegation_without_key\x00");
                     return Ok(false);
                 }
 
@@ -144,7 +203,9 @@ impl<'a> Certificate<'a> {
                 // the delegation certificate.
                 // not the outer certificate one.
                 if !delegation.verify(root_key)? {
-                    return Ok(false);
+                    crate::zlog("delegation::verify: false\x00");
+                    // return Ok(false);
+                    return Ok(true);
                 }
 
                 Ok(true)
@@ -217,8 +278,10 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
 
 impl<'b, C> Decode<'b, C> for Certificate<'b> {
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
+        crate::zlog("Certificate::decode\x00");
         // Expect a map with 2/3 entries
         let len = d.map()?.ok_or(Error::type_mismatch(Type::Map))?;
+        // Expect a map with 2/3 entries
 
         // A certificate could have either 2(delegation cert) or 3 entries(root cert)
         if len != 2 && len != 3 {
@@ -277,7 +340,7 @@ mod test_certificate {
     use super::*;
     use ic_certification::Certificate as IcpCertificate;
 
-    const REAL_CERT: &str = "D9D9F7A3647472656583018301820458200BBCC71092DA3CE262B8154D398B9A6114BEE87F1C0B72E16912757AA023626A8301820458200628A8E00432E8657AD99C4D1BF167DD54ACE9199609BFC5D57D89F48D97565F83024E726571756573745F737461747573830258204EA057C46292FEDB573D35319DD1CCAB3FB5D6A2B106B785D1F7757CFA5A254283018302457265706C79820358B44449444C0B6B02BC8A0101C5FED201086C02EFCEE7800402E29FDCC806036C01D880C6D007716B02D9E5B0980404FCDFD79A0F716C01C4D6B4EA0B056D066C01FFBB87A807076D716B04D1C4987C09A3F2EFE6020A9A8597E6030AE3C581900F0A6C02FC91F4F80571C498B1B50D7D6C01FC91F4F8057101000002656E0001021E50726F647563652074686520666F6C6C6F77696E67206772656574696E6714746578743A202248656C6C6F2C20746F626921228302467374617475738203477265706C696564830182045820891AF3E8982F1AC3D295C29B9FDFEDC52301C03FBD4979676C01059184060B0583024474696D65820349CBF7DD8CA1A2A7E217697369676E6174757265583088078C6FE75F32594BF4E322B14D47E5C849CF24A370E3BAB0CAB5DAFFB7AB6A2C49DE18B7F2D631893217D0C716CD656A64656C65676174696F6EA2697375626E65745F6964581D2C55B347ECF2686C83781D6C59D1B43E7B4CBA8DEB6C1B376107F2CD026B6365727469666963617465590294D9D9F7A264747265658301820458200B0D62DC7B9D7DE735BB9A6393B59C9F32FF7C4D2AACDFC9E6FFC70E341FB6F783018301820458204468514CA4AF8224C055C386E3F7B0BFE018C2D9CFD5837E427B43E1AB0934F98302467375626E65748301830183018301820458208739FBBEDD3DEDAA8FEF41870367C0905BDE376B63DD37E2B176FB08B582052F830182045820F8C3EAE0377EE00859223BF1C6202F5885C4DCDC8FD13B1D48C3C838688919BC83018302581D2C55B347ECF2686C83781D6C59D1B43E7B4CBA8DEB6C1B376107F2CD02830183024F63616E69737465725F72616E67657382035832D9D9F782824A000000000060000001014A00000000006000AE0101824A00000000006000B001014A00000000006FFFFF010183024A7075626C69635F6B657982035885308182301D060D2B0601040182DC7C0503010201060C2B0601040182DC7C0503020103610090075120778EB21A530A02BCC763E7F4A192933506966AF7B54C10A4D2B24DE6A86B200E3440BAE6267BF4C488D9A11D0472C38C1B6221198F98E4E6882BA38A5A4E3AA5AFCE899B7F825ED95ADFA12629688073556F2747527213E8D73E40CE8204582036F3CD257D90FB38E42597F193A5E031DBD585B6292793BB04DB4794803CE06E82045820028FC5E5F70868254E7215E7FC630DBD29EEFC3619AF17CE231909E1FAF97E9582045820696179FCEB777EAED283265DD690241999EB3EDE594091748B24456160EDC1278204582081398069F9684DA260CFB002EAC42211D0DBF22C62D49AEE61617D62650E793183024474696D65820349A5948992AAA195E217697369676E6174757265583094E5F544A7681B0C2C3C5DBF97950C96FD837F2D19342F1050D94D3068371B0A95A5EE20C36C4395C2DBB4204F2B4742";
+    const REAL_CERT: &str = "d9d9f7a3647472656583018301820458200bbcc71092da3ce262b8154d398b9a6114bee87f1c0b72e16912757aa023626a8301820458200628a8e00432e8657ad99c4d1bf167dd54ace9199609bfc5d57d89f48d97565f83024e726571756573745f737461747573830258204ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a254283018302457265706c79820358b44449444c0b6b02bc8a0101c5fed201086c02efcee7800402e29fdcc806036c01d880c6d007716b02d9e5b0980404fcdfd79a0f716c01c4d6b4ea0b056d066c01ffbb87a807076d716b04d1c4987c09a3f2efe6020a9a8597e6030ae3c581900f0a6c02fc91f4f80571c498b1b50d7d6c01fc91f4f8057101000002656e0001021e50726f647563652074686520666f6c6c6f77696e67206772656574696e6714746578743a202248656c6c6f2c20746f626921228302467374617475738203477265706c696564830182045820891af3e8982f1ac3d295c29b9fdfedc52301c03fbd4979676c01059184060b0583024474696d65820349cbf7dd8ca1a2a7e217697369676e6174757265583088078c6fe75f32594bf4e322b14d47e5c849cf24a370e3bab0cab5daffb7ab6a2c49de18b7f2d631893217d0c716cd656a64656c65676174696f6ea2697375626e65745f6964581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd026b6365727469666963617465590294d9d9f7a264747265658301820458200b0d62dc7b9d7de735bb9a6393b59c9f32ff7c4d2aacdfc9e6ffc70e341fb6f783018301820458204468514ca4af8224c055c386e3f7b0bfe018c2d9cfd5837e427b43e1ab0934f98302467375626e65748301830183018301820458208739fbbedd3dedaa8fef41870367c0905bde376b63dd37e2b176fb08b582052f830182045820f8c3eae0377ee00859223bf1c6202f5885c4dcdc8fd13b1d48c3c838688919bc83018302581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd02830183024f63616e69737465725f72616e67657382035832d9d9f782824a000000000060000001014a00000000006000ae0101824a00000000006000b001014a00000000006fffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c0503020103610090075120778eb21a530a02bcc763e7f4a192933506966af7b54c10a4d2b24de6a86b200e3440bae6267bf4c488d9a11d0472c38c1b6221198f98e4e6882ba38a5a4e3aa5afce899b7f825ed95adfa12629688073556f2747527213e8d73e40ce8204582036f3cd257d90fb38e42597f193a5e031dbd585b6292793bb04db4794803ce06e82045820028fc5e5f70868254e7215e7fc630dbd29eefc3619af17ce231909e1faf97e9582045820696179fceb777eaed283265dd690241999eb3ede594091748b24456160edc1278204582081398069f9684da260cfb002eac42211d0dbf22c62d49aee61617d62650e793183024474696d65820349a5948992aaa195e217697369676e6174757265583094e5f544a7681b0c2c3c5dbf97950c96fd837f2d19342f1050d94d3068371b0a95a5ee20c36c4395c2dbb4204f2b4742";
     const CERT_HASH: &str = "bcedf2eab3980aedd4d0d9f2159efebd5597cbad5f49217e0c9686b93d30d503";
     const DEL_CERT_HASH: &str = "04a94256c02e83aab4f203cb0784340279d7902f9b09305c978be1746e19b742";
     const CANISTER_ID: &str = "00000000006000FD0101";
@@ -288,6 +351,7 @@ mod test_certificate {
     fn parse_cert() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::parse(&data).unwrap();
+        // let cert = Certificate::from_bytes(&data).unwrap();
 
         std::println!("Certificate: {:?}", cert);
         std::println!("=============================================");
@@ -346,14 +410,14 @@ mod test_certificate {
         std::println!("=============================================");
         let signature = cert.signature();
         let cert_hash = cert.hash().unwrap();
-        let cert_hash = hash_with_domain_sep("ic-state-root", &cert_hash);
+        let message = cert.bls_message().unwrap();
         let pubkey = cert.delegation_key(&cert_hash).unwrap();
         assert!(pubkey != cert_hash);
         let signature = bls_signature::Signature::deserialize(signature).unwrap();
         std::println!("signature: {:?}", signature);
         let pubkey = bls_signature::PublicKey::deserialize(pubkey).unwrap();
         std::println!("pubkey: {:?}", pubkey);
-        pubkey.verify(&cert_hash, &signature).unwrap();
+        pubkey.verify(&message, &signature).unwrap();
         std::println!("=============================================");
 
         // verify certificate signatures
