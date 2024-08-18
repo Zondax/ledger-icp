@@ -54,7 +54,6 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
 
         // Expect a map with 2/3 entries
         let len = d.map()?.ok_or(ParserError::UnexpectedValue)?;
-        crate::zlog("read_len\x00");
 
         // Expect a map with 2/3 entries
         // A certificate could have either 2(delegation cert) or 3 entries(root cert)
@@ -62,31 +61,33 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
             crate::zlog("wrong_len\x00");
             return Err(ParserError::ValueOutOfRange);
         }
-        crate::zlog("good_len\x00");
+
         let out = out.as_mut_ptr();
+
+        let mut delegation = None;
 
         for _ in 0..len {
             crate::zlog("item_i\x00");
             let key = d.str()?;
-            let mut rem = &input[d.position()..];
+            #[cfg(test)]
+            std::println!("parsing: {}", key);
             match key {
                 "tree" => {
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
                     unsafe { addr_of_mut!((*out).tree).write(raw_value) };
-                } //tree = Some(RawValue::decode(d, ctx)?),
+                }
                 "signature" => {
-                    let signature = unsafe { &mut *addr_of_mut!((*out).signature).cast() };
-                    let rem = Signature::from_bytes_into(rem, signature)?;
-                    d = Decoder::new(rem);
-                } //signature = Some(RawValue::decode(d, ctx)?.try_into()?),
+                    let signature = Signature::decode(&mut d, &mut ())?;
+                    unsafe { addr_of_mut!((*out).signature).write(signature) };
+                }
                 "delegation" => {
-                    let delegation = unsafe { &mut *addr_of_mut!((*out).delegation).cast() };
-                    rem = Delegation::from_bytes_into(rem, delegation)?;
-                    d = Decoder::new(rem);
-                } //delegation = Some(Delegation::decode(d, ctx)?),
+                    delegation = Some(Delegation::decode(&mut d, &mut ())?);
+                }
                 _ => return Err(ParserError::InvalidCertificate),
             }
         }
+
+        unsafe { addr_of_mut!((*out).delegation).write(delegation) };
 
         let cert = unsafe { &mut *out };
         // Verify that the tree raw value can be parsed sucessfully into a HashTree

@@ -1,5 +1,3 @@
-use core::ptr::addr_of_mut;
-
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -17,7 +15,7 @@ use core::ptr::addr_of_mut;
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
-use crate::{error::ParserError, FromBytes};
+use crate::error::ParserError;
 
 use super::{
     hash_tree::{HashTree, LookupResult},
@@ -102,53 +100,6 @@ impl<'a> Delegation<'a> {
             }
             _ => Ok(LookupResult::Absent),
         }
-    }
-}
-
-impl<'a> FromBytes<'a> for Delegation<'a> {
-    fn from_bytes_into(
-        input: &'a [u8],
-        out: &mut core::mem::MaybeUninit<Self>,
-    ) -> Result<&'a [u8], crate::error::ParserError> {
-        crate::zlog("Delegation::from_bytes_into\x00");
-        let out = out.as_mut_ptr();
-
-        let mut d = Decoder::new(input);
-        // Expect a map with 2 entries
-        let len = d.map()?.ok_or(ParserError::ValueOutOfRange)?;
-        crate::zlog("got delegation_len");
-
-        if len != DELEGATION_MAP_ENTRIES {
-            return Err(ParserError::InvalidDelegation);
-        }
-
-        let mut rem;
-
-        for _ in 0..2 {
-            let key = d.str()?;
-            rem = d.input();
-            crate::zlog("del_i");
-
-            match key {
-                "subnet_id" => {
-                    let subnet = unsafe { &mut *addr_of_mut!((*out).subnet_id).cast() };
-                    _ = SubnetId::from_bytes_into(rem, subnet)?;
-                    // skip the bytes contained in this map
-                    d.skip()?;
-                    // subnet_id = Some(SubnetId::decode(d, ctx)?);
-                }
-                "certificate" => {
-                    d.bytes()?;
-                    // let mut dec = Decoder::new(bytes);
-                    let raw = RawValue::decode(&mut d, &mut ())?;
-                    unsafe { addr_of_mut!((*out).certificate).write(raw) };
-                    // certificate = Some(raw);
-                }
-                _ => return Err(ParserError::UnexpectedValue),
-            }
-        }
-
-        Ok(d.input())
     }
 }
 
