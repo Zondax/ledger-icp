@@ -103,7 +103,7 @@ impl ConsentRequestT {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn parse_consent_request(data: *const u8, data_len: u16) -> u32 {
+pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16) -> u32 {
     crate::zlog("parse_consent_request\x00");
     if data.is_null() {
         return ParserError::NoData as u32;

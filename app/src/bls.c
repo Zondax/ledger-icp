@@ -64,20 +64,11 @@ zxerr_t bls_saveConsentRequest(void) {
     // Get Buffer with consent call request
     const uint8_t *message = tx_get_buffer();
     const uint16_t messageLength = tx_get_buffer_length();
-    zemu_log("got_buffer****\n");
 
     //parse consent
-    // consent_request_t *out_request = get_consent_request();
-    // if (parse_consent_request(message, messageLength, out_request) != parser_ok) {
-    // if (parse_consent_request(message, messageLength, &consent_request) != parser_ok) {
-    if (parse_consent_request(message, messageLength) != parser_ok) {
+    if (rs_parse_consent_request(message, messageLength) != parser_ok) {
         return zxerr_unknown;
     }
-    zemu_log("consent_request_parsed****\n");
-
-    // Save consent request
-    // CHECK_ZXERR(save_consent_request(&out_request));
-    zemu_log("consent_request_saved****\n");
 
     // Save App State
     set_state(CERT_STATE_PROCESSED_CONSENT_REQUEST);
@@ -99,7 +90,7 @@ zxerr_t bls_saveCanisterCall(void) {
     // the hash to be signed would be also computed in this step
     // and stored as part of this type in nvm memory
     canister_call_t *out_request = get_canister_call();
-    if (parse_canister_call_request(message, messageLength) != parser_ok) {
+    if (rs_parse_canister_call_request(message, messageLength) != parser_ok) {
         return zxerr_unknown;
     }
 
@@ -116,10 +107,10 @@ zxerr_t bls_saveRootKey(uint8_t *root_key) {
     zemu_log("bls_saveRootKey****\n");
 
     // Test App State
-    // if (get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
-        // zemu_log("wrong_root_key_state\n");
-        // return zxerr_unknown;
-    // }
+    if (get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
+        zemu_log("wrong_root_key_state\n");
+        return zxerr_unknown;
+    }
 
     // Get Buffer witn root key
     // Save root key from user overwriting default value
@@ -152,17 +143,12 @@ zxerr_t bls_verify() {
     const uint8_t *certificate = tx_get_buffer();
     const uint16_t certificate_len = tx_get_buffer_length();
 
-    // consent_request_t *consent_request = get_consent_request();
-    // canister_call_t *call_request = get_canister_call();
-
     //Go into verifications
-    if(parser_verify_certificate(certificate, certificate_len, pubkey) != parser_ok) {
+    if(rs_verify_certificate(certificate, certificate_len, pubkey) != parser_ok) {
         return zxerr_invalid_crypto_settings;
     }
 
     // Save App State
-    // TODO: Set state to CERT_STATE_SIGN
-    // and clear any other data
     set_state(CERT_STATE_INITIAL);
 
     return zxerr_ok;

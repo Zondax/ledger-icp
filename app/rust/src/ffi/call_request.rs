@@ -101,7 +101,7 @@ impl CanisterCallT {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn parse_canister_call_request(data: *const u8, data_len: u16) -> u32 {
+pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_len: u16) -> u32 {
     if data.is_null() {
         return ParserError::NoData as u32;
     }

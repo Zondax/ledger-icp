@@ -59,16 +59,14 @@ typedef struct {
 } consent_request_t;
 
 // Function to parse a canister call request
-parser_error_t parse_canister_call_request(const uint8_t *data,
+parser_error_t rs_parse_canister_call_request(const uint8_t *data,
                                            uint16_t data_len);
 
 // Function to parse a cconsent request
-// parser_error_t parse_consent_request(const uint8_t *data, uint16_t data_len,
-//                                      consent_request_t *out_request);
-parser_error_t parse_consent_request(const uint8_t *data, uint16_t data_len);
+parser_error_t rs_parse_consent_request(const uint8_t *data, uint16_t data_len);
 
 // Function to parser certificate and verify
-parser_error_t parser_verify_certificate(const uint8_t *certificate,
+parser_error_t rs_verify_certificate(const uint8_t *certificate,
                                          uint16_t certificate_len,
                                          const uint8_t *root_key);
 

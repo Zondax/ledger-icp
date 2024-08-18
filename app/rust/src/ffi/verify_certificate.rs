@@ -14,7 +14,9 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate};
+use crate::{
+    constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, HashTree, LookupResult,
+};
 
 use std::cmp::PartialEq;
 
@@ -43,12 +45,12 @@ impl PartialEq<CanisterCallT> for ConsentRequestT {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn parser_verify_certificate(
+pub unsafe extern "C" fn rs_verify_certificate(
     certificate: *const u8,
     certificate_len: u16,
     root_key: *const u8,
 ) -> u32 {
-    crate::zlog("parser_verify_certificate\x00");
+    crate::zlog("rs_parser_verify_certificate\x00");
     if certificate.is_null() || root_key.is_null() {
         crate::zlog("no_cert/no_key\x00");
         return ParserError::NoData as u32;
@@ -83,9 +85,6 @@ pub unsafe extern "C" fn parser_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     };
 
-    // let cert = cert.assume_init();
-    crate::zlog("cert_parsed****\x00");
-
     match cert.verify(root_key) {
         Ok(false) => return ParserError::InvalidCertificate as u32,
         Err(e) => return e as u32,
@@ -99,12 +98,11 @@ pub unsafe extern "C" fn parser_verify_certificate(
     // Certificate tree must contain a node labeled with the request_id computed
     // from the consent_msg_request, this ensures that the passed data referes to
     // the provided certificate
-    // FIXME: uncomment
-    // let Ok(LookupResult::Found(_)) = HashTree::lookup_path(&request_id[..].into(), tree) else {
-    //     crate::zlog("request_id mismatch****\x00");
-    //     return ParserError::InvalidCertificate as u32;
-    // };
-    //
+    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(&request_id[..].into(), tree) else {
+        crate::zlog("request_id mismatch****\x00");
+        return ParserError::InvalidCertificate as u32;
+    };
+
     CERTIFICATE.replace(cert);
 
     // Now store the certificate back in memory for ui usage?
