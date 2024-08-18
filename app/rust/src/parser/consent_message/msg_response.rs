@@ -125,6 +125,7 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
 impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
+        crate::zlog("ContentMessageResponse::num_items\x00");
         match self {
             Self::Ok(msg) => msg.num_items(),
             Self::Err(err) => err.num_items(),
@@ -139,6 +140,7 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
+        crate::zlog("ContentMessageResponse::render_item\x00");
         match self {
             Self::Ok(msg) => msg.render_item(item_n, title, message, page),
             Self::Err(err) => err.render_item(item_n, title, message, page),

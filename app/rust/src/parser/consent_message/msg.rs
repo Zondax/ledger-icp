@@ -43,6 +43,21 @@ pub enum MessageType {
 
 #[derive(Debug)]
 #[repr(C)]
+// (
+//   record {
+//     arg = blob "\44\49\44\4c\00\01\71\04\74\6f\62\69";
+//     method = "greet";
+//     user_preferences = record {
+//       metadata = record { utc_offset_minutes = null; language = "en" };
+//       device_spec = opt variant {
+//         LineDisplay = record {
+//           characters_per_line = 30 : nat16;
+//           lines_per_page = 3 : nat16;
+//         }
+//       };
+//     };
+//   },
+// )
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
     // Assuming max 4 pages with 5 lines each
@@ -262,7 +277,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
-        let title_bytes = b"Consent Msg Request:";
+        let title_bytes = b"ConsentRequest:";
         let title_len = title_bytes.len().min(title.len() - 1);
         title[..title_len].copy_from_slice(&title_bytes[..title_len]);
         title[title_len] = 0;

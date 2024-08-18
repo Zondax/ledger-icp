@@ -184,6 +184,11 @@ impl<'a> DisplayableItem for Error<'a> {
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
+        let title_bytes = b"Error:";
+        let title_len = title_bytes.len().min(title.len() - 1);
+        title[..title_len].copy_from_slice(&title_bytes[..title_len]);
+        title[title_len] = 0;
+
         match self {
             // TODO: maybe we just show the variant name as the error message?
             // description message could contain symbols
@@ -192,10 +197,6 @@ impl<'a> DisplayableItem for Error<'a> {
             | Error::InsufficientPayment(e) => e.render_item(item_n, title, message, page),
             // TODO: Check if it is worth to display error code
             Error::GenericError { description, .. } => {
-                let title_bytes = b"Error:";
-                let title_len = title_bytes.len().min(title.len() - 1);
-                title[..title_len].copy_from_slice(&title_bytes[..title_len]);
-                title[title_len] = 0;
                 let msg = description.as_bytes();
                 handle_ui_message(msg, message, page)
             }
