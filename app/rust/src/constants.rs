@@ -31,3 +31,5 @@ pub const CANISTER_MAX_LEN: usize = 10;
 pub const REQUEST_MAX_LEN: usize = 10;
 pub const METHOD_MAX_LEN: usize = 20;
 pub const NONCE_MAX_LEN: usize = 32;
+// separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
+pub const BLS_MSG_SIZE: usize = 1 + 13 + 32;

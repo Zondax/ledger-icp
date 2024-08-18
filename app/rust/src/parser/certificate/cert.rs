@@ -20,7 +20,7 @@ use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use crate::{
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{CBOR_CERTIFICATE_TAG, REPLY_PATH},
+    constants::{BLS_MSG_SIZE, CBOR_CERTIFICATE_TAG, REPLY_PATH},
     error::{ParserError, ViewError},
     DisplayableItem, FromBytes, Signature,
 };
@@ -160,7 +160,7 @@ impl<'a> Certificate<'a> {
 
         // Step 4: Verify signature
         // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
-        let mut message = [0u8; 1 + 13 + 32];
+        let mut message = [0u8; BLS_MSG_SIZE];
         message[0] = 13;
         message[1..14].copy_from_slice(b"ic-state-root");
         message[14..].copy_from_slice(&root_hash);
@@ -185,7 +185,6 @@ impl<'a> Certificate<'a> {
         match &self.delegation {
             None => Ok(true),
             Some(delegation) => {
-                crate::zlog("\x00");
                 // Ensure the delegation's certificate contains the subnet's public key
                 if delegation.public_key()?.is_none() {
                     crate::zlog("delegation_without_key\x00");
@@ -204,8 +203,7 @@ impl<'a> Certificate<'a> {
                 // not the outer certificate one.
                 if !delegation.verify(root_key)? {
                     crate::zlog("delegation::verify: false\x00");
-                    // return Ok(false);
-                    return Ok(true);
+                    return Ok(false);
                 }
 
                 Ok(true)
