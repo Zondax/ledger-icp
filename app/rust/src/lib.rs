@@ -32,6 +32,8 @@ pub fn zlog(_msg: &str) {
     unsafe {
         zemu_log_stack(_msg.as_bytes().as_ptr());
     }
+    #[cfg(test)]
+    std::println!("{}", _msg);
 }
 
 extern "C" {
