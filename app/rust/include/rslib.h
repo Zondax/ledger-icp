@@ -80,5 +80,6 @@ parser_error_t rs_getItem(int8_t displayIdx,
                           uint8_t *pageCount);
 
 // use to clear resources after certificate verification and signing
-void clear_resources(void);
+void rs_clear_resources(void);
+void rs_get_signing_hash(uint8_t *hash);
 #endif

@@ -26,8 +26,8 @@ extern "C" {
 
 zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
-zxerr_t bls_saveRootKey(void);
-zxerr_t bls_verify(parsed_obj_t *cert);
+zxerr_t bls_saveRootKey(uint8_t *root_key);
+zxerr_t bls_verify();
 uint8_t *bls_root_key();
 #ifdef __cplusplus
 }

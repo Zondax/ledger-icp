@@ -152,18 +152,8 @@ zxerr_t tx_getItem(int8_t displayIdx,
 #if defined(BLS_SIGNATURE)
 #include "bls.h"
 
-parsed_obj_t parsed_cert;
-
-void tx_initialize_cert() {
-    parsed_cert.state = &parsed_obj_buffer[0];
-    parsed_cert.len = CERT_OBJ_MAX_SIZE;
-
-    MEMZERO(parsed_cert.state, parsed_cert.len);
-}
-
 zxerr_t tx_certVerify() {
-    tx_initialize_cert();
-    return bls_verify(&parsed_cert);
+    return bls_verify();
 }
 
 /// Return the number of items in the transaction

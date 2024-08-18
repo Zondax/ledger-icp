@@ -26,8 +26,6 @@
 // define root key with default value
 static uint8_t alternative_root_key[ROOT_KEY_LEN] = {0};
 
-// static consent_request_t consent_request;
-
 uint8_t *bls_root_key() {
     static uint8_t root_key[ROOT_KEY_LEN];
     static bool initialized = false;
@@ -114,21 +112,19 @@ zxerr_t bls_saveCanisterCall(void) {
     return zxerr_ok;
 }
 
-zxerr_t bls_saveRootKey(void) {
+zxerr_t bls_saveRootKey(uint8_t *root_key) {
+    zemu_log("bls_saveRootKey****\n");
+
     // Test App State
-    if (get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
-        return zxerr_unknown;
-    }
+    // if (get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
+        // zemu_log("wrong_root_key_state\n");
+        // return zxerr_unknown;
+    // }
 
     // Get Buffer witn root key
-    const uint8_t *message = tx_get_buffer();
-    const uint16_t messageLength = tx_get_buffer_length();
-
-    if(messageLength != ROOT_KEY_LEN) {
-        return zxerr_invalid_crypto_settings;
-    }
     // Save root key from user overwriting default value
-    MEMCPY(alternative_root_key, message, ROOT_KEY_LEN);
+    MEMCPY(alternative_root_key, root_key, ROOT_KEY_LEN);
+    zemu_log("Root key saved\n");
 
     // Save App State
     set_state(CERT_STATE_PROCESSED_ROOT_KEY);
@@ -136,7 +132,7 @@ zxerr_t bls_saveRootKey(void) {
     return zxerr_ok;
 }
 
-zxerr_t bls_verify(parsed_obj_t *cert) {
+zxerr_t bls_verify() {
     // Two possible states, we saved a root key from user, or there was no root key overwriting
     if ( get_state() != CERT_STATE_PROCESSED_ROOT_KEY && get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
         return zxerr_unknown;
@@ -156,8 +152,8 @@ zxerr_t bls_verify(parsed_obj_t *cert) {
     const uint8_t *certificate = tx_get_buffer();
     const uint16_t certificate_len = tx_get_buffer_length();
 
-    consent_request_t *consent_request = get_consent_request();
-    canister_call_t *call_request = get_canister_call();
+    // consent_request_t *consent_request = get_consent_request();
+    // canister_call_t *call_request = get_canister_call();
 
     //Go into verifications
     if(parser_verify_certificate(certificate, certificate_len, pubkey) != parser_ok) {

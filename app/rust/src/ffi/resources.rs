@@ -9,7 +9,7 @@ pub static mut CALL_REQUEST_T: Option<crate::ffi::call_request::CanisterCallT> =
 pub static mut CERTIFICATE: Option<crate::parser::Certificate<'static>> = None;
 
 #[no_mangle]
-pub unsafe extern "C" fn clear_resources() {
+pub unsafe extern "C" fn rs_clear_resources() {
     if CONSENT_REQUEST_T.is_some() {
         crate::zlog("clear_resources: consent_request\x00");
         CONSENT_REQUEST_T.take();

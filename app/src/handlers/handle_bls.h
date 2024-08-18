@@ -77,13 +77,16 @@ __Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile u
 }
 
 __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    zemu_log("handleRootKey****\n");
-    if (!process_chunk(tx, rx)) {
-        THROW(APDU_CODE_OK);
+
+    // We should received complete key data
+    if (rx < (OFFSET_DATA + ROOT_KEY_LEN)) {
+        zemu_log("wrong input key data****\n");
+        THROW(APDU_CODE_WRONG_LENGTH);
     }
 
+
     CHECK_APP_CANARY()
-    zxerr_t err = bls_saveRootKey();
+    zxerr_t err = bls_saveRootKey(&G_io_apdu_buffer[OFFSET_DATA]);
     CHECK_APP_CANARY()
 
     if (err != zxerr_ok) {
@@ -94,7 +97,7 @@ __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32
     THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     zemu_log("handleSignBls****\n");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
@@ -113,16 +116,9 @@ __Z_INLINE void handleSignBls(__unused volatile uint32_t *flags, volatile uint32
     }
 
     CHECK_APP_CANARY()
-
-    // view_review_init(rs_getItem, rs_getNumItems, app_sign_bls);
     view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
     view_review_show(REVIEW_TXN);
     *flags |= IO_ASYNCH_REPLY;
-
-    // Clear nvm data after signing and full certificate review
-    bls_nvm_reset();
-
-    THROW(APDU_CODE_OK);
 }
 
 

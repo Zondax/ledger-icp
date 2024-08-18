@@ -94,6 +94,7 @@ impl CanisterCallT {
             self.has_nonce = true;
             self.nonce.copy_from_slice(nonce);
         }
+        crate::zlog("CanisterCallT::fill_from: done!\x00");
 
         Ok(())
     }
@@ -130,5 +131,14 @@ pub unsafe extern "C" fn parse_canister_call_request(data: *const u8, data_len: 
             ParserError::Ok as u32
         }
         Err(_) => ParserError::InvalidCallRequest as u32,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rs_get_signing_hash(data: *mut [u8; 32]) {
+    let hash = unsafe { &mut *data };
+
+    if let Some(call) = CALL_REQUEST_T.as_ref() {
+        hash.copy_from_slice(&call.hash);
     }
 }

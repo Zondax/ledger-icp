@@ -20,6 +20,7 @@ use super::resources::CERTIFICATE;
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_getNumItems(num_items: *mut u8) -> u32 {
+    crate::zlog("rs_getNumItems\x00");
     if num_items.is_null() {
         return ParserError::ContextMismatch as u32;
     }
@@ -30,6 +31,7 @@ pub unsafe extern "C" fn rs_getNumItems(num_items: *mut u8) -> u32 {
     };
 
     let Ok(num) = cert.num_items() else {
+        crate::zlog("no_DATA\x00");
         return ParserError::NoData as _;
     };
 
@@ -48,6 +50,7 @@ pub unsafe extern "C" fn rs_getItem(
     page_idx: u8,
     page_count: *mut u8,
 ) -> u32 {
+    crate::zlog("rs_getItem\x00");
     *page_count = 0u8;
 
     let page_count = &mut *page_count;
