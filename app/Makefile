@@ -107,7 +107,7 @@ APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 .PHONY: rust
 rust:
-	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target $(RUST_TARGET) --release
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(TARGET_NAME) cargo build --target $(RUST_TARGET) --release
 
 .PHONY: rust_clean
 rust_clean:
