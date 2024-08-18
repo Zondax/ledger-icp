@@ -103,6 +103,12 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     };
 
+    // Verify ingress_expiry aginst certificate timestamp
+    if !cert.verify_time(call_request.ingress_expiry) {
+        crate::zlog("ingress_expiry mismatch****\x00");
+        return ParserError::InvalidCertificate as u32;
+    }
+
     CERTIFICATE.replace(cert);
 
     // Now store the certificate back in memory for ui usage?

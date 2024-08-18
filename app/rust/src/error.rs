@@ -80,6 +80,7 @@ pub enum ParserError {
     TooManyFields,
     FieldNotFound,
     LEB128Overflow,
+    InvalidTime,
 }
 
 // minicibor error provides a reach

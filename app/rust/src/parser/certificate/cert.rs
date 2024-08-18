@@ -20,7 +20,7 @@ use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use crate::{
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{BLS_MSG_SIZE, CBOR_CERTIFICATE_TAG, REPLY_PATH},
+    constants::{BLS_MSG_SIZE, CBOR_CERTIFICATE_TAG, FIVE_MINUTES_IN_SECONDS, REPLY_PATH},
     error::{ParserError, ViewError},
     DisplayableItem, FromBytes, Signature,
 };
@@ -264,6 +264,18 @@ impl<'a> Certificate<'a> {
         let mut msg = MaybeUninit::uninit();
         ConsentMessageResponse::from_bytes_into(bytes, &mut msg)?;
         Ok(unsafe { msg.assume_init() })
+    }
+
+    pub fn verify_time(&self, ingress_expiry: u64) -> bool {
+        let Ok(Some(cert_time)) = self.timestamp() else {
+            return false;
+        };
+
+        if cert_time > ingress_expiry {
+            return false;
+        }
+
+        (ingress_expiry - cert_time) <= FIVE_MINUTES_IN_SECONDS
     }
 }
 
