@@ -21,6 +21,8 @@ pub mod call_request;
 pub mod candid_utils;
 mod certificate;
 pub mod consent_message;
+#[cfg(test)]
+mod snapshots_common;
 
 pub use certificate::*;
 
