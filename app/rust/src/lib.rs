@@ -13,6 +13,7 @@ mod ffi;
 mod parser;
 pub mod type_table;
 pub mod utils;
+use zemu_sys as _;
 
 pub use parser::*;
 

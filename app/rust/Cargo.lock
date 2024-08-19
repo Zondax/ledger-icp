@@ -998,6 +998,8 @@ dependencies = [
  "nom",
  "serde_cbor",
  "sha2 0.10.8",
+ "zemu-sys",
+ "zuit",
 ]
 
 [[package]]
@@ -1337,4 +1339,11 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.70",
+]
+
+[[package]]
+name = "zuit"
+version = "0.1.0"
+dependencies = [
+ "zemu-sys",
 ]

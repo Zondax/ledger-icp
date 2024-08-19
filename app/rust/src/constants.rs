@@ -17,7 +17,7 @@ pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
 pub const BLS_SIGNATURE_SIZE: usize = 48;
 pub const MAX_LINES: usize = 2;
 pub const MAX_PAGES: usize = 20;
-pub const MAX_CHARS_PER_LINE: usize = 32;
+pub const MAX_CHARS_PER_LINE: usize = 25;
 pub const REPLY_PATH: &str = "reply";
 
 pub const CBOR_TAG: u64 = 55799;
@@ -31,6 +31,8 @@ pub const CANISTER_MAX_LEN: usize = 10;
 pub const REQUEST_MAX_LEN: usize = 10;
 pub const METHOD_MAX_LEN: usize = 20;
 pub const NONCE_MAX_LEN: usize = 32;
-pub const FIVE_MINUTES_IN_SECONDS: u64 = 5 * 60;
+pub const SECONDS_PER_MINUTE: u64 = 60;
+pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
+pub const FIVE_MINUTES_IN_NANOSECONDS: u64 = 5 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
 pub const BLS_MSG_SIZE: usize = 1 + 13 + 32;

@@ -75,6 +75,85 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
         // Unfortunate we can not use const generic parameters in expresion bellow
         [0u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1]
     }
+
+    fn format_page_content(
+        &self,
+        page: &Page<'_, LINES>,
+        output: &mut [u8],
+    ) -> Result<u8, ViewError> {
+        crate::zlog("ConsentMessage::format_page_content\x00");
+
+        let mut output_idx = 0;
+        let mut current_line = 0;
+        let mut is_new_line = true;
+
+        for line in page.lines.iter().take(page.num_lines) {
+            let input = line.as_bytes();
+            let mut char_idx = 0;
+
+            while char_idx < input.len() && current_line < MAX_LINES {
+                let remaining_space = MAX_CHARS_PER_LINE.min(output.len() - output_idx);
+                if remaining_space == 0 {
+                    break;
+                }
+
+                // Add a space if this is a new line and we're not at the start of the output
+                if !is_new_line && output_idx > 0 && output_idx < output.len() - 1 {
+                    output[output_idx] = b' ';
+                    output_idx += 1;
+                }
+
+                let copy_len = remaining_space.min(input.len() - char_idx);
+                output[output_idx..output_idx + copy_len]
+                    .copy_from_slice(&input[char_idx..char_idx + copy_len]);
+
+                char_idx += copy_len;
+                output_idx += copy_len;
+
+                // Add hyphen if word is split and we're not at the end of the line
+                if char_idx < input.len()
+                    && output_idx < output.len() - 1
+                    && output_idx % MAX_CHARS_PER_LINE != 0
+                {
+                    output[output_idx] = b'-';
+                    output_idx += 1;
+                }
+
+                // Move to next line if we've filled the current line
+                if output_idx % MAX_CHARS_PER_LINE == 0 {
+                    if current_line < MAX_LINES - 1 && output_idx < output.len() - 1 {
+                        output[output_idx] = b'\n';
+                        output_idx += 1;
+                        current_line += 1;
+                        is_new_line = true;
+                    } else {
+                        break;
+                    }
+                } else {
+                    is_new_line = false;
+                }
+            }
+
+            // Move to next line after processing each input line if there's space
+            if current_line < MAX_LINES - 1
+                && output_idx < output.len() - 1
+                && char_idx >= input.len()
+            {
+                output[output_idx] = b'\n';
+                output_idx += 1;
+                current_line += 1;
+                is_new_line = true;
+            }
+        }
+
+        // Null-terminate the output if there's space
+        if output_idx < output.len() {
+            output[output_idx] = 0;
+            output_idx += 1;
+        }
+
+        Ok(output_idx as u8)
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -82,6 +161,14 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
 pub struct Page<'a, const L: usize> {
     lines: [&'a str; L],
     num_lines: usize,
+}
+
+impl<'a, const L: usize> Iterator for Page<'a, L> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
 }
 
 impl<'a, const L: usize> Page<'a, L> {
@@ -99,6 +186,7 @@ impl<'a, const L: usize> Default for Page<'a, L> {
     }
 }
 
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 struct LineDisplayIterator<'b, const L: usize> {
     current: &'b [u8],
     page_idx: usize,
@@ -277,7 +365,8 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
-        let title_bytes = b"ConsentRequest:";
+        crate::zlog("ConsentMessage::render_item\x00");
+        let title_bytes = b"ConsentMsg";
         let title_len = title_bytes.len().min(title.len() - 1);
         title[..title_len].copy_from_slice(&title_bytes[..title_len]);
         title[title_len] = 0;
@@ -289,27 +378,13 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
             }
             ConsentMessage::LineDisplayMessage(bytes) => {
                 let mut pages: LineDisplayIterator<'_, LINES> = LineDisplayIterator::new(bytes);
-                // now get to the page we are looking for
                 let current_page = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
 
-                let mut render_data = Self::render_buffer();
-                let mut at = 0;
+                let mut output = Self::render_buffer();
 
-                current_page
-                    .lines
-                    .iter()
-                    .take(current_page.num_lines)
-                    .for_each(|line| {
-                        render_data[at..at + line.len()].copy_from_slice(line.as_bytes());
-                        at += line.len();
-                        // TODO: Not sure if adding a separator would work here
-                        // lets confirm with testing
-                        if at < render_data.len() {
-                            render_data[at] = b'\n';
-                        }
-                    });
-
-                handle_ui_message(&render_data, message, page)
+                // Use a Rust version of the C function to format the message
+                self.format_page_content(&current_page, &mut output)?;
+                handle_ui_message(&output, message, page)
             }
         }
     }

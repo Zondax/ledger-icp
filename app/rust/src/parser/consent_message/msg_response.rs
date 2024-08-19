@@ -150,6 +150,10 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
 
 #[cfg(test)]
 mod msg_response_test {
+    use zemu_sys::Viewable;
+
+    use crate::parser::snapshots_common::ReducedPage;
+
     use super::*;
 
     const MSG_DATA: &[u8] = &[
@@ -163,10 +167,52 @@ mod msg_response_test {
         108, 108, 111, 119, 105, 110, 103, 32, 103, 114, 101, 101, 116, 105, 110, 103, 20, 116,
         101, 120, 116, 58, 32, 34, 72, 101, 108, 108, 111, 44, 32, 116, 111, 98, 105, 33, 34,
     ];
+    /// This is only to be used for testing, hence why
+    /// it's present inside the `mod test` block only
+    impl Viewable for ConsentMessageResponse<'static> {
+        fn num_items(&mut self) -> Result<u8, zemu_sys::ViewError> {
+            DisplayableItem::num_items(&*self).map_err(|_| zemu_sys::ViewError::Unknown)
+        }
+
+        fn render_item(
+            &mut self,
+            item_idx: u8,
+            title: &mut [u8],
+            message: &mut [u8],
+            page_idx: u8,
+        ) -> Result<u8, zemu_sys::ViewError> {
+            DisplayableItem::render_item(&*self, item_idx, title, message, page_idx)
+                .map_err(|_| zemu_sys::ViewError::Unknown)
+        }
+
+        fn accept(&mut self, _: &mut [u8]) -> (usize, u16) {
+            (0, 0)
+        }
+
+        fn reject(&mut self, _: &mut [u8]) -> (usize, u16) {
+            (0, 0)
+        }
+    }
 
     #[test]
     fn parse_msg_response() {
         let resp = ConsentMessageResponse::from_bytes(MSG_DATA).unwrap();
         std::println!("{:?}", resp);
+    }
+
+    #[test]
+    fn test_ui() {
+        let resp = ConsentMessageResponse::from_bytes(MSG_DATA).unwrap();
+        let mut driver = zuit::MockDriver::<_, 18, 1024>::new(resp);
+        driver.drive();
+
+        let ui = driver.out_ui();
+
+        let reduced = ui
+            .iter()
+            .flat_map(|item| item.iter().map(ReducedPage::from))
+            .collect::<std::vec::Vec<_>>();
+
+        std::println!("{:?}", reduced);
     }
 }
