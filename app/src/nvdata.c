@@ -22,7 +22,7 @@
 #include "os.h"
 #include "view.h"
 
-bls_header_t bls_header;
+bls_header_t bls_header = {CERT_STATE_INITIAL};
 
 // STATE
 uint8_t get_state() {
