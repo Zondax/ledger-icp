@@ -20,7 +20,10 @@ use minicbor::{data::Type, decode::Error, Decode, Decoder};
 
 use crate::{
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{BLS_MSG_SIZE, CBOR_CERTIFICATE_TAG, FIVE_MINUTES_IN_SECONDS, REPLY_PATH},
+    constants::{
+        BLS_MSG_SIZE, CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, FIVE_MINUTES_IN_NANOSECONDS,
+        REPLY_PATH,
+    },
     error::{ParserError, ViewError},
     DisplayableItem, FromBytes, Signature,
 };
@@ -58,7 +61,6 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         // Expect a map with 2/3 entries
         // A certificate could have either 2(delegation cert) or 3 entries(root cert)
         if len != 2 && len != 3 {
-            crate::zlog("wrong_len\x00");
             return Err(ParserError::ValueOutOfRange);
         }
 
@@ -143,7 +145,6 @@ impl<'a> Certificate<'a> {
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
         if !self.check_delegation(root_key)? {
-            crate::zlog("check_delegation: false\x00");
             return Ok(false);
         }
 
@@ -203,7 +204,6 @@ impl<'a> Certificate<'a> {
                 // the delegation certificate.
                 // not the outer certificate one.
                 if !delegation.verify(root_key)? {
-                    crate::zlog("delegation::verify: false\x00");
                     return Ok(false);
                 }
 
@@ -246,7 +246,7 @@ impl<'a> Certificate<'a> {
             Some(delegation) => delegation.cert().tree(),
         };
 
-        let path = "canister_ranges".into();
+        let path = CANISTER_RANGES_PATH.into();
         let found = HashTree::lookup_path(&path, tree).ok()?;
         let data = found.value()?;
         let mut ranges = MaybeUninit::uninit();
@@ -275,7 +275,9 @@ impl<'a> Certificate<'a> {
             return false;
         }
 
-        (ingress_expiry - cert_time) <= FIVE_MINUTES_IN_SECONDS
+        let time_difference = ingress_expiry.saturating_sub(cert_time);
+
+        time_difference <= FIVE_MINUTES_IN_NANOSECONDS
     }
 }
 
@@ -290,6 +292,7 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
 impl<'b, C> Decode<'b, C> for Certificate<'b> {
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
         crate::zlog("Certificate::decode\x00");
+
         // Expect a map with 2/3 entries
         let len = d.map()?.ok_or(Error::type_mismatch(Type::Map))?;
         // Expect a map with 2/3 entries
@@ -349,6 +352,8 @@ impl<'a> DisplayableItem for Certificate<'a> {
 #[cfg(test)]
 mod test_certificate {
 
+    use crate::constants::CANISTER_ROOT_KEY;
+
     use super::*;
     use ic_certification::Certificate as IcpCertificate;
 
@@ -358,6 +363,8 @@ mod test_certificate {
     const CANISTER_ID: &str = "00000000006000FD0101";
 
     const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
+
+    const INGRESS_EXPIRY: u64 = 17362103064099315712;
 
     #[test]
     fn parse_cert() {
@@ -405,6 +412,7 @@ mod test_certificate {
 
         assert_eq!(root_hash, icp_hash);
         assert_eq!(root_hash, CERT_HASH);
+
         // compare our root hash with the hash icp library computes
         let icp_cert: IcpCertificate = serde_cbor::from_slice(&data).unwrap();
         let delegation = icp_cert.delegation.unwrap();
@@ -413,28 +421,11 @@ mod test_certificate {
 
         assert_eq!(del_cert_hash, icp_hash);
         assert_eq!(del_cert_hash, DEL_CERT_HASH);
-        std::println!("*root_hash: {}", root_hash);
-        std::println!("*del_hash: {}", icp_hash);
-
-        std::println!("icp_raw_signature {:?}", icp_cert.signature);
-        std::println!("icp_signature: {:?}", hex::encode(icp_cert.signature));
-
-        std::println!("=============================================");
-        let signature = cert.signature();
-        let cert_hash = cert.hash().unwrap();
-        let message = cert.bls_message().unwrap();
-        let pubkey = cert.delegation_key(&cert_hash).unwrap();
-        assert!(pubkey != cert_hash);
-        let signature = bls_signature::Signature::deserialize(signature).unwrap();
-        std::println!("signature: {:?}", signature);
-        let pubkey = bls_signature::PublicKey::deserialize(pubkey).unwrap();
-        std::println!("pubkey: {:?}", pubkey);
-        pubkey.verify(&message, &signature).unwrap();
-        std::println!("=============================================");
 
         // verify certificate signatures
-        let root_key = [0u8; 32];
+        let root_key = hex::decode(CANISTER_ROOT_KEY).unwrap();
         assert!(cert.verify(&root_key).unwrap());
+        // assert!(cert.verify_time(INGRESS_EXPIRY));
     }
 
     #[test]

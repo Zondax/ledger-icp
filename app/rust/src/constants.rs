@@ -19,6 +19,7 @@ pub const MAX_LINES: usize = 2;
 pub const MAX_PAGES: usize = 20;
 pub const MAX_CHARS_PER_LINE: usize = 25;
 pub const REPLY_PATH: &str = "reply";
+pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
 
 pub const CBOR_TAG: u64 = 55799;
 pub const CBOR_CERTIFICATE_TAG: u64 = CBOR_TAG;
@@ -36,3 +37,6 @@ pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
 pub const FIVE_MINUTES_IN_NANOSECONDS: u64 = 5 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
 pub const BLS_MSG_SIZE: usize = 1 + 13 + 32;
+// The official root key for consent message verification
+// including certificate
+pub const CANISTER_ROOT_KEY: &str = "814c0e6ec71fab583b08bd81373c255c3c371b2e84863c98a4f1e08b74235d14fb5d9c0cd546d9685f913a0c0b2cc5341583bf4b4392e467db96d65b9bb4cb717112f8472e0d5a4d14505ffd7484b01291091c5f87b98883463f98091a0baaae";
