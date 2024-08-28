@@ -1,3 +1,5 @@
+use core::ptr::addr_of_mut;
+
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -15,16 +17,13 @@
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
+use crate::{zlog, FromBytes};
+
 #[derive(Clone, Copy, PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct RawValue<'a>(&'a [u8]);
 
 impl<'a> RawValue<'a> {
-    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Error> {
-        let mut d = Decoder::new(bytes);
-        RawValue::decode(&mut d, &mut ())
-    }
-
     pub fn bytes(&self) -> &'a [u8] {
         self.0
     }
@@ -38,6 +37,28 @@ impl<'a> RawValue<'a> {
     }
 }
 
+impl<'a> FromBytes<'a> for RawValue<'a> {
+    fn from_bytes_into(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
+        zlog("RawValue::from_bytes_into\x00");
+
+        let mut d = Decoder::new(input);
+
+        let start = d.position();
+        d.skip()?;
+        let end = d.position();
+
+        let out = out.as_mut_ptr();
+        unsafe { addr_of_mut!((*out).0).write(&d.input()[start..end]) };
+
+        Ok(&input[end..])
+    }
+}
+
+// Keep Decode implementation for use
+// in context where parsing is lazy
 impl<'b, C> Decode<'b, C> for RawValue<'b> {
     fn decode(d: &mut Decoder<'b>, _: &mut C) -> Result<Self, Error> {
         let start = d.position();

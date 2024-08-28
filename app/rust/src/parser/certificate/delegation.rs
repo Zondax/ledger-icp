@@ -1,3 +1,5 @@
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
+
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -13,9 +15,9 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use minicbor::{decode::Error, Decode, Decoder};
+use minicbor::{decode::Error, Decoder};
 
-use crate::error::ParserError;
+use crate::{error::ParserError, zlog, FromBytes};
 
 use super::{
     hash_tree::{HashTree, LookupResult},
@@ -35,14 +37,57 @@ pub struct Delegation<'a> {
     pub certificate: RawValue<'a>,
 }
 
+impl<'a> FromBytes<'a> for Delegation<'a> {
+    fn from_bytes_into(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
+        zlog("Delegation::from_bytes_into\x00");
+
+        let out = out.as_mut_ptr();
+        let mut d = Decoder::new(input);
+
+        // Expect a map with 2 entries
+        let len = d
+            .map()?
+            .ok_or(Error::type_mismatch(minicbor::data::Type::Map))?;
+
+        if len != DELEGATION_MAP_ENTRIES {
+            return Err(ParserError::InvalidDelegation);
+        }
+
+        for _ in 0..2 {
+            let key = d.str()?;
+
+            match key {
+                "subnet_id" => {
+                    let subnet_id: &mut MaybeUninit<SubnetId<'a>> =
+                        unsafe { &mut *addr_of_mut!((*out).subnet_id).cast() };
+
+                    let data = &input[d.position()..];
+
+                    let rem = SubnetId::from_bytes_into(data, subnet_id)?;
+                    d.set_position(d.position() + (data.len() - rem.len()));
+                }
+                "certificate" => {
+                    let bytes = d.bytes()?;
+
+                    let raw_value: &mut MaybeUninit<RawValue<'a>> =
+                        unsafe { &mut *addr_of_mut!((*out).certificate).cast() };
+                    _ = RawValue::from_bytes_into(bytes, raw_value)?;
+                }
+                _ => return Err(ParserError::UnexpectedField),
+            }
+        }
+
+        Ok(&input[d.position()..])
+    }
+}
+
 impl<'a> Delegation<'a> {
     pub fn cert(&self) -> Certificate<'a> {
-        // Safe to unwrap because certificate parsing what check before
-        let Ok(cert) = Certificate::parse(self.certificate.bytes()) else {
-            unreachable!();
-        };
-
-        cert
+        // Safe to unwrap as this was checked at parsing
+        Certificate::try_from(self.certificate).unwrap()
     }
 
     pub fn tree(&self) -> HashTree<'a> {
@@ -103,46 +148,10 @@ impl<'a> Delegation<'a> {
     }
 }
 
-impl<'b, C> Decode<'b, C> for Delegation<'b> {
-    fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
-        // Expect a map with 2 entries
-        let len = d
-            .map()?
-            .ok_or(Error::type_mismatch(minicbor::data::Type::Map))?;
-
-        if len != DELEGATION_MAP_ENTRIES {
-            return Err(Error::message("Expected a map with 2 entries"));
-        }
-
-        let mut subnet_id = None;
-        let mut certificate = None;
-
-        for _ in 0..2 {
-            let key = d.str()?;
-
-            match key {
-                "subnet_id" => {
-                    subnet_id = Some(SubnetId::decode(d, ctx)?);
-                }
-                "certificate" => {
-                    let bytes = d.bytes()?;
-                    let mut dec = Decoder::new(bytes);
-                    let raw = RawValue::decode(&mut dec, ctx)?;
-                    certificate = Some(raw);
-                }
-                _ => return Err(Error::message("Unexpected key")),
-            }
-        }
-
-        Ok(Delegation {
-            subnet_id: subnet_id.ok_or(Error::message("Missing subnet_id"))?,
-            certificate: certificate.ok_or(Error::message("Missing certificate"))?,
-        })
-    }
-}
-
 #[cfg(test)]
 mod test_delegation {
+
+    use crate::FromBytes;
 
     use super::*;
 
@@ -155,7 +164,7 @@ mod test_delegation {
     #[test]
     fn test_pubkey() {
         let data = hex::decode(DATA).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
         let delegation = cert.delegation().expect("root cert must have a delegation");
         delegation.public_key().unwrap().unwrap();
     }
@@ -163,7 +172,7 @@ mod test_delegation {
     #[test]
     fn test_subnet() {
         let data = hex::decode(DATA).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
         let delegation = cert.delegation().expect("root cert must have a delegation");
         assert_eq!(delegation.subnet(), SUBNET_ID);
     }

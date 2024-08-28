@@ -327,7 +327,7 @@ pub fn hash_with_domain_sep(domain: &str, data: &[u8]) -> [u8; 32] {
 
 #[cfg(test)]
 mod hash_tree_tests {
-    use crate::parser::certificate::Certificate;
+    use crate::{parser::certificate::Certificate, FromBytes};
 
     use super::*;
 
@@ -358,7 +358,7 @@ mod hash_tree_tests {
     fn test_lookup_time() {
         // Parse the certificate
         let data = hex::decode(DATA).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
 
         // Perform the lookup
         let time = cert.timestamp().unwrap().unwrap();
@@ -373,7 +373,7 @@ mod hash_tree_tests {
     fn test_lookup_reply() {
         // Parse the certificate
         let data = hex::decode(DATA).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
 
         let path = "reply".into();
 

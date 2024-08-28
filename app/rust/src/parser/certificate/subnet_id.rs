@@ -1,4 +1,4 @@
-use core::ptr::addr_of_mut;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
@@ -15,7 +15,7 @@ use core::ptr::addr_of_mut;
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use minicbor::{data::Type, decode::Error, Decode, Decoder};
+use minicbor::{data::Type, Decoder};
 
 use crate::{error::ParserError, FromBytes};
 
@@ -33,7 +33,7 @@ impl<'a> SubnetId<'a> {
     }
 }
 impl<'a> TryFrom<&RawValue<'a>> for SubnetId<'a> {
-    type Error = Error;
+    type Error = ParserError;
 
     fn try_from(value: &RawValue<'a>) -> Result<Self, Self::Error> {
         (*value).try_into()
@@ -41,11 +41,12 @@ impl<'a> TryFrom<&RawValue<'a>> for SubnetId<'a> {
 }
 
 impl<'a> TryFrom<RawValue<'a>> for SubnetId<'a> {
-    type Error = Error;
+    type Error = ParserError;
 
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
-        let mut d = Decoder::new(value.bytes());
-        Self::decode(&mut d, &mut ())
+        let mut raw_value = MaybeUninit::uninit();
+        _ = SubnetId::from_bytes_into(value.bytes(), &mut raw_value)?;
+        Ok(unsafe { raw_value.assume_init() })
     }
 }
 
@@ -54,31 +55,22 @@ impl<'a> FromBytes<'a> for SubnetId<'a> {
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
-        let mut d = Decoder::new(input);
+        let out = out.as_mut_ptr();
+
+        let d = Decoder::new(input);
+
         // Expect Bytes
         if d.datatype()? != Type::Bytes {
             return Err(ParserError::UnexpectedType);
         }
 
-        let raw_value = RawValue::decode(&mut d, &mut ())?;
+        let data = &input[d.position()..];
 
-        let out = out.as_mut_ptr();
+        let raw_value: &mut MaybeUninit<RawValue<'a>> =
+            unsafe { &mut *addr_of_mut!((*out).0).cast() };
 
-        unsafe {
-            addr_of_mut!((*out).0).write(raw_value);
-        }
+        let rem = RawValue::from_bytes_into(data, raw_value)?;
 
-        Ok(&input[d.position()..])
-    }
-}
-
-impl<'b, C> Decode<'b, C> for SubnetId<'b> {
-    fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
-        // Expect Bytes
-        if d.datatype()? != Type::Bytes {
-            return Err(Error::type_mismatch(Type::Bytes));
-        }
-
-        Ok(SubnetId(RawValue::decode(d, ctx)?))
+        Ok(rem)
     }
 }

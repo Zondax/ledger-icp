@@ -16,16 +16,16 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use bls_signature::verify_bls_signature;
-use minicbor::{data::Type, decode::Error, Decode, Decoder};
+use minicbor::{Decode, Decoder};
 
 use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{
-        BLS_MSG_SIZE, CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, FIVE_MINUTES_IN_NANOSECONDS,
+        BLS_MSG_SIZE, CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET,
         REPLY_PATH,
     },
     error::{ParserError, ViewError},
-    DisplayableItem, FromBytes, Signature,
+    zlog, DisplayableItem, FromBytes, Signature,
 };
 
 use super::{
@@ -46,7 +46,8 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
-        crate::zlog("Certificate::from_bytes_into\x00");
+        zlog("Certificate::from_bytes_into\x00");
+
         let mut d = Decoder::new(input);
 
         if let Ok(tag) = d.tag() {
@@ -65,65 +66,54 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         }
 
         let out = out.as_mut_ptr();
-
-        let mut delegation = None;
+        let mut has_delegation = false;
 
         for _ in 0..len {
-            crate::zlog("item_i\x00");
             let key = d.str()?;
-            #[cfg(test)]
-            std::println!("parsing: {}", key);
             match key {
                 "tree" => {
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
                     unsafe { addr_of_mut!((*out).tree).write(raw_value) };
                 }
                 "signature" => {
-                    let signature = Signature::decode(&mut d, &mut ())?;
-                    unsafe { addr_of_mut!((*out).signature).write(signature) };
+                    let signature: &mut MaybeUninit<Signature<'a>> =
+                        unsafe { &mut *addr_of_mut!((*out).signature).cast() };
+                    let data = &input[d.position()..];
+
+                    let rem = Signature::from_bytes_into(data, signature)?;
+
+                    d.set_position(d.position() + (data.len() - rem.len()));
                 }
                 "delegation" => {
-                    delegation = Some(Delegation::decode(&mut d, &mut ())?);
+                    // create a new delegation here because it is define as an option
+                    let mut delegation = MaybeUninit::uninit();
+                    let data = &input[d.position()..];
+                    let rem = Delegation::from_bytes_into(data, &mut delegation)?;
+
+                    unsafe {
+                        addr_of_mut!((*out).delegation).write(Some(delegation.assume_init()))
+                    };
+                    has_delegation = true;
+
+                    d.set_position(d.position() + (data.len() - rem.len()));
                 }
                 _ => return Err(ParserError::InvalidCertificate),
             }
         }
 
-        unsafe { addr_of_mut!((*out).delegation).write(delegation) };
+        if !has_delegation {
+            unsafe { addr_of_mut!((*out).delegation).write(None) };
+        }
 
         let cert = unsafe { &mut *out };
         // Verify that the tree raw value can be parsed sucessfully into a HashTree
         let _: HashTree = cert.tree.try_into().map_err(|_| ParserError::InvalidTree)?;
 
-        Ok(d.input())
+        Ok(&input[d.position()..])
     }
 }
 
 impl<'a> Certificate<'a> {
-    pub fn parse(data: &[u8]) -> Result<Certificate, ParserError> {
-        let mut decoder = Decoder::new(data);
-
-        // Check for and skip the self-describing CBOR tag if present
-        if let Ok(tag) = decoder.tag() {
-            if tag.as_u64() != CBOR_CERTIFICATE_TAG {
-                return Err(ParserError::CborUnexpected);
-            }
-        }
-
-        let cert = Certificate::decode(&mut decoder, &mut ())?;
-
-        // Integrity checks in certificates
-        // check inner trees:
-        let _: HashTree = cert.tree().try_into()?;
-
-        // check delegation certificate if present
-        if let Some(delegation) = cert.delegation {
-            let _: Certificate = delegation.certificate.try_into()?;
-        }
-
-        Ok(cert)
-    }
-
     pub fn tree(&self) -> RawValue<'a> {
         self.tree
     }
@@ -145,6 +135,7 @@ impl<'a> Certificate<'a> {
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         // Step 2: Check delegation
         if !self.check_delegation(root_key)? {
+            zlog("check_delegation_failed\x00");
             return Ok(false);
         }
 
@@ -171,7 +162,7 @@ impl<'a> Certificate<'a> {
     }
 
     fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
-        crate::zlog("verify_signature\x00");
+        zlog("verify_signature\x00");
         let signature = self.signature.bls_signature();
         let message = self.bls_message()?;
 
@@ -183,13 +174,13 @@ impl<'a> Certificate<'a> {
     // the one that comes in the delegation
     // if delegation is not present, return true
     fn check_delegation(&self, root_key: &[u8]) -> Result<bool, ParserError> {
-        crate::zlog("Certificate::check_delegation\x00");
+        zlog("Certificate::check_delegation\x00");
         match &self.delegation {
             None => Ok(true),
             Some(delegation) => {
                 // Ensure the delegation's certificate contains the subnet's public key
                 if delegation.public_key()?.is_none() {
-                    crate::zlog("delegation_without_key\x00");
+                    zlog("delegation_without_key\x00");
                     return Ok(false);
                 }
 
@@ -277,7 +268,7 @@ impl<'a> Certificate<'a> {
 
         let time_difference = ingress_expiry.saturating_sub(cert_time);
 
-        time_difference <= FIVE_MINUTES_IN_NANOSECONDS
+        time_difference <= MAX_CERT_INGRESS_OFFSET
     }
 }
 
@@ -285,46 +276,10 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
     type Error = ParserError;
 
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
-        Self::parse(value.bytes())
-    }
-}
+        let mut cert = MaybeUninit::uninit();
 
-impl<'b, C> Decode<'b, C> for Certificate<'b> {
-    fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
-        crate::zlog("Certificate::decode\x00");
-
-        // Expect a map with 2/3 entries
-        let len = d.map()?.ok_or(Error::type_mismatch(Type::Map))?;
-        // Expect a map with 2/3 entries
-
-        // A certificate could have either 2(delegation cert) or 3 entries(root cert)
-        if len != 2 && len != 3 {
-            return Err(Error::type_mismatch(Type::Map));
-        }
-
-        let mut tree = None;
-        let mut signature = None;
-        let mut delegation = None;
-
-        for _ in 0..len {
-            match d.str()? {
-                "tree" => tree = Some(RawValue::decode(d, ctx)?),
-                "signature" => signature = Some(RawValue::decode(d, ctx)?.try_into()?),
-                "delegation" => delegation = Some(Delegation::decode(d, ctx)?),
-                _ => return Err(Error::message("Unexpected key in certificate")),
-            }
-        }
-        // Verify that the tree raw value can be parsed sucessfully into a HashTree
-        let raw_tree = tree.ok_or(Error::message("Missing tree"))?;
-        let _: HashTree = raw_tree
-            .try_into()
-            .map_err(|_| Error::message("Invalid tree"))?;
-
-        Ok(Certificate {
-            tree: raw_tree,
-            signature: signature.ok_or(Error::message("Missing signature"))?,
-            delegation,
-        })
+        Self::from_bytes_into(value.bytes(), &mut cert)?;
+        Ok(unsafe { cert.assume_init() })
     }
 }
 
@@ -343,7 +298,7 @@ impl<'a> DisplayableItem for Certificate<'a> {
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
-        crate::zlog("Certificate::render_item\x00");
+        zlog("Certificate::render_item\x00");
         let msg = self.msg().map_err(|_| ViewError::Unknown)?;
         msg.render_item(item_n, title, message, page)
     }
@@ -364,32 +319,12 @@ mod test_certificate {
 
     const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
 
-    const INGRESS_EXPIRY: u64 = 17362103064099315712;
+    const INGRESS_EXPIRY: u64 = 1712667140606000000;
 
     #[test]
     fn parse_cert() {
         let data = hex::decode(REAL_CERT).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
-        // let cert = Certificate::from_bytes(&data).unwrap();
-
-        std::println!("Certificate: {:?}", cert);
-        std::println!("=============================================");
-        std::println!("Certificate Tree: ");
-        HashTree::parse_and_print_hash_tree(&cert.tree(), 0).unwrap();
-        std::println!("=============================================");
-        std::println!("Delegation Certificate Tree: ");
-        let delegation_certificate = cert.delegation().as_ref().unwrap().cert();
-        HashTree::parse_and_print_hash_tree(&delegation_certificate.tree(), 0).unwrap();
-        std::println!("=============================================");
-
-        std::println!("timestamp: {:?}", cert.timestamp());
-        let request_id = [
-            78, 160, 87, 196, 98, 146, 254, 219, 87, 61, 53, 49, 157, 209, 204, 171, 63, 181, 214,
-            162, 177, 6, 183, 133, 209, 247, 117, 124, 250, 90, 37, 66,
-        ];
-
-        std::println!("request_id: {}", hex::encode(request_id));
-        std::println!("certificate_size: {}", core::mem::size_of::<Certificate>());
+        let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
         assert!(cert.msg().is_ok());
@@ -398,7 +333,7 @@ mod test_certificate {
     #[test]
     fn verify_cert() {
         let data = hex::decode(REAL_CERT).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
         let root_hash = hex::encode(cert.hash().unwrap());
         // Verify delegation.cert root_hash
         let del_cert = cert.delegation.unwrap().cert();
@@ -425,13 +360,15 @@ mod test_certificate {
         // verify certificate signatures
         let root_key = hex::decode(CANISTER_ROOT_KEY).unwrap();
         assert!(cert.verify(&root_key).unwrap());
-        // assert!(cert.verify_time(INGRESS_EXPIRY));
+
+        // verify certificate expiry time
+        assert!(cert.verify_time(INGRESS_EXPIRY));
     }
 
     #[test]
     fn check_canister_ranges() {
         let data = hex::decode(REAL_CERT).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
         let ranges = cert.canister_ranges().unwrap();
         let mut num_ranges = 0;
         for (i, r) in ranges.iter().enumerate() {
@@ -449,7 +386,7 @@ mod test_certificate {
     #[test]
     fn cert_lookup_request_id() {
         let data = hex::decode(REAL_CERT).unwrap();
-        let cert = Certificate::parse(&data).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
 
         let request_id = hex::decode(REQUEST_ID).unwrap();
 
