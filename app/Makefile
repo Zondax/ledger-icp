@@ -81,6 +81,13 @@ BLS_SIGNATURE = 1
 DEFINES += BLS_SIGNATURE=$(BLS_SIGNATURE)
 endif
 
+RUST_TARGET_NAME := $(TARGET_NAME)
+
+NBGL_TARGETS := TARGET_STAX TARGET_FLEX
+ifeq ($(TARGET_NAME),$(filter $(TARGET_NAME), $(NBGL_TARGETS)))
+RUST_TARGET_NAME := TARGET_STAX
+endif
+
 ifndef ICONNAME
 $(error ICONNAME is not set)
 endif
@@ -107,7 +114,7 @@ APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 .PHONY: rust
 rust:
-	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(TARGET_NAME) cargo build --target $(RUST_TARGET) --release
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(RUST_TARGET_NAME) cargo build --target $(RUST_TARGET) --release
 
 .PHONY: rust_clean
 rust_clean:
