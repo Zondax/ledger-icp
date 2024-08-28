@@ -253,7 +253,8 @@ mod call_request_test {
 
         std::println!("ConsentMsgRequest: {:?}", msg_req);
 
-        assert_eq!(hex::encode(msg_req.sender), DEFAULT_SENDER);
+        assert_eq!(msg_req.sender.len(), 1);
+        assert_eq!(msg_req.sender[0], DEFAULT_SENDER);
         assert_eq!(hex::encode(msg_req.canister_id), CANISTER_ID);
         assert_eq!(msg_req.method_name, METHOD);
         assert_eq!(msg_req.request_type, REQUEST_TYPE);
