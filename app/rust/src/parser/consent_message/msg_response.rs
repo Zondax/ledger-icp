@@ -84,10 +84,6 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
 
         // 2. Parse the type table
         let (rem, _table) = parse_type_table(rem)?;
-        #[cfg(test)]
-        {
-            crate::type_table::print_type_table(&_table);
-        }
 
         // 3. Read the variant index (M part)
         let (rem, variant_index) =
