@@ -21,10 +21,10 @@ pub use parser::*;
 
 fn debug(_msg: &str) {}
 
-#[cfg(not(any(test, fuzzing, clippy)))]
+#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
 use core::panic::PanicInfo;
 
-#[cfg(not(any(test, fuzzing, clippy)))]
+#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
