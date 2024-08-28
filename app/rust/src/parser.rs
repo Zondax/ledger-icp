@@ -37,8 +37,6 @@ pub trait FromBytes<'b>: Sized {
     /// store itself
     #[cfg(test)]
     fn from_bytes(input: &'b [u8]) -> Result<Self, crate::error::ParserError> {
-        use core::mem::MaybeUninit;
-
         let mut out = MaybeUninit::uninit();
         Self::from_bytes_into(input, &mut out)?;
         unsafe { Ok(out.assume_init()) }
