@@ -3,10 +3,10 @@ use core::{mem::MaybeUninit, ptr::addr_of_mut};
 use minicbor::Decoder;
 
 use crate::{
-    constants::CALL_REQUEST_TAG,
+    constants::{BIG_NUM_TAG, CALL_REQUEST_TAG},
     error::ParserError,
     utils::{compress_leb128, hash_blob, hash_str},
-    FromBytes,
+    zlog, FromBytes,
 };
 
 // {"content": {"arg": h'4449444C00017104746F6269', "canister_id": h'00000000006000FD0101',
@@ -15,6 +15,8 @@ use crate::{
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct CallRequest<'a> {
     pub arg: &'a [u8],
+    // Sender is allowed to be either default sender(h04) or
+    // this signer
     pub sender: &'a [u8],
     pub canister_id: &'a [u8],
     pub method_name: &'a str,
@@ -95,7 +97,7 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
-        crate::zlog("CallRequest::from_bytes_into\x00");
+        zlog("CallRequest::from_bytes_into\x00");
         let out = out.as_mut_ptr();
 
         let mut d = Decoder::new(input);
@@ -112,9 +114,6 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
         }
 
         let _key = d.str()?;
-        // if key != "content" {
-        //     return Err(ParserError::InvalidCallRequest);
-        // }
 
         // Decode content map
         let content_len = d.map()?.ok_or(ParserError::CborUnexpected)?;
@@ -135,9 +134,23 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
                     "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
                     "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
                     "ingress_expiry" => {
-                        let n = d.u64()?;
+                        if let Ok(tag) = d.tag() {
+                            if tag.as_u64() != BIG_NUM_TAG {
+                                return Err(ParserError::InvalidCallRequest);
+                            }
+                        }
+                        let bytes = d.bytes()?;
+                        // read bytes as a timestamp of 8 bytes
+                        if bytes.len() > core::mem::size_of::<u64>() {
+                            return Err(ParserError::InvalidTime);
+                        }
 
-                        addr_of_mut!((*out).ingress_expiry).write(n);
+                        let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
+                        num_bytes[..bytes.len()].copy_from_slice(bytes);
+
+                        let timestamp = u64::from_be_bytes(num_bytes);
+
+                        addr_of_mut!((*out).ingress_expiry).write(timestamp);
                     }
                     _ => return Err(ParserError::UnexpectedField),
                 }
@@ -156,8 +169,8 @@ mod call_request_test {
 
     use super::*;
 
-    // This is CBOR data
-    const REQUEST: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f6578706972791bf710af546aca20006b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
+    const REQUEST: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
+    const TIME_EXPIRY: u64 = 1712667140606000000;
 
     #[test]
     fn call_parse() {
@@ -173,6 +186,6 @@ mod call_request_test {
         assert_eq!(call_request.canister_id, &[0, 0, 0, 0, 0, 96, 0, 253, 1, 1]);
         assert_eq!(call_request.method_name, "greet");
         assert_eq!(call_request.request_type, "query");
-        assert_eq!(call_request.ingress_expiry, 17802922104099315712);
+        assert_eq!(call_request.ingress_expiry, TIME_EXPIRY);
     }
 }
