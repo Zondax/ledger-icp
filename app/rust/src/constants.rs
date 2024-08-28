@@ -22,11 +22,13 @@ pub const REPLY_PATH: &str = "reply";
 pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
 
 pub const CBOR_TAG: u64 = 55799;
+pub const BIG_NUM_TAG: u64 = 2;
 pub const CBOR_CERTIFICATE_TAG: u64 = CBOR_TAG;
 pub const CALL_REQUEST_TAG: u64 = CBOR_TAG;
 pub const CONSENT_MSG_REQUEST_TAG: u64 = CBOR_TAG;
 pub const CANISTER_RANGES_TAG: u64 = CBOR_TAG;
 
+pub const DEFAULT_SENDER: &str = "04";
 pub const SENDER_MAX_LEN: usize = 29;
 pub const CANISTER_MAX_LEN: usize = 10;
 pub const REQUEST_MAX_LEN: usize = 10;
@@ -34,7 +36,9 @@ pub const METHOD_MAX_LEN: usize = 20;
 pub const NONCE_MAX_LEN: usize = 32;
 pub const SECONDS_PER_MINUTE: u64 = 60;
 pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
-pub const FIVE_MINUTES_IN_NANOSECONDS: u64 = 5 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
+// The max offset between the certificate.time and the call message request ingress_expiry
+// otherwise, call request must be considered invalid/outdated and not processed at all
+pub const MAX_CERT_INGRESS_OFFSET: u64 = 12 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
 pub const BLS_MSG_SIZE: usize = 1 + 13 + 32;
 // The official root key for consent message verification
