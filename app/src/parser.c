@@ -29,7 +29,9 @@
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
 #include "parser_print_protobuf.h"
+#if defined(BLS_SIGNATURE)
 #include "rslib.h"
+#endif
 
 
 
