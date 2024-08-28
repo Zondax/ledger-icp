@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "clean": "ts-node tests/pullImageKillOld.ts",
-    "test": "yarn clean && jest"
+    "test": "jest --testPathIgnorePatterns='dev.*|testvectors.*|btc.*'",
+    "test_dev": "jest"
   },
   "dependencies": {
     "@zondax/ledger-icp": "link:../js",
