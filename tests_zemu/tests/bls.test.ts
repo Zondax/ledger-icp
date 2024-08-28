@@ -16,12 +16,12 @@
 
 import Zemu from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
-import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
+import { DEFAULT_OPTIONS, DEVICE_MODELS_BLS } from './common'
 
 jest.setTimeout(180000)
 
 describe('Bls', function () {
-  test.concurrent.each(DEVICE_MODELS)('verify_with_custom_key', async function (m) {
+  test.concurrent.each(DEVICE_MODELS_BLS)('verify_with_custom_key', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
@@ -54,7 +54,7 @@ describe('Bls', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('verify_with_default_key', async function (m) {
+  test.concurrent.each(DEVICE_MODELS_BLS)('verify_with_default_key', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
