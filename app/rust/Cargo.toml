@@ -41,3 +41,6 @@ opt-level = "z"
 
 [profile.dev]
 panic = "abort"
+
+[features]
+clippy = []

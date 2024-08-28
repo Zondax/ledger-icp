@@ -51,6 +51,46 @@ jobs:
           make
           echo "size=$(python3 deps/ledger-zxlib/scripts/getSize.py s)" >> $GITHUB_OUTPUT
 
+  clippy:
+    runs-on: ubuntu-latest
+    container:
+      image: zondax/rust-ci:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache/restore Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: ./app/rust/.cargo
+          key: ${{ runner.os }}-${{ hashFiles('./Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ github.sha }}
+      - name: clippy
+        run: |
+          cd ./app/rust
+          cargo clippy --all-targets --features "clippy"
+
+  rust_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: zondax/rust-ci:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache/restore Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: ./app/rust/.cargo
+          key: ${{ runner.os }}-${{ hashFiles('./Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ github.sha }}
+      - name: run rust tests
+        run: make rust_test
+
   size_nano_s:
     needs: build_ledger
     runs-on: ubuntu-latest
