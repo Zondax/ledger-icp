@@ -326,7 +326,7 @@ export default class InternetComputerApp extends GenericApp {
     root_key?: string,
   ): Promise<ResponseSign> {
     // Check if all strings are not empty
-    if (!consent_request || !canister_call || !root_key || !certificate) {
+    if (!consent_request || !canister_call || !certificate) {
       throw new Error("All parameters must be non-empty strings");
     }
     let result: ResponseSign;
