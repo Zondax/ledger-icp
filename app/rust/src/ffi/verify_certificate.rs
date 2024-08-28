@@ -15,9 +15,11 @@
 ********************************************************************************/
 
 use crate::{
-    constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, HashTree, LookupResult,
+    constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes, HashTree,
+    LookupResult,
 };
 
+use core::mem::MaybeUninit;
 use std::cmp::PartialEq;
 
 use super::{
@@ -26,6 +28,7 @@ use super::{
     resources::{CALL_REQUEST_T, CERTIFICATE, CONSENT_REQUEST_T},
 };
 
+// This is use to check important fields in consent_msg_request and canister_call_request
 impl PartialEq<ConsentRequestT> for CanisterCallT {
     fn eq(&self, other: &ConsentRequestT) -> bool {
         self.arg_hash == other.arg_hash
@@ -52,16 +55,13 @@ pub unsafe extern "C" fn rs_verify_certificate(
 ) -> u32 {
     crate::zlog("rs_parser_verify_certificate\x00");
     if certificate.is_null() || root_key.is_null() {
-        crate::zlog("no_cert/no_key\x00");
         return ParserError::NoData as u32;
     }
 
     let Some(call_request) = CALL_REQUEST_T.as_ref() else {
-        crate::zlog("no_call_request\x00");
         return ParserError::NoData as u32;
     };
     let Some(consent_request) = CONSENT_REQUEST_T.as_ref() else {
-        crate::zlog("no_consent_request\x00");
         return ParserError::NoData as u32;
     };
 
@@ -69,7 +69,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     // for canister_call_t and consent_request_t
     // which ensures canister_id, method and args are the same in both
     if call_request != consent_request {
-        crate::zlog("call_request != consent_request****\x00");
+        crate::zlog("call != consent mistmatch\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -81,9 +81,13 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
-    let Ok(cert) = Certificate::parse(data) else {
+    let mut cert = MaybeUninit::uninit();
+    let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+        crate::zlog("Could not parse certificate****\x00");
         return ParserError::InvalidCertificate as u32;
     };
+
+    let cert = unsafe { cert.assume_init() };
 
     match cert.verify(root_key) {
         Ok(false) => return ParserError::InvalidCertificate as u32,
@@ -109,8 +113,8 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
+    // Now store the certificate back in memory for ui usage
     CERTIFICATE.replace(cert);
 
-    // Now store the certificate back in memory for ui usage?
     ParserError::Ok as u32
 }
