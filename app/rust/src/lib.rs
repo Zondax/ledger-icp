@@ -11,8 +11,10 @@ mod constants;
 mod error;
 mod ffi;
 mod parser;
+mod principal;
 pub mod type_table;
 pub mod utils;
+pub use principal::Principal;
 use zemu_sys as _;
 
 pub use parser::*;

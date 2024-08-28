@@ -16,13 +16,14 @@
 
 use crate::{
     constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes, HashTree,
-    LookupResult,
+    LookupResult, Principal,
 };
 
 use core::mem::MaybeUninit;
 use std::cmp::PartialEq;
 
 use super::{
+    c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
     resources::{CALL_REQUEST_T, CERTIFICATE, CONSENT_REQUEST_T},
@@ -110,6 +111,19 @@ pub unsafe extern "C" fn rs_verify_certificate(
     // Verify ingress_expiry aginst certificate timestamp
     if !cert.verify_time(call_request.ingress_expiry) {
         crate::zlog("ingress_expiry mismatch****\x00");
+        return ParserError::InvalidCertificate as u32;
+    }
+
+    // Check sender identity
+    let sender = &consent_request.sender[..consent_request.sender_len as usize];
+    let device_principal = device_principal();
+
+    let Ok(sender) = Principal::new(sender) else {
+        return ParserError::InvalidCertificate as u32;
+    };
+
+    if !sender.is_default() && sender != device_principal {
+        crate::zlog("sender_id mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
