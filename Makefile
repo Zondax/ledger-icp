@@ -27,6 +27,9 @@ ZXLIB_COMPILE_STAX ?= 1
 PRODUCTION_BUILD ?= 1
 include $(CURDIR)/deps/ledger-zxlib/dockerized_build.mk
 
+proto:
+	cd $(CURDIR)/app/src/protobuf && $(CURDIR)/deps/nanopb/generator/protoc ./base_types.proto ./types.proto ./governance.proto ./dfinity.proto --nanopb_out=.
+
 else
 default:
 	$(MAKE) -C app
