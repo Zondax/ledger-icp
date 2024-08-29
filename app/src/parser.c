@@ -28,6 +28,7 @@
 #include "timeutils.h"
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
+#include "parser_print_protobuf.h"
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
 // For some reason NanoX requires this function
@@ -200,6 +201,16 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
     switch (parser_tx_obj.txtype) {
         case call: {
             switch (parser_tx_obj.tx_fields.call.method_type) {
+                case pb_sendrequest:
+                case pb_manageneuron:
+                case pb_listneurons:
+                case pb_claimneurons: {
+                    return parser_getItemProtobuf(displayIdx,
+                                                  outKey, outKeyLen,
+                                                  outVal, outValLen,
+                                                  pageIdx, pageCount);
+                }
+
                 case candid_manageneuron:
                 case candid_listneurons:
                 case candid_updatenodeprovider:

@@ -19,6 +19,11 @@
 #include <zxtypes.h>
 #include <stdbool.h>
 
+#define ZX_NO_CPP
+
+#include "protobuf/dfinity.pb.h"
+#include "protobuf/governance.pb.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,6 +39,8 @@ extern "C" {
 #define METHOD_MAX_LEN 20
 #define NONCE_MAX_LEN 32
 
+#define ARG_MAX_LEN 1000
+
 #define PATH_MAX_LEN 40
 #define PATH_MAX_ARRAY 2
 
@@ -44,6 +51,12 @@ typedef enum {
 } txtype_e;
 
 typedef enum {
+    pb_unknown = 0x00,          //default is not accepted
+    pb_sendrequest = 0x01,
+    pb_manageneuron = 0x02,
+    pb_listneurons = 0x03,
+    pb_claimneurons = 0x04,
+
     candid_transfer = 0xF001,
     candid_manageneuron = 0xF002,
     candid_updatenodeprovider = 0xF003,
@@ -52,34 +65,44 @@ typedef enum {
 } method_type_e;
 
 typedef enum {
-    wrong_operation = 0,          //default is not accepted
+Configure = 2,
+    Configure_IncreaseDissolveDelay = 2001,
+    Configure_StartDissolving = 2002,
+    Configure_StopDissolving = 2003,
+    Configure_AddHotKey = 2004,
+    Configure_RemoveHotKey = 2005,
+    Configure_SetDissolvedTimestamp = 2006,
+    Configure_JoinNeuronsFund = 2007,
+    Configure_LeaveNeuronsFund = 2008,
+    Configure_ChangeAutoStakeMaturity = 2009,
 
-    Merge = 1,
-    Spawn = 2,
     Disburse = 3,
-    StakeMaturity = 4,
-    RegisterVote = 5,
-    Follow = 6,
-    Split = 7,
+    Spawn = 4,
+    Follow = 5,
+    RegisterVote = 7,
+    Split = 11,
 
-    Configure_SetDissolvedDelay = 100,
-    Configure_IncreaseDissolveDelay = 101,
-    Configure_StartDissolving = 102,
-    Configure_StopDissolving = 103,
-    Configure_JoinNeuronsFund = 104,
-    Configure_LeaveNeuronsFund = 105,
-    Configure_AddHotkey = 106,
-    Configure_RemoveHotkey = 107,
-    Configure_ChangeAutoStakeMaturity = 108,
+    Merge = 1000,
+    SpawnCandid = 1001,
+    StakeMaturityCandid = 1002,
+    Configure_IncreaseDissolveDelayCandid = 1003,
+    Configure_StartDissolvingCandid = 1004,
+    Configure_StopDissolvingCandid = 1005,
+    DisburseCandid = 1006,
+    Configure_JoinNeuronsFundCandid = 1007,
+    Configure_LeaveNeuronsFundCandid = 1008,
+    Configure_AddHotkeyCandid = 1009,
+    Configure_RemoveHotkeyCandid = 1010,
+    RegisterVoteCandid = 1011,
+    FollowCandid = 1012,
 
-    SNS_AddNeuronPermissions = 200,
-    SNS_RemoveNeuronPermissions = 201,
-    SNS_Disburse = 202,
-    SNS_StakeMaturity = 203,
-
-    SNS_Configure_StartDissolving = 300,
-    SNS_Configure_StopDissolving = 301,
-    SNS_Configure_SetDissolveDelay = 302,
+    SNS_AddNeuronPermissions = 3000,
+    SNS_RemoveNeuronPermissions = 3001,
+    SNS_Configure_StartDissolving = 3002,
+    SNS_Configure_StopDissolving = 3003,
+    SNS_Disburse = 3004,
+    SNS_StakeMaturity = 3005,
+    SNS_Configure_SetDissolveDelay = 3006,
 } manageNeuron_e;
 
 typedef enum {
@@ -114,6 +137,7 @@ typedef struct {
 } nonce_t;
 
 typedef struct {
+    uint8_t data[ARG_MAX_LEN + 1];
     uint8_t *dataPtr;
     size_t len;
 } method_arg_t;
@@ -145,9 +169,12 @@ typedef struct {
     uint8_t is_sns;
 
     union {
+        ic_nns_governance_pb_v1_ManageNeuron ic_nns_governance_pb_v1_ManageNeuron;
         candid_ManageNeuron_t candid_manageNeuron;
         candid_UpdateNodeProvider_t candid_updateNodeProvider;
         candid_ListNeurons_t candid_listNeurons;
+        SendRequest SendRequest;
+        ListNeurons ListNeurons;
         sns_ManageNeuron_t sns_manageNeuron;
         icrc_transfer_t  icrcTransfer;
         candid_transfer_t candid_transfer;

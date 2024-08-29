@@ -1,0 +1,50 @@
+syntax = "proto3";
+import "nanopb.proto";
+
+import "base_types.proto";
+import "governance.proto";
+
+message TimeStamp {
+  uint64 timestamp_nanos = 1;
+}
+
+message Memo {
+  uint64 memo = 1;
+}
+message ICPTs {
+  uint64 e8s = 1;
+}
+
+message Payment {
+  ICPTs receiver_gets = 1;
+}
+
+message Subaccount {
+  bytes sub_account = 1 [(nanopb).max_size = 32, (nanopb).fixed_length = true];    // always 32 bytes
+}
+message AccountIdentifier {
+  bytes hash = 1 [(nanopb).max_size = 32, (nanopb).fixed_length = true];    // always 32 bytes, starts with CRC32
+}
+
+message BlockHeight {
+  uint64 height = 1;
+}
+
+message SendRequest {
+  Memo memo = 1;     // required
+  Payment payment = 2;     // required
+  ICPTs max_fee = 3;     // required
+  Subaccount from_subaccount = 4;   // optional
+  AccountIdentifier to = 5;   // required
+  BlockHeight created_at = 6;   // optional
+  TimeStamp created_at_time = 7; // optional
+}
+
+message ManageNeuronPb {
+  ic_nns_governance.pb.v1.ManageNeuron manage_neuron = 1;
+}
+
+message ListNeurons {
+  repeated fixed64 neuron_ids = 1;
+  bool caller_neuron_ids = 2;
+}
