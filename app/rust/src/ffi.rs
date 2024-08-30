@@ -13,13 +13,12 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+mod c_api;
 mod call_request;
 mod consent_request;
-mod verify_certificate;
-// mod parser_interface;
-mod c_api;
 mod resources;
 mod ui;
+mod verify_certificate;
 
 #[cfg(test)]
 mod ffi_verify_cert {
@@ -74,10 +73,8 @@ mod ffi_verify_cert {
         unsafe {
             rs_clear_resources();
         }
-    }
 
-    #[test]
-    fn fail_resources_not_empty() {
+        // now test again and ensure we error if resources are not empty
         assert_eq!(bls_flow(), ParserError::Ok as u32);
         // trying to verify without cleaning resources
         assert_ne!(bls_flow(), ParserError::Ok as u32);
