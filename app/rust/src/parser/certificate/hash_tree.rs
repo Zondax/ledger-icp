@@ -86,6 +86,7 @@ impl<'a> HashTree<'a> {
     // Traverse all the tree ensuring
     // at parsing that we can handle its length
     // without reaching overflows, otherwise we error
+    #[inline(never)]
     fn check_integrity(&self, depth: usize) -> Result<(), ParserError> {
         if depth >= MAX_TREE_DEPTH {
             return Err(ParserError::RecursionLimitReached);
@@ -150,10 +151,12 @@ impl<'a> HashTree<'a> {
         Ok(())
     }
 
+    #[inline(never)]
     pub fn lookup_path(
         label: &Label<'a>,
         tree: RawValue<'a>,
     ) -> Result<LookupResult<'a>, ParserError> {
+        #[inline(never)]
         fn inner_lookup<'a>(
             label: &Label<'a>,
             tree: RawValue<'a>,
@@ -195,6 +198,7 @@ impl<'a> HashTree<'a> {
 
     /// Reconstruct the root hash of this tree, following the rules in:
     /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
+    #[inline(never)]
     pub fn reconstruct(&self) -> Result<[u8; 32], ParserError> {
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
@@ -262,6 +266,7 @@ impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
 }
 
 impl<'b, C> Decode<'b, C> for HashTree<'b> {
+    #[inline(never)]
     fn decode(d: &mut Decoder<'b>, ctx: &mut C) -> Result<Self, Error> {
         // Every tree is encoded as an array:
         // [tag(u8), data(CBOR blob)]
@@ -317,6 +322,7 @@ impl<'a> LookupResult<'a> {
     }
 }
 
+#[inline(never)]
 pub fn hash_with_domain_sep(domain: &str, data: &[u8]) -> [u8; 32] {
     let mut hasher = sha2::Sha256::new();
     hasher.update([domain.len() as u8]);

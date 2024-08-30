@@ -126,13 +126,17 @@ impl<'a> Certificate<'a> {
         self.signature.bls_signature()
     }
 
+    #[inline(never)]
     pub fn hash(&self) -> Result<[u8; 32], ParserError> {
         let tree: HashTree = self.tree.try_into()?;
         tree.reconstruct()
     }
 
     // The root_public_key is now a parameter to the verify method
+    #[inline(never)]
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
+        zlog("Certificate::verify\x00");
+
         // Step 2: Check delegation
         if !self.check_delegation(root_key)? {
             zlog("check_delegation_failed\x00");
@@ -145,6 +149,7 @@ impl<'a> Certificate<'a> {
         self.verify_signature(pubkey)
     }
 
+    #[inline(never)]
     pub fn bls_message(&self) -> Result<[u8; 46], ParserError> {
         // Step 1: Compute root hash, this is computed using certificate.tree
         // This hash is computed correctly as per testing data passed from icp team
@@ -161,30 +166,36 @@ impl<'a> Certificate<'a> {
         Ok(message)
     }
 
+    #[inline(never)]
     fn verify_signature(&self, pubkey: &[u8]) -> Result<bool, ParserError> {
-        zlog("verify_signature\x00");
         let signature = self.signature.bls_signature();
         let message = self.bls_message()?;
 
         // Call third-party library directly to verify this signature
-        Ok(verify_bls_signature(signature, &message, pubkey).is_ok())
+        zlog("Certificate::verify_signature\x00");
+        let verified = verify_bls_signature(signature, &message, pubkey);
+
+        Ok(verified.is_ok())
     }
 
     // verify the inner certificate
     // the one that comes in the delegation
     // if delegation is not present, return true
+    #[inline(never)]
     fn check_delegation(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         zlog("Certificate::check_delegation\x00");
         match &self.delegation {
             None => Ok(true),
             Some(delegation) => {
                 // Ensure the delegation's certificate contains the subnet's public key
+                zlog("dele_pubkey\x00");
                 if delegation.public_key()?.is_none() {
                     zlog("delegation_without_key\x00");
                     return Ok(false);
                 }
 
                 // Ensure the delegation's certificate does not have another delegation
+                zlog("no_delegation\x00");
                 if delegation.cert().delegation().is_some() {
                     return Ok(false);
                 }
@@ -194,6 +205,7 @@ impl<'a> Certificate<'a> {
                 // however the signature to use is the one contained in
                 // the delegation certificate.
                 // not the outer certificate one.
+                zlog("delegation_verify\x00");
                 if !delegation.verify(root_key)? {
                     return Ok(false);
                 }

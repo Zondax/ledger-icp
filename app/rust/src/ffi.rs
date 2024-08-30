@@ -22,7 +22,11 @@ mod verify_certificate;
 
 #[cfg(test)]
 mod ffi_verify_cert {
-    use crate::{constants::CANISTER_ROOT_KEY, error::ParserError};
+    use crate::{
+        constants::CANISTER_ROOT_KEY,
+        error::ParserError,
+        ffi::{call_request::CanisterCallT, consent_request::ConsentRequestT},
+    };
 
     use super::{
         call_request::rs_parse_canister_call_request, consent_request::rs_parse_consent_request,
@@ -78,5 +82,14 @@ mod ffi_verify_cert {
         assert_eq!(bls_flow(), ParserError::Ok as u32);
         // trying to verify without cleaning resources
         assert_ne!(bls_flow(), ParserError::Ok as u32);
+
+        std::println!(
+            "consent_request_t_size: {}",
+            core::mem::size_of::<ConsentRequestT>()
+        );
+        std::println!(
+            "call_request_t_size: {}",
+            core::mem::size_of::<CanisterCallT>()
+        )
     }
 }

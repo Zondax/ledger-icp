@@ -147,11 +147,13 @@ pub fn hash(data: &[u8]) -> [u8; 32] {
     hash
 }
 
+#[inline(never)]
 pub fn hash_str(s: &str) -> [u8; 32] {
     hash(s.as_bytes())
 }
 
 // Function to hash binary blobs
+#[inline(never)]
 pub fn hash_blob(blob: &[u8]) -> [u8; 32] {
     hash(blob)
 }

@@ -15,8 +15,8 @@
 ********************************************************************************/
 
 use crate::{
-    constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes, HashTree,
-    LookupResult, Principal,
+    check_canary, constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes,
+    HashTree, LookupResult, Principal,
 };
 
 use core::mem::MaybeUninit;
@@ -55,13 +55,18 @@ pub unsafe extern "C" fn rs_verify_certificate(
     root_key: *const u8,
 ) -> u32 {
     crate::zlog("rs_parser_verify_certificate\x00");
+    check_canary();
     if certificate.is_null() || root_key.is_null() {
         return ParserError::NoData as u32;
     }
 
+    // Check values are set
+    crate::zlog("call_request****\x00");
     let Some(call_request) = CALL_REQUEST_T.as_ref() else {
         return ParserError::NoData as u32;
     };
+
+    crate::zlog("consent_request****\x00");
     let Some(consent_request) = CONSENT_REQUEST_T.as_ref() else {
         return ParserError::NoData as u32;
     };
@@ -82,6 +87,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
+    crate::zlog("parse_cert****\x00");
     let mut cert = MaybeUninit::uninit();
     let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
         crate::zlog("Could not parse certificate****\x00");
@@ -95,15 +101,14 @@ pub unsafe extern "C" fn rs_verify_certificate(
         Err(e) => return e as u32,
         _ => {}
     }
-    crate::zlog("cert_verified****\x00");
-
-    let tree = cert.tree();
-    let request_id = consent_request.request_id;
+    crate::zlog("cert_signature_verified****\x00");
 
     // Certificate tree must contain a node labeled with the request_id computed
     // from the consent_msg_request, this ensures that the passed data referes to
     // the provided certificate
-    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(&request_id[..].into(), tree) else {
+    let Ok(LookupResult::Found(_)) =
+        HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
+    else {
         crate::zlog("request_id mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     };
@@ -127,7 +132,18 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
-    // Now store the certificate back in memory for ui usage
+    // Check canister_id in request/consent is within allowed canister in the
+    // certificate canister ranges
+    // if let Some(ranges) = cert.canister_ranges() {
+    //     if ranges.is_canister_in_range(
+    //         &call_request.canister_id[..call_request.canister_id_len as usize],
+    //     ) {
+    //         crate::zlog("canister_id mismatch****\x00");
+    //         return ParserError::InvalidCertificate as u32;
+    //     }
+    // }
+
+    // Indicates certificate was valid
     CERTIFICATE.replace(cert);
 
     ParserError::Ok as u32

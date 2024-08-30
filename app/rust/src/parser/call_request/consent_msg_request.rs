@@ -69,6 +69,8 @@ impl<'a> ConsentMsgRequest<'a> {
     /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
     #[inline(never)]
     pub fn request_id(&self) -> [u8; 32] {
+        crate::zlog("ConsentMsgRequest::request_id\x00");
+
         const MAX_FIELDS: usize = 7;
         let fields: [&str; MAX_FIELDS] = [
             "request_type",

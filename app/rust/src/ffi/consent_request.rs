@@ -45,25 +45,14 @@ pub struct ConsentRequestT {
 // also it assigns the inner args and method name of the candid
 // encoded icrc21_consent_message_request
 impl ConsentRequestT {
-    pub fn reset(&mut self) {
-        self.arg_hash.iter_mut().for_each(|x| *x = 0);
-        self.canister_id.iter_mut().for_each(|x| *x = 0);
-        self.method_name.iter_mut().for_each(|x| *x = 0);
-        self.sender.iter_mut().for_each(|x| *x = 0);
-        self.request_id.iter_mut().for_each(|x| *x = 0);
-        self.canister_id_len = 0;
-        self.sender_len = 0;
-        self.method_name_len = 0;
-        self.ingress_expiry = 0;
-    }
-
     #[inline(never)]
     fn fill_from(&mut self, request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
         check_canary();
 
+        crate::zlog("ConsentRequestT::fill_from\x00");
+
         // Compute and store request_id
         let request_id = request.request_id();
-        // let request_id = [0u8; 32];
         self.request_id.copy_from_slice(&request_id);
 
         // Compute arg_hash
@@ -94,29 +83,12 @@ impl ConsentRequestT {
         self.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
         self.canister_id_len = request.canister_id.len() as u16;
 
-        // Copy request_type
-        // if request.request_type.len() > REQUEST_MAX_LEN {
-        //     return Err(ParserError::ValueOutOfRange);
-        // }
-        // self.request_type[..request.request_type.len()]
-        //     .copy_from_slice(request.request_type.as_bytes());
-        // self.request_type_len = request.request_type.len() as u16;
-
         // Copy sender
         if request.sender.len() > SENDER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
         self.sender[..request.sender.len()].copy_from_slice(request.sender);
         self.sender_len = request.sender.len() as u16;
-
-        // Copy nonce if present
-        // if let Some(nonce) = request.nonce {
-        //     if nonce.len() > NONCE_MAX_LEN {
-        //         return Err(ParserError::ValueOutOfRange);
-        //     }
-        //     self.nonce[..nonce.len()].copy_from_slice(nonce);
-        //     self.has_nonce = true;
-        // }
 
         Ok(())
     }
@@ -150,9 +122,6 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
                 return e as u32;
             }
 
-            // Indicate consent request was parsed correctly
-            CONSENT_REQUEST_T.1 = true;
-
             ParserError::Ok as u32
         }
         Err(_) => ParserError::InvalidConsentMsg as u32,
@@ -162,14 +131,18 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 #[inline(never)]
 fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
     unsafe {
-        if CONSENT_REQUEST_T.1 {
+        if CONSENT_REQUEST_T.is_some() {
             return Err(ParserError::InvalidConsentMsg);
         }
 
-        let consent_request = CONSENT_REQUEST_T.0.assume_init_mut();
+        // let consent_request = CONSENT_REQUEST_T.0.assume_init_mut();
+        let mut consent_request = ConsentRequestT::default();
 
         // Update our consent request
         consent_request.fill_from(request)?;
+
+        // Indicate consent request was parsed correctly
+        CONSENT_REQUEST_T.replace(consent_request);
     }
 
     Ok(())

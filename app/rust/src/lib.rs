@@ -39,6 +39,15 @@ pub fn zlog(_msg: &str) {
     std::println!("{}", _msg);
 }
 
+#[cfg(not(test))]
+pub fn check_canary() {
+    unsafe { check_app_canary() }
+}
+
+#[cfg(test)]
+pub fn check_canary() {}
+
 extern "C" {
     fn zemu_log_stack(s: *const u8);
+    fn check_app_canary();
 }

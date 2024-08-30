@@ -38,6 +38,7 @@ pub struct Delegation<'a> {
 }
 
 impl<'a> FromBytes<'a> for Delegation<'a> {
+    #[inline(never)]
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
@@ -85,12 +86,14 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
 }
 
 impl<'a> Delegation<'a> {
+    #[inline(never)]
     pub fn cert(&self) -> Certificate<'a> {
         // Safe to unwrap as this was checked at parsing
         Certificate::try_from(self.certificate).unwrap()
     }
 
     pub fn tree(&self) -> HashTree<'a> {
+        crate::zlog("Delegation::tree\x00");
         let cert = self.cert();
         // Safe to unwrap as this was checked
         // when Delegation was parsed
@@ -105,7 +108,9 @@ impl<'a> Delegation<'a> {
         self.subnet_id.id()
     }
 
+    #[inline(never)]
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
+        crate::zlog("Delegation::verify\x00");
         let cert = self.cert();
 
         cert.verify(root_key)
@@ -113,7 +118,9 @@ impl<'a> Delegation<'a> {
 
     // Why an option?
     // It is not clear if delegation would always contain a key
+    #[inline(never)]
     pub fn public_key(&self) -> Result<Option<PublicKey<'a>>, ParserError> {
+        crate::zlog("Delegation::public_key\x00");
         let value = self.subnet_public_key()?;
         let Some(value) = value.value() else {
             return Ok(None);
@@ -123,7 +130,9 @@ impl<'a> Delegation<'a> {
 
     // 1. subnet_id: This is available in the Delegation structure.
     // 2. public_key: We need to lookup ["subnet", subnet_id, "public_key"] in the inner certificate.
+    #[inline(never)]
     fn subnet_public_key(&self) -> Result<LookupResult<'a>, ParserError> {
+        crate::zlog("Delegation::subnet_public_key\x00");
         // Step 1: Look up "subnet" in the root of the tree
         let cert = self.cert();
 
