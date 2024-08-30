@@ -41,7 +41,7 @@
 #include "process_chunks.h"
 
 __Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    zemu_log("handleConsentRequest****\n");
+    zemu_log_stack("handleConsentRequest");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -59,7 +59,7 @@ __Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile
 }
 
 __Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    zemu_log("handleCanisterCall****\n");
+    zemu_log_stack("handleCanisterCall");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -77,10 +77,10 @@ __Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile u
 }
 
 __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log_stack("handleRootKey");
 
     // We should received complete key data
     if (rx < (OFFSET_DATA + ROOT_KEY_LEN)) {
-        zemu_log("wrong input key data****\n");
         THROW(APDU_CODE_WRONG_LENGTH);
     }
 
@@ -99,7 +99,7 @@ __Z_INLINE void handleRootKey(__unused volatile uint32_t *flags, volatile uint32
 }
 
 __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    zemu_log("handleSignBls****\n");
+    zemu_log_stack("handleSignBls");
     if (!process_chunk(tx, rx)) {
         THROW(APDU_CODE_OK);
     }
@@ -107,7 +107,6 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
     // Parser Certificate and verify
     CHECK_APP_CANARY()
     zxerr_t err = tx_certVerify();
-
     CHECK_APP_CANARY()
 
     if (err != zxerr_ok) {
@@ -115,6 +114,7 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
         MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
         THROW(APDU_CODE_DATA_INVALID);
     }
+    zemu_log_stack("cert_ok");
 
     CHECK_APP_CANARY()
     view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);

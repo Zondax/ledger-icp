@@ -39,6 +39,7 @@
 static bool tx_initialized = false;
 
 __Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
+    check_app_canary();
     UNUSED(tx);
     const uint8_t payloadType = G_io_apdu_buffer[OFFSET_PAYLOAD_TYPE];
 

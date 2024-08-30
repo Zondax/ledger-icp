@@ -132,6 +132,7 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     volatile uint16_t sw = 0;
+    check_app_canary();
     zemu_log("HandleAPDU******\n");
 
     BEGIN_TRY
@@ -155,21 +156,18 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                 }
 
                 case INS_GET_ADDR: {
-                zemu_log("addrr******\n");
                     CHECK_PIN_VALIDATED()
                     handleGetAddr(flags, tx, rx);
                     break;
                 }
 
                 case INS_SIGN: {
-                zemu_log("sign******\n");
                     CHECK_PIN_VALIDATED()
                     handleSign(flags, tx, rx);
                     break;
                 }
 
                 case INS_SIGN_COMBINED: {
-                zemu_log("combined******\n");
                     CHECK_PIN_VALIDATED()
                     handleSignCombined(flags, tx, rx);
                     break;
@@ -177,28 +175,24 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
 #if defined(BLS_SIGNATURE)
                 case INS_CONSENT_REQUEST: {
-                zemu_log("consent_request******\n");
                     CHECK_PIN_VALIDATED()
                     handleConsentRequest(flags, tx, rx);
                     break;
                 }
 
                 case INS_CANISTER_CALL_TX: {
-                zemu_log("canister_call******\n");
                     CHECK_PIN_VALIDATED()
                     handleCanisterCall(flags, tx, rx);
                     break;
                 }
 
                 case INS_ROOT_KEY: {
-                zemu_log("ins_root_key******\n");
                     CHECK_PIN_VALIDATED()
                     handleRootKey(flags, tx, rx);
                     break;
                 }
 
                 case INS_CERTIFICATE_AND_SIGN: {
-                zemu_log("certificate_verify******\n");
                     CHECK_PIN_VALIDATED()
                     handleSignBls(flags, tx, rx);
                     break;

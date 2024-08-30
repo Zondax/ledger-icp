@@ -55,7 +55,6 @@ uint8_t *bls_root_key() {
 }
 
 zxerr_t bls_saveConsentRequest(void) {
-    zemu_log("bls_saveConsentRequest\n");
     // Test App State
     if (get_state() != CERT_STATE_INITIAL) {
         return zxerr_unknown;
@@ -71,6 +70,7 @@ zxerr_t bls_saveConsentRequest(void) {
     }
 
     // Save App State
+    zemu_log_stack("bls_saveConsentRequest completed");
     set_state(CERT_STATE_PROCESSED_CONSENT_REQUEST);
 
     return zxerr_ok;
@@ -100,18 +100,15 @@ zxerr_t bls_saveCanisterCall(void) {
 }
 
 zxerr_t bls_saveRootKey(uint8_t *root_key) {
-    zemu_log("bls_saveRootKey\n");
 
     // Test App State
     if (get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
-        zemu_log("wrong_root_key_state\n");
         return zxerr_unknown;
     }
 
     // Get Buffer witn root key
     // Save root key from user overwriting default value
     MEMCPY(alternative_root_key, root_key, ROOT_KEY_LEN);
-    zemu_log("Root key saved\n");
 
     // Save App State
     set_state(CERT_STATE_PROCESSED_ROOT_KEY);
@@ -120,6 +117,7 @@ zxerr_t bls_saveRootKey(uint8_t *root_key) {
 }
 
 zxerr_t bls_verify() {
+    zemu_log_stack("bls_verify");
     // Two possible states, we saved a root key from user, or there was no root key overwriting
     if ( get_state() != CERT_STATE_PROCESSED_ROOT_KEY && get_state() != CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST) {
         return zxerr_unknown;
@@ -131,7 +129,6 @@ zxerr_t bls_verify() {
     // If an alternative root_key was processed
     // then, use it
     if (get_state() == CERT_STATE_PROCESSED_ROOT_KEY) {
-        zemu_log("Using root key from user\n");
         pubkey = alternative_root_key;
     }
 
@@ -140,6 +137,7 @@ zxerr_t bls_verify() {
     const uint16_t certificate_len = tx_get_buffer_length();
 
     //Go into verifications
+    zemu_log_stack("rs_verify_cert");
     if(rs_verify_certificate(certificate, certificate_len, pubkey) != parser_ok) {
         return zxerr_invalid_crypto_settings;
     }
