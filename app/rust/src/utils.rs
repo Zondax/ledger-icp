@@ -15,6 +15,12 @@
 ********************************************************************************/
 use crate::error::{ParserError, ViewError};
 
+pub trait ByteSerializable: Sized {
+    fn fill_to(&self, output: &mut [u8]) -> Result<(), ParserError>;
+    fn from_bytes(input: &[u8]) -> Result<&Self, ParserError>;
+    fn validate(&self) -> Result<(), ParserError>;
+}
+
 /// This function returns the index of the first null byte in the slice
 #[cfg(test)]
 pub fn strlen(s: &[u8]) -> usize {

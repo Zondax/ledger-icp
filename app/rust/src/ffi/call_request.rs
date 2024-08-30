@@ -14,12 +14,15 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{call_request::CallRequest, check_canary, constants::*, error::ParserError, FromBytes};
+use crate::{
+    call_request::CallRequest, check_canary, constants::*, error::ParserError,
+    utils::ByteSerializable, FromBytes,
+};
 
-use core::mem::MaybeUninit;
+use core::mem::{size_of, MaybeUninit};
 use sha2::{Digest, Sha256};
 
-use super::resources::CALL_REQUEST_T;
+use super::resources::MEMORY_CALL_REQUEST;
 
 #[repr(C)]
 #[derive(PartialEq, Default)]
@@ -41,6 +44,47 @@ pub struct CanisterCallT {
     // The hash of this call request
     // which is going to be signed
     pub hash: [u8; 32],
+}
+
+impl ByteSerializable for CanisterCallT {
+    #[inline(never)]
+    fn fill_to(&self, output: &mut [u8]) -> Result<(), ParserError> {
+        if output.len() != size_of::<Self>() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                self as *const Self as *const u8,
+                output.as_mut_ptr(),
+                core::mem::size_of::<Self>(),
+            );
+        }
+
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn from_bytes(input: &[u8]) -> Result<&Self, ParserError> {
+        if input.len() != size_of::<Self>() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+
+        let result = unsafe { &*(input.as_ptr() as *const Self) };
+        result.validate()?;
+        Ok(result)
+    }
+
+    #[inline(never)]
+    fn validate(&self) -> Result<(), ParserError> {
+        if self.canister_id_len as usize > CANISTER_MAX_LEN
+            || self.method_name_len as usize > METHOD_MAX_LEN
+            || self.sender_len as usize > SENDER_MAX_LEN
+        {
+            return Err(ParserError::ValueOutOfRange);
+        }
+        Ok(())
+    }
 }
 
 impl CanisterCallT {
@@ -105,21 +149,9 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
         Ok(_) => {
             let request = call_request.assume_init();
 
-            // Global must be empty at this point
-            if CALL_REQUEST_T.is_some() {
-                return ParserError::InvalidConsentMsg as u32;
-            }
-
-            // Safe to unwrap due to previous check
-            let mut call_request = CanisterCallT::default();
-
-            // Update our call request
-            if let Err(e) = call_request.fill_from(&request) {
+            if let Err(e) = fill_request(&request) {
                 return e as u32;
             }
-
-            // Indicate request was parsed correctly
-            CALL_REQUEST_T.replace(call_request);
 
             ParserError::Ok as u32
         }
@@ -127,11 +159,36 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
     }
 }
 
+#[inline(never)]
+fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
+    unsafe {
+        // let consent_request = CONSENT_REQUEST_T.0.assume_init_mut();
+        let mut consent_request = CanisterCallT::default();
+
+        // Update our consent request
+        consent_request.fill_from(request)?;
+
+        let mut serialized = [0; core::mem::size_of::<CanisterCallT>()];
+        consent_request.fill_to(&mut serialized)?;
+
+        MEMORY_CALL_REQUEST
+            .write(0, &serialized)
+            .map_err(|_| ParserError::UnexpectedError)?;
+
+        let consent2 = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST)?;
+        consent2.validate()?;
+
+        // Indicate consent request was parsed correctly
+    }
+
+    Ok(())
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn rs_get_signing_hash(data: *mut [u8; 32]) {
     let hash = unsafe { &mut *data };
 
-    let Some(call) = CALL_REQUEST_T.as_ref() else {
+    let Ok(call) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
         return;
     };
 

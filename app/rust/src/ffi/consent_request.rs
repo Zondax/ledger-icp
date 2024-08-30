@@ -15,13 +15,17 @@
 ********************************************************************************/
 
 use crate::{
-    call_request::ConsentMsgRequest, check_canary, constants::*, error::ParserError,
-    utils::hash_blob, FromBytes,
+    call_request::ConsentMsgRequest,
+    check_canary,
+    constants::*,
+    error::ParserError,
+    utils::{hash_blob, ByteSerializable},
+    FromBytes,
 };
 
-use core::mem::MaybeUninit;
+use core::mem::{size_of, MaybeUninit};
 
-use super::resources::CONSENT_REQUEST_T;
+use super::resources::MEMORY_CONSENT_REQUEST;
 
 #[repr(C)]
 #[derive(PartialEq, Default)]
@@ -41,11 +45,51 @@ pub struct ConsentRequestT {
     pub request_id: [u8; 32],
 }
 
+impl ByteSerializable for ConsentRequestT {
+    #[inline(never)]
+    fn fill_to(&self, output: &mut [u8]) -> Result<(), ParserError> {
+        if output.len() != core::mem::size_of::<Self>() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                self as *const Self as *const u8,
+                output.as_mut_ptr(),
+                core::mem::size_of::<Self>(),
+            );
+        }
+
+        Ok(())
+    }
+
+    #[inline(never)]
+    fn from_bytes(input: &[u8]) -> Result<&Self, ParserError> {
+        if input.len() != size_of::<Self>() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+
+        let result = unsafe { &*(input.as_ptr() as *const Self) };
+        result.validate()?;
+        Ok(result)
+    }
+
+    #[inline(never)]
+    fn validate(&self) -> Result<(), ParserError> {
+        if self.canister_id_len as usize > CANISTER_MAX_LEN
+            || self.method_name_len as usize > METHOD_MAX_LEN
+            || self.sender_len as usize > SENDER_MAX_LEN
+        {
+            return Err(ParserError::ValueOutOfRange);
+        }
+        Ok(())
+    }
+}
+
 // This converts from ConsentMsgRequest to ConsentRequestT
 // also it assigns the inner args and method name of the candid
 // encoded icrc21_consent_message_request
 impl ConsentRequestT {
-    #[inline(never)]
     fn fill_from(&mut self, request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
         check_canary();
 
@@ -131,18 +175,21 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 #[inline(never)]
 fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
     unsafe {
-        if CONSENT_REQUEST_T.is_some() {
-            return Err(ParserError::InvalidConsentMsg);
-        }
-
         // let consent_request = CONSENT_REQUEST_T.0.assume_init_mut();
         let mut consent_request = ConsentRequestT::default();
 
         // Update our consent request
         consent_request.fill_from(request)?;
 
-        // Indicate consent request was parsed correctly
-        CONSENT_REQUEST_T.replace(consent_request);
+        let mut serialized = [0; core::mem::size_of::<ConsentRequestT>()];
+        consent_request.fill_to(&mut serialized)?;
+
+        MEMORY_CONSENT_REQUEST
+            .write(0, &serialized)
+            .map_err(|_| ParserError::UnexpectedError)?;
+
+        let consent2 = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST)?;
+        consent2.validate()?;
     }
 
     Ok(())

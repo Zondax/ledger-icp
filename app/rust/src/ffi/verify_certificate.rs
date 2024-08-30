@@ -22,11 +22,13 @@ use crate::{
 use core::mem::MaybeUninit;
 use std::cmp::PartialEq;
 
+use crate::utils::ByteSerializable;
+
 use super::{
     c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    resources::{CALL_REQUEST_T, CERTIFICATE, CONSENT_REQUEST_T},
+    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST},
 };
 
 // This is use to check important fields in consent_msg_request and canister_call_request
@@ -62,12 +64,12 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     // Check values are set
     crate::zlog("call_request****\x00");
-    let Some(call_request) = CALL_REQUEST_T.as_ref() else {
+    let Ok(call_request) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
         return ParserError::NoData as u32;
     };
 
     crate::zlog("consent_request****\x00");
-    let Some(consent_request) = CONSENT_REQUEST_T.as_ref() else {
+    let Ok(consent_request) = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST) else {
         return ParserError::NoData as u32;
     };
 
