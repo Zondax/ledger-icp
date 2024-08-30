@@ -15,10 +15,10 @@ pub struct Icrc21ConsentMessageMetadata<'a> {
 }
 
 impl<'a> FromTable<'a> for Icrc21ConsentMessageMetadata<'a> {
-    fn from_table(
+    fn from_table<const MAX_FIELDS: usize>(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-        type_table: &TypeTable,
+        type_table: &TypeTable<MAX_FIELDS>,
         type_index: usize,
     ) -> Result<&'a [u8], ParserError> {
         let entry = type_table

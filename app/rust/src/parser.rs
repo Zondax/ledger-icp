@@ -61,10 +61,10 @@ pub trait FromBytes<'b>: Sized {
 }
 
 pub trait FromTable<'a>: Sized {
-    fn from_table(
+    fn from_table<const MAX_FIELDS: usize>(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-        type_table: &crate::type_table::TypeTable,
+        type_table: &crate::type_table::TypeTable<MAX_FIELDS>,
         type_index: usize,
     ) -> Result<&'a [u8], crate::error::ParserError>;
 }

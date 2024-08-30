@@ -67,6 +67,7 @@ impl<'a> ConsentMsgRequest<'a> {
     /// Computes the request_id which is the hash
     /// of this struct using independent hash of structured data
     /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
+    #[inline(never)]
     pub fn request_id(&self) -> [u8; 32] {
         const MAX_FIELDS: usize = 7;
         let fields: [&str; MAX_FIELDS] = [
@@ -127,6 +128,7 @@ impl<'a> ConsentMsgRequest<'a> {
 }
 
 impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
+    #[inline(never)]
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
@@ -163,14 +165,17 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
             return Err(ParserError::UnexpectedValue);
         }
 
-        let mut arg = None;
         let mut nonce = None;
 
         for _ in 0..content_len {
             let key = d.str()?;
             unsafe {
                 match key {
-                    "arg" => arg = Some(d.bytes()?),
+                    "arg" => {
+                        let arg: &mut MaybeUninit<RawArg<'a>> =
+                            &mut *addr_of_mut!((*out).arg).cast();
+                        _ = RawArg::from_bytes_into(d.bytes()?, arg)?;
+                    }
                     "nonce" => nonce = Some(d.bytes()?),
                     "sender" => addr_of_mut!((*out).sender).write(d.bytes()?),
                     "canister_id" => addr_of_mut!((*out).canister_id).write(d.bytes()?),
@@ -204,11 +209,6 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
             }
         }
 
-        let arg_bytes = arg.ok_or(ParserError::CborUnexpected)?;
-
-        let arg: &mut MaybeUninit<RawArg<'a>> = unsafe { &mut *addr_of_mut!((*out).arg).cast() };
-        _ = RawArg::from_bytes_into(arg_bytes, arg)?;
-
         unsafe {
             addr_of_mut!((*out).nonce).write(nonce);
         }
@@ -216,7 +216,7 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
         let out = unsafe { &mut *out };
 
         // This is unfortunate because of PIC issues, we can not
-        // compare directli name with the METHOD_NAME constant
+        // compare directly name with the METHOD_NAME constant
         let mut name = [0u8; METHOD_NAME_LEN];
         name.copy_from_slice(METHOD_NAME);
 

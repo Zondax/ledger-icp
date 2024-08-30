@@ -10,8 +10,8 @@ type Hash256 = [u8; 32];
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Icrc21ConsentMessageSpec<'a> {
-    metadata: Icrc21ConsentMessageMetadata<'a>,
-    device_spec: Option<DeviceSpec>,
+    metadata: Icrc21ConsentMessageMetadata<'a>, // 2
+    device_spec: Option<DeviceSpec>,            // 4
 }
 
 impl<'a> Icrc21ConsentMessageSpec<'a> {
@@ -61,10 +61,11 @@ pub enum DeviceSpec {
 }
 
 impl<'a> FromTable<'a> for Icrc21ConsentMessageSpec<'a> {
-    fn from_table(
+    #[inline(never)]
+    fn from_table<const MAX_FIELDS: usize>(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-        type_table: &TypeTable,
+        type_table: &TypeTable<MAX_FIELDS>,
         type_index: usize,
     ) -> Result<&'a [u8], ParserError> {
         let entry = type_table
@@ -108,9 +109,9 @@ impl<'a> FromTable<'a> for Icrc21ConsentMessageSpec<'a> {
     }
 }
 
-fn parse_opt_device_spec<'a>(
+fn parse_opt_device_spec<'a, const MAX_FIELDS: usize>(
     input: &'a [u8],
-    _type_table: &TypeTable,
+    _type_table: &TypeTable<MAX_FIELDS>,
     _type_index: usize,
 ) -> Result<(Option<DeviceSpec>, &'a [u8]), ParserError> {
     let (rem, opt_tag) = decompress_leb128(input)?;

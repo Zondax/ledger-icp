@@ -24,6 +24,11 @@ use crate::{
 
 use super::{msg_error::Error, msg_info::ConsentInfo};
 
+// Defines the minimum number of elements
+// in our candid type table in order
+// to parse the type using it
+const MAX_TABLE_FIELDS: usize = 11;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ResponseType {
@@ -83,7 +88,7 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
             .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
 
         // 2. Parse the type table
-        let (rem, _table) = parse_type_table(rem)?;
+        let (rem, _table) = parse_type_table::<MAX_TABLE_FIELDS>(rem)?;
 
         // 3. Read the variant index (M part)
         let (rem, variant_index) =
