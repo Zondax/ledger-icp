@@ -19,6 +19,7 @@
 
 using ::testing::TestWithParam;
 
+class JsonTests_Phase1 : public JsonTests_Base {};
 class JsonTests_Phase2 : public JsonTests_Base {};
 class JsonTests_Candid_Send : public JsonTests_Base {};
 class JsonTests_SNS_AddPermission : public JsonTests_Base {};
@@ -29,6 +30,17 @@ class JsonTests_SNS_SetDissolveDelay : public JsonTests_Base {};
 class JsonTests_ICRC : public JsonTests_Base {};
 class JsonTests_Deprecated : public JsonTests_Base {};
 
+INSTANTIATE_TEST_SUITE_P (
+        Phase1,
+        JsonTests_Phase1,
+        ::testing::ValuesIn(GetJsonTestCases("manual.json")),
+        JsonTests_Phase1::PrintToStringParamName()
+);
+
+// Parametric test using current runtime:
+TEST_P(JsonTests_Phase1, Normal) { check_testcase(GetParam(), false); }
+
+TEST_P(JsonTests_Phase1, Expert) { check_testcase(GetParam(), true); }
 
 ////////////////////
 ////////////////////
