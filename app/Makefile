@@ -76,9 +76,11 @@ $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
 
 # Enable bls signature verification for all targets except TARGET_NANOS
-ifneq ($(TARGET_NAME), TARGET_NANOS)
+ifneq ($(TARGET_NAME),TARGET_NANOS)
+ifneq ($(TARGET_NAME),TARGET_NANOX)
 BLS_SIGNATURE = 1
 DEFINES += BLS_SIGNATURE=$(BLS_SIGNATURE)
+endif
 endif
 
 RUST_TARGET_NAME := $(TARGET_NAME)
