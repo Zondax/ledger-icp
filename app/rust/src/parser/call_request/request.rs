@@ -5,7 +5,7 @@ use minicbor::Decoder;
 use crate::{
     constants::{BIG_NUM_TAG, CALL_REQUEST_TAG},
     error::ParserError,
-    utils::{compress_leb128, hash_blob, hash_str},
+    utils::compress_leb128,
     zlog, FromBytes,
 };
 
@@ -53,13 +53,15 @@ impl<'a> CallRequest<'a> {
     // this is going to be signed
     // order of the fields is important
     pub fn digest(&self) -> [u8; 32] {
-        use sha2::Digest;
+        use sha2::{Digest, Sha256};
         let mut hasher = sha2::Sha256::new();
 
         // Helper function to hash a field
         let mut hash_field = |name: &str, value: &[u8]| {
-            hasher.update(hash_str(name));
-            hasher.update(hash_blob(value));
+            let tmp: [u8; 32] = Sha256::digest(name.as_bytes()).into();
+            hasher.update(tmp);
+            let tmp: [u8; 32] = Sha256::digest(value).into();
+            hasher.update(tmp);
         };
 
         // Hash fields in the same order as the C function
