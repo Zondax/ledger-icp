@@ -127,7 +127,6 @@ jobs:
         id: get-tests
         run: |
           cd tests_zemu
-          npm install --save-dev @matteoh2o1999/github-actions-jest-reporter
           TESTS=`yarn test --listTests --json | head -n 3 | tail -n 1 | jq -cM 'to_entries | map({id: .key, file: .value})'`
           echo "tests=$TESTS" >> "$GITHUB_OUTPUT"
 
