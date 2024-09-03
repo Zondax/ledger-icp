@@ -20,9 +20,6 @@ mod resources;
 mod ui;
 mod verify_certificate;
 
-use crate::error::ParserError;
-use core::mem::size_of;
-
 #[cfg(test)]
 mod ffi_verify_cert {
     use crate::{
