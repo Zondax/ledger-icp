@@ -172,6 +172,7 @@ mod call_request_test {
     use super::*;
 
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
+    const REQUEST2: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d610e2008806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
     const TIME_EXPIRY: u64 = 1712667140606000000;
 
     #[test]
@@ -189,5 +190,22 @@ mod call_request_test {
         assert_eq!(call_request.method_name, "greet");
         assert_eq!(call_request.request_type, "query");
         assert_eq!(call_request.ingress_expiry, TIME_EXPIRY);
+    }
+
+    #[test]
+    fn call_parse2() {
+        let data = hex::decode(REQUEST2).unwrap();
+        let call_request = CallRequest::from_bytes(&data).unwrap();
+        std::println!("CallRequest: {:?}", call_request);
+
+        assert_eq!(
+            call_request.arg,
+            &[68, 73, 68, 76, 0, 1, 113, 4, 116, 111, 98, 105]
+        );
+        assert_eq!(call_request.sender, &[4]);
+        assert_eq!(call_request.canister_id, &[0, 0, 0, 0, 0, 96, 0, 253, 1, 1]);
+        assert_eq!(call_request.method_name, "greet");
+        assert_eq!(call_request.request_type, "query");
+        assert_eq!(call_request.ingress_expiry, 1712666798482000000);
     }
 }

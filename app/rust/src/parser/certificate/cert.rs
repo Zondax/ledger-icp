@@ -331,7 +331,7 @@ mod test_certificate {
 
     const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
 
-    const INGRESS_EXPIRY: u64 = 1712667140606000000;
+    const INGRESS_EXPIRY: u64 = 1712666798482000000;
 
     #[test]
     fn parse_cert() {
