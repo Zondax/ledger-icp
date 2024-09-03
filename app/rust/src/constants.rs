@@ -39,7 +39,7 @@ pub const SECONDS_PER_MINUTE: u64 = 60;
 pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
 // The max offset between the certificate.time and the call message request ingress_expiry
 // otherwise, call request must be considered invalid/outdated and not processed at all
-pub const MAX_CERT_INGRESS_OFFSET: u64 = 12 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
+pub const MAX_CERT_INGRESS_OFFSET: u64 = 10 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
 pub const BLS_MSG_SIZE: usize = 1 + 13 + 32;
 // The official root key for consent message verification
