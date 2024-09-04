@@ -50,6 +50,9 @@ impl PartialEq<CanisterCallT> for ConsentRequestT {
     }
 }
 
+// Most of the verification follows:
+// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certification
+// and comments from ICP team during development
 #[no_mangle]
 pub unsafe extern "C" fn rs_verify_certificate(
     certificate: *const u8,

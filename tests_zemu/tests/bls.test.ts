@@ -42,7 +42,7 @@ describe('Bls', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert`)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_custom_key`)
 
       const signatureResponse = await respCert
       console.log(respCert)
@@ -72,7 +72,7 @@ describe('Bls', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert`)
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`)
 
       const signatureResponse = await respCert
       console.log(respCert)

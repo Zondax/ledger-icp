@@ -75,7 +75,7 @@ RUST_TARGET := thumbv6m-none-eabi
 $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
 
-# Enable bls signature verification for all targets except TARGET_NANOS
+# Enable bls signature verification for all targets except TARGET_NANOS and TARGET_NANOX
 ifneq ($(TARGET_NAME),TARGET_NANOS)
 ifneq ($(TARGET_NAME),TARGET_NANOX)
 BLS_SIGNATURE = 1
