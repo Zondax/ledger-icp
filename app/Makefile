@@ -106,13 +106,14 @@ endif
 
 APP_SOURCE_PATH += $(MY_DIR)/rust/include
 
+CFLAGS += -I$(MY_DIR)/../deps/nanopb/
+APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
+
+
 # Check if BLS_SIGNATURE is set
 ifdef BLS_SIGNATURE
 
 APP_CUSTOM_LINK_DEPENDENCIES = rust
-
-CFLAGS += -I$(MY_DIR)/../deps/nanopb/
-APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 .PHONY: rust
 rust:
