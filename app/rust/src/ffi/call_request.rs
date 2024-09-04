@@ -34,12 +34,8 @@ pub struct CanisterCallT {
     pub ingress_expiry: u64,
     pub method_name: [u8; METHOD_MAX_LEN],
     pub method_name_len: u16,
-    // pub request_type: [u8; REQUEST_MAX_LEN],
-    // pub request_type_len: u16,
     pub sender: [u8; SENDER_MAX_LEN],
     pub sender_len: u16,
-    // pub nonce: [u8; NONCE_MAX_LEN],
-    // pub has_nonce: bool,
 
     // The hash of this call request
     // which is going to be signed
@@ -162,7 +158,6 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
 #[inline(never)]
 fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
     unsafe {
-        // let consent_request = CONSENT_REQUEST_T.0.assume_init_mut();
         let mut consent_request = CanisterCallT::default();
 
         // Update our consent request
@@ -177,8 +172,6 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
 
         let consent2 = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST)?;
         consent2.validate()?;
-
-        // Indicate consent request was parsed correctly
     }
 
     Ok(())

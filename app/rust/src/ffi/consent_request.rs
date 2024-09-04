@@ -36,12 +36,13 @@ pub struct ConsentRequestT {
     pub ingress_expiry: u64,
     pub method_name: [u8; METHOD_MAX_LEN],
     pub method_name_len: u16,
-    // pub request_type: [u8; REQUEST_MAX_LEN],
-    // pub request_type_len: u16,
     pub sender: [u8; SENDER_MAX_LEN],
     pub sender_len: u16,
-    // pub nonce: [u8; NONCE_MAX_LEN],
-    // pub has_nonce: bool,
+    // This request_id is used
+    // to lookup for the reply field
+    // in a certificate, this ensures that
+    // the consent_request being processed refers to the provided
+    // BLS certificate
     pub request_id: [u8; 32],
 }
 
@@ -175,7 +176,6 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 #[inline(never)]
 fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
     unsafe {
-        // let consent_request = CONSENT_REQUEST_T.0.assume_init_mut();
         let mut consent_request = ConsentRequestT::default();
 
         // Update our consent request
