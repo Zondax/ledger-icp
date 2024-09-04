@@ -68,6 +68,22 @@ typedef enum {
     parser_invalid_tree,
     parser_minicbor_error,
     parser_recursion_limit_reached,
+    // New errors added from Rust
+    parser_invalid_tag,
+    parser_invalid_msg_metadata,
+    parser_invalid_consent_msg,
+    parser_invalid_utf8,
+    parser_invalid_error_response,
+    parser_invalid_response_type,
+    parser_invalid_call_request,
+    parser_invalid_consent_msg_request,
+    parser_invalid_canister_id,
+    parser_invalid_language,
+    parser_too_many_types,
+    parser_too_many_fields,
+    parser_field_not_found,
+    parser_leb128_overflow,
+    parser_invalid_time,
 } parser_error_t;
 
 typedef struct {
