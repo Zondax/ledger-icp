@@ -11,53 +11,6 @@
 #define CERT_OBJ_MAX_SIZE 60
 
 
-typedef struct {
-   uint8_t *state;
-   uint32_t len;
-} parsed_obj_t;
-
-
-// Define the Canister call request structure
-typedef struct {
-  uint8_t arg_hash[32];
-  uint8_t canister_id[CANISTER_MAX_LEN + 1];
-  uint16_t canister_id_len;
-  uint64_t ingress_expiry;
-  uint8_t method_name[METHOD_MAX_LEN + 1];
-  uint16_t method_name_len;
-  uint8_t request_type[REQUEST_MAX_LEN + 1];
-  uint16_t request_type_len;
-  uint8_t sender[SENDER_MAX_LEN + 1];
-  uint16_t sender_len;
-  uint8_t nonce[NONCE_MAX_LEN + 1];
-  bool hash_nonce;
-
-  // This holds the sha256 hash of this struct
-  // and is used for signing
-  uint8_t hash[32];
-} canister_call_t;
-
-// Define the Consent request structure
-typedef struct {
-  uint8_t arg_hash[32];
-  uint8_t canister_id[CANISTER_MAX_LEN + 1];
-  uint16_t canister_id_len;
-  uint64_t ingress_expiry;
-  uint8_t method_name[METHOD_MAX_LEN + 1];
-  uint16_t method_name_len;
-  uint8_t request_type[REQUEST_MAX_LEN + 1];
-  uint16_t request_type_len;
-  uint8_t sender[SENDER_MAX_LEN + 1];
-  uint16_t sender_len;
-  uint8_t nonce[NONCE_MAX_LEN + 1];
-  bool hash_nonce;
-
-  // Not part of the struct but
-  // a place holder for the request_id
-  // of this struct
-  uint8_t request_id[32];
-} consent_request_t;
-
 // Function to parse a canister call request
 parser_error_t rs_parse_canister_call_request(const uint8_t *data,
                                            uint16_t data_len);
