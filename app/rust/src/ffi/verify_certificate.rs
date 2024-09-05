@@ -88,14 +88,11 @@ pub unsafe extern "C" fn rs_verify_certificate(
     let root_key = core::slice::from_raw_parts(root_key, BLS_PUBLIC_KEY_SIZE);
 
     if CERTIFICATE.is_some() {
-        crate::zlog("certificate already present****\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
-    crate::zlog("parse_cert****\x00");
     let mut cert = MaybeUninit::uninit();
     let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
-        crate::zlog("Could not parse certificate****\x00");
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -106,7 +103,6 @@ pub unsafe extern "C" fn rs_verify_certificate(
         Err(e) => return e as u32,
         _ => {}
     }
-    crate::zlog("cert_signature_verified****\x00");
 
     // Certificate tree must contain a node labeled with the request_id computed
     // from the consent_msg_request, this ensures that the passed data referes to
@@ -139,14 +135,14 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     // Check canister_id in request/consent is within allowed canister in the
     // certificate canister ranges
-    // if let Some(ranges) = cert.canister_ranges() {
-    //     if ranges.is_canister_in_range(
-    //         &call_request.canister_id[..call_request.canister_id_len as usize],
-    //     ) {
-    //         crate::zlog("canister_id mismatch****\x00");
-    //         return ParserError::InvalidCertificate as u32;
-    //     }
-    // }
+    if let Some(ranges) = cert.canister_ranges() {
+        if !ranges.is_canister_in_range(
+            &call_request.canister_id[..call_request.canister_id_len as usize],
+        ) {
+            crate::zlog("canister_id mismatch****\x00");
+            return ParserError::InvalidCertificate as u32;
+        }
+    }
 
     // Indicates certificate was valid
     CERTIFICATE.replace(cert);
