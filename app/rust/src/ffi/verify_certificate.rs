@@ -122,7 +122,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     // Check sender identity
-    let sender = &consent_request.sender[..consent_request.sender_len as usize];
+    let sender = &call_request.sender[..call_request.sender_len as usize];
     let device_principal = device_principal();
 
     let Ok(sender) = Principal::new(sender) else {

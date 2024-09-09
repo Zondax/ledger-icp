@@ -273,8 +273,6 @@ impl<'a> Certificate<'a> {
         let Ok(Some(cert_time)) = self.timestamp() else {
             return false;
         };
-        #[cfg(test)]
-        std::println!("cert_time: {} - call_time: {}", cert_time, ingress_expiry);
 
         if cert_time > ingress_expiry {
             return false;
