@@ -8,13 +8,23 @@ extern "C" {
 #[cfg(test)]
 fn c_fill_principal(output: *mut u8, output_len: u16, response_len: *mut u16) -> i8 {
     unsafe {
-        let output = core::slice::from_raw_parts_mut(output, output_len as usize);
-        let response_len = &mut *response_len;
+        // The default principal using our testing mnemonic
+        const SENDER: &[u8] = &[
+            25, 170, 61, 66, 192, 72, 221, 125, 20, 240, 207, 160, 223, 105, 161, 193, 56, 23, 128,
+            246, 233, 161, 55, 171, 170, 106, 130, 227, 2,
+        ];
 
-        output.iter_mut().for_each(|x| *x = 1);
-        *response_len = output_len;
+        let output = core::slice::from_raw_parts_mut(output, output_len as usize);
+
+        *response_len = SENDER.len() as _;
+
+        if output_len as usize >= SENDER.len() {
+            output.copy_from_slice(SENDER);
+            0
+        } else {
+            -1
+        }
     }
-    0
 }
 
 // Get device principal, this is safe to use
