@@ -39,7 +39,8 @@ impl PartialEq<ConsentRequestT> for CanisterCallT {
                 == other.canister_id[..other.canister_id_len as usize]
             && self.method_name[..self.method_name_len as usize]
                 == other.method_name[..other.method_name_len as usize]
-            && self.sender[..self.sender_len as usize] == other.sender[..other.sender_len as usize]
+        // We omit the sender because according to latest provided data
+        // it can be different
     }
 }
 

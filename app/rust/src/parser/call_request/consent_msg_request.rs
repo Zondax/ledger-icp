@@ -237,6 +237,8 @@ mod call_request_test {
     use super::*;
 
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
+    const REQUEST2: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
+
     const ARG: &str = "4449444c00017104746f6269";
     const NONCE: &str = "a3788c1805553fb69b20f08e87e23b13";
     const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
@@ -254,6 +256,24 @@ mod call_request_test {
         let request_id = hex::encode(msg_req.request_id());
 
         std::println!("ConsentMsgRequest: {:?}", msg_req);
+
+        assert_eq!(msg_req.sender.len(), 1);
+        assert_eq!(msg_req.sender[0], DEFAULT_SENDER);
+        assert_eq!(hex::encode(msg_req.canister_id), CANISTER_ID);
+        assert_eq!(msg_req.method_name, METHOD);
+        assert_eq!(msg_req.request_type, REQUEST_TYPE);
+
+        assert_eq!(msg_req.ingress_expiry, INGRESS_EXPIRY);
+        assert_eq!(hex::encode(msg_req.nonce.unwrap()), NONCE);
+        assert_eq!(request_id, REQUEST_ID);
+    }
+
+    #[test]
+    fn msg_request2() {
+        let data = hex::decode(REQUEST2).unwrap();
+        let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
+
+        let request_id = hex::encode(msg_req.request_id());
 
         assert_eq!(msg_req.sender.len(), 1);
         assert_eq!(msg_req.sender[0], DEFAULT_SENDER);

@@ -173,7 +173,11 @@ mod call_request_test {
 
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
     const REQUEST2: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d610e2008806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
+    const REQUEST3: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
     const TIME_EXPIRY: u64 = 1712667140606000000;
+    const CANISTER_ID: &str = "00000000006000FD0101";
+
+    const ARG3: &str = "4449444C00017104746F6269";
 
     #[test]
     fn call_parse() {
@@ -207,5 +211,19 @@ mod call_request_test {
         assert_eq!(call_request.method_name, "greet");
         assert_eq!(call_request.request_type, "query");
         assert_eq!(call_request.ingress_expiry, 1712666798482000000);
+    }
+
+    #[test]
+    fn call_parse3() {
+        let data = hex::decode(REQUEST3).unwrap();
+        let call_request = CallRequest::from_bytes(&data).unwrap();
+
+        assert_eq!(call_request.arg, &hex::decode(ARG3).unwrap());
+        // Sender in this tests is not the default one
+        assert_ne!(call_request.sender, &[4]);
+        assert_eq!(call_request.canister_id, hex::decode(CANISTER_ID).unwrap());
+        assert_eq!(call_request.method_name, "greet");
+        assert_eq!(call_request.request_type, "query");
+        assert_eq!(call_request.ingress_expiry, TIME_EXPIRY);
     }
 }
