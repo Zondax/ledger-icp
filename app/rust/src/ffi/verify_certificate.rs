@@ -15,8 +15,10 @@
 ********************************************************************************/
 
 use crate::{
-    check_canary, constants::BLS_PUBLIC_KEY_SIZE, error::ParserError, Certificate, FromBytes,
-    HashTree, LookupResult, Principal,
+    check_canary,
+    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
+    error::ParserError,
+    Certificate, FromBytes, HashTree, LookupResult, Principal,
 };
 
 use core::mem::MaybeUninit;
@@ -39,8 +41,6 @@ impl PartialEq<ConsentRequestT> for CanisterCallT {
                 == other.canister_id[..other.canister_id_len as usize]
             && self.method_name[..self.method_name_len as usize]
                 == other.method_name[..other.method_name_len as usize]
-        // We omit the sender because according to latest provided data
-        // it can be different
     }
 }
 
@@ -121,15 +121,10 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
-    // Check sender identity
-    let sender = &call_request.sender[..call_request.sender_len as usize];
-    let device_principal = device_principal();
+    let call_sender = &call_request.sender[..call_request.sender_len as usize];
+    let consent_sender = &consent_request.sender[..consent_request.sender_len as usize];
 
-    let Ok(sender) = Principal::new(sender) else {
-        return ParserError::InvalidCertificate as u32;
-    };
-
-    if !sender.is_default() && sender != device_principal {
+    if !validate_sender(call_sender, consent_sender) {
         crate::zlog("sender_id mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     }
@@ -149,4 +144,21 @@ pub unsafe extern "C" fn rs_verify_certificate(
     CERTIFICATE.replace(cert);
 
     ParserError::Ok as u32
+}
+
+fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
+    // Check sender identity
+    // This check should be:
+    // call.sender == consent.sender || consent.sender == 0x04 or
+    // call.sender == device.principal
+    // to pass validation
+    if !(call_sender == consent_sender || consent_sender == [DEFAULT_SENDER]) {
+        let device_principal = device_principal();
+        let Ok(call_sender_principal) = Principal::new(call_sender) else {
+            return false;
+        };
+        // them check that at least the call_sender_principal matches the device_principal
+        return call_sender_principal != device_principal;
+    }
+    true
 }
