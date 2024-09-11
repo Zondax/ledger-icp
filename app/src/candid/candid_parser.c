@@ -24,6 +24,10 @@
 // Good reference:  https://github.com/dfinity/agent-js/tree/main/packages/candid
 // https://github.com/dfinity/candid/blob/master/spec/Candid.md#deserialisation
 
+#define MAX_FIELDS 25
+#define TYPE_OPT 0
+#define TYPE_NEURONS_IDS 1
+#define TYPE_CALLER 2
 
 #define CREATE_CTX(__CTX, __TX, __INPUT, __INPUT_SIZE) \
     parser_context_t __CTX; \
@@ -71,54 +75,67 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-    if (txn.txn_length != 3) {
+    // at least we need to have the 2 non opt fields already defined in the did file
+    if (txn.txn_length < 2) {
         return parser_unexpected_value;
     }
-    txn.element.variant_index = 0;
-    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
-    if (txn.element.field_hash != hash_neuron_ids) {
-        return parser_unexpected_type;
-    }
+    uint64_t n_fields = txn.txn_length;
 
-    // reset txn
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
-    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+    //Array to save opt fields positon in the record
+    uint8_t opt_fields_pos[MAX_FIELDS] = {0};
 
-    txn.element.variant_index = 1;
-    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
-    CHECK_PARSER_ERR(readCandidOptional(&txn))
-    if (txn.element.implementation != Bool) {
-       return parser_unexpected_type;
-    }
+    // Check types before parsing
+    for (uint64_t i = 0; i < n_fields; i++){
+        //reset txn
+        CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
+        CHECK_PARSER_ERR(readCandidRecordLength(&txn))
+        //jump to index
+        txn.element.variant_index = i;
+        CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
 
-    // reset txn
-    CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
-    CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-
-    txn.element.variant_index = 2;
-    CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
-    if (txn.element.field_hash != hash_include_neurons_readable_by_caller ||
-        txn.element.implementation != Bool) {
-        return parser_unexpected_type;
+        //element is not any of the non opt expected fields than its probably an optinal
+        if (txn.element.field_hash == hash_neuron_ids) {
+            opt_fields_pos[i] = TYPE_NEURONS_IDS;
+        } else if (txn.element.field_hash == hash_include_neurons_readable_by_caller &&
+                   txn.element.implementation == Bool) {
+            opt_fields_pos[i] = TYPE_CALLER;
+        } else {
+            CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
+            // Check that is an opt(inside the function) if not return error, not an expected type
+            CHECK_PARSER_ERR(readCandidOptional(&txn))
+            opt_fields_pos[i] = TYPE_OPT;
+        }
     }
 
     // let's read
     candid_ListNeurons_t *val = &tx->tx_fields.call.data.candid_listNeurons;
     uint64_t tmp_neuron_id = 0;
-    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->neuron_ids_size))
+    uint8_t tmp_presence = 0;
+    for( uint64_t i = 0; i < n_fields; i++) {
+        // If opt_fields_pos is 0 we have a opt field in this position
+        switch (opt_fields_pos[i]) {
+            case TYPE_OPT: // read the optinal, expect its null or empty if not return error
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &tmp_presence))
+                if(tmp_presence){ //expect empty optionals
+                    return parser_unexpected_value;
+                }
+                break;
+            case TYPE_NEURONS_IDS: //read number os ids
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->neuron_ids_size))
 
-    val->neuron_ids_ptr = ctx.buffer + ctx.offset;
-    for (uint8_t i = 0; i < val->neuron_ids_size; i++) {
-        CHECK_PARSER_ERR(readCandidNat64(&ctx, &tmp_neuron_id))
+                val->neuron_ids_ptr = ctx.buffer + ctx.offset;
+                for (uint8_t j = 0; j < val->neuron_ids_size; j++) {
+                    CHECK_PARSER_ERR(readCandidNat64(&ctx, &tmp_neuron_id))
+                }
+                break;
+            case TYPE_CALLER: // read bool
+                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_neurons_readable_by_caller))
+                break;
+            default:
+            return parser_unexpected_value;
+        }
     }
 
-    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->has_include_empty_neurons_readable_by_caller))
-    if(val->has_include_empty_neurons_readable_by_caller) {
-        CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_empty_neurons_readable_by_caller))
-    }
-
-    CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_neurons_readable_by_caller))
     return parser_ok;
 }
 

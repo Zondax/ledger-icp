@@ -68,7 +68,7 @@ endif
 
 APP_LOAD_PARAMS = --curve secp256k1 $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
-APP_STACK_MIN_SIZE := 3000
+APP_STACK_MIN_SIZE := 2050
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 
 $(info TARGET_NAME  = [$(TARGET_NAME)])
@@ -82,6 +82,9 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
 CFLAGS += -Wvla  -Wno-implicit-fallthrough
 CFLAGS += -I$(MY_DIR)/../deps/tinycbor/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/tinycbor-ledger
+
+CFLAGS += -I$(MY_DIR)/../deps/nanopb/
+APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
 .PHONY: rust
 rust:
