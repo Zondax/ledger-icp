@@ -70,9 +70,25 @@ APP_LOAD_PARAMS = --curve secp256k1 $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
 APP_STACK_MIN_SIZE := 2050
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
+RUST_TARGET := thumbv6m-none-eabi
 
 $(info TARGET_NAME  = [$(TARGET_NAME)])
 $(info ICONNAME  = [$(ICONNAME)])
+
+# Enable bls signature verification for all targets except TARGET_NANOS and TARGET_NANOX
+ifneq ($(TARGET_NAME),TARGET_NANOS)
+ifneq ($(TARGET_NAME),TARGET_NANOX)
+BLS_SIGNATURE = 1
+DEFINES += BLS_SIGNATURE=$(BLS_SIGNATURE)
+endif
+endif
+
+RUST_TARGET_NAME := $(TARGET_NAME)
+
+NBGL_TARGETS := TARGET_STAX TARGET_FLEX
+ifeq ($(TARGET_NAME),$(filter $(TARGET_NAME), $(NBGL_TARGETS)))
+RUST_TARGET_NAME := TARGET_STAX
+endif
 
 ifndef ICONNAME
 $(error ICONNAME is not set)
@@ -82,24 +98,55 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
 CFLAGS += -Wvla  -Wno-implicit-fallthrough
 CFLAGS += -I$(MY_DIR)/../deps/tinycbor/src
 APP_SOURCE_PATH += $(MY_DIR)/../deps/tinycbor-ledger
+LDFLAGS  += -z muldefs
+
+ifdef BLS_SIGNATURE
+LDLIBS   += -Lrust/target/$(RUST_TARGET)/release -lrslib
+endif
+
+APP_SOURCE_PATH += $(MY_DIR)/rust/include
 
 CFLAGS += -I$(MY_DIR)/../deps/nanopb/
 APP_SOURCE_PATH += $(MY_DIR)/../deps/nanopb_tiny/
 
+
+# Check if BLS_SIGNATURE is set
+ifdef BLS_SIGNATURE
+
+APP_CUSTOM_LINK_DEPENDENCIES = rust
+
 .PHONY: rust
 rust:
-	@echo "No rust code"
-#	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo build --target thumbv6m-none-eabi --release
-
-# Before linking, we need to be sure rust lib is there
-bin/app.elf: rust
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(RUST_TARGET_NAME) cargo build --target $(RUST_TARGET) --release
 
 .PHONY: rust_clean
 rust_clean:
-	@echo "No rust code"
-#	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo clean
 
 clean: rust_clean
+
+.PHONY: rust_tests
+rust_tests:
+	cd rust && CARGO_HOME="$(CURDIR)/rust/.cargo" cargo test
+else
+# Empty rules when BLS_SIGNATURE is not set
+.PHONY: rust
+rust:
+	@echo "Skipping Rust build (BLS_SIGNATURE not set)"
+
+.PHONY: rust_clean
+rust_clean:
+	@echo "Skipping Rust clean (BLS_SIGNATURE not set)"
+
+.PHONY: rust_tests
+rust_tests:
+	@echo "Skipping Rust tests (BLS_SIGNATURE not set)"
+
+endif
+
+ifdef BLS_SIGNATURE
+clean: rust_clean
+endif
 
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.side_loading
 

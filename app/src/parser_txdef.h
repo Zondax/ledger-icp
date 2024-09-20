@@ -189,15 +189,12 @@ typedef struct {
 
 typedef struct {
     txtype_e txtype;            // union selector
-
     request_t request_type;
     special_transfer_e special_transfer_type;
-
     union {
         call_t call;
         state_read_t stateRead;
     } tx_fields;
-
     uint64_t candid_typetableSize;
     uint64_t candid_rootType;
 } parser_tx_t;

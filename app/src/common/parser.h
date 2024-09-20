@@ -43,6 +43,19 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                               char *outVal, uint16_t outValLen,
                               uint8_t pageIdx, uint8_t *pageCount);
 
+#if defined(BLS_SIGNATURE)
+#include "rslib.h"
+
+extern uint8_t parsed_obj_buffer[60];
+
+parser_error_t parser_certNumItems(uint8_t *num_items);
+
+parser_error_t parser_certGetItem(uint8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen,
+                              char *outVal, uint16_t outValLen,
+                              uint8_t pageIdx, uint8_t *pageCount);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

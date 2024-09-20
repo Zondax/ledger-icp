@@ -29,6 +29,11 @@
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
 #include "parser_print_protobuf.h"
+#if defined(BLS_SIGNATURE)
+#include "rslib.h"
+#endif
+
+
 
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
 // For some reason NanoX requires this function
@@ -239,3 +244,22 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
 
     return parser_unexpected_type;
 }
+
+#if defined(BLS_SIGNATURE)
+uint8_t parsed_obj_buffer[CERT_OBJ_MAX_SIZE];
+
+parser_error_t parser_certNumItems(uint8_t *num_items) {
+    CHECK_PARSER_ERR(rs_getNumItems(num_items));
+    PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
+    return parser_ok;
+}
+
+parser_error_t parser_certGetItem(uint8_t displayIdx,
+                              char *outKey, uint16_t outKeyLen,
+                              char *outVal, uint16_t outValLen,
+                              uint8_t pageIdx, uint8_t *pageCount) {
+
+    *pageCount = 1;
+    return rs_getItem(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+}
+#endif

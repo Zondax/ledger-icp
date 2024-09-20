@@ -91,17 +91,19 @@ const char *parser_getErrorDescription(parser_error_t err) {
         case parser_display_page_out_of_range:
             return "Display page out of range";
         case parser_unexpected_error:
-            return "Unexepected internal error";
-            // cbor
+            return "Unexpected internal error";
+        case parser_not_implemented:
+            return "Feature not implemented";
+        // cbor
         case parser_cbor_unexpected:
-            return "unexpected CBOR error";
+            return "Unexpected CBOR error";
         case parser_cbor_not_canonical:
             return "CBOR was not in canonical order";
         case parser_cbor_unexpected_EOF:
             return "Unexpected CBOR EOF";
-            // Coin specific
+        // Coin specific
         case parser_unexpected_tx_version:
-            return "tx version is not supported";
+            return "TX version is not supported";
         case parser_unexpected_type:
             return "Unexpected data type";
         case parser_unexpected_method:
@@ -120,18 +122,66 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "Value out of range";
         case parser_invalid_address:
             return "Invalid address format";
-            /////////// Context specific
+        // Context specific
         case parser_context_mismatch:
-            return "context prefix is invalid";
+            return "Context prefix is invalid";
         case parser_context_unexpected_size:
-            return "context unexpected size";
+            return "Context unexpected size";
         case parser_context_invalid_chars:
-            return "context invalid chars";
-            // Required fields error
+            return "Context invalid chars";
+        case parser_context_unknown_prefix:
+            return "Unknown context prefix";
+        // Required fields error
         case parser_required_nonce:
             return "Required field nonce";
         case parser_required_method:
             return "Required field method";
+        // Special codes
+        case parser_type_not_found:
+            return "Type not found";
+        case parser_invalid_label:
+            return "Invalid label";
+        case parser_invalid_delegation:
+            return "Invalid delegation";
+        case parser_invalid_certificate:
+            return "Invalid certificate";
+        case parser_invalid_tree:
+            return "Invalid tree";
+        case parser_minicbor_error:
+            return "MiniCBOR error";
+        case parser_recursion_limit_reached:
+            return "Recursion limit reached";
+        // New errors added from Rust
+        case parser_invalid_tag:
+            return "Invalid tag";
+        case parser_invalid_msg_metadata:
+            return "Invalid message metadata";
+        case parser_invalid_consent_msg:
+            return "Invalid consent message";
+        case parser_invalid_utf8:
+            return "Invalid UTF-8";
+        case parser_invalid_error_response:
+            return "Invalid error response";
+        case parser_invalid_response_type:
+            return "Invalid response type";
+        case parser_invalid_call_request:
+            return "Invalid call request";
+        case parser_invalid_consent_msg_request:
+            return "Invalid consent message request";
+        case parser_invalid_canister_id:
+            return "Invalid canister ID";
+        case parser_invalid_language:
+            return "Invalid language";
+        case parser_too_many_types:
+            return "Too many types";
+        case parser_too_many_fields:
+            return "Too many fields";
+        case parser_field_not_found:
+            return "Field not found";
+        case parser_leb128_overflow:
+            return "LEB128 overflow";
+        case parser_invalid_time:
+            return "Invalid time";
         default:
             return "Unrecognized error code";
     }

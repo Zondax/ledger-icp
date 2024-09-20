@@ -193,6 +193,71 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
     }
 }
 
+zxerr_t crypto_sign_bls(uint8_t *signatureBuffer,
+                    uint16_t signatureMaxlen,
+                    uint16_t *sigSize,
+                    uint8_t *payload,
+                    uint16_t payloadLen) {
+
+    if (signatureMaxlen < SIGN_PREHASH_SIZE + sizeof(signature_t)){
+        return zxerr_buffer_too_small;
+    }
+
+    uint8_t message_digest[CX_SHA256_SIZE] = {0};
+    signatureBuffer[0] = 0x0a;
+    MEMCPY(&signatureBuffer[1], (uint8_t *)"ic-request", SIGN_PREFIX_SIZE - 1);
+
+    // Copy the provided payload (hash) to the appropriate location
+    if (payloadLen != CX_SHA256_SIZE) {
+        return zxerr_invalid_crypto_settings;
+    }
+    MEMCPY(signatureBuffer + SIGN_PREFIX_SIZE, payload, payloadLen);
+    CHECK_APP_CANARY()
+
+    cx_hash_sha256(signatureBuffer, SIGN_PREHASH_SIZE, message_digest, CX_SHA256_SIZE);
+
+    cx_ecfp_private_key_t cx_privateKey;
+    uint8_t privateKeyData[64] = {0};
+    uint32_t info = 0;
+    uint32_t signatureLength = sizeof_field(signature_t, der_signature);
+
+    signature_t *const signature = (signature_t *) (signatureBuffer + SIGN_PREHASH_SIZE);
+
+    zxerr_t err = zxerr_ledger_api_error;
+    // Generate keys
+    CATCH_CXERROR(os_derive_bip32_no_throw(CX_CURVE_SECP256K1,
+                             hdPath,
+                             HDPATH_LEN_DEFAULT,
+                             privateKeyData, NULL));
+    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey));
+
+    // Sign
+    CATCH_CXERROR(cx_ecdsa_sign_no_throw(&cx_privateKey,
+                           CX_RND_RFC6979 | CX_LAST,
+                           CX_SHA256,
+                           message_digest,
+                           CX_SHA256_SIZE,
+                           signature->der_signature,
+                           &signatureLength,
+                           &info));
+
+    err_convert_e err_c = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
+    if (err_c != no_error) {
+        err = zxerr_unknown;
+    } else {
+        *sigSize = SIGN_PREHASH_SIZE + sizeof_field(signature_t, r) + sizeof_field(signature_t, s) + sizeof_field(signature_t, v) + signatureLength;
+        err = zxerr_ok;
+    }
+catch_cx_error:
+    MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
+    MEMZERO(privateKeyData, 32);
+    if (err != zxerr_ok) {
+        MEMZERO(signatureBuffer, signatureMaxlen);
+    }
+    return err;
+}
+
+
 zxerr_t crypto_sign(uint8_t *signatureBuffer,
                     uint16_t signatureMaxlen,
                     uint16_t *sigSize) {
@@ -635,14 +700,6 @@ zxerr_t compressLEB128(const uint64_t input, uint16_t maxSize, uint8_t *output, 
     *outLen = bytes;
     return zxerr_ok;
 }
-
-typedef struct {
-    uint8_t publicKey[SECP256K1_PK_LEN];
-    uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
-    uint8_t subAccountBytes[DFINITY_ADDR_LEN];
-    char addrText[DFINITY_TEXTUAL_SIZE];
-
-} __attribute__((packed)) answer_t;
 
 zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrLen) {
     MEMZERO(buffer, buffer_len);

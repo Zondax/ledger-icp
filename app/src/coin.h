@@ -25,6 +25,10 @@ extern "C" {
 #define CLA                             0x11u
 
 #define INS_SIGN_COMBINED               0x03u
+#define INS_CONSENT_REQUEST             0x04u
+#define INS_CANISTER_CALL_TX            0x05u
+#define INS_ROOT_KEY                    0x06u
+#define INS_CERTIFICATE_AND_SIGN        0x07u
 
 #define HDPATH_LEN_DEFAULT   5u
 

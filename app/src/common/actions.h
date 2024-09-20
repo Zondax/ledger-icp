@@ -56,6 +56,8 @@ __Z_INLINE void app_sign_combined() {
 }
 
 __Z_INLINE zxerr_t app_fill_address() {
+    CHECK_APP_CANARY();
+
     // Put data directly in the apdu buffer
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
 
@@ -84,3 +86,32 @@ __Z_INLINE void app_reply_error() {
     set_code(G_io_apdu_buffer, 0, APDU_CODE_DATA_INVALID);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
+
+#if defined(BLS_SIGNATURE)
+#include "bls.h"
+
+__Z_INLINE void app_sign_bls() {
+    uint16_t replyLen = 0;
+
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    // retrieve hash to be sign
+    uint8_t hash[32] = {0};
+
+    rs_get_signing_hash(hash);
+
+    zxerr_t err = crypto_sign_bls(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &replyLen, hash, 32);
+
+    // Clear data after signing
+    // and reset bls state
+    reset_bls_state();
+
+
+    if (err != zxerr_ok || replyLen == 0) {
+        set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+    } else {
+        set_code(G_io_apdu_buffer, replyLen, APDU_CODE_OK);
+        io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, replyLen + 2);
+    }
+}
+#endif

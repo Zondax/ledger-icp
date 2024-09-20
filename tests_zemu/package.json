@@ -15,13 +15,18 @@
   ],
   "scripts": {
     "clean": "ts-node tests/pullImageKillOld.ts",
-    "test": "yarn clean && jest"
+    "test": "jest --testPathIgnorePatterns='dev.*|testvectors.*|btc.*'",
+    "test_dev": "jest",
+    "try": "node try.mjs"
   },
   "dependencies": {
+    "@ledgerhq/hw-transport-node-hid": "^6.29.3",
+    "@ledgerhq/logs": "^6.12.0",
     "@zondax/ledger-icp": "link:../js",
     "@zondax/zemu": "^0.50.2"
   },
   "devDependencies": {
+    "@matteoh2o1999/github-actions-jest-reporter": "^3.0.0",
     "@types/jest": "^29.2.3",
     "@types/ledgerhq__hw-transport": "^4.21.4",
     "@types/secp256k1": "^4.0.3",
