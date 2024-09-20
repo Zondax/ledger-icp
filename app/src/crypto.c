@@ -22,11 +22,6 @@
 
 uint32_t hdPath[HDPATH_LEN_DEFAULT];
 
-bool isTestnet() {
-    return hdPath[0] == HDPATH_0_TESTNET &&
-           hdPath[1] == HDPATH_1_TESTNET;
-}
-
 uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
                               0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x0a, 0x03, 0x42, 0x00};
 
@@ -44,7 +39,7 @@ uint8_t const DER_PREFIX[] = {0x30, 0x56, 0x30, 0x10, 0x06, 0x07, 0x2a, 0x86, 0x
 #define SIGNATURE_SIZE_S 32
 #define SIGNATURE_SIZE_RS 64
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
 #include "cx.h"
 
 zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t outputLen){
@@ -53,7 +48,7 @@ zxerr_t hash_sha224(uint8_t *input, uint16_t inputLen, uint8_t *output, uint16_t
     }
     cx_sha256_t ctx;
     cx_sha224_init(&ctx);
-    cx_hash_no_throw(&ctx.header, CX_LAST, input, inputLen, output, 224);
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, CX_LAST, input, inputLen, output, 224));
     return zxerr_ok;
 }
 
@@ -69,11 +64,11 @@ zxerr_t crypto_extractPublicKey(uint8_t *pubKey, uint16_t pubKeyLen) {
     zxerr_t err = zxerr_ledger_api_error;
     CATCH_CXERROR(os_derive_bip32_no_throw(CX_CURVE_256K1, hdPath,
                                            HDPATH_LEN_DEFAULT,
-                                           privateKeyData, NULL))
+                                           privateKeyData, NULL));
 
-    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_256K1, privateKeyData, 32, &cx_privateKey))
-    CATCH_CXERROR(cx_ecfp_init_public_key_no_throw(CX_CURVE_256K1, NULL, 0, &cx_publicKey))
-    CATCH_CXERROR(cx_ecfp_generate_pair_no_throw(CX_CURVE_256K1, &cx_publicKey, &cx_privateKey, 1))
+    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_256K1, privateKeyData, 32, &cx_privateKey));
+    CATCH_CXERROR(cx_ecfp_init_public_key_no_throw(CX_CURVE_256K1, NULL, 0, &cx_publicKey));
+    CATCH_CXERROR(cx_ecfp_generate_pair_no_throw(CX_CURVE_256K1, &cx_publicKey, &cx_privateKey, 1));
     memcpy(pubKey, cx_publicKey.W, SECP256K1_PK_LEN);
     err = zxerr_ok;
 
@@ -118,36 +113,36 @@ typedef struct {
 #define HASH_U64(FIELDNAME, FIELDVALUE, TMPDIGEST) { \
     MEMZERO(TMPDIGEST,sizeof(TMPDIGEST));                      \
     cx_hash_sha256((uint8_t *)FIELDNAME, sizeof(FIELDNAME) - 1, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0);         \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0));         \
     uint8_t ingressbuf[10];                                             \
     uint16_t enc_size = 0;                                              \
     CHECK_ZXERR(compressLEB128(FIELDVALUE, sizeof(ingressbuf), ingressbuf, &enc_size)); \
     cx_hash_sha256((uint8_t *)ingressbuf, enc_size, tmpdigest, CX_SHA256_SIZE);         \
-    cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);                        \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0));                        \
 }
 
 #define HASH_BYTES_INTERMEDIATE(FIELDNAME, FIELDVALUE, TMPDIGEST) { \
     MEMZERO(TMPDIGEST,sizeof(TMPDIGEST));                      \
     cx_hash_sha256((uint8_t *)FIELDNAME, sizeof(FIELDNAME) - 1, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0);         \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0));         \
     cx_hash_sha256((uint8_t *)(FIELDVALUE).data, (FIELDVALUE).len, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0);                               \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0));                               \
 }
 
 #define HASH_BYTES_END(FIELDNAME, FIELDVALUE, TMPDIGEST, ENDDIGEST) { \
     MEMZERO(TMPDIGEST,sizeof(TMPDIGEST));                      \
     cx_hash_sha256((uint8_t *)FIELDNAME, sizeof(FIELDNAME) - 1, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0);         \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0));         \
     cx_hash_sha256((uint8_t *)(FIELDVALUE).data, (FIELDVALUE).len, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE);        \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE));        \
 }
 
 #define HASH_BYTES_PTR_END(FIELDNAME, FIELDVALUE, TMPDIGEST, ENDDIGEST) { \
     MEMZERO(TMPDIGEST,sizeof(TMPDIGEST));                      \
     cx_hash_sha256((uint8_t *)FIELDNAME, sizeof(FIELDNAME) - 1, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0);         \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0));         \
     cx_hash_sha256((uint8_t *)(FIELDVALUE).dataPtr, (FIELDVALUE).len, TMPDIGEST, CX_SHA256_SIZE); \
-    cx_hash_no_throw(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE);        \
+    CHECK_CX_OK(cx_hash_no_throw(&ctx.header, CX_LAST, TMPDIGEST, CX_SHA256_SIZE, ENDDIGEST, CX_SHA256_SIZE));        \
 }
 
 zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
@@ -178,7 +173,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             HASH_U64("ingress_expiry",fields->ingress_expiry, tmpdigest);
 
             cx_hash_sha256((uint8_t *)"paths", 5, tmpdigest, CX_SHA256_SIZE);
-            cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+            CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0));
 
             uint8_t arrayBuffer[PATH_MAX_ARRAY * CX_SHA256_SIZE];
             for (size_t index = 0; index < fields->paths.arrayLen ; index++){
@@ -186,7 +181,7 @@ zxerr_t crypto_getDigest(uint8_t *digest, txtype_e txtype){
             }
             cx_hash_sha256(arrayBuffer, fields->paths.arrayLen*CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
             cx_hash_sha256(tmpdigest, CX_SHA256_SIZE, tmpdigest, CX_SHA256_SIZE);
-            cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0);
+            CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0));
 
             HASH_BYTES_END("request_type", parser_tx_obj.request_type, tmpdigest, digest);
             return zxerr_ok;
@@ -205,8 +200,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
         return zxerr_buffer_too_small;
     }
 
-    uint8_t message_digest[CX_SHA256_SIZE];
-    MEMZERO(message_digest,sizeof(message_digest));
+    uint8_t message_digest[CX_SHA256_SIZE] = {0};
 
     signatureBuffer[0] = 0x0a;
     MEMCPY(&signatureBuffer[1], (uint8_t *)"ic-request",SIGN_PREFIX_SIZE - 1);
@@ -228,9 +222,9 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
     CATCH_CXERROR(os_derive_bip32_no_throw(CX_CURVE_SECP256K1,
                              hdPath,
                              HDPATH_LEN_DEFAULT,
-                             privateKeyData, NULL))
+                             privateKeyData, NULL));
 
-    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey))
+    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey));
 
     // Sign
     CATCH_CXERROR(cx_ecdsa_sign_no_throw(&cx_privateKey,
@@ -240,7 +234,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer,
                            CX_SHA256_SIZE,
                            signature->der_signature,
                            &signatureLength,
-                           &info))
+                           &info));
 
     err_convert_e err_c = convertDERtoRSV(signature->der_signature, info,  signature->r, signature->s, &signature->v);
     if (err_c != no_error) {
@@ -309,9 +303,9 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
     CATCH_CXERROR(os_derive_bip32_no_throw(CX_CURVE_SECP256K1,
                                            hdPath,
                                            HDPATH_LEN_DEFAULT,
-                                           privateKeyData, NULL))
+                                           privateKeyData, NULL));
 
-    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey))
+    CATCH_CXERROR(cx_ecfp_init_private_key_no_throw(CX_CURVE_SECP256K1, privateKeyData, 32, &cx_privateKey));
 
     // Sign request
     CATCH_CXERROR(cx_ecdsa_sign_no_throw(&cx_privateKey,
@@ -321,7 +315,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
                                          CX_SHA256_SIZE,
                                          sigma.der_signature,
                                          &sigLen,
-                                         &info))
+                                         &info));
 
     err_convert_e err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
     if (err_c != no_error) {
@@ -343,7 +337,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer,
                                              CX_SHA256_SIZE,
                                              sigma.der_signature,
                                              &sigLen,
-                                             &info))
+                                             &info));
 
         err_c = convertDERtoRSV(sigma.der_signature, info,  sigma.r, sigma.s, &sigma.v);
         if (err_c != no_error) {
@@ -665,9 +659,7 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
     CHECK_ZXERR(crypto_computePrincipal(answer->publicKey, answer->principalBytes));
 
     //For now only defeault subaccount, maybe later grab 32 bytes from the apdu buffer.
-    uint8_t zero_subaccount[DFINITY_SUBACCOUNT_LEN];
-    MEMZERO(zero_subaccount, DFINITY_SUBACCOUNT_LEN);
-
+    uint8_t zero_subaccount[DFINITY_SUBACCOUNT_LEN] = {0};
     CHECK_ZXERR(crypto_principalToSubaccount(answer->principalBytes, sizeof_field(answer_t, principalBytes),
                                              zero_subaccount, DFINITY_SUBACCOUNT_LEN, answer->subAccountBytes,
                                              sizeof_field(answer_t, subAccountBytes)));

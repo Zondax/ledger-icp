@@ -17,6 +17,7 @@
 
 #include <coin.h>
 #include <zxtypes.h>
+#include <stdbool.h>
 
 #define ZX_NO_CPP
 
@@ -64,9 +65,7 @@ typedef enum {
 } method_type_e;
 
 typedef enum {
-    wrong_operation = 0,          //default is not accepted
-
-    Configure = 2,
+Configure = 2,
     Configure_IncreaseDissolveDelay = 2001,
     Configure_StartDissolving = 2002,
     Configure_StopDissolving = 2003,
@@ -77,15 +76,12 @@ typedef enum {
     Configure_LeaveNeuronsFund = 2008,
     Configure_ChangeAutoStakeMaturity = 2009,
 
-////
     Disburse = 3,
     Spawn = 4,
     Follow = 5,
     RegisterVote = 7,
-//    Register_Vote = 10,
     Split = 11,
-//    DisburseToNeuron = 12,
-//    ClaimOrRefresh = 13,
+
     Merge = 1000,
     SpawnCandid = 1001,
     StakeMaturityCandid = 1002,
@@ -190,9 +186,6 @@ typedef struct {
     sender_t sender;
     pathArray_t paths;
 } state_read_t;
-
-///
-///
 
 typedef struct {
     txtype_e txtype;            // union selector

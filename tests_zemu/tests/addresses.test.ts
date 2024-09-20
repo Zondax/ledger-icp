@@ -14,7 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu from '@zondax/zemu'
+import Zemu, { isTouchDevice } from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 
@@ -81,7 +81,7 @@ describe('Addresses', function () {
       }
 
       try {
-        await sim.start({ ...defaultOptions_withseed, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+        await sim.start({ ...defaultOptions_withseed, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
         const app = new InternetComputerApp(sim.getTransport())
 
         const resp = await app.getAddressAndPubKey("m/44'/223'/0'/0/0")
@@ -102,7 +102,7 @@ describe('Addresses', function () {
   test.concurrent.each(DEVICE_MODELS)('derivation paths', async function (m) {
     const sim = new Zemu(m.path)
     try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
       for (const TEST of TEST_CASES_BIP32) {

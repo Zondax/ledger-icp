@@ -73,7 +73,7 @@ __Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 
-    bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
+    const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
     uint32_t added;
     switch (payloadType) {
@@ -128,9 +128,9 @@ __Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
 __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
 
-    uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
+    const uint8_t requireConfirmation = G_io_apdu_buffer[OFFSET_P1];
 
-    zxerr_t zxerr = app_fill_address();
+    const zxerr_t zxerr = app_fill_address();
     if (zxerr != zxerr_ok) {
         *tx = 0;
         THROW(APDU_CODE_DATA_INVALID);
@@ -158,7 +158,7 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
     CHECK_APP_CANARY()
 
     if (error_msg != NULL) {
-        int error_msg_length = strlen(error_msg);
+        const uint32_t error_msg_length = strnlen(error_msg, sizeof(G_io_apdu_buffer));
         MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
         *tx += (error_msg_length);
         THROW(APDU_CODE_DATA_INVALID);
@@ -181,7 +181,7 @@ __Z_INLINE void handleSignCombined(volatile uint32_t *flags, volatile uint32_t *
     CHECK_APP_CANARY()
 
     if (error_msg != NULL) {
-        int error_msg_length = strlen(error_msg);
+        const uint32_t error_msg_length = strnlen(error_msg, sizeof(G_io_apdu_buffer));
         MEMCPY(G_io_apdu_buffer, error_msg, error_msg_length);
         *tx += (error_msg_length);
         THROW(APDU_CODE_DATA_INVALID);
@@ -202,7 +202,9 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
     G_io_apdu_buffer[1] = LEDGER_MAJOR_VERSION;
     G_io_apdu_buffer[2] = LEDGER_MINOR_VERSION;
     G_io_apdu_buffer[3] = LEDGER_PATCH_VERSION;
-    G_io_apdu_buffer[4] = !IS_UX_ALLOWED;
+    // sdk won't pass the apdu message if device is locked
+    // keeping it for backwards compatibility
+    G_io_apdu_buffer[4] = 0;
 
     G_io_apdu_buffer[5] = (TARGET_ID >> 24) & 0xFF;
     G_io_apdu_buffer[6] = (TARGET_ID >> 16) & 0xFF;
@@ -214,7 +216,7 @@ __Z_INLINE void handle_getversion(__Z_UNUSED volatile uint32_t *flags, volatile 
 }
 
 void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
-    uint16_t sw = 0;
+    volatile uint16_t sw = 0;
 
     BEGIN_TRY
     {
@@ -278,7 +280,7 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
                     break;
             }
             G_io_apdu_buffer[*tx] = sw >> 8;
-            G_io_apdu_buffer[*tx + 1] = sw;
+            G_io_apdu_buffer[*tx + 1] = sw & 0xFF;
             *tx += 2;
         }
         FINALLY
