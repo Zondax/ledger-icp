@@ -5,5 +5,5 @@ module.exports = {
   globalSetup: './jest/globalsetup.ts',
   globalTeardown: './jest/globalteardown.ts',
   setupFilesAfterEnv: ['./jest/setup.ts'],
-  reporters: ['default', ['summary', { summaryThreshold: 1 }]],
+  reporters: ['default', ['summary', { summaryThreshold: 1 }], '@matteoh2o1999/github-actions-jest-reporter'],
 }
