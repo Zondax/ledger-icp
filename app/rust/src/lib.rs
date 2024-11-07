@@ -8,7 +8,7 @@ extern crate no_std_compat as std;
 
 pub mod candid_types;
 mod constants;
-mod error;
+pub mod error;
 mod ffi;
 mod parser;
 mod principal;
@@ -16,6 +16,10 @@ pub mod type_table;
 pub mod utils;
 pub use principal::Principal;
 use zemu_sys as _;
+pub mod argument_list;
+pub mod candid_header;
+#[cfg(test)]
+pub mod test_ui;
 
 pub use parser::*;
 

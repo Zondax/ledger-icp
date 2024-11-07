@@ -1,14 +1,12 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
-use minicbor::Decoder;
 
 use crate::{
-    constants::{BIG_NUM_TAG, CONSENT_MSG_REQUEST_TAG},
     error::ParserError,
     utils::{compress_leb128, hash_blob, hash_str},
     zlog, FromBytes,
 };
 
-use super::RawArg;
+use super::{CanisterCall, Icrc21ConsentMessageRequest, RawArg};
 
 const METHOD_NAME_LEN: usize = 36;
 const METHOD_NAME: &[u8] = b"icrc21_canister_call_consent_message";
@@ -22,19 +20,7 @@ const METHOD_NAME: &[u8] = b"icrc21_canister_call_consent_message";
 // "request_type": "call", "sender": h'04'}}
 #[derive(PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct ConsentMsgRequest<'a> {
-    // Bellow arg contains
-    // a candid encoded type the Icrc21ConsentMessageRequest
-    pub arg: RawArg<'a>,
-    pub nonce: Option<&'a [u8]>,
-    // Sender is allowed to be either default sender(h04) or
-    // this signer
-    pub sender: &'a [u8],
-    pub canister_id: &'a [u8],
-    pub method_name: &'a str,
-    pub request_type: &'a str,
-    pub ingress_expiry: u64,
-}
+pub struct ConsentMsgRequest<'a>(CanisterCall<'a>);
 
 impl<'a> ConsentMsgRequest<'a> {
     // this sums up the nonce although
@@ -42,26 +28,38 @@ impl<'a> ConsentMsgRequest<'a> {
     const MAP_ENTRIES: u64 = 7;
 
     // Getter methods (unchanged)
-    pub fn arg(&self) -> &RawArg<'a> {
-        &self.arg
+    pub fn arg(&'a self) -> &RawArg<'a> {
+        self.0.arg()
     }
 
     pub fn nonce(&self) -> Option<&[u8]> {
-        self.nonce
+        self.0.nonce()
     }
     pub fn sender(&self) -> &[u8] {
-        self.sender
+        self.0.sender()
     }
     pub fn canister_id(&self) -> &[u8] {
-        self.canister_id
+        self.0.canister_id()
     }
 
     pub fn request_type(&self) -> &str {
-        self.request_type
+        self.0.request_type()
     }
 
     pub fn ingress_expiry(&self) -> u64 {
-        self.ingress_expiry
+        self.0.ingress_expiry()
+    }
+
+    pub fn method_name(&self) -> &str {
+        self.0.method_name()
+    }
+
+    #[inline(never)]
+    pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest, ParserError> {
+        // lazy parsing on demand in order to reduce stack usage
+        Ok(Icrc21ConsentMessageRequest::new_unchecked(
+            self.arg().raw_data(),
+        ))
     }
 
     /// Computes the request_id which is the hash
@@ -83,7 +81,7 @@ impl<'a> ConsentMsgRequest<'a> {
         ];
         let mut field_hashes = [[0u8; 64]; MAX_FIELDS];
         let mut field_count = 0;
-        let max_fields = if self.nonce.is_some() {
+        let max_fields = if self.0.nonce().is_some() {
             MAX_FIELDS
         } else {
             MAX_FIELDS - 1
@@ -93,18 +91,18 @@ impl<'a> ConsentMsgRequest<'a> {
             let key_hash = hash_str(key);
 
             let value_hash = match idx {
-                0 => hash_blob(self.request_type.as_bytes()),
-                1 => hash_blob(self.sender),
+                0 => hash_blob(self.0.request_type.as_bytes()),
+                1 => hash_blob(self.0.sender),
                 2 => {
                     let mut buf = [0u8; 10];
-                    let leb = compress_leb128(self.ingress_expiry, &mut buf);
+                    let leb = compress_leb128(self.0.ingress_expiry, &mut buf);
                     hash_blob(leb)
                 }
-                3 => hash_blob(self.canister_id),
-                4 => hash_blob(self.method_name.as_bytes()),
-                5 => hash_blob(self.arg.raw_data()),
+                3 => hash_blob(self.0.canister_id()),
+                4 => hash_blob(self.0.method_name().as_bytes()),
+                5 => hash_blob(self.0.arg.raw_data()),
                 6 => {
-                    if let Some(nonce) = self.nonce {
+                    if let Some(nonce) = self.0.nonce {
                         hash_blob(nonce)
                     } else {
                         break;
@@ -137,83 +135,12 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
     ) -> Result<&'a [u8], ParserError> {
         zlog("ConsentMsgRequest::from_bytes_into\x00");
 
-        let mut d = Decoder::new(input);
-
         let out = out.as_mut_ptr();
-        // Check tag
-        if let Ok(tag) = d.tag() {
-            if tag.as_u64() != CONSENT_MSG_REQUEST_TAG {
-                return Err(ParserError::InvalidTag);
-            }
-        }
 
-        // Decode outer map
-        let len = d.map()?.ok_or(ParserError::UnexpectedValue)?;
-        if len != 1 {
-            return Err(ParserError::UnexpectedValue);
-        }
+        let call: &mut MaybeUninit<CanisterCall<'a>> =
+            unsafe { &mut *addr_of_mut!((*out).0).cast() };
 
-        let _key = d.str()?;
-
-        // Decode content map
-        let content_len = d.map()?.ok_or(ParserError::UnexpectedBufferEnd)?;
-
-        // Nonce could be an optional argument
-        // so it could have 6 or 7 map entries depending
-        // on the presence of nonce
-        let max_entries = Self::MAP_ENTRIES;
-
-        if content_len != max_entries && content_len != max_entries - 1 {
-            return Err(ParserError::UnexpectedValue);
-        }
-
-        let mut nonce = None;
-
-        for _ in 0..content_len {
-            let key = d.str()?;
-            unsafe {
-                match key {
-                    "arg" => {
-                        let arg: &mut MaybeUninit<RawArg<'a>> =
-                            &mut *addr_of_mut!((*out).arg).cast();
-                        _ = RawArg::from_bytes_into(d.bytes()?, arg)?;
-                    }
-                    "nonce" => nonce = Some(d.bytes()?),
-                    "sender" => addr_of_mut!((*out).sender).write(d.bytes()?),
-                    "canister_id" => addr_of_mut!((*out).canister_id).write(d.bytes()?),
-                    "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
-                    "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
-                    "ingress_expiry" => {
-                        if let Ok(tag) = d.tag() {
-                            if tag.as_u64() != BIG_NUM_TAG {
-                                return Err(ParserError::InvalidCallRequest);
-                            }
-                        }
-
-                        let Ok(bytes) = d.bytes() else {
-                            return Err(ParserError::UnexpectedValue);
-                        };
-
-                        // read bytes as a timestamp of 8 bytes
-                        if bytes.len() > core::mem::size_of::<u64>() {
-                            return Err(ParserError::InvalidTime);
-                        }
-
-                        let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
-                        num_bytes[..bytes.len()].copy_from_slice(bytes);
-
-                        let timestamp = u64::from_be_bytes(num_bytes);
-
-                        addr_of_mut!((*out).ingress_expiry).write(timestamp);
-                    }
-                    _ => return Err(ParserError::UnexpectedField),
-                }
-            }
-        }
-
-        unsafe {
-            addr_of_mut!((*out).nonce).write(nonce);
-        }
+        let rem = CanisterCall::from_bytes_into(input, call)?;
 
         let out = unsafe { &mut *out };
 
@@ -222,11 +149,12 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
         let mut name = [0u8; METHOD_NAME_LEN];
         name.copy_from_slice(METHOD_NAME);
 
-        if out.method_name.as_bytes() != name {
+        if out.0.method_name.as_bytes() != name {
             return Err(ParserError::InvalidConsentMsgRequest);
         }
 
-        Ok(&input[d.position()..])
+        crate::zlog("ConsentMsgRequest::from_bytes_into ok\x00");
+        Ok(rem)
     }
 }
 
@@ -236,53 +164,38 @@ mod call_request_test {
 
     use super::*;
 
-    const REQUEST: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
-    const REQUEST2: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
+    const REQUEST: &str = "d9d9f7a167636f6e74656e74a76361726758d84449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e0101230003006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b18072a6f7894d0006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550369f1914fd64438f5e6329fcb66b1d4d6c726571756573745f747970656463616c6c6673656e6465724104";
 
     const ARG: &str = "4449444c00017104746f6269";
-    const NONCE: &str = "a3788c1805553fb69b20f08e87e23b13";
-    const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
-    const CANISTER_ID: &str = "00000000006000fd0101";
+    const NONCE: &str = "369f1914fd64438f5e6329fcb66b1d4d";
+    const REQUEST_ID: &str = "ea37fdc5229d7273d500dc8ae3c009f0421049c1f02cc5ad85ea838ae7dfc045";
+    const CANISTER_ID: &str = "00000000000000020101";
     const METHOD: &str = "icrc21_canister_call_consent_message";
     const REQUEST_TYPE: &str = "call";
     // The default sender
-    const INGRESS_EXPIRY: u64 = 1712666698482000000;
+    const INGRESS_EXPIRY: u64 = 1731399240000000000;
 
     #[test]
     fn msg_request() {
         let data = hex::decode(REQUEST).unwrap();
         let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
 
-        let request_id = hex::encode(msg_req.request_id());
+        let icrc_msg_request = msg_req.icrc21_msg_request().unwrap();
 
-        std::println!("ConsentMsgRequest: {:?}", msg_req);
-
-        assert_eq!(msg_req.sender.len(), 1);
-        assert_eq!(msg_req.sender[0], DEFAULT_SENDER);
-        assert_eq!(hex::encode(msg_req.canister_id), CANISTER_ID);
-        assert_eq!(msg_req.method_name, METHOD);
-        assert_eq!(msg_req.request_type, REQUEST_TYPE);
-
-        assert_eq!(msg_req.ingress_expiry, INGRESS_EXPIRY);
-        assert_eq!(hex::encode(msg_req.nonce.unwrap()), NONCE);
-        assert_eq!(request_id, REQUEST_ID);
-    }
-
-    #[test]
-    fn msg_request2() {
-        let data = hex::decode(REQUEST2).unwrap();
-        let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
+        let method = icrc_msg_request.method().unwrap();
+        assert_eq!(method, "icrc2_approve");
 
         let request_id = hex::encode(msg_req.request_id());
 
-        assert_eq!(msg_req.sender.len(), 1);
-        assert_eq!(msg_req.sender[0], DEFAULT_SENDER);
-        assert_eq!(hex::encode(msg_req.canister_id), CANISTER_ID);
-        assert_eq!(msg_req.method_name, METHOD);
-        assert_eq!(msg_req.request_type, REQUEST_TYPE);
+        assert_eq!(msg_req.sender().len(), 1);
+        assert_eq!(msg_req.sender()[0], DEFAULT_SENDER);
+        assert_eq!(hex::encode(msg_req.canister_id()), CANISTER_ID);
+        assert_eq!(msg_req.method_name(), METHOD);
+        assert_eq!(msg_req.request_type(), REQUEST_TYPE);
+        std::println!("request_id: {}", request_id);
 
-        assert_eq!(msg_req.ingress_expiry, INGRESS_EXPIRY);
-        assert_eq!(hex::encode(msg_req.nonce.unwrap()), NONCE);
+        assert_eq!(msg_req.ingress_expiry(), INGRESS_EXPIRY);
+        assert_eq!(hex::encode(msg_req.nonce().unwrap()), NONCE);
         assert_eq!(request_id, REQUEST_ID);
     }
 }

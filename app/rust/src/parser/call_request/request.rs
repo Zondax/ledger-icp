@@ -1,52 +1,37 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
-use minicbor::Decoder;
+use crate::{error::ParserError, utils::compress_leb128, zlog, FromBytes};
 
-use crate::{
-    constants::{BIG_NUM_TAG, CALL_REQUEST_TAG},
-    error::ParserError,
-    utils::compress_leb128,
-    zlog, FromBytes,
-};
+use super::{CanisterCall, RawArg};
 
 // {"content": {"arg": h'4449444C00017104746F6269', "canister_id": h'00000000006000FD0101',
 // "ingress_expiry": 1712667140606000000, "method_name": "greet", "request_type": "query", "sender": h'04'}}
 #[derive(PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct CallRequest<'a> {
-    pub arg: &'a [u8],
-    // Sender is allowed to be either default sender(h04) or
-    // this signer
-    pub sender: &'a [u8],
-    pub canister_id: &'a [u8],
-    pub method_name: &'a str,
-    pub request_type: &'a str,
-    pub ingress_expiry: u64,
-    pub nonce: Option<&'a [u8]>,
-}
+pub struct CallRequest<'a>(CanisterCall<'a>);
 
 impl<'a> CallRequest<'a> {
-    pub fn arg(&self) -> &[u8] {
-        self.arg
+    pub fn arg(&'a self) -> &RawArg<'a> {
+        self.0.arg()
     }
     pub fn sender(&self) -> &[u8] {
-        self.sender
+        self.0.sender()
     }
     pub fn canister_id(&self) -> &[u8] {
-        self.canister_id
+        self.0.canister_id()
     }
     pub fn method_name(&self) -> &str {
-        self.method_name
+        self.0.method_name()
     }
     pub fn request_type(&self) -> &str {
-        self.request_type
+        self.0.request_type()
     }
     pub fn ingress_expiry(&self) -> u64 {
-        self.ingress_expiry
+        self.0.ingress_expiry()
     }
 
     pub fn nonce(&self) -> Option<&[u8]> {
-        self.nonce
+        self.0.nonce()
     }
 
     // Compute the hash of the call request
@@ -65,26 +50,26 @@ impl<'a> CallRequest<'a> {
         };
 
         // Hash fields in the same order as the C function
-        hash_field("sender", self.sender);
-        hash_field("canister_id", self.canister_id);
+        hash_field("sender", self.sender());
+        hash_field("canister_id", self.canister_id());
 
         // Hash ingress_expiry (u64)
         let mut buf = [0u8; 10];
         hash_field(
             "ingress_expiry",
-            compress_leb128(self.ingress_expiry, &mut buf),
+            compress_leb128(self.ingress_expiry(), &mut buf),
         );
 
-        hash_field("method_name", self.method_name.as_bytes());
-        hash_field("request_type", self.request_type.as_bytes());
+        hash_field("method_name", self.method_name().as_bytes());
+        hash_field("request_type", self.request_type().as_bytes());
 
         // Hash nonce if present
-        if let Some(nonce) = self.nonce {
+        if let Some(nonce) = self.nonce() {
             hash_field("nonce", nonce);
         }
 
         // Hash arg last
-        hash_field("arg", self.arg);
+        hash_field("arg", self.arg().raw_data());
 
         // Finalize and return the hash
         let result = hasher.finalize();
@@ -98,71 +83,16 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-    ) -> Result<&'a [u8], crate::error::ParserError> {
+    ) -> Result<&'a [u8], ParserError> {
         zlog("CallRequest::from_bytes_into\x00");
         let out = out.as_mut_ptr();
 
-        let mut d = Decoder::new(input);
+        let call: &mut MaybeUninit<CanisterCall<'a>> =
+            unsafe { &mut *addr_of_mut!((*out).0).cast() };
 
-        if let Ok(tag) = d.tag() {
-            if tag.as_u64() != CALL_REQUEST_TAG {
-                return Err(ParserError::InvalidCallRequest);
-            }
-        }
+        let rem = CanisterCall::from_bytes_into(input, call)?;
 
-        let len = d.map()?.ok_or(ParserError::InvalidCallRequest)?;
-        if len != 1 {
-            return Err(ParserError::InvalidCallRequest);
-        }
-
-        let _key = d.str()?;
-
-        // Decode content map
-        let content_len = d.map()?.ok_or(ParserError::CborUnexpected)?;
-        if content_len != 6 && content_len != 7 {
-            return Err(ParserError::InvalidCallRequest);
-        }
-
-        let mut nonce = None;
-
-        for _ in 0..content_len as usize {
-            let key = d.str()?;
-            unsafe {
-                match key {
-                    "arg" => addr_of_mut!((*out).arg).write(d.bytes()?),
-                    "nonce" => nonce = Some(d.bytes()?),
-                    "sender" => addr_of_mut!((*out).sender).write(d.bytes()?),
-                    "canister_id" => addr_of_mut!((*out).canister_id).write(d.bytes()?),
-                    "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
-                    "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
-                    "ingress_expiry" => {
-                        if let Ok(tag) = d.tag() {
-                            if tag.as_u64() != BIG_NUM_TAG {
-                                return Err(ParserError::InvalidCallRequest);
-                            }
-                        }
-                        let bytes = d.bytes()?;
-                        // read bytes as a timestamp of 8 bytes
-                        if bytes.len() > core::mem::size_of::<u64>() {
-                            return Err(ParserError::InvalidTime);
-                        }
-
-                        let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
-                        num_bytes[..bytes.len()].copy_from_slice(bytes);
-
-                        let timestamp = u64::from_be_bytes(num_bytes);
-
-                        addr_of_mut!((*out).ingress_expiry).write(timestamp);
-                    }
-                    _ => return Err(ParserError::UnexpectedField),
-                }
-            }
-        }
-        unsafe {
-            addr_of_mut!((*out).nonce).write(nonce);
-        }
-
-        Ok(&input[d.position()..])
+        Ok(rem)
     }
 }
 
@@ -171,59 +101,26 @@ mod call_request_test {
 
     use super::*;
 
-    const REQUEST: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
-    const REQUEST2: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d610e2008806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
-    const REQUEST3: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
-    const TIME_EXPIRY: u64 = 1712667140606000000;
-    const CANISTER_ID: &str = "00000000006000FD0101";
+    const REQUEST: &str = "d9d9f7a167636f6e74656e74a76361726758684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b18072a6f7894d0006b6d6574686f645f6e616d656d69637263325f617070726f7665656e6f6e6365506b99f1c2338b4543152aae206d5286726c726571756573745f747970656463616c6c6673656e646572581d052c5f6f270fc4a3a882a8075732cba90ad4bd25d30bd2cf7b0bfe7c02";
+    const TIME_EXPIRY: u64 = 1731399240000000000;
+    const CANISTER_ID: &str = "00000000000000020101";
 
-    const ARG3: &str = "4449444C00017104746F6269";
+    const ARG: &str =  "4449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a0000000000000007010100";
+    const SENDER: &str = "052c5f6f270fc4a3a882a8075732cba90ad4bd25d30bd2cf7b0bfe7c02";
+    const METHOD_NAME: &str = "icrc2_approve";
+    const REQUEST_TYPE: &str = "call";
 
     #[test]
-    fn call_parse() {
+    fn call_parse4() {
         let data = hex::decode(REQUEST).unwrap();
         let call_request = CallRequest::from_bytes(&data).unwrap();
-        std::println!("CallRequest: {:?}", call_request);
 
-        assert_eq!(
-            call_request.arg,
-            &[68, 73, 68, 76, 0, 1, 113, 4, 116, 111, 98, 105]
-        );
-        assert_eq!(call_request.sender, &[4]);
-        assert_eq!(call_request.canister_id, &[0, 0, 0, 0, 0, 96, 0, 253, 1, 1]);
-        assert_eq!(call_request.method_name, "greet");
-        assert_eq!(call_request.request_type, "query");
-        assert_eq!(call_request.ingress_expiry, TIME_EXPIRY);
-    }
-
-    #[test]
-    fn call_parse2() {
-        let data = hex::decode(REQUEST2).unwrap();
-        let call_request = CallRequest::from_bytes(&data).unwrap();
-        std::println!("CallRequest: {:?}", call_request);
-
-        assert_eq!(
-            call_request.arg,
-            &[68, 73, 68, 76, 0, 1, 113, 4, 116, 111, 98, 105]
-        );
-        assert_eq!(call_request.sender, &[4]);
-        assert_eq!(call_request.canister_id, &[0, 0, 0, 0, 0, 96, 0, 253, 1, 1]);
-        assert_eq!(call_request.method_name, "greet");
-        assert_eq!(call_request.request_type, "query");
-        assert_eq!(call_request.ingress_expiry, 1712666798482000000);
-    }
-
-    #[test]
-    fn call_parse3() {
-        let data = hex::decode(REQUEST3).unwrap();
-        let call_request = CallRequest::from_bytes(&data).unwrap();
-
-        assert_eq!(call_request.arg, &hex::decode(ARG3).unwrap());
+        assert_eq!(hex::encode(call_request.arg().raw_data()), ARG);
         // Sender in this tests is not the default one
-        assert_ne!(call_request.sender, &[4]);
-        assert_eq!(call_request.canister_id, hex::decode(CANISTER_ID).unwrap());
-        assert_eq!(call_request.method_name, "greet");
-        assert_eq!(call_request.request_type, "query");
-        assert_eq!(call_request.ingress_expiry, TIME_EXPIRY);
+        assert_eq!(hex::encode(call_request.sender()), SENDER);
+        assert_eq!(hex::encode(call_request.canister_id()), CANISTER_ID);
+        assert_eq!(call_request.method_name(), METHOD_NAME);
+        assert_eq!(call_request.request_type(), REQUEST_TYPE);
+        assert_eq!(call_request.ingress_expiry(), TIME_EXPIRY);
     }
 }

@@ -16,10 +16,10 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
+    candid_header::CandidHeader,
     candid_utils::{parse_opt_i16, parse_text},
     error::ParserError,
-    utils::decompress_leb128,
-    FromBytes,
+    FromCandidHeader,
 };
 
 #[repr(C)]
@@ -30,27 +30,37 @@ pub struct ConsentMessageMetadata<'a> {
     pub utc_offset: Option<i16>,
 }
 
-impl<'a> FromBytes<'a> for ConsentMessageMetadata<'a> {
-    fn from_bytes_into(
+impl<'a> ConsentMessageMetadata<'a> {
+    pub const LANGUAGE: u32 = 2047967320; // hash of "language"
+    pub const UTC_OFFSET: u32 = 1502369582;
+}
+
+impl<'a> FromCandidHeader<'a> for ConsentMessageMetadata<'a> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
+        _header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
-        let (rem, _) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
+        crate::zlog("ConsentMessageMetadata::from_table_info\n");
 
-        // read first the utc_offset, its hash is < than the language hash
-        let (rem, utc_offset) = parse_opt_i16(rem)?;
+        // Then parse fields in hash order
+        // UTC_OFFSET (1502369582) comes first
+        let (rem, utc_offset) = parse_opt_i16(input)?;
+
+        // Then LANGUAGE (2047967320)
         let (rem, language) = parse_text(rem)?;
 
         if language.is_empty() || language != "en" {
             return Err(ParserError::InvalidLanguage);
         }
 
+        // Write values to output
         let out = out.as_mut_ptr();
-
         unsafe {
             addr_of_mut!((*out).language).write(language);
             addr_of_mut!((*out).utc_offset).write(utc_offset);
         }
+
         Ok(rem)
     }
 }

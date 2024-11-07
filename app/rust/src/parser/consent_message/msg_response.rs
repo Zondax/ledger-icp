@@ -16,21 +16,18 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
+    candid_header::parse_candid_header,
+    constants::{MAX_ARGS, MAX_TABLE_FIELDS},
     error::{ParserError, ViewError},
-    type_table::parse_type_table,
     utils::decompress_leb128,
-    DisplayableItem, FromBytes,
+    DisplayableItem, FromBytes, FromCandidHeader,
 };
 
 use super::{msg_error::Error, msg_info::ConsentInfo};
 
-// Defines the minimum number of elements
-// in our candid type table in order
-// to parse the type using it
-const MAX_TABLE_FIELDS: usize = 11;
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ResponseType {
     Ok,
     Err,
@@ -61,6 +58,9 @@ pub enum ConsentMessageResponse<'a> {
 }
 
 impl<'a> ConsentMessageResponse<'a> {
+    pub const OK_HASH: u32 = 17724; // hash of "Ok"
+    pub const ERR_HASH: u32 = 3456837; // hash of Err
+
     pub fn response_type(&self) -> ResponseType {
         match self {
             Self::Ok(_) => ResponseType::Ok,
@@ -83,36 +83,43 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentMessageResponse::from_bytes_into");
 
-        // 1. Read the "DIDL" magic number
-        let (rem, _) = nom::bytes::complete::tag("DIDL")(input)
-            .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
+        #[cfg(test)]
+        std::println!("*********MsgResponse*********:\n {}", hex::encode(input));
 
-        // 2. Parse the type table
-        let (rem, _table) = parse_type_table::<MAX_TABLE_FIELDS>(rem)?;
+        // Parse Candid header
+        let (rem, header) = parse_candid_header::<MAX_TABLE_FIELDS, MAX_ARGS>(input)?;
 
-        // 3. Read the variant index (M part)
-        let (rem, variant_index) =
-            decompress_leb128(rem).map_err(|_| ParserError::UnexpectedError)?;
+        // Read the variant index
+        let (rem, variant_index) = decompress_leb128(rem)?;
 
-        // after inspecting the type table
-        // we know that ok index is 1, and 8 for error
-        // 0: variant {17724: 1, 3456837: 8}
-        match variant_index {
-            1 => {
-                // Ok variant
+        // Get the root variant type (type 0)
+        let root_entry = header
+            .type_table
+            .find_type_entry(0)
+            .ok_or(ParserError::UnexpectedType)?;
+
+        // Verificar que el índice es válido
+        if variant_index >= root_entry.field_count as u64 {
+            return Err(ParserError::UnexpectedType);
+        }
+
+        // Obtener el hash del campo seleccionado
+        let (field_hash, _) = root_entry.fields[variant_index as usize];
+
+        match field_hash {
+            Self::OK_HASH => {
                 let out = out.as_mut_ptr() as *mut OkVariant;
                 let data = unsafe { &mut *addr_of_mut!((*out).1).cast() };
-                let rem = ConsentInfo::from_bytes_into(rem, data)?;
+                let rem = ConsentInfo::from_candid_header(rem, data, &header)?;
                 unsafe {
                     addr_of_mut!((*out).0).write(ResponseType::Ok);
                 }
                 Ok(rem)
             }
-            8 => {
-                // Err variant
+            Self::ERR_HASH => {
                 let out = out.as_mut_ptr() as *mut ErrVariant;
                 let data = unsafe { &mut *addr_of_mut!((*out).1).cast() };
-                let rem = Error::from_bytes_into(rem, data)?;
+                let rem = Error::from_candid_header(rem, data, &header)?;
                 unsafe {
                     addr_of_mut!((*out).0).write(ResponseType::Err);
                 }
@@ -151,26 +158,25 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
 
 #[cfg(test)]
 mod msg_response_test {
+    use serde::{Deserialize, Serialize};
+    use std::string::String;
+    use std::vec::Vec;
     use zemu_sys::Viewable;
 
-    use crate::parser::snapshots_common::ReducedPage;
+    use crate::{parser::snapshots_common::ReducedPage, test_ui::with_leaked};
 
     use super::*;
 
-    const MSG_DATA: &[u8] = &[
-        68, 73, 68, 76, 11, 107, 2, 188, 138, 1, 1, 197, 254, 210, 1, 8, 108, 2, 239, 206, 231,
-        128, 4, 2, 226, 159, 220, 200, 6, 3, 108, 1, 216, 128, 198, 208, 7, 113, 107, 2, 217, 229,
-        176, 152, 4, 4, 252, 223, 215, 154, 15, 113, 108, 1, 196, 214, 180, 234, 11, 5, 109, 6,
-        108, 1, 255, 187, 135, 168, 7, 7, 109, 113, 107, 4, 209, 196, 152, 124, 9, 163, 242, 239,
-        230, 2, 10, 154, 133, 151, 230, 3, 10, 227, 197, 129, 144, 15, 10, 108, 2, 252, 145, 244,
-        248, 5, 113, 196, 152, 177, 181, 13, 125, 108, 1, 252, 145, 244, 248, 5, 113, 1, 0, 0, 2,
-        101, 110, 0, 1, 2, 30, 80, 114, 111, 100, 117, 99, 101, 32, 116, 104, 101, 32, 102, 111,
-        108, 108, 111, 119, 105, 110, 103, 32, 103, 114, 101, 101, 116, 105, 110, 103, 20, 116,
-        101, 120, 116, 58, 32, 34, 72, 101, 108, 108, 111, 44, 32, 116, 111, 98, 105, 33, 34,
-    ];
+    const MSG_DATA: &str = "4449444c0c6b02bc8a0101c5fed201096c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b02d9e5b0980405fcdfd79a0f716c01c4d6b4ea0b066d076c01ffbb87a807086d716b04d1c4987c0aa3f2efe6020b9a8597e6030be3c581900f0b6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e0007031e2320417574686f72697a6520616e6f74686572206164647265737320746f2077697468647261772066726f6d20796f7572206163636f756e74202a2a5468651f666f6c6c6f77696e67206164647265737320697320616c6c6f77656420746f031d77697468647261772066726f6d20796f7572206163636f756e743a2a2a2272646d78362d6a616161612d61616161612d61616164712d636169202a2a596f75720d7375626163636f756e743a2a2a032330303030303030303030303030303030303030303030303030303030303030303030301d3030303030303030303030303030303030303030303030303030303030232a2a526571756573746564207769746864726177616c20616c6c6f77616e63653a2a2a032031302049435020e29aa02054686520616c6c6f77616e63652077696c6c2062652273657420746f2031302049435020696e646570656e64656e746c79206f6620616e791e70726576696f757320616c6c6f77616e63652e20556e74696c207468697303217472616e73616374696f6e20686173206265656e206578656375746564207468651e7370656e6465722063616e207374696c6c206578657263697365207468652370726576696f757320616c6c6f77616e63652028696620616e792920746f2069742773032166756c6c20616d6f756e742e202a2a45787069726174696f6e20646174653a2a2a204e6f2065787069726174696f6e2e202a2a417070726f76616c206665653a2a2a23302e3030303120494350202a2a5472616e73616374696f6e206665657320746f206265031a7061696420627920796f7572207375626163636f756e743a2a2a2330303030303030303030303030303030303030303030303030303030303030303030301d3030303030303030303030303030303030303030303030303030303030";
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct TransactionData {
+        response: String,
+    }
+
     /// This is only to be used for testing, hence why
     /// it's present inside the `mod test` block only
-    impl Viewable for ConsentMessageResponse<'static> {
+    impl<'a> Viewable for ConsentMessageResponse<'a> {
         fn num_items(&mut self) -> Result<u8, zemu_sys::ViewError> {
             DisplayableItem::num_items(&*self).map_err(|_| zemu_sys::ViewError::Unknown)
         }
@@ -197,23 +203,38 @@ mod msg_response_test {
 
     #[test]
     fn parse_msg_response() {
-        let resp = ConsentMessageResponse::from_bytes(MSG_DATA).unwrap();
-        std::println!("{:?}", resp);
+        let data = hex::decode(MSG_DATA).unwrap();
+        let _ = ConsentMessageResponse::from_bytes(&data[..]).unwrap();
     }
 
+    #[cfg_attr(miri, ignore)]
     #[test]
     fn test_ui() {
-        let resp = ConsentMessageResponse::from_bytes(MSG_DATA).unwrap();
-        let mut driver = zuit::MockDriver::<_, 18, 1024>::new(resp);
-        driver.drive();
+        insta::glob!("testvectors/*.json", |path| {
+            let file = std::fs::File::open(path)
+                .unwrap_or_else(|e| panic!("Unable to open file {:?}: {:?}", path, e));
+            let input: TransactionData = serde_json::from_reader(file)
+                .unwrap_or_else(|e| panic!("Unable to read file {:?} as json: {:?}", path, e));
 
-        let ui = driver.out_ui();
+            let test = |data| {
+                let resp = ConsentMessageResponse::from_bytes(data).expect("Fail parsing");
 
-        let reduced = ui
-            .iter()
-            .flat_map(|item| item.iter().map(ReducedPage::from))
-            .collect::<std::vec::Vec<_>>();
+                let mut driver = zuit::MockDriver::<_, 18, 1024>::new(resp);
+                driver.drive();
 
-        std::println!("{:?}", reduced);
+                let ui = driver.out_ui();
+
+                let reduced = ui
+                    .iter()
+                    .flat_map(|item| item.iter().map(ReducedPage::from))
+                    .collect::<std::vec::Vec<_>>();
+
+                insta::assert_debug_snapshot!(reduced);
+            };
+
+            let data = hex::decode(input.response).unwrap();
+
+            unsafe { with_leaked(data, test) };
+        });
     }
 }
