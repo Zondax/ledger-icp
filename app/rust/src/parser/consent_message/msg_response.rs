@@ -16,18 +16,14 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
+    constants::MAX_TABLE_FIELDS,
     error::{ParserError, ViewError},
     type_table::parse_type_table,
     utils::decompress_leb128,
-    DisplayableItem, FromBytes,
+    DisplayableItem, FromBytes, FromTableInto,
 };
 
 use super::{msg_error::Error, msg_info::ConsentInfo};
-
-// Defines the minimum number of elements
-// in our candid type table in order
-// to parse the type using it
-const MAX_TABLE_FIELDS: usize = 11;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -61,6 +57,9 @@ pub enum ConsentMessageResponse<'a> {
 }
 
 impl<'a> ConsentMessageResponse<'a> {
+    pub const OK: u32 = 17724; // hash of "Ok"
+    pub const ERR: u32 = 3456837; // hash of Err
+
     pub fn response_type(&self) -> ResponseType {
         match self {
             Self::Ok(_) => ResponseType::Ok,
@@ -88,31 +87,36 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
             .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;
 
         // 2. Parse the type table
-        let (rem, _table) = parse_type_table::<MAX_TABLE_FIELDS>(rem)?;
+        let (rem, table) = parse_type_table::<MAX_TABLE_FIELDS>(rem)?;
 
         // 3. Read the variant index (M part)
         let (rem, variant_index) =
             decompress_leb128(rem).map_err(|_| ParserError::UnexpectedError)?;
 
-        // after inspecting the type table
-        // we know that ok index is 1, and 8 for error
-        // 0: variant {17724: 1, 3456837: 8}
+        // Find the indices for Ok and Err variants
+        let ok_idx = table.find_variant(Self::OK as _)?;
+        let err_idx = table.find_variant(Self::ERR as _)?;
+
         match variant_index {
-            1 => {
+            idx if idx == ok_idx => {
                 // Ok variant
+                // Read record size for Ok variant
+                let (rem, _record_size) = decompress_leb128(rem)?;
                 let out = out.as_mut_ptr() as *mut OkVariant;
                 let data = unsafe { &mut *addr_of_mut!((*out).1).cast() };
-                let rem = ConsentInfo::from_bytes_into(rem, data)?;
+                let rem = ConsentInfo::from_table_into(rem, data, &table)?;
                 unsafe {
                     addr_of_mut!((*out).0).write(ResponseType::Ok);
                 }
                 Ok(rem)
             }
-            8 => {
+            idx if idx == err_idx => {
                 // Err variant
+                // Read record size for Err variant
+                let (rem, _record_size) = decompress_leb128(rem)?;
                 let out = out.as_mut_ptr() as *mut ErrVariant;
                 let data = unsafe { &mut *addr_of_mut!((*out).1).cast() };
-                let rem = Error::from_bytes_into(rem, data)?;
+                let rem = Error::from_table_into(rem, data, &table)?;
                 unsafe {
                     addr_of_mut!((*out).0).write(ResponseType::Err);
                 }

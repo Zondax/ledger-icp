@@ -171,12 +171,14 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
 
         for _ in 0..content_len {
             let key = d.str()?;
+            zlog(key);
             unsafe {
                 match key {
                     "arg" => {
                         let arg: &mut MaybeUninit<RawArg<'a>> =
                             &mut *addr_of_mut!((*out).arg).cast();
-                        _ = RawArg::from_bytes_into(d.bytes()?, arg)?;
+                        let arg_bytes = d.bytes()?;
+                        _ = RawArg::from_bytes_into(arg_bytes, arg)?;
                     }
                     "nonce" => nonce = Some(d.bytes()?),
                     "sender" => addr_of_mut!((*out).sender).write(d.bytes()?),
@@ -184,25 +186,23 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
                     "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
                     "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
                     "ingress_expiry" => {
-                        if let Ok(tag) = d.tag() {
+                        let timestamp = if let Ok(n) = d.u64() {
+                            // Direct uint64 case (what we have in the data)
+                            n
+                        } else {
+                            let tag = d.tag()?;
+                            // Your existing tagged bignum case
                             if tag.as_u64() != BIG_NUM_TAG {
                                 return Err(ParserError::InvalidCallRequest);
                             }
-                        }
-
-                        let Ok(bytes) = d.bytes() else {
-                            return Err(ParserError::UnexpectedValue);
+                            let bytes = d.bytes()?;
+                            if bytes.len() > core::mem::size_of::<u64>() {
+                                return Err(ParserError::InvalidTime);
+                            }
+                            let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
+                            num_bytes[..bytes.len()].copy_from_slice(bytes);
+                            u64::from_be_bytes(num_bytes)
                         };
-
-                        // read bytes as a timestamp of 8 bytes
-                        if bytes.len() > core::mem::size_of::<u64>() {
-                            return Err(ParserError::InvalidTime);
-                        }
-
-                        let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
-                        num_bytes[..bytes.len()].copy_from_slice(bytes);
-
-                        let timestamp = u64::from_be_bytes(num_bytes);
 
                         addr_of_mut!((*out).ingress_expiry).write(timestamp);
                     }
@@ -238,6 +238,7 @@ mod call_request_test {
 
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
     const REQUEST2: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
+    const REQUEST3: &str =  "d9d9f7a167636f6e74656e74a76361726758d34449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b18055743aebef8006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e6365500f76469666fa1ffca9352cdfea6be4506c726571756573745f747970656463616c6c6673656e6465724104";
 
     const ARG: &str = "4449444c00017104746f6269";
     const NONCE: &str = "a3788c1805553fb69b20f08e87e23b13";
@@ -284,5 +285,11 @@ mod call_request_test {
         assert_eq!(msg_req.ingress_expiry, INGRESS_EXPIRY);
         assert_eq!(hex::encode(msg_req.nonce.unwrap()), NONCE);
         assert_eq!(request_id, REQUEST_ID);
+    }
+
+    #[test]
+    fn msg_request3() {
+        let data = hex::decode(REQUEST3).unwrap();
+        let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
     }
 }

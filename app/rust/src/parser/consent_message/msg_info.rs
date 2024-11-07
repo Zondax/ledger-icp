@@ -16,7 +16,9 @@
 use crate::{
     constants::{MAX_LINES, MAX_PAGES},
     error::{ParserError, ViewError},
-    DisplayableItem, FromBytes,
+    type_table::{parse_type_table, FieldType, TypeTable},
+    utils::decompress_leb128,
+    DisplayableItem, FromBytes, FromTableInto,
 };
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
@@ -29,11 +31,61 @@ pub struct ConsentInfo<'a> {
     pub metadata: ConsentMessageMetadata<'a>,
 }
 
+impl<'a> ConsentInfo<'a> {
+    pub const METADATA: u32 = 1075439471;
+    pub const MESSAGE: u32 = 1763119074;
+}
+
+impl<'a> FromTableInto<'a> for ConsentInfo<'a> {
+    fn from_table_into<const TABLE_SIZE: usize>(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+        table: &TypeTable<TABLE_SIZE>,
+    ) -> Result<&'a [u8], ParserError> {
+        crate::zlog("ConsentInfo::from_table_into\n");
+
+        let out = out.as_mut_ptr();
+
+        // Get the type entry for ConsentInfo (type 1)
+        let type_entry = table
+            .find_type_entry(1)
+            .ok_or(ParserError::UnexpectedType)?;
+        #[cfg(test)]
+        std::println!("ConsentInfo::type_entry {:?}\n", type_entry);
+
+        // We know METADATA has lower hash than MESSAGE, so it comes first in memory
+        // No need for sorting or vectors, just check the order is correct in the type table
+        let metadata_idx = type_entry.find_field_type(Self::METADATA)?;
+        let message_idx = type_entry.find_field_type(Self::MESSAGE)?;
+        #[cfg(test)]
+        std::println!("{metadata_idx:?} - {message_idx:?}");
+
+        // Verify we have both fields
+        if !matches!(metadata_idx, FieldType::Compound(_))
+            || !matches!(message_idx, FieldType::Compound(_))
+        {
+            crate::zlog("Compound type mismatch\n");
+            return Err(ParserError::UnexpectedType);
+        }
+
+        // Parse in memory order (metadata first, then message)
+        let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };
+        let mut rem = ConsentMessageMetadata::from_table_into(input, metadata, table)?;
+
+        let message: &mut MaybeUninit<ConsentMessage<'_, MAX_PAGES, MAX_LINES>> =
+            unsafe { &mut *addr_of_mut!((*out).message).cast() };
+        rem = ConsentMessage::from_table_into(rem, message, table)?;
+
+        Ok(rem)
+    }
+}
+
 impl<'a> FromBytes<'a> for ConsentInfo<'a> {
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], ParserError> {
+        crate::zlog("ConsentInfo::from_bytes_into\n");
         let out = out.as_mut_ptr();
         // Field with hash 1075439471 points to type 2 the metadata
         let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };

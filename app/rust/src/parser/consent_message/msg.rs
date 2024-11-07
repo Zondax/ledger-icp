@@ -19,14 +19,10 @@ use crate::{
     candid_utils::parse_text,
     constants::{MAX_CHARS_PER_LINE, MAX_LINES},
     error::{ParserError, ViewError},
+    type_table::{FieldType, TypeTable},
     utils::{decompress_leb128, handle_ui_message},
-    DisplayableItem, FromBytes,
+    DisplayableItem, FromBytes, FromTableInto,
 };
-
-// We got this after printing the type table
-// using candid_utils::print_type_table function
-const LINE_DISPLAY_MESSAGE_HASH: u64 = 1124872921;
-const GENERIC_DISPLAY_MESSAGE_HASH: u64 = 4082495484;
 
 #[repr(C)]
 struct GenericDisplayMessageVariant<'a>(MessageType, &'a str);
@@ -68,6 +64,11 @@ pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
 }
 
 impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
+    // We got this after printing the type table
+    // using candid_utils::print_type_table function
+    const LINE_DISPLAY_MESSAGE_HASH: u64 = 1124872921;
+    const GENERIC_DISPLAY_MESSAGE_HASH: u64 = 4082495484;
+
     // TODO: Check that this holds true
     // the idea snprintf(buffer, "%s\n%s\n", line1, line2)
     // but in bytes plus null terminator
@@ -266,6 +267,108 @@ impl TryFrom<u64> for MessageType {
             0 => Ok(Self::LineDisplayMessage),
             1 => Ok(Self::GenericDisplayMessage),
             _ => Err(ParserError::UnexpectedValue),
+        }
+    }
+}
+
+impl<'a, const PAGES: usize, const LINES: usize> FromTableInto<'a>
+    for ConsentMessage<'a, PAGES, LINES>
+{
+    fn from_table_into<const TABLE_SIZE: usize>(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+        table: &TypeTable<TABLE_SIZE>,
+    ) -> Result<&'a [u8], ParserError> {
+        crate::zlog("ConsentMessage::from_table_into\x00");
+
+        // Get the position index
+        let (rem, variant_index) =
+            decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
+        #[cfg(test)]
+        std::println!("variant_position: {}", variant_index);
+
+        // Get the type entry for ConsentMessage (type 4)
+        let type_entry = table
+            .find_type_entry(4)
+            .ok_or(ParserError::UnexpectedType)?;
+
+        #[cfg(test)]
+        {
+            std::println!("Type entry fields:");
+            for (i, (hash, field_type)) in type_entry
+                .fields
+                .iter()
+                .take(type_entry.field_count as usize)
+                .enumerate()
+            {
+                std::println!("Field {}: hash={}, type={:?}", i, hash, field_type);
+            }
+        }
+
+        // Validate position is within bounds
+        if variant_index >= type_entry.field_count as u64 {
+            return Err(ParserError::UnexpectedType);
+        }
+
+        // Get field at that position
+        let (field_hash, _) = type_entry.fields[variant_index as usize];
+
+        // Read record size after variant index
+        let (rem, _record_size) = decompress_leb128(rem)?;
+
+        // Match on field hash
+        match field_hash {
+            hash if hash == Self::LINE_DISPLAY_MESSAGE_HASH as u32 => {
+                crate::zlog("LineDisplayMessage\n");
+                let start = rem;
+                let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
+                unsafe {
+                    addr_of_mut!((*out).0).write(MessageType::LineDisplayMessage);
+                }
+
+                let (mut rem, page_count) = decompress_leb128(rem)?;
+                if page_count as usize > PAGES {
+                    return Err(ParserError::ValueOutOfRange);
+                }
+
+                for _ in 0..page_count as usize {
+                    let (new_rem, lines_count) = decompress_leb128(rem)?;
+                    rem = new_rem;
+                    if lines_count as usize > LINES {
+                        return Err(ParserError::ValueOutOfRange);
+                    }
+                    for _ in 0..lines_count as usize {
+                        let (new_rem, _) = parse_text(rem)?;
+                        rem = new_rem;
+                    }
+                }
+
+                let read = rem.as_ptr() as usize - start.as_ptr() as usize;
+                if read > start.len() {
+                    return Err(ParserError::UnexpectedBufferEnd);
+                }
+
+                let data = &start[0..read];
+                unsafe {
+                    addr_of_mut!((*out).1).write(data);
+                }
+                Ok(rem)
+            }
+            hash if hash == Self::GENERIC_DISPLAY_MESSAGE_HASH as u32 => {
+                crate::zlog("GenericDisplayMessage\n");
+                let out = out.as_mut_ptr() as *mut GenericDisplayMessageVariant;
+                let (rem, message) = parse_text(rem)?;
+                unsafe {
+                    addr_of_mut!((*out).0).write(MessageType::GenericDisplayMessage);
+                    addr_of_mut!((*out).1).write(message);
+                }
+                Ok(rem)
+            }
+            _ => {
+                #[cfg(test)]
+                std::println!("Unknown field hash: {}", field_hash);
+                Err(ParserError::UnexpectedType)
+            }
         }
     }
 }

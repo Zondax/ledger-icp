@@ -127,6 +127,7 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
 
         for _ in 0..content_len as usize {
             let key = d.str()?;
+            zlog(key);
             unsafe {
                 match key {
                     "arg" => addr_of_mut!((*out).arg).write(d.bytes()?),
@@ -136,25 +137,30 @@ impl<'a> FromBytes<'a> for CallRequest<'a> {
                     "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
                     "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
                     "ingress_expiry" => {
-                        if let Ok(tag) = d.tag() {
+                        let timestamp = if let Ok(n) = d.u64() {
+                            // Direct uint64 case (what we have in the data)
+                            n
+                        } else {
+                            let tag = d.tag()?;
+                            // Your existing tagged bignum case
                             if tag.as_u64() != BIG_NUM_TAG {
                                 return Err(ParserError::InvalidCallRequest);
                             }
-                        }
-                        let bytes = d.bytes()?;
-                        // read bytes as a timestamp of 8 bytes
-                        if bytes.len() > core::mem::size_of::<u64>() {
-                            return Err(ParserError::InvalidTime);
-                        }
-
-                        let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
-                        num_bytes[..bytes.len()].copy_from_slice(bytes);
-
-                        let timestamp = u64::from_be_bytes(num_bytes);
+                            let bytes = d.bytes()?;
+                            if bytes.len() > core::mem::size_of::<u64>() {
+                                return Err(ParserError::InvalidTime);
+                            }
+                            let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
+                            num_bytes[..bytes.len()].copy_from_slice(bytes);
+                            u64::from_be_bytes(num_bytes)
+                        };
 
                         addr_of_mut!((*out).ingress_expiry).write(timestamp);
                     }
-                    _ => return Err(ParserError::UnexpectedField),
+                    _ => {
+                        zlog("CallRequest::unexpected_field\x00");
+                        return Err(ParserError::UnexpectedField);
+                    }
                 }
             }
         }
@@ -174,6 +180,7 @@ mod call_request_test {
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
     const REQUEST2: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d610e2008806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e6465724104";
     const REQUEST3: &str = "d9d9f7a167636f6e74656e74a6636172674c4449444c00017104746f62696b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49db0b64dfb806b6d6574686f645f6e616d656567726565746c726571756573745f747970656571756572796673656e646572581d19aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+    const REQUEST4: &str = "d9d9f7a167636f6e74656e74a6636172674c620210011a0612040a0211116b63616e69737465725f69644a000000000000000101016e696e67726573735f6578706972791b16a2cd02c5b2d1006b6d6574686f645f6e616d65706d616e6167655f6e6575726f6e5f70626c726571756573745f747970656463616c6c6673656e646572581d8a4aa4ffc7bc5ccdcd5a7a3d10c9bb06741063b02c7e908a624f721d02";
     const TIME_EXPIRY: u64 = 1712667140606000000;
     const CANISTER_ID: &str = "00000000006000FD0101";
 
@@ -225,5 +232,11 @@ mod call_request_test {
         assert_eq!(call_request.method_name, "greet");
         assert_eq!(call_request.request_type, "query");
         assert_eq!(call_request.ingress_expiry, TIME_EXPIRY);
+    }
+
+    #[test]
+    fn call_parse4() {
+        let data = hex::decode(REQUEST4).unwrap();
+        let call_request = CallRequest::from_bytes(&data).unwrap();
     }
 }

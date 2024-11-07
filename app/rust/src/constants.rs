@@ -49,3 +49,8 @@ pub const CANISTER_ROOT_KEY: &str = "814c0e6ec71fab583b08bd81373c255c3c371b2e848
 // Provided in testing data
 // indicating sender in there is the default one, whose value is 0x04
 pub const DEFAULT_SENDER: u8 = 0x04;
+
+// Defines the minimum number of elements
+// in our candid type table in order
+// to parse the type using it
+pub const MAX_TABLE_FIELDS: usize = 20;
