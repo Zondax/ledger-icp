@@ -16,11 +16,10 @@
 use core::ptr::addr_of_mut;
 
 use crate::{
+    candid_header::CandidHeader,
     candid_utils::{parse_opt_i16, parse_text},
     error::ParserError,
-    type_table::TypeTable,
-    utils::decompress_leb128,
-    FromBytes, FromTableInto,
+    FromCandidHeader,
 };
 
 #[repr(C)]
@@ -36,23 +35,17 @@ impl<'a> ConsentMessageMetadata<'a> {
     pub const UTC_OFFSET: u32 = 1502369582;
 }
 
-impl<'a> FromTableInto<'a> for ConsentMessageMetadata<'a> {
-    fn from_table_into<const TABLE_SIZE: usize>(
+impl<'a> FromCandidHeader<'a> for ConsentMessageMetadata<'a> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        _table: &TypeTable<TABLE_SIZE>,
+        _header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentMessageMetadata::from_table_info\n");
-        #[cfg(test)]
-        std::println!("input: {}", hex::encode(input));
-
-        // Read number of fields
-        let (rem, _field_count) =
-            decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
 
         // Then parse fields in hash order
         // UTC_OFFSET (1502369582) comes first
-        let (rem, utc_offset) = parse_opt_i16(rem)?;
+        let (rem, utc_offset) = parse_opt_i16(input)?;
 
         // Then LANGUAGE (2047967320)
         let (rem, language) = parse_text(rem)?;
@@ -68,31 +61,6 @@ impl<'a> FromTableInto<'a> for ConsentMessageMetadata<'a> {
             addr_of_mut!((*out).utc_offset).write(utc_offset);
         }
 
-        Ok(rem)
-    }
-}
-
-impl<'a> FromBytes<'a> for ConsentMessageMetadata<'a> {
-    fn from_bytes_into(
-        input: &'a [u8],
-        out: &mut core::mem::MaybeUninit<Self>,
-    ) -> Result<&'a [u8], ParserError> {
-        let (rem, _) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-
-        // read first the utc_offset, its hash is < than the language hash
-        let (rem, utc_offset) = parse_opt_i16(rem)?;
-        let (rem, language) = parse_text(rem)?;
-
-        if language.is_empty() || language != "en" {
-            return Err(ParserError::InvalidLanguage);
-        }
-
-        let out = out.as_mut_ptr();
-
-        unsafe {
-            addr_of_mut!((*out).language).write(language);
-            addr_of_mut!((*out).utc_offset).write(utc_offset);
-        }
         Ok(rem)
     }
 }

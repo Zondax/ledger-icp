@@ -1,5 +1,3 @@
-use crate::candid_types::IDLTypes;
-use crate::candid_utils::parse_text;
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -15,10 +13,13 @@ use crate::candid_utils::parse_text;
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+use crate::candid_header::CandidHeader;
+use crate::candid_types::IDLTypes;
+use crate::candid_utils::parse_text;
 use crate::error::{ParserError, ViewError};
-use crate::type_table::{FieldType, TypeTable};
+use crate::type_table::FieldType;
 use crate::utils::{decompress_leb128, handle_ui_message};
-use crate::{DisplayableItem, FromBytes, FromTableInto};
+use crate::{DisplayableItem, FromBytes, FromCandidHeader};
 use core::ptr::addr_of_mut;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -53,14 +54,15 @@ impl<'a> ErrorInfo<'a> {
     pub const DESCRIPTION: u32 = 1595738364; // hash of "description"
 }
 
-impl<'a> FromTableInto<'a> for ErrorInfo<'a> {
-    fn from_table_into<const TABLE_SIZE: usize>(
+impl<'a> FromCandidHeader<'a> for ErrorInfo<'a> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        table: &TypeTable<TABLE_SIZE>,
+        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         // Get the type entry for ErrorInfo (type 11 based on your table)
-        let type_entry = table
+        let type_entry = header
+            .type_table
             .find_type_entry(11)
             .ok_or(ParserError::UnexpectedType)?;
 
@@ -159,18 +161,19 @@ impl<'a> Error<'a> {
     pub const DESCRIPTION: u32 = 3601615940; // hash of "description"
 }
 
-impl<'a> FromTableInto<'a> for Error<'a> {
-    fn from_table_into<const TABLE_SIZE: usize>(
+impl<'a> FromCandidHeader<'a> for Error<'a> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        table: &TypeTable<TABLE_SIZE>,
+        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         // Get the variant index
         let (rem, variant_index) =
             decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
 
         // Get the type entry for Error (type 9 based on your table)
-        let type_entry = table
+        let type_entry = header
+            .type_table
             .find_type_entry(9)
             .ok_or(ParserError::UnexpectedType)?;
 
@@ -183,7 +186,7 @@ impl<'a> FromTableInto<'a> for Error<'a> {
                     .unwrap() as u64 =>
             {
                 let mut error_info = core::mem::MaybeUninit::uninit();
-                let rem = ErrorInfo::from_table_into(rem, &mut error_info, table)?;
+                let rem = ErrorInfo::from_candid_header(rem, &mut error_info, header)?;
                 let out = out.as_mut_ptr() as *mut UnsupportedCanisterCallVariant;
                 unsafe {
                     addr_of_mut!((*out).0).write(ErrorType::UnsupportedCanisterCall);
@@ -198,7 +201,7 @@ impl<'a> FromTableInto<'a> for Error<'a> {
                     .unwrap() as u64 =>
             {
                 let mut error_info = core::mem::MaybeUninit::uninit();
-                let rem = ErrorInfo::from_table_into(rem, &mut error_info, table)?;
+                let rem = ErrorInfo::from_candid_header(rem, &mut error_info, header)?;
                 let out = out.as_mut_ptr() as *mut ConsentMessageUnavailableVariant;
                 unsafe {
                     addr_of_mut!((*out).0).write(ErrorType::ConsentMessageUnavailable);
@@ -213,7 +216,7 @@ impl<'a> FromTableInto<'a> for Error<'a> {
                     .unwrap() as u64 =>
             {
                 let mut error_info = core::mem::MaybeUninit::uninit();
-                let rem = ErrorInfo::from_table_into(rem, &mut error_info, table)?;
+                let rem = ErrorInfo::from_candid_header(rem, &mut error_info, header)?;
                 let out = out.as_mut_ptr() as *mut InsufficientPaymentVariant;
                 unsafe {
                     addr_of_mut!((*out).0).write(ErrorType::InsufficientPayment);
@@ -228,7 +231,8 @@ impl<'a> FromTableInto<'a> for Error<'a> {
                     .unwrap() as u64 =>
             {
                 // For GenericError, we need to verify the field order from the type table
-                let generic_type_entry = table
+                let generic_type_entry = header
+                    .type_table
                     .find_type_entry(
                         type_entry
                             .find_field_type(Self::GENERIC_ERROR)?

@@ -15,13 +15,15 @@
 ********************************************************************************/
 use core::ptr::addr_of_mut;
 
+use nom::bytes::complete::take;
+
 use crate::{
+    candid_header::CandidHeader,
     candid_utils::parse_text,
     constants::{MAX_CHARS_PER_LINE, MAX_LINES},
     error::{ParserError, ViewError},
-    type_table::{FieldType, TypeTable},
     utils::{decompress_leb128, handle_ui_message},
-    DisplayableItem, FromBytes, FromTableInto,
+    DisplayableItem, FromBytes, FromCandidHeader,
 };
 
 #[repr(C)]
@@ -54,20 +56,31 @@ pub enum MessageType {
 //     };
 //   },
 // )
+// or:
+//device_spec: [
+//   {
+//     LineDisplay: {
+//       characters_per_line: 35,
+//       lines_per_page: 3,
+//     },
+//   },
+// ],
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
-    // Assuming max 4 pages with 5 lines each
-    // also lazy parsing, although we ensure
+    // Lazy parsing, although we ensure
     // we parse every page and line, lets store
     // this as bytes
     LineDisplayMessage(&'a [u8]),
 }
 
 impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
-    // We got this after printing the type table
-    // using candid_utils::print_type_table function
-    const LINE_DISPLAY_MESSAGE_HASH: u64 = 1124872921;
-    const GENERIC_DISPLAY_MESSAGE_HASH: u64 = 4082495484;
+    // Hashes de los campos
+    const LINE_DISPLAY_MESSAGE_HASH: u32 = 1124872921;
+    const GENERIC_DISPLAY_MESSAGE_HASH: u32 = 4082495484;
+    const PAGES_FIELD_HASH: u32 = 3175951172; // hash del campo pages en el record
+    const LINES_FIELD_HASH: u32 = 1963056639; // hash del campo lines en el record de page
+                                              // We got this after printing the type table
+                                              // using candid_utils::print_type_table function
 
     // TODO: Check that this holds true
     // the idea snprintf(buffer, "%s\n%s\n", line1, line2)
@@ -271,107 +284,355 @@ impl TryFrom<u64> for MessageType {
     }
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> FromTableInto<'a>
+impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
     for ConsentMessage<'a, PAGES, LINES>
 {
-    fn from_table_into<const TABLE_SIZE: usize>(
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        table: &TypeTable<TABLE_SIZE>,
+        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentMessage::from_table_into\x00");
 
-        // Get the position index
-        let (rem, variant_index) =
-            decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
         #[cfg(test)]
-        std::println!("variant_position: {}", variant_index);
+        {
+            crate::type_table::print_type_table(&header.type_table);
+            std::println!("input: {}", hex::encode(&input[..32]));
+        }
 
-        // Get the type entry for ConsentMessage (type 4)
-        let type_entry = table
+        // Read variant index
+        let (rem, variant_index) = decompress_leb128(input)?;
+
+        // Get type info from table
+        let type_entry = header
+            .type_table
             .find_type_entry(4)
             .ok_or(ParserError::UnexpectedType)?;
 
-        #[cfg(test)]
-        {
-            std::println!("Type entry fields:");
-            for (i, (hash, field_type)) in type_entry
-                .fields
-                .iter()
-                .take(type_entry.field_count as usize)
-                .enumerate()
-            {
-                std::println!("Field {}: hash={}, type={:?}", i, hash, field_type);
-            }
-        }
-
-        // Validate position is within bounds
         if variant_index >= type_entry.field_count as u64 {
             return Err(ParserError::UnexpectedType);
         }
 
-        // Get field at that position
+        // Get field hash and verify
         let (field_hash, _) = type_entry.fields[variant_index as usize];
 
-        // Read record size after variant index
-        let (rem, _record_size) = decompress_leb128(rem)?;
-
-        // Match on field hash
         match field_hash {
-            hash if hash == Self::LINE_DISPLAY_MESSAGE_HASH as u32 => {
+            hash if hash == Self::LINE_DISPLAY_MESSAGE_HASH => {
                 crate::zlog("LineDisplayMessage\n");
+                // Start of the content message
+                // pointing to the page count
                 let start = rem;
                 let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
+
                 unsafe {
                     addr_of_mut!((*out).0).write(MessageType::LineDisplayMessage);
                 }
 
-                let (mut rem, page_count) = decompress_leb128(rem)?;
+                // Get record type entry (type 5)
+                let record_entry = header
+                    .type_table
+                    .find_type_entry(5)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Verify pages field hash
+                let _ = record_entry
+                    .fields
+                    .iter()
+                    .find(|(hash, _)| *hash == Self::PAGES_FIELD_HASH)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Vector of pages
+                let (rem, page_count) = decompress_leb128(rem)?;
+
                 if page_count as usize > PAGES {
                     return Err(ParserError::ValueOutOfRange);
                 }
 
-                for _ in 0..page_count as usize {
-                    let (new_rem, lines_count) = decompress_leb128(rem)?;
-                    rem = new_rem;
-                    if lines_count as usize > LINES {
+                // Debug: intenta leer la primera página
+                let mut raw_line = rem;
+                for _page in 0..page_count {
+                    let (rem, line_count) = decompress_leb128(raw_line)?;
+                    if line_count as usize > LINES {
                         return Err(ParserError::ValueOutOfRange);
                     }
-                    for _ in 0..lines_count as usize {
-                        let (new_rem, _) = parse_text(rem)?;
-                        rem = new_rem;
+
+                    #[cfg(test)]
+                    std::println!("Page: {_page} line count: {line_count}");
+                    let mut current = rem;
+                    for _i in 0..line_count {
+                        if let Ok((new_rem, _text)) = parse_text(current) {
+                            #[cfg(test)]
+                            std::println!("Line {}: {:?}", _i, _text);
+                            current = new_rem;
+                        }
                     }
+                    raw_line = current;
                 }
-
-                let read = rem.as_ptr() as usize - start.as_ptr() as usize;
-                if read > start.len() {
-                    return Err(ParserError::UnexpectedBufferEnd);
-                }
-
-                let data = &start[0..read];
+                // Store raw bytes for lazy parsing
+                let data_len = start.len() - raw_line.len();
+                let (rem, data) = take(data_len)(start)?;
                 unsafe {
                     addr_of_mut!((*out).1).write(data);
                 }
+
                 Ok(rem)
             }
-            hash if hash == Self::GENERIC_DISPLAY_MESSAGE_HASH as u32 => {
-                crate::zlog("GenericDisplayMessage\n");
+            hash if hash == Self::GENERIC_DISPLAY_MESSAGE_HASH => {
                 let out = out.as_mut_ptr() as *mut GenericDisplayMessageVariant;
-                let (rem, message) = parse_text(rem)?;
+                let (rem, text) = parse_text(rem)?;
                 unsafe {
                     addr_of_mut!((*out).0).write(MessageType::GenericDisplayMessage);
-                    addr_of_mut!((*out).1).write(message);
+                    addr_of_mut!((*out).1).write(text);
                 }
                 Ok(rem)
             }
-            _ => {
-                #[cfg(test)]
-                std::println!("Unknown field hash: {}", field_hash);
-                Err(ParserError::UnexpectedType)
-            }
+            _ => Err(ParserError::UnexpectedType),
         }
     }
+
+    // fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    //     input: &'a [u8],
+    //     out: &mut core::mem::MaybeUninit<Self>,
+    //     header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+    // ) -> Result<&'a [u8], ParserError> {
+    //     crate::zlog("ConsentMessage::from_table_into\x00");
+    //     #[cfg(test)]
+    //     {
+    //         // std::println!("const CONSENT_MSG: &str =  \"{}\";", hex::encode(input));
+    //         crate::type_table::print_type_table(&header.type_table);
+    //         std::println!("input: {}", hex::encode(&input[..32]));
+    //     }
+    //
+    //     // Read variant index
+    //     let (rem, variant_index) = decompress_leb128(input)?;
+    //     #[cfg(test)]
+    //     std::println!("rem: {}", hex::encode(&rem[..64]));
+    //
+    //     // Get type info from table
+    //     let type_entry = header
+    //         .type_table
+    //         .find_type_entry(4)
+    //         .ok_or(ParserError::UnexpectedType)?;
+    //
+    //     #[cfg(test)]
+    //     std::println!("msg_entry: {:?}", type_entry);
+    //
+    //     if variant_index >= type_entry.field_count as u64 {
+    //         return Err(ParserError::UnexpectedType);
+    //     }
+    //
+    //     // Get field info
+    //     let (field_hash, _) = type_entry.fields[variant_index as usize];
+    //     #[cfg(test)]
+    //     std::println!("field_hash: {}", field_hash);
+    //
+    //     // Read record size - this is for the variant record
+    //     let (rem, _record_size) = decompress_leb128(rem)?;
+    //
+    //     match field_hash {
+    //         hash if hash == Self::LINE_DISPLAY_MESSAGE_HASH as u32 => {
+    //             crate::zlog("LineDisplayMessage\n");
+    //             let start = rem;
+    //             let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
+    //
+    //             unsafe {
+    //                 addr_of_mut!((*out).0).write(MessageType::LineDisplayMessage);
+    //             }
+    //
+    //             // First read the record field count for pages vector
+    //             let (rem, field_count) = decompress_leb128(rem)?;
+    //             #[cfg(test)]
+    //             std::println!("pages_record field count: {}", field_count);
+    //             #[cfg(test)]
+    //             std::println!("next bytes: {}", hex::encode(&rem[..16]));
+    //             // if field_count != 1 {
+    //             //     // Should only have 'pages' field
+    //             //     return Err(ParserError::UnexpectedType);
+    //             // }
+    //
+    //             // Read the pages vector length
+    //             let (mut rem, page_count) = decompress_leb128(rem)?;
+    //             // let (new_rem, lines_count) = decompress_leb128(rem)?;
+    //             #[cfg(test)]
+    //             std::println!("page_count?: {}", page_count);
+    //
+    //             while let Ok((new_rem, text)) = parse_text(rem) {
+    //                 #[cfg(test)]
+    //                 std::println!("Length: {}, Text: {:?}", text.len(), text);
+    //                 rem = new_rem;
+    //                 // Also print next byte if available
+    //                 if !rem.is_empty() {
+    //                     #[cfg(test)]
+    //                     std::println!("Next byte: {:02x}", rem[0]);
+    //                 }
+    //             }
+    //
+    //             if page_count as usize > PAGES {
+    //                 return Err(ParserError::ValueOutOfRange);
+    //             }
+    //
+    //             // For each page
+    //             for page_idx in 0..page_count as usize {
+    //                 // Read the record field count for this page (should be 1 for 'lines')
+    //                 let (new_rem, field_count) = decompress_leb128(rem)?;
+    //                 if field_count != 1 {
+    //                     return Err(ParserError::UnexpectedType);
+    //                 }
+    //                 rem = new_rem;
+    //
+    //                 // Read the lines vector length
+    //                 let (new_rem, lines_count) = decompress_leb128(rem)?;
+    //                 rem = new_rem;
+    //
+    //                 #[cfg(test)]
+    //                 std::println!("Page {}: {} lines", page_idx, lines_count);
+    //
+    //                 if lines_count as usize > LINES {
+    //                     return Err(ParserError::ValueOutOfRange);
+    //                 }
+    //
+    //                 // Read each line
+    //                 for line_idx in 0..lines_count as usize {
+    //                     let (new_rem, line_text) = parse_text(rem)?;
+    //                     rem = new_rem;
+    //
+    //                     #[cfg(test)]
+    //                     std::println!("  Line {}: {:?}", line_idx, line_text);
+    //                 }
+    //             }
+    //
+    //             // Store raw bytes for lazy parsing
+    //             let read = rem.as_ptr() as usize - start.as_ptr() as usize;
+    //             if read > start.len() {
+    //                 return Err(ParserError::UnexpectedBufferEnd);
+    //             }
+    //             let data = &start[0..read];
+    //             unsafe {
+    //                 addr_of_mut!((*out).1).write(data);
+    //             }
+    //             Ok(rem)
+    //         }
+    //         hash if hash == Self::GENERIC_DISPLAY_MESSAGE_HASH as u32 => {
+    //             // GenericDisplayMessage handling...
+    //             let out = out.as_mut_ptr() as *mut GenericDisplayMessageVariant;
+    //             let (rem, text) = parse_text(rem)?;
+    //             unsafe {
+    //                 addr_of_mut!((*out).0).write(MessageType::GenericDisplayMessage);
+    //                 addr_of_mut!((*out).1).write(text);
+    //             }
+    //             Ok(rem)
+    //         }
+    //         _ => Err(ParserError::UnexpectedType),
+    //     }
+    // }
 }
+// impl<'a, const PAGES: usize, const LINES: usize> FromTableInto<'a>
+//     for ConsentMessage<'a, PAGES, LINES>
+// {
+//     fn from_table_into<const TABLE_SIZE: usize>(
+//         input: &'a [u8],
+//         out: &mut core::mem::MaybeUninit<Self>,
+//         table: &TypeTable<TABLE_SIZE>,
+//     ) -> Result<&'a [u8], ParserError> {
+//         crate::zlog("ConsentMessage::from_table_into\x00");
+//
+//         #[cfg(test)]
+//         {
+//             std::println!("const CONSENT_MSG: &str =  \"{}\";", hex::encode(input));
+//             crate::type_table::print_type_table(table);
+//             std::println!("input: {}", hex::encode(input));
+//         }
+//
+//         // Read variant index
+//         let (rem, variant_index) = decompress_leb128(input)?;
+//
+//         // Get type info from table
+//         let type_entry = table
+//             .find_type_entry(4)
+//             .ok_or(ParserError::UnexpectedType)?;
+//
+//         #[cfg(test)]
+//         std::println!("msg_entry: {:?}", type_entry);
+//
+//         if variant_index >= type_entry.field_count as u64 {
+//             return Err(ParserError::UnexpectedType);
+//         }
+//
+//         // Get field info
+//         let (field_hash, _) = type_entry.fields[variant_index as usize];
+//         #[cfg(test)]
+//         std::println!("field_hash: {}", field_hash);
+//
+//         // Read record size
+//         let (rem, _record_size) = decompress_leb128(rem)?;
+//         #[cfg(test)]
+//         std::println!("record_size: {}", _record_size);
+//
+//         match field_hash {
+//             hash if hash == Self::LINE_DISPLAY_MESSAGE_HASH as u32 => {
+//                 crate::zlog("LineDisplayMessage\n");
+//                 let start = rem;
+//                 let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
+//                 unsafe {
+//                     addr_of_mut!((*out).0).write(MessageType::LineDisplayMessage);
+//                 }
+//
+//                 // First vector: pages
+//                 let (mut rem, page_count) = decompress_leb128(rem)?;
+//                 #[cfg(test)]
+//                 std::println!("Total pages: {}", page_count);
+//
+//                 if page_count as usize > PAGES {
+//                     return Err(ParserError::ValueOutOfRange);
+//                 }
+//
+//                 // For each page
+//                 for page_idx in 0..page_count as usize {
+//                     // Each page is a record containing a 'lines' vector
+//                     let (new_rem, record_size) = decompress_leb128(rem)?;
+//                     #[cfg(test)]
+//                     std::println!("record_size: {}", record_size);
+//                     rem = new_rem;
+//
+//                     // Read the lines vector
+//                     let (new_rem, lines_count) = decompress_leb128(rem)?;
+//                     rem = new_rem;
+//
+//                     #[cfg(test)]
+//                     std::println!("Page {}: {} lines", page_idx, lines_count);
+//
+//                     if lines_count as usize > LINES {
+//                         return Err(ParserError::ValueOutOfRange);
+//                     }
+//
+//                     // Read each line
+//                     for line_idx in 0..lines_count as usize {
+//                         let (new_rem, line_text) = parse_text(rem)?;
+//                         rem = new_rem;
+//                         #[cfg(test)]
+//                         std::println!("  Line {}: {:?}", line_idx, line_text);
+//                     }
+//                 }
+//
+//                 // Store raw bytes for lazy parsing
+//                 let read = rem.as_ptr() as usize - start.as_ptr() as usize;
+//                 if read > start.len() {
+//                     return Err(ParserError::UnexpectedBufferEnd);
+//                 }
+//                 let data = &start[0..read];
+//                 unsafe {
+//                     addr_of_mut!((*out).1).write(data);
+//                 }
+//                 Ok(rem)
+//             }
+//             hash if hash == Self::GENERIC_DISPLAY_MESSAGE_HASH as u32 => {
+//                 // ... GenericDisplayMessage handling remains the same ...
+//                 Ok(rem)
+//             }
+//             _ => Err(ParserError::UnexpectedType),
+//         }
+//     }
+// }
 
 impl<'a, const PAGES: usize, const LINES: usize> FromBytes<'a>
     for ConsentMessage<'a, PAGES, LINES>
@@ -400,13 +661,13 @@ impl<'a, const PAGES: usize, const LINES: usize> FromBytes<'a>
                 unsafe {
                     addr_of_mut!((*out).0).write(message_type);
                 }
-                // get page count
+                // get lines per page count
                 let (mut rem, page_count) = decompress_leb128(rem)?;
 
                 // we do not probably need to limit number of pages
-                if page_count as usize > PAGES {
-                    return Err(ParserError::ValueOutOfRange);
-                }
+                // if page_count as usize > PAGES {
+                //     return Err(ParserError::ValueOutOfRange);
+                // }
 
                 // now iterate over each page to parse the line they contain
                 // ensure data integrity at this level at parsing, so we do not
@@ -416,12 +677,15 @@ impl<'a, const PAGES: usize, const LINES: usize> FromBytes<'a>
                     // update our slice pointer
                     rem = new_rem;
 
-                    if lines_count as usize > LINES {
-                        return Err(ParserError::ValueOutOfRange);
-                    }
+                    // if lines_count as usize > LINES {
+                    //     return Err(ParserError::ValueOutOfRange);
+                    // }
 
-                    for _ in 0..lines_count as usize {
-                        let (new_rem, _) = parse_text(rem)?;
+                    for i in 0..lines_count as usize {
+                        let (new_rem, _text) = parse_text(rem)?;
+                        #[cfg(test)]
+                        std::println!("*text{i}: {_text}");
+
                         // update our slice pointer
                         rem = new_rem;
                     }
