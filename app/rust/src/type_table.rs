@@ -70,6 +70,7 @@ impl<const MAX_FIELDS: usize> TypeTable<MAX_FIELDS> {
 pub fn parse_type_table<const MAX_FIELDS: usize>(
     input: &[u8],
 ) -> Result<(&[u8], TypeTable<MAX_FIELDS>), ParserError> {
+    crate::zlog("parse_type_table\x00");
     let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
     if type_count > MAX_FIELDS as u64 {
         return Err(ParserError::TooManyTypes);
