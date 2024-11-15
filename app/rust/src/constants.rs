@@ -15,8 +15,10 @@
 ********************************************************************************/
 pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
 pub const BLS_SIGNATURE_SIZE: usize = 48;
-pub const MAX_LINES: usize = 2;
-pub const MAX_PAGES: usize = 20;
+// means max characteres per line
+pub const MAX_LINES: usize = 35;
+// means mx number of lines per page
+pub const MAX_PAGES: usize = 10;
 pub const MAX_CHARS_PER_LINE: usize = 25;
 pub const REPLY_PATH: &str = "reply";
 pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
@@ -54,3 +56,5 @@ pub const DEFAULT_SENDER: u8 = 0x04;
 // in our candid type table in order
 // to parse the type using it
 pub const MAX_TABLE_FIELDS: usize = 20;
+// the max number of candid arguments in memory
+pub const MAX_ARGS: usize = 20;
