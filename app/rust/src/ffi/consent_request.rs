@@ -98,6 +98,9 @@ impl ConsentRequestT {
 
         // Compute and store request_id
         let request_id = request.request_id();
+        #[cfg(test)]
+        std::println!("Request ID: {:?}", hex::encode(request_id));
+
         self.request_id.copy_from_slice(&request_id);
 
         // Compute arg_hash
@@ -109,11 +112,16 @@ impl ConsentRequestT {
         let arg = icrc21.arg()?;
 
         let hash = hash_blob(arg);
+        #[cfg(test)]
+        std::println!("ConsentRequest->hash: {:?}", hex::encode(hash));
         self.arg_hash.copy_from_slice(&hash);
 
         // Copy method_name
         // the one encoded in the inner args
         let method = icrc21.method()?;
+        #[cfg(test)]
+        std::println!("ConsentRequest->Method: {:?}", method);
+
         if method.len() > METHOD_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
@@ -121,19 +129,21 @@ impl ConsentRequestT {
         self.method_name_len = method.len() as u16;
 
         // Copy canister_id
-        if request.canister_id.len() > CANISTER_MAX_LEN {
+        let canister_id = request.canister_id();
+        if canister_id.len() > CANISTER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
 
-        self.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
-        self.canister_id_len = request.canister_id.len() as u16;
+        self.canister_id[..canister_id.len()].copy_from_slice(canister_id);
+        self.canister_id_len = canister_id.len() as u16;
 
         // Copy sender
-        if request.sender.len() > SENDER_MAX_LEN {
+        let sender = request.sender();
+        if sender.len() > SENDER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
-        self.sender[..request.sender.len()].copy_from_slice(request.sender);
-        self.sender_len = request.sender.len() as u16;
+        self.sender[..sender.len()].copy_from_slice(sender);
+        self.sender_len = sender.len() as u16;
 
         Ok(())
     }
@@ -141,6 +151,8 @@ impl ConsentRequestT {
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16) -> u32 {
+    crate::zlog("rs_parse_consent_request\x00");
+
     if data.is_null() {
         return ParserError::NoData as u32;
     }
@@ -153,6 +165,7 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
     // Call from_bytes_into and handle the result
     match ConsentMsgRequest::from_bytes_into(msg, &mut request) {
         Ok(_) => {
+            crate::zlog("consent_request::ok\x00");
             // Get the initialized CallRequest
             let request = request.assume_init_ref();
 
@@ -175,6 +188,9 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 
 #[inline(never)]
 fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
+    crate::zlog("consent_request::fill_request\x00");
+    #[cfg(test)]
+    std::println!("ConsentMsgRequest: {:?}", request);
     unsafe {
         let mut consent_request = ConsentRequestT::default();
 

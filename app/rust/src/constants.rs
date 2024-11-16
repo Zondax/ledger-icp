@@ -29,6 +29,7 @@ pub const CBOR_CERTIFICATE_TAG: u64 = CBOR_TAG;
 pub const CALL_REQUEST_TAG: u64 = CBOR_TAG;
 pub const CONSENT_MSG_REQUEST_TAG: u64 = CBOR_TAG;
 pub const CANISTER_RANGES_TAG: u64 = CBOR_TAG;
+pub const CANISTER_CALL_TAG: u64 = CBOR_TAG;
 
 pub const PRINCIPAL_MAX_LEN: usize = 29;
 // Sender are principals

@@ -95,7 +95,7 @@ impl CanisterCallT {
 
         // Compute arg hash
         let mut hasher = Sha256::new();
-        hasher.update(request.arg);
+        hasher.update(request.arg().raw_data());
         let arg_hash = hasher.finalize();
 
         self.arg_hash.copy_from_slice(arg_hash.as_slice());
@@ -104,24 +104,24 @@ impl CanisterCallT {
             return Err(ParserError::ValueOutOfRange);
         }
 
-        self.canister_id.copy_from_slice(request.canister_id);
-        self.canister_id_len = request.canister_id.len() as u16;
-        self.ingress_expiry = request.ingress_expiry;
+        self.canister_id.copy_from_slice(request.canister_id());
+        self.canister_id_len = request.canister_id().len() as u16;
+        self.ingress_expiry = request.ingress_expiry();
 
-        if request.method_name.len() > METHOD_MAX_LEN {
+        if request.method_name().len() > METHOD_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
 
-        self.method_name[..request.method_name.len()]
-            .copy_from_slice(request.method_name.as_bytes());
-        self.method_name_len = request.method_name.len() as u16;
+        self.method_name[..request.method_name().len()]
+            .copy_from_slice(request.method_name().as_bytes());
+        self.method_name_len = request.method_name().len() as u16;
 
-        if request.sender.len() > SENDER_MAX_LEN {
+        if request.sender().len() > SENDER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
 
-        self.sender[..request.sender.len()].copy_from_slice(request.sender);
-        self.sender_len = request.sender.len() as u16;
+        self.sender[..request.sender().len()].copy_from_slice(request.sender());
+        self.sender_len = request.sender().len() as u16;
 
         crate::zlog("CanisterCallT::fill_from: done!\x00");
 
