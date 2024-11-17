@@ -6,7 +6,7 @@ use crate::{
     zlog, FromBytes,
 };
 
-use super::{CanisterCall, RawArg};
+use super::{CanisterCall, Icrc21ConsentMessageRequest, RawArg};
 
 const METHOD_NAME_LEN: usize = 36;
 const METHOD_NAME: &[u8] = b"icrc21_canister_call_consent_message";
@@ -29,7 +29,7 @@ impl<'a> ConsentMsgRequest<'a> {
 
     // Getter methods (unchanged)
     pub fn arg(&'a self) -> &RawArg<'a> {
-        &self.0.arg()
+        self.0.arg()
     }
 
     pub fn nonce(&self) -> Option<&[u8]> {
@@ -52,6 +52,13 @@ impl<'a> ConsentMsgRequest<'a> {
 
     pub fn method_name(&self) -> &str {
         self.0.method_name()
+    }
+
+    pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest, ParserError> {
+        // lazy parsing on demand in order to reduce stack usage
+        Ok(Icrc21ConsentMessageRequest::new_unchecked(
+            self.arg().raw_data(),
+        ))
     }
 
     /// Computes the request_id which is the hash
@@ -195,6 +202,11 @@ mod call_request_test {
     fn msg_request2() {
         let data = hex::decode(REQUEST2).unwrap();
         let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
+
+        let icrc_msg_request = msg_req.icrc21_msg_request().unwrap();
+
+        let method = icrc_msg_request.method().unwrap();
+        assert_eq!(method, "icrc2_approve");
 
         let request_id = hex::encode(msg_req.request_id());
 

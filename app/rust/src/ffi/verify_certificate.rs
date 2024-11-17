@@ -94,6 +94,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     let mut cert = MaybeUninit::uninit();
     let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+        crate::zlog("Fail parsing certificate***\x00");
         return ParserError::InvalidCertificate as u32;
     };
 

@@ -16,6 +16,8 @@ pub mod type_table;
 pub mod utils;
 pub use principal::Principal;
 use zemu_sys as _;
+pub mod argument_list;
+pub mod candid_header;
 
 pub use parser::*;
 
