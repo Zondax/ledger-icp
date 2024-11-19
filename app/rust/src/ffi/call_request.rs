@@ -84,6 +84,7 @@ impl ByteSerializable for CanisterCallT {
 }
 
 impl CanisterCallT {
+    #[inline(never)]
     fn fill_from(&mut self, request: &CallRequest<'_>) -> Result<(), ParserError> {
         check_canary();
         crate::zlog("CanisterCallT::fill_from\x00");
@@ -157,14 +158,13 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
 
 #[inline(never)]
 fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
+    let mut serialized = [0; core::mem::size_of::<CanisterCallT>()];
+
     unsafe {
-        let mut consent_request = CanisterCallT::default();
+        let call_request = &mut *(serialized.as_mut_ptr() as *mut CanisterCallT);
 
         // Update our consent request
-        consent_request.fill_from(request)?;
-
-        let mut serialized = [0; core::mem::size_of::<CanisterCallT>()];
-        consent_request.fill_to(&mut serialized)?;
+        call_request.fill_from(request)?;
 
         MEMORY_CALL_REQUEST
             .write(0, &serialized)

@@ -33,6 +33,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
     }
 
     // Public methods using clear names
+    #[inline(never)]
     pub fn method(&self) -> Result<&str, ParserError> {
         self.get_field(Self::METHOD_FIELD)?
             .ok_or(ParserError::UnexpectedField)
@@ -42,6 +43,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
             })
     }
 
+    #[inline(never)]
     pub fn arg(&self) -> Result<&[u8], ParserError> {
         self.get_field(Self::ARG_FIELD)?
             .ok_or(ParserError::UnexpectedField)
@@ -51,6 +53,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
             })
     }
 
+    #[inline(never)]
     pub fn user_preferences(&self) -> Result<Icrc21ConsentMessageSpec<'a>, ParserError> {
         self.get_field(Self::USER_PREFERENCES_FIELD)?
             .ok_or(ParserError::UnexpectedField)

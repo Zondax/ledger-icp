@@ -54,6 +54,7 @@ impl<'a> ConsentMsgRequest<'a> {
         self.0.method_name()
     }
 
+    #[inline(never)]
     pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest, ParserError> {
         // lazy parsing on demand in order to reduce stack usage
         Ok(Icrc21ConsentMessageRequest::new_unchecked(
@@ -151,15 +152,8 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
         if out.0.method_name.as_bytes() != name {
             return Err(ParserError::InvalidConsentMsgRequest);
         }
-        // check the candid encoded request that comes in the arg
-        // we do not need to compare them against reference values
-        // but at least ensure data is parsed correctly
-        // at this stage
-        let icrc_msg = Icrc21ConsentMessageRequest::new_unchecked(out.0.arg().raw_data());
-        let _ = icrc_msg.arg()?;
-        let _ = icrc_msg.method()?;
-        let _ = icrc_msg.user_preferences()?;
 
+        crate::zlog("ConsentMsgRequest::from_bytes_into ok\x00");
         Ok(rem)
     }
 }

@@ -95,15 +95,12 @@ impl<'a> FromBytes<'a> for CanisterCall<'a> {
 
         for _ in 0..content_len {
             let key = d.str()?;
-            zlog(key);
             unsafe {
                 match key {
                     "arg" => {
                         let arg: &mut MaybeUninit<RawArg<'a>> =
                             &mut *addr_of_mut!((*out).arg).cast();
                         let arg_bytes = d.bytes()?;
-                        #[cfg(test)]
-                        std::println!("CanisterCall::Arg: {:?}", hex::encode(arg_bytes));
                         _ = RawArg::from_bytes_into(arg_bytes, arg)?;
                     }
                     "nonce" => nonce = Some(d.bytes()?),

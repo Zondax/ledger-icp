@@ -165,11 +165,13 @@ impl<'a> Certificate<'a> {
 
         // Step 4: Verify signature
         // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
+        crate::zlog("Certificate::separator****\x00");
         let mut message = [0u8; BLS_MSG_SIZE];
         message[0] = SEPARATOR_LEN as u8;
         // message[1..14].copy_from_slice(b"ic-state-root");
         message[1..14].copy_from_slice(SEPARATOR);
         message[14..].copy_from_slice(&root_hash);
+        crate::zlog("Certificate::separator**** OK\x00");
 
         Ok(message)
     }

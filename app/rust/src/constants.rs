@@ -54,9 +54,9 @@ pub const DEFAULT_SENDER: u8 = 0x04;
 // Defines the minimum number of elements
 // in our candid type table in order
 // to parse the type using it
-pub const MAX_TABLE_FIELDS: usize = 20;
+pub const MAX_TABLE_FIELDS: usize = 12;
 // the max number of candid arguments in memory
-pub const MAX_ARGS: usize = 20;
+pub const MAX_ARGS: usize = 5;
 
 // The size of the hash
 pub const SHA256_DIGEST_LENGTH: usize = 32;

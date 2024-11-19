@@ -38,6 +38,8 @@ pub fn parse_argument_types<const MAX_ARGS: usize>(
     input: &[u8],
 ) -> Result<(&[u8], ArgumentTypes<MAX_ARGS>), ParserError> {
     let (rem, arg_count) = decompress_leb128(input)?;
+    #[cfg(test)]
+    std::println!("arg_count: {}", arg_count);
     if arg_count > MAX_ARGS as u64 {
         return Err(ParserError::TooManyTypes);
     }

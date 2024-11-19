@@ -91,6 +91,7 @@ impl ByteSerializable for ConsentRequestT {
 // also it assigns the inner args and method name of the candid
 // encoded icrc21_consent_message_request
 impl ConsentRequestT {
+    #[inline(never)]
     fn fill_from(&mut self, request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
         check_canary();
 
@@ -98,8 +99,6 @@ impl ConsentRequestT {
 
         // Compute and store request_id
         let request_id = request.request_id();
-        #[cfg(test)]
-        std::println!("Request ID: {:?}", hex::encode(request_id));
 
         self.request_id.copy_from_slice(&request_id);
 
@@ -110,19 +109,13 @@ impl ConsentRequestT {
         };
 
         let arg = icrc21.arg()?;
-        #[cfg(test)]
-        std::println!("arg: {}", hex::encode(arg));
 
         let hash = hash_blob(arg);
-        #[cfg(test)]
-        std::println!("ConsentRequest->hash: {:?}", hex::encode(hash));
         self.arg_hash.copy_from_slice(&hash);
 
         // Copy method_name
         // the one encoded in the inner args
         let method = icrc21.method()?;
-        #[cfg(test)]
-        std::println!("ConsentRequest->Method: {:?}", method);
 
         if method.len() > METHOD_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
@@ -167,7 +160,6 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
     // Call from_bytes_into and handle the result
     match ConsentMsgRequest::from_bytes_into(msg, &mut request) {
         Ok(_) => {
-            crate::zlog("consent_request::ok\x00");
             // Get the initialized CallRequest
             let request = request.assume_init_ref();
 
@@ -182,6 +174,8 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
                 return e as u32;
             }
 
+            crate::zlog("consent_request::ok\x00");
+
             ParserError::Ok as u32
         }
         Err(_) => ParserError::InvalidConsentMsg as u32,
@@ -190,21 +184,21 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 
 #[inline(never)]
 fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
-    crate::zlog("consent_request::fill_request\x00");
-    #[cfg(test)]
-    std::println!("ConsentMsgRequest: {:?}", request);
+    crate::zlog("consent_request::fill\x00");
+    let mut serialized = [0; core::mem::size_of::<ConsentRequestT>()];
     unsafe {
-        let mut consent_request = ConsentRequestT::default();
+        {
+            // Lets transmute the array in order to re-use serialized memory
+            // saving a bunch of stack
+            let consent_request = &mut *(serialized.as_mut_ptr() as *mut ConsentRequestT);
 
-        // Update our consent request
-        consent_request.fill_from(request)?;
+            // Update our consent request
+            consent_request.fill_from(request)?;
 
-        let mut serialized = [0; core::mem::size_of::<ConsentRequestT>()];
-        consent_request.fill_to(&mut serialized)?;
-
-        MEMORY_CONSENT_REQUEST
-            .write(0, &serialized)
-            .map_err(|_| ParserError::UnexpectedError)?;
+            MEMORY_CONSENT_REQUEST
+                .write(0, &serialized)
+                .map_err(|_| ParserError::UnexpectedError)?;
+        }
 
         let consent2 = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST)?;
         consent2.validate()?;
