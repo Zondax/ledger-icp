@@ -61,7 +61,6 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
         if !matches!(metadata_idx, FieldType::Compound(_))
             || !matches!(message_idx, FieldType::Compound(_))
         {
-            crate::zlog("Compound type mismatch\n");
             return Err(ParserError::UnexpectedType);
         }
 
@@ -80,6 +79,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
 impl<'a> DisplayableItem for ConsentInfo<'a> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
+        crate::zlog("ConsentInfo::num_items\x00");
         self.message.num_items()
     }
 

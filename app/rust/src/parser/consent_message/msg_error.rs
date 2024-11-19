@@ -231,7 +231,7 @@ impl<'a> FromCandidHeader<'a> for Error<'a> {
                     .unwrap() as u64 =>
             {
                 // For GenericError, we need to verify the field order from the type table
-                let generic_type_entry = header
+                let _generic_type_entry = header
                     .type_table
                     .find_type_entry(
                         type_entry
