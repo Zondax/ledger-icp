@@ -105,11 +105,13 @@ impl ConsentRequestT {
 
         // Compute arg_hash
         // remember this is the inner hash
-        let Ok(icrc21) = request.arg().icrc21_msg_request() else {
+        let Ok(icrc21) = request.icrc21_msg_request() else {
             return Err(ParserError::InvalidConsentMsg);
         };
 
         let arg = icrc21.arg()?;
+        #[cfg(test)]
+        std::println!("arg: {}", hex::encode(arg));
 
         let hash = hash_blob(arg);
         #[cfg(test)]

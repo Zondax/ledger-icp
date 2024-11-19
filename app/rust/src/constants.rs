@@ -43,8 +43,6 @@ pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
 // The max offset between the certificate.time and the call message request ingress_expiry
 // otherwise, call request must be considered invalid/outdated and not processed at all
 pub const MAX_CERT_INGRESS_OFFSET: u64 = 15 * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND;
-// separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
-pub const BLS_MSG_SIZE: usize = 1 + 13 + 32;
 // The official root key for consent message verification
 // including certificate, provided by the ICP team
 pub const CANISTER_ROOT_KEY: &str = "814c0e6ec71fab583b08bd81373c255c3c371b2e84863c98a4f1e08b74235d14fb5d9c0cd546d9685f913a0c0b2cc5341583bf4b4392e467db96d65b9bb4cb717112f8472e0d5a4d14505ffd7484b01291091c5f87b98883463f98091a0baaae";
@@ -59,3 +57,6 @@ pub const DEFAULT_SENDER: u8 = 0x04;
 pub const MAX_TABLE_FIELDS: usize = 20;
 // the max number of candid arguments in memory
 pub const MAX_ARGS: usize = 20;
+
+// The size of the hash
+pub const SHA256_DIGEST_LENGTH: usize = 32;

@@ -175,7 +175,12 @@ mod icrc21_msg_request_test {
     use super::*;
 
     const ICRC21_DATA: &str =
-        "086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e00";
+        "4449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e010123000300";
+
+    const METHOD: &str = "icrc2_approve";
+    const ARGS: &str = "4449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a0000000000000007010100";
+    const LANGUAGE: &str = "en";
+    const LINES_PER_PAGE: u16 = 3;
 
     #[test]
     fn test_icrc21_msg_request() {
@@ -183,10 +188,12 @@ mod icrc21_msg_request_test {
         let icrc = Icrc21ConsentMessageRequest::new_unchecked(&icrc);
 
         let method = icrc.method().unwrap();
-        std::println!("method: {:?}", method);
+        assert_eq!(method, METHOD);
         let arg = icrc.arg().unwrap();
-        std::println!("arg: {:?}", hex::encode(arg));
+        assert_eq!(hex::encode(arg), ARGS);
         let user_preferences = icrc.user_preferences().unwrap();
-        std::println!("user_preferences: {:?}", user_preferences);
+        assert_eq!(user_preferences.language(), LANGUAGE);
+        assert_eq!(user_preferences.lines_per_page(), Some(LINES_PER_PAGE));
+        assert_eq!(user_preferences.utc_offset(), None);
     }
 }

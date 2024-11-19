@@ -20,8 +20,8 @@ use crate::{
 // };
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Icrc21ConsentMessageSpec<'a> {
-    metadata: ConsentMessageMetadata<'a>, // 2
-    device_spec: Option<DeviceSpec>,      // 4
+    pub(crate) metadata: ConsentMessageMetadata<'a>, // 2
+    pub(crate) device_spec: Option<DeviceSpec>,      // 4
 }
 
 impl<'a> Icrc21ConsentMessageSpec<'a> {
@@ -30,6 +30,10 @@ impl<'a> Icrc21ConsentMessageSpec<'a> {
 
     pub fn language(&self) -> &str {
         self.metadata.language
+    }
+
+    pub fn utc_offset(&self) -> Option<i16> {
+        self.metadata.utc_offset
     }
 
     pub fn lines_per_page(&self) -> Option<u16> {

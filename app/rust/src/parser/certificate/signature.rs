@@ -47,6 +47,8 @@ impl<'a> FromBytes<'a> for Signature<'a> {
         out: &mut core::mem::MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
         zlog("Signature::from_bytes\x00");
+        #[cfg(test)]
+        std::println!("Encoded Signature: {}", hex::encode(&input[..50]));
 
         let mut d = Decoder::new(input);
         let out = out.as_mut_ptr();

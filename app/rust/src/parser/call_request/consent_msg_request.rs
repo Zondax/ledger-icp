@@ -151,6 +151,14 @@ impl<'a> FromBytes<'a> for ConsentMsgRequest<'a> {
         if out.0.method_name.as_bytes() != name {
             return Err(ParserError::InvalidConsentMsgRequest);
         }
+        // check the candid encoded request that comes in the arg
+        // we do not need to compare them against reference values
+        // but at least ensure data is parsed correctly
+        // at this stage
+        let icrc_msg = Icrc21ConsentMessageRequest::new_unchecked(out.0.arg().raw_data());
+        let _ = icrc_msg.arg()?;
+        let _ = icrc_msg.method()?;
+        let _ = icrc_msg.user_preferences()?;
 
         Ok(rem)
     }
@@ -162,45 +170,20 @@ mod call_request_test {
 
     use super::*;
 
-    // const REQUEST: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
-    // const REQUEST2: &str = "d9d9f7a167636f6e74656e74a763617267586b4449444c076d7b6c01d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d026e036c02efcee7800401c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501060c4449444c00017104746f626905677265657402656e01011e0003006b63616e69737465725f69644a00000000006000fd01016e696e67726573735f657870697279c24817c49d49c5a920806b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550a3788c1805553fb69b20f08e87e23b136c726571756573745f747970656463616c6c6673656e6465724104";
-    const REQUEST: &str =  "d9d9f7a167636f6e74656e74a76361726758d84449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e0101230003006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b1805f118a85d00006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550650e5e8a64c4aa9980a4ff7433df98dd6c726571756573745f747970656463616c6c6673656e6465724104";
-    const REQUEST2: &str = "d9d9f7a167636f6e74656e74a76361726758d84449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e0101230003006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b18072a6f7894d0006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550369f1914fd64438f5e6329fcb66b1d4d6c726571756573745f747970656463616c6c6673656e6465724104";
+    const REQUEST: &str = "d9d9f7a167636f6e74656e74a76361726758d84449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e0101230003006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b18072a6f7894d0006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550369f1914fd64438f5e6329fcb66b1d4d6c726571756573745f747970656463616c6c6673656e6465724104";
 
     const ARG: &str = "4449444c00017104746f6269";
-    const NONCE: &str = "650e5e8a64c4aa9980a4ff7433df98dd";
-    const NONCE2: &str = "369f1914fd64438f5e6329fcb66b1d4d";
-    const REQUEST_ID: &str = "e54bfca3ec91347909780ad7f4a0e4b2b7bc45bdea5b7180b33665f40bba7a22";
-    const REQUEST_ID2: &str = "ea37fdc5229d7273d500dc8ae3c009f0421049c1f02cc5ad85ea838ae7dfc045";
+    const NONCE: &str = "369f1914fd64438f5e6329fcb66b1d4d";
+    const REQUEST_ID: &str = "ea37fdc5229d7273d500dc8ae3c009f0421049c1f02cc5ad85ea838ae7dfc045";
     const CANISTER_ID: &str = "00000000000000020101";
-    const CANISTER_ID2: &str = "00000000000000020101";
     const METHOD: &str = "icrc21_canister_call_consent_message";
     const REQUEST_TYPE: &str = "call";
     // The default sender
-    const INGRESS_EXPIRY: u64 = 1731054720000000000;
-    const INGRESS_EXPIRY2: u64 = 1731399240000000000;
+    const INGRESS_EXPIRY: u64 = 1731399240000000000;
 
     #[test]
     fn msg_request() {
         let data = hex::decode(REQUEST).unwrap();
-        let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
-
-        let request_id = hex::encode(msg_req.request_id());
-
-        assert_eq!(msg_req.sender().len(), 1);
-        assert_eq!(msg_req.sender()[0], DEFAULT_SENDER);
-        assert_eq!(hex::encode(msg_req.canister_id()), CANISTER_ID);
-        assert_eq!(msg_req.method_name(), METHOD);
-        assert_eq!(msg_req.request_type(), REQUEST_TYPE);
-
-        assert_eq!(msg_req.ingress_expiry(), INGRESS_EXPIRY);
-        assert_eq!(hex::encode(msg_req.nonce().unwrap()), NONCE);
-        assert_eq!(request_id, REQUEST_ID);
-    }
-
-    #[test]
-    fn msg_request2() {
-        let data = hex::decode(REQUEST2).unwrap();
         let msg_req = ConsentMsgRequest::from_bytes(&data).unwrap();
 
         let icrc_msg_request = msg_req.icrc21_msg_request().unwrap();
@@ -217,8 +200,8 @@ mod call_request_test {
         assert_eq!(msg_req.request_type(), REQUEST_TYPE);
         std::println!("request_id: {}", request_id);
 
-        assert_eq!(msg_req.ingress_expiry(), INGRESS_EXPIRY2);
-        assert_eq!(hex::encode(msg_req.nonce().unwrap()), NONCE2);
-        assert_eq!(request_id, REQUEST_ID2);
+        assert_eq!(msg_req.ingress_expiry(), INGRESS_EXPIRY);
+        assert_eq!(hex::encode(msg_req.nonce().unwrap()), NONCE);
+        assert_eq!(request_id, REQUEST_ID);
     }
 }
