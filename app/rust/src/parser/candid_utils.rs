@@ -81,7 +81,7 @@ mod tests {
         let input = &[1, 0x2A, 0x00]; // 1 followed by 42 in little endian
         let (rem, value) = parse_opt_i16(input).unwrap();
         assert_eq!(value, Some(42));
-        assert_eq!(rem, &[]);
+        assert!(rem.is_empty());
 
         // Test invalid tag
         let input = &[2, 0x00, 0x00];

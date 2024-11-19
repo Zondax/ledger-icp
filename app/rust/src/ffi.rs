@@ -44,7 +44,7 @@ mod ffi_verify_cert {
         unsafe {
             // 1. send consent_request
             if rs_parse_consent_request(consent_data.as_ptr(), consent_data.len() as u16)
-                != ParserError::Ok as _
+                != ParserError::Ok as u32
             {
                 std::println!("Error parsing consent request");
                 return ParserError::InvalidConsentMsg as u32;
@@ -52,7 +52,7 @@ mod ffi_verify_cert {
 
             // 2. send call request
             if rs_parse_canister_call_request(call_data.as_ptr(), call_data.len() as u16)
-                != ParserError::Ok as _
+                != ParserError::Ok as u32
             {
                 std::println!("Error parsing call request");
                 return ParserError::InvalidCallRequest as u32;
@@ -62,7 +62,7 @@ mod ffi_verify_cert {
                 cert_data.as_ptr(),
                 cert_data.len() as u16,
                 root_key.as_ptr(),
-            ) != ParserError::Ok as _
+            ) != ParserError::Ok as u32
             {
                 std::println!("Error verifying certificate");
                 return ParserError::InvalidCertificate as u32;
