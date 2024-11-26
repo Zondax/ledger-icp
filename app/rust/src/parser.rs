@@ -15,7 +15,10 @@
 ********************************************************************************/
 use core::mem::MaybeUninit;
 
-use crate::error::ViewError;
+use crate::{
+    candid_header::CandidHeader,
+    error::{ParserError, ViewError},
+};
 
 pub mod call_request;
 pub mod candid_utils;
@@ -25,6 +28,16 @@ pub mod consent_message;
 mod snapshots_common;
 
 pub use certificate::*;
+
+pub trait FromCandidHeader<'a> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+    ) -> Result<&'a [u8], ParserError>
+    where
+        Self: Sized;
+}
 
 ///This trait defines an useful interface to parse
 ///objects from bytes.

@@ -91,6 +91,7 @@ impl ByteSerializable for ConsentRequestT {
 // also it assigns the inner args and method name of the candid
 // encoded icrc21_consent_message_request
 impl ConsentRequestT {
+    #[inline(never)]
     fn fill_from(&mut self, request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
         check_canary();
 
@@ -98,11 +99,12 @@ impl ConsentRequestT {
 
         // Compute and store request_id
         let request_id = request.request_id();
+
         self.request_id.copy_from_slice(&request_id);
 
         // Compute arg_hash
         // remember this is the inner hash
-        let Ok(icrc21) = request.arg().icrc21_msg_request() else {
+        let Ok(icrc21) = request.icrc21_msg_request() else {
             return Err(ParserError::InvalidConsentMsg);
         };
 
@@ -114,6 +116,7 @@ impl ConsentRequestT {
         // Copy method_name
         // the one encoded in the inner args
         let method = icrc21.method()?;
+
         if method.len() > METHOD_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
@@ -121,19 +124,21 @@ impl ConsentRequestT {
         self.method_name_len = method.len() as u16;
 
         // Copy canister_id
-        if request.canister_id.len() > CANISTER_MAX_LEN {
+        let canister_id = request.canister_id();
+        if canister_id.len() > CANISTER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
 
-        self.canister_id[..request.canister_id.len()].copy_from_slice(request.canister_id);
-        self.canister_id_len = request.canister_id.len() as u16;
+        self.canister_id[..canister_id.len()].copy_from_slice(canister_id);
+        self.canister_id_len = canister_id.len() as u16;
 
         // Copy sender
-        if request.sender.len() > SENDER_MAX_LEN {
+        let sender = request.sender();
+        if sender.len() > SENDER_MAX_LEN {
             return Err(ParserError::ValueOutOfRange);
         }
-        self.sender[..request.sender.len()].copy_from_slice(request.sender);
-        self.sender_len = request.sender.len() as u16;
+        self.sender[..sender.len()].copy_from_slice(sender);
+        self.sender_len = sender.len() as u16;
 
         Ok(())
     }
@@ -141,6 +146,8 @@ impl ConsentRequestT {
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16) -> u32 {
+    crate::zlog("rs_parse_consent_request\x00");
+
     if data.is_null() {
         return ParserError::NoData as u32;
     }
@@ -167,6 +174,8 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
                 return e as u32;
             }
 
+            crate::zlog("consent_request::ok\x00");
+
             ParserError::Ok as u32
         }
         Err(_) => ParserError::InvalidConsentMsg as u32,
@@ -175,18 +184,21 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 
 #[inline(never)]
 fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
+    crate::zlog("consent_request::fill\x00");
+    let mut serialized = [0; core::mem::size_of::<ConsentRequestT>()];
     unsafe {
-        let mut consent_request = ConsentRequestT::default();
+        {
+            // Lets transmute the array in order to re-use serialized memory
+            // saving a bunch of stack
+            let consent_request = &mut *(serialized.as_mut_ptr() as *mut ConsentRequestT);
 
-        // Update our consent request
-        consent_request.fill_from(request)?;
+            // Update our consent request
+            consent_request.fill_from(request)?;
 
-        let mut serialized = [0; core::mem::size_of::<ConsentRequestT>()];
-        consent_request.fill_to(&mut serialized)?;
-
-        MEMORY_CONSENT_REQUEST
-            .write(0, &serialized)
-            .map_err(|_| ParserError::UnexpectedError)?;
+            MEMORY_CONSENT_REQUEST
+                .write(0, &serialized)
+                .map_err(|_| ParserError::UnexpectedError)?;
+        }
 
         let consent2 = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST)?;
         consent2.validate()?;

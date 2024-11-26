@@ -56,6 +56,15 @@ impl<const MAX_FIELDS: usize> TypeTable<MAX_FIELDS> {
     pub fn find_type_entry(&self, type_index: usize) -> Option<&TypeTableEntry<MAX_FIELDS>> {
         self.entries.get(type_index)
     }
+    pub fn find_variant(&self, field_hash: u32) -> Result<u64, ParserError> {
+        // Get the root variant entry (type 0)
+        let root_entry = self.find_type_entry(0).ok_or(ParserError::UnexpectedType)?;
+
+        match root_entry.find_field_type(field_hash)? {
+            FieldType::Compound(idx) => Ok(idx as u64),
+            _ => Err(ParserError::UnexpectedType),
+        }
+    }
 }
 
 pub fn parse_type_table<const MAX_FIELDS: usize>(
@@ -128,8 +137,7 @@ pub fn parse_type_table<const MAX_FIELDS: usize>(
 }
 
 #[cfg(test)]
-pub fn print_type_table(type_table: &TypeTable<20>) {
-    println!("type_count: {}", type_table.entry_count);
+pub fn print_type_table<const N: usize>(type_table: &TypeTable<N>) {
     println!("Type table:");
     for (i, entry) in type_table
         .entries

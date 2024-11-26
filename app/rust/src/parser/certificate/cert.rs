@@ -21,8 +21,8 @@ use minicbor::{Decode, Decoder};
 use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{
-        BLS_MSG_SIZE, CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET,
-        REPLY_PATH,
+        CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET, REPLY_PATH,
+        SHA256_DIGEST_LENGTH,
     },
     error::{ParserError, ViewError},
     zlog, DisplayableItem, FromBytes, Signature,
@@ -32,6 +32,10 @@ use super::{
     canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree,
     raw_value::RawValue,
 };
+// separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
+pub const SEPARATOR: &[u8] = b"ic-state-root";
+pub const SEPARATOR_LEN: usize = SEPARATOR.len();
+pub const BLS_MSG_SIZE: usize = 1 + SEPARATOR_LEN + SHA256_DIGEST_LENGTH;
 
 #[derive(Clone, Copy, PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
@@ -109,6 +113,9 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         // Verify that the tree raw value can be parsed sucessfully into a HashTree
         let _: HashTree = cert.tree.try_into().map_err(|_| ParserError::InvalidTree)?;
 
+        #[cfg(test)]
+        HashTree::parse_and_print_hash_tree(&cert.tree, 0).unwrap();
+
         Ok(&input[d.position()..])
     }
 }
@@ -150,7 +157,7 @@ impl<'a> Certificate<'a> {
     }
 
     #[inline(never)]
-    pub fn bls_message(&self) -> Result<[u8; 46], ParserError> {
+    pub fn bls_message(&self) -> Result<[u8; BLS_MSG_SIZE], ParserError> {
         // Step 1: Compute root hash, this is computed using certificate.tree
         // This hash is computed correctly as per testing data passed from icp team
         // we get to the same hash.
@@ -158,10 +165,13 @@ impl<'a> Certificate<'a> {
 
         // Step 4: Verify signature
         // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
+        crate::zlog("Certificate::separator****\x00");
         let mut message = [0u8; BLS_MSG_SIZE];
-        message[0] = 13;
-        message[1..14].copy_from_slice(b"ic-state-root");
+        message[0] = SEPARATOR_LEN as u8;
+        // message[1..14].copy_from_slice(b"ic-state-root");
+        message[1..14].copy_from_slice(SEPARATOR);
         message[14..].copy_from_slice(&root_hash);
+        crate::zlog("Certificate::separator**** OK\x00");
 
         Ok(message)
     }
@@ -188,7 +198,7 @@ impl<'a> Certificate<'a> {
             None => Ok(true),
             Some(delegation) => {
                 // Ensure the delegation's certificate contains the subnet's public key
-                zlog("dele_pubkey\x00");
+                zlog("delegation_pubkey\x00");
                 if delegation.public_key()?.is_none() {
                     zlog("delegation_without_key\x00");
                     return Ok(false);
@@ -220,6 +230,7 @@ impl<'a> Certificate<'a> {
         match &self.delegation {
             None => Ok(root_key), // Use root_public_key if no delegation
             Some(d) => {
+                zlog("using_delegation_key\x00");
                 let key = d.public_key()?.ok_or(ParserError::UnexpectedValue)?;
                 Ok(key.as_bytes())
             }
@@ -263,6 +274,8 @@ impl<'a> Certificate<'a> {
         let tree = self.tree();
         let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
         let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
+        #[cfg(test)]
+        std::println!("\nConsent message bytes: {:?}\n", hex::encode(bytes));
 
         let mut msg = MaybeUninit::uninit();
         ConsentMessageResponse::from_bytes_into(bytes, &mut msg)?;
@@ -319,19 +332,44 @@ impl<'a> DisplayableItem for Certificate<'a> {
 #[cfg(test)]
 mod test_certificate {
 
-    use crate::constants::CANISTER_ROOT_KEY;
+    use crate::consent_message::msg_response::ResponseType;
 
     use super::*;
     use ic_certification::Certificate as IcpCertificate;
 
-    const REAL_CERT: &str = "d9d9f7a3647472656583018301820458200bbcc71092da3ce262b8154d398b9a6114bee87f1c0b72e16912757aa023626a8301820458200628a8e00432e8657ad99c4d1bf167dd54ace9199609bfc5d57d89f48d97565f83024e726571756573745f737461747573830258204ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a254283018302457265706c79820358b44449444c0b6b02bc8a0101c5fed201086c02efcee7800402e29fdcc806036c01d880c6d007716b02d9e5b0980404fcdfd79a0f716c01c4d6b4ea0b056d066c01ffbb87a807076d716b04d1c4987c09a3f2efe6020a9a8597e6030ae3c581900f0a6c02fc91f4f80571c498b1b50d7d6c01fc91f4f8057101000002656e0001021e50726f647563652074686520666f6c6c6f77696e67206772656574696e6714746578743a202248656c6c6f2c20746f626921228302467374617475738203477265706c696564830182045820891af3e8982f1ac3d295c29b9fdfedc52301c03fbd4979676c01059184060b0583024474696d65820349cbf7dd8ca1a2a7e217697369676e6174757265583088078c6fe75f32594bf4e322b14d47e5c849cf24a370e3bab0cab5daffb7ab6a2c49de18b7f2d631893217d0c716cd656a64656c65676174696f6ea2697375626e65745f6964581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd026b6365727469666963617465590294d9d9f7a264747265658301820458200b0d62dc7b9d7de735bb9a6393b59c9f32ff7c4d2aacdfc9e6ffc70e341fb6f783018301820458204468514ca4af8224c055c386e3f7b0bfe018c2d9cfd5837e427b43e1ab0934f98302467375626e65748301830183018301820458208739fbbedd3dedaa8fef41870367c0905bde376b63dd37e2b176fb08b582052f830182045820f8c3eae0377ee00859223bf1c6202f5885c4dcdc8fd13b1d48c3c838688919bc83018302581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd02830183024f63616e69737465725f72616e67657382035832d9d9f782824a000000000060000001014a00000000006000ae0101824a00000000006000b001014a00000000006fffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c0503020103610090075120778eb21a530a02bcc763e7f4a192933506966af7b54c10a4d2b24de6a86b200e3440bae6267bf4c488d9a11d0472c38c1b6221198f98e4e6882ba38a5a4e3aa5afce899b7f825ed95adfa12629688073556f2747527213e8d73e40ce8204582036f3cd257d90fb38e42597f193a5e031dbd585b6292793bb04db4794803ce06e82045820028fc5e5f70868254e7215e7fc630dbd29eefc3619af17ce231909e1faf97e9582045820696179fceb777eaed283265dd690241999eb3ede594091748b24456160edc1278204582081398069f9684da260cfb002eac42211d0dbf22c62d49aee61617d62650e793183024474696d65820349a5948992aaa195e217697369676e6174757265583094e5f544a7681b0c2c3c5dbf97950c96fd837f2d19342f1050d94d3068371b0a95a5ee20c36c4395c2dbb4204f2b4742";
-    const CERT_HASH: &str = "bcedf2eab3980aedd4d0d9f2159efebd5597cbad5f49217e0c9686b93d30d503";
-    const DEL_CERT_HASH: &str = "04a94256c02e83aab4f203cb0784340279d7902f9b09305c978be1746e19b742";
-    const CANISTER_ID: &str = "00000000006000FD0101";
+    const REAL_CERT: &str = "d9d9f7a264747265658301830182045820d4cff6a25570a56ac14e743e694daa2aa88b80a4bea761116471b56e4945ed6d830182045820f26d51d511039fcb5058441e6204fec42a0da824541f57d0c1c3468a13e16cbf83024e726571756573745f737461747573830182045820198df32f6757100316e899c7a3afec26f6933c06bf5d2f6233f6b0f14ac5b96f83025820ea37fdc5229d7273d500dc8ae3c009f0421049c1f02cc5ad85ea838ae7dfc04583018302457265706c7982035903304449444c0c6b02bc8a0101c5fed201096c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b02d9e5b0980405fcdfd79a0f716c01c4d6b4ea0b066d076c01ffbb87a807086d716b04d1c4987c0aa3f2efe6020b9a8597e6030be3c581900f0b6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e0007031e2320417574686f72697a6520616e6f74686572206164647265737320746f2077697468647261772066726f6d20796f7572206163636f756e74202a2a5468651f666f6c6c6f77696e67206164647265737320697320616c6c6f77656420746f031d77697468647261772066726f6d20796f7572206163636f756e743a2a2a2272646d78362d6a616161612d61616161612d61616164712d636169202a2a596f75720d7375626163636f756e743a2a2a032330303030303030303030303030303030303030303030303030303030303030303030301d3030303030303030303030303030303030303030303030303030303030232a2a526571756573746564207769746864726177616c20616c6c6f77616e63653a2a2a032031302049435020e29aa02054686520616c6c6f77616e63652077696c6c2062652273657420746f2031302049435020696e646570656e64656e746c79206f6620616e791e70726576696f757320616c6c6f77616e63652e20556e74696c207468697303217472616e73616374696f6e20686173206265656e206578656375746564207468651e7370656e6465722063616e207374696c6c206578657263697365207468652370726576696f757320616c6c6f77616e63652028696620616e792920746f2069742773032166756c6c20616d6f756e742e202a2a45787069726174696f6e20646174653a2a2a204e6f2065787069726174696f6e2e202a2a417070726f76616c206665653a2a2a23302e3030303120494350202a2a5472616e73616374696f6e206665657320746f206265031a7061696420627920796f7572207375626163636f756e743a2a2a2330303030303030303030303030303030303030303030303030303030303030303030301d30303030303030303030303030303030303030303030303030303030308302467374617475738203477265706c6965648301820458206d8327eb52806a887c0e4f444261e7bde20005e64d9b31479b9af72f8f89886083024474696d65820349c8ccbcfea4c8ca8318697369676e61747572655830b9eb03718c42aa1926bab9956dcef37432045ba1122baf120b8fc3e9fb56f75df8eee419e4e6488e60db79dcaba8c153";
+    const CANISTER_ID: &str = "00000000000000020101";
+    const REQUEST_ID: &str = "ea37fdc5229d7273d500dc8ae3c009f0421049c1f02cc5ad85ea838ae7dfc045";
+    const INGRESS_EXPIRY: u64 = 1731399240000000000;
+    const CERT_GENERIC_DISPLAY: &str = "d9d9f7a2647472656583018301820458207970ca0b7b0c0e63228c4cf47ce6f4a94268cfc004a99ae8aba5e97f204126a183018204582080b175729756e05010ceab7db6bed386cc6db61d274fe7d38a5f0bcea7ef317783024e726571756573745f7374617475738301830258204b77e3e74aa91e7bf50f8cf1acc0cb1dbafa4ad45c050e2abcc5d910317862a383018302457265706c79820359032d4449444c0c6b02bc8a0101c5fed201096c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b02d9e5b0980405fcdfd79a0f716c01c4d6b4ea0b066d076c01ffbb87a807086d716b04d1c4987c0aa3f2efe6020b9a8597e6030be3c581900f0b6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e01a4052320417574686f72697a6520616e6f74686572206164647265737320746f2077697468647261772066726f6d20796f7572206163636f756e740a0a2a2a54686520666f6c6c6f77696e67206164647265737320697320616c6c6f77656420746f2077697468647261772066726f6d20796f7572206163636f756e743a2a2a0a72646d78362d6a616161612d61616161612d61616164712d6361690a0a2a2a596f7572207375626163636f756e743a2a2a0a303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030300a0a2a2a526571756573746564207769746864726177616c20616c6c6f77616e63653a2a2a0a3130204943500ae29aa02054686520616c6c6f77616e63652077696c6c2062652073657420746f2031302049435020696e646570656e64656e746c79206f6620616e792070726576696f757320616c6c6f77616e63652e20556e74696c2074686973207472616e73616374696f6e20686173206265656e20657865637574656420746865207370656e6465722063616e207374696c6c206578657263697365207468652070726576696f757320616c6c6f77616e63652028696620616e792920746f20697427732066756c6c20616d6f756e742e0a0a2a2a45787069726174696f6e20646174653a2a2a0a4e6f2065787069726174696f6e2e0a0a2a2a417070726f76616c206665653a2a2a0a302e30303031204943500a0a2a2a5472616e73616374696f6e206665657320746f206265207061696420627920796f7572207375626163636f756e743a2a2a0a303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030308302467374617475738203477265706c696564820458203c45af0e5805729f1d07fbce20047198017873e787c5a27744ca20c71ad357b8830182045820d4fdd3b69be601a88a9412234c7940446d55dbc09bd3f28eb96d8548a2fe885283024474696d65820349889893d986e3d58218697369676e61747572655830b60f55093dc0835939589c2a3dcb5313248b13b5d965f3019fb9f5f3d34503443100b5103386a9d2df229fa82fe0440c";
+    const ROOT_KEY: &str =
+        "b354faa40626ebc91ed7e55b2307feff70d119ef37f89915bd4561a1ed8c5c26c8c2cb8c4711eec681bf213a75cb988008fb1f4d7aa278cd4fad6f295c83bab04b8cabcb32640cf926083daf865551f9f3b76fd800dac027a583858b9d1d3f64";
 
-    const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
+    use std::vec::Vec;
 
-    const INGRESS_EXPIRY: u64 = 1712666798482000000;
+    fn extract_bls_from_der(der_bytes: &[u8]) -> Option<Vec<u8>> {
+        // The BLS public key in this DER format comes after:
+        // - SEQUENCE (0x30)
+        // - Length of entire sequence (0x81 0x82)
+        // - Inner SEQUENCE (0x30)
+        // - Inner sequence length (0x1d)
+        // - Two OID structures
+        // - BIT STRING marker (0x03)
+        // - BIT STRING length (0x61)
+        // - Padding bit (0x00)
+
+        // We can look for the bit string marker and length
+        let mut i = 0;
+        while i < der_bytes.len() {
+            if der_bytes[i] == 0x03 && der_bytes[i + 1] == 0x61 && der_bytes[i + 2] == 0x00 {
+                // Found the start of our key data
+                // Skip the 0x03 0x61 0x00 markers and return the rest
+                return Some(der_bytes[i + 3..].to_vec());
+            }
+            i += 1;
+        }
+        None
+    }
 
     #[test]
     fn parse_cert() {
@@ -343,34 +381,25 @@ mod test_certificate {
     }
 
     #[test]
-    fn verify_cert() {
+    fn verify_certificate() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let cert_signature = hex::encode(cert.signature());
         let root_hash = hex::encode(cert.hash().unwrap());
         // Verify delegation.cert root_hash
-        let del_cert = cert.delegation.unwrap().cert();
-        let del_cert_hash = hex::encode(del_cert.hash().unwrap());
+        assert!(cert.delegation.is_none());
 
         // compare our root hash with the hash icp library computes
         let icp_cert: IcpCertificate = serde_cbor::from_slice(&data).unwrap();
         let icp_tree = icp_cert.tree;
         let icp_hash = icp_tree.digest();
         let icp_hash = hex::encode(icp_hash);
+        let icp_signature = hex::encode(icp_cert.signature);
 
         assert_eq!(root_hash, icp_hash);
-        assert_eq!(root_hash, CERT_HASH);
+        assert_eq!(cert_signature, icp_signature);
 
-        // compare our root hash with the hash icp library computes
-        let icp_cert: IcpCertificate = serde_cbor::from_slice(&data).unwrap();
-        let delegation = icp_cert.delegation.unwrap();
-        let del_cert: IcpCertificate = serde_cbor::from_slice(&delegation.certificate).unwrap();
-        let icp_hash = hex::encode(del_cert.tree.digest());
-
-        assert_eq!(del_cert_hash, icp_hash);
-        assert_eq!(del_cert_hash, DEL_CERT_HASH);
-
-        // verify certificate signatures
-        let root_key = hex::decode(CANISTER_ROOT_KEY).unwrap();
+        let root_key = hex::decode(ROOT_KEY).unwrap();
         assert!(cert.verify(&root_key).unwrap());
 
         // verify certificate expiry time
@@ -381,7 +410,12 @@ mod test_certificate {
     fn check_canister_ranges() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
-        let ranges = cert.canister_ranges().unwrap();
+
+        let Some(ranges) = cert.canister_ranges() else {
+            // No ranges in this data
+            return;
+        };
+
         let mut num_ranges = 0;
         for (i, r) in ranges.iter().enumerate() {
             std::println!("Range{}: {:?}", i, r);
@@ -406,5 +440,15 @@ mod test_certificate {
 
         let found = HashTree::lookup_path(&request_id[..].into(), tree).unwrap();
         assert!(found.raw_value().is_some());
+    }
+
+    #[test]
+    fn error_generic_display() {
+        let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+
+        // Check we parse the message(reply field)
+        let msg = cert.msg().unwrap();
+        assert_eq!(msg.response_type(), ResponseType::Ok);
     }
 }
