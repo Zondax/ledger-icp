@@ -20,9 +20,12 @@
 #include "candid_parser.h"
 #include "parser_txdef.h"
 #include "timeutils.h"
+#include "token_info.h"
 #include <zxformat.h>
 
 #define DEFAULT_MAXIMUM_FEES 10000
+#define AMOUNT_TITLE "Amount "
+#define AMOUNT_TITTLE_LEN sizeof(AMOUNT_TITLE)
 
 __Z_INLINE parser_error_t print_permission(int32_t permission, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     switch (permission)
@@ -249,6 +252,17 @@ static parser_error_t parser_getItemDisburseCandid(uint8_t displayIdx,
     *pageCount = 1;
 
     const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
+    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const token_info_t *token = get_token(canister_id, canister_id_len);
+
+    const char *tokenSymbol = NULL;
+    uint8_t decimals = 0;
+
+    if (token != NULL) {
+        tokenSymbol = token->token_symbol;
+        decimals = token->decimals;
+    }
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -283,9 +297,12 @@ static parser_error_t parser_getItemDisburseCandid(uint8_t displayIdx,
     }
 
     if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "Amount (ICP)");
+        snprintf(outKey, outKeyLen, AMOUNT_TITLE);
+        if (tokenSymbol != NULL) {
+            snprintf(outKey + AMOUNT_TITTLE_LEN, outKeyLen - AMOUNT_TITTLE_LEN, "(%s)", tokenSymbol);
+        }
         if (fields->command.disburse.has_amount) {
-            return print_ICP(fields->command.disburse.amount, outVal, outValLen, pageIdx, pageCount);
+            return print_Amount(fields->command.disburse.amount, outVal, outValLen, pageIdx, pageCount, decimals);
         } else {
             snprintf(outVal, outValLen, "All");
             return parser_ok;
@@ -604,6 +621,19 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx,
     const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Split, parser_unexpected_value)
 
+    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
+    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const token_info_t *token = get_token(canister_id, canister_id_len);
+
+    const char *tokenSymbol = NULL;
+    uint8_t decimals = 0;
+
+    if (token != NULL) {
+        tokenSymbol = token->token_symbol;
+        decimals = token->decimals;
+    }
+
+
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         snprintf(outVal, outValLen, "Split Neuron");
@@ -626,8 +656,11 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx,
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Amount (ICP)");
-        return print_ICP(fields->command.split.amount_e8s, outVal, outValLen, pageIdx, pageCount);
+        snprintf(outKey, outKeyLen, AMOUNT_TITLE);
+        if (tokenSymbol != NULL) {
+            snprintf(outKey + AMOUNT_TITTLE_LEN, outKeyLen - AMOUNT_TITTLE_LEN, "(%s)", tokenSymbol);
+        }
+        return print_Amount(fields->command.disburse.amount, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
     return parser_no_data;
@@ -881,6 +914,18 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx,
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
+    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
+    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const token_info_t *token = get_token(canister_id, canister_id_len);
+
+    const char *tokenSymbol = NULL;
+    uint8_t decimals = 0;
+
+    if (token != NULL) {
+        tokenSymbol = token->token_symbol;
+        decimals = token->decimals;
+    }
+
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
         snprintf(outVal, outValLen, is_stake_tx ? "Stake Neuron" : "Send ICP");
@@ -923,10 +968,13 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx,
     }
 
     if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "Amount (ICP)");
-        return print_ICP(fields->data.candid_transfer.amount,
+        snprintf(outKey, outKeyLen, AMOUNT_TITLE);
+        if (tokenSymbol != NULL) {
+            snprintf(outKey + AMOUNT_TITTLE_LEN, outKeyLen - AMOUNT_TITTLE_LEN, "(%s)", tokenSymbol);
+        }
+        return print_Amount(fields->data.candid_transfer.amount,
                          outVal, outValLen,
-                         pageIdx, pageCount);
+                         pageIdx, pageCount, decimals);
     }
 
     if (displayIdx == 4) {
@@ -952,6 +1000,18 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     call_t *call = &parser_tx_obj.tx_fields.call;
     const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
+
+    uint8_t *canister_id = call->canister_id.data;
+    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const token_info_t *token = get_token(canister_id, canister_id_len);
+
+    const char *tokenSymbol = NULL;
+    uint8_t decimals = 0;
+
+    if (token != NULL) {
+        tokenSymbol = token->token_symbol;
+        decimals = token->decimals;
+    }
 
     if (displayIdx == 0) {
         if (icp_canisterId) {
@@ -1000,10 +1060,14 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx,
     }
 
     if (displayIdx == 4) {
-        const char *title = icp_canisterId ? "Amount (ICP)" : "Amount (Tokens)";
-        snprintf(outKey, outKeyLen, "%s", title);
+        snprintf(outKey, outKeyLen, AMOUNT_TITLE);
+        if (tokenSymbol != NULL && icp_canisterId ) {
+            snprintf(outKey + AMOUNT_TITTLE_LEN, outKeyLen - AMOUNT_TITTLE_LEN, "(%s)", tokenSymbol);
+        } else {
+            snprintf(outKey + AMOUNT_TITTLE_LEN, outKeyLen - AMOUNT_TITTLE_LEN, "(Tokens)");
+        }
 
-        return print_ICP(call->data.icrcTransfer.amount, outVal, outValLen, pageIdx, pageCount);
+        return print_Amount(call->data.icrcTransfer.amount, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
     // Skip fee if not present and not icp canister id
@@ -1040,6 +1104,18 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
                                              uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
     const sns_Disburse_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.sns_disburse;
+
+    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
+    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const token_info_t *token = get_token(canister_id, canister_id_len);
+
+    const char *tokenSymbol = NULL;
+    uint8_t decimals = 0;
+
+    if (token != NULL) {
+        tokenSymbol = token->token_symbol;
+        decimals = token->decimals;
+    }
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type");
@@ -1084,9 +1160,10 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx,
         }
     }
     if (displayIdx == 4) {
-        snprintf(outKey, outKeyLen, "Amount");
-        if (fields->has_amount) {
-            return print_ICP(fields->amount, outVal, outValLen, pageIdx, pageCount);
+        snprintf(outKey, outKeyLen, AMOUNT_TITLE);
+        if (tokenSymbol != NULL && fields->has_amount) {
+            snprintf(outKey + AMOUNT_TITTLE_LEN, outKeyLen - AMOUNT_TITTLE_LEN, "(%s)", tokenSymbol);
+            return print_Amount(fields->amount, outVal, outValLen, pageIdx, pageCount, decimals);
         } else {
             snprintf(outVal, outValLen, "All");
             return parser_ok;

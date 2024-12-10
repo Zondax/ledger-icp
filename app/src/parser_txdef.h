@@ -44,6 +44,9 @@ extern "C" {
 #define PATH_MAX_LEN 40
 #define PATH_MAX_ARRAY 2
 
+#define TOKEN_SYMBOL_MAX_LEN 16
+#define CANISTER_ID_STR_MAX_LEN 32
+
 typedef enum {
     unknown = 0x00,                 // default is not accepted
     call = 0x01,
@@ -198,6 +201,12 @@ typedef struct {
     uint64_t candid_typetableSize;
     uint64_t candid_rootType;
 } parser_tx_t;
+
+typedef struct {
+    char canister_id[CANISTER_ID_STR_MAX_LEN];  // Keeping as string for now
+    char token_symbol[TOKEN_SYMBOL_MAX_LEN];
+    uint8_t decimals;
+} token_info_t;
 
 #ifdef __cplusplus
 }

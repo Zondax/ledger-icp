@@ -36,6 +36,41 @@
     static const char SEPARATOR = 0x20; // space
 #endif
 
+parser_error_t format_principal_with_delimiters(const char *input, const uint16_t inputLen,
+                                              char *output, const uint16_t outputLen) {
+    const uint8_t CHARS_PER_CHUNK = 5;
+
+    if (outputLen < 35) {
+        return parser_unexpected_buffer_end;
+    }
+
+    const size_t inputStrLen = strnlen(input, inputLen);
+    size_t outPos = 0;  // Track position in output buffer explicitly
+
+    for (size_t idx = 0; idx * CHARS_PER_CHUNK < inputStrLen; idx++) {
+        // Add separator between groups of 3 chunks
+        if (idx % 3 == 0 && idx != 0) {
+            output[outPos++] = '-';  // Using SEPARATOR or '-' directly
+        }
+
+        // Copy the chunk
+        size_t inPos = idx * CHARS_PER_CHUNK;
+        for (int i = 0; i < CHARS_PER_CHUNK && inPos + i < inputStrLen; i++) {
+            output[outPos++] = input[inPos + i];
+        }
+
+        // Add dash unless it's the last chunk or after every 3rd chunk
+        const bool isLastChunk = ((idx + 1) * CHARS_PER_CHUNK >= inputStrLen);
+        const bool skipDash = (idx % 3 == 2);
+        if (!skipDash && !isLastChunk) {
+            output[outPos++] = '-';
+        }
+    }
+
+    output[outPos] = '\0';
+    return parser_ok;
+}
+
 parser_error_t page_textual_with_delimiters(const char *input, const uint16_t inputLen, char *output, const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount) {
     const uint8_t CHARS_PER_CHUNK = 5;
     const uint8_t CHARS_PER_PAGE = 15 * LINES_PER_PAGE;
@@ -273,6 +308,19 @@ parser_error_t print_ICP(uint64_t value,
     return parser_ok;
 }
 
+parser_error_t print_Amount(uint64_t value,
+                         char *outVal, uint16_t outValLen,
+                         uint8_t pageIdx, uint8_t *pageCount, uint8_t decimals) {
+    char buffer[200] = {0};
+    zxerr_t err = formatValue(buffer, sizeof(buffer), value, decimals);
+    if (err != zxerr_ok) {
+        return parser_unexpected_error;
+    }
+
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
+}
+
 parser_error_t print_principal(const uint8_t *data, uint16_t len,
                              char *outVal, uint16_t outValLen,
                              uint8_t pageIdx, uint8_t *pageCount) {
@@ -356,4 +404,29 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
 
     buffer[index] = 0;
     return parser_ok;
+}
+
+parser_error_t format_principal(const uint8_t *data, uint16_t len,
+                              char *outVal, uint16_t outValLen) {
+    if (outValLen < 35) {
+        return parser_unexpected_buffer_end;
+    }
+
+    // First convert to textual representation
+    char tmpBuffer[100] = {'\0'};
+    uint16_t outLen = sizeof(tmpBuffer);
+    zxerr_t err = crypto_principalToTextual(data, len, tmpBuffer, &outLen);
+    if (err != zxerr_ok) {
+        return parser_unexpected_error;
+    }
+
+    // Remove any newlines that might have been added
+    char *newline = strchr(tmpBuffer, '\n');
+    if (newline != NULL) {
+        *newline = '\0';
+        outLen = (uint16_t)(newline - tmpBuffer);
+    }
+
+    // Now format with delimiters
+    return format_principal_with_delimiters(tmpBuffer, outLen, outVal, outValLen);
 }
