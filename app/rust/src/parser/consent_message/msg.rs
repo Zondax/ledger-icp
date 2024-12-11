@@ -106,15 +106,27 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
                 continue;
             }
 
-            // Copy the pre-formatted segment
+            // Copy the pre-formatted segment, filtering non-ASCII characters
             let remaining_space = MAX_CHARS_PER_LINE.min(output.len() - output_idx);
             if remaining_space == 0 {
                 break;
             }
 
-            let copy_len = remaining_space.min(input.len());
-            output[output_idx..output_idx + copy_len].copy_from_slice(&input[..copy_len]);
-            output_idx += copy_len;
+            let mut copied = 0;
+            for &byte in input.iter() {
+                if copied >= remaining_space {
+                    break;
+                }
+
+                // Only copy ASCII printable characters (32-126) and safe symbols
+                if (byte >= 32 && byte <= 126) || byte == b'\n' {
+                    output[output_idx] = byte;
+                    output_idx += 1;
+                    copied += 1;
+                } else {
+                    crate::zlog("Skipping non-ascii\x00");
+                }
+            }
 
             // Add newline if we're not at the last line
             if current_line < MAX_LINES - 1 && output_idx < output.len() - 1 {
