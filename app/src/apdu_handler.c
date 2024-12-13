@@ -146,11 +146,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
             if (rx < APDU_MIN_LENGTH) {
                 THROW(APDU_CODE_WRONG_LENGTH);
             }
-        ZEMU_LOGF(50, "***INS: %d\n", G_io_apdu_buffer[OFFSET_INS])
 
             switch (G_io_apdu_buffer[OFFSET_INS]) {
                 case INS_GET_VERSION: {
-                zemu_log("version******\n");
                     handle_getversion(flags, tx, rx);
                     break;
                 }
