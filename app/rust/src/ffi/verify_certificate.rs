@@ -16,6 +16,7 @@
 
 use crate::{
     check_canary,
+    consent_message::msg_response::ResponseType,
     constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
@@ -99,6 +100,17 @@ pub unsafe extern "C" fn rs_verify_certificate(
     };
 
     let cert = unsafe { cert.assume_init() };
+
+    // Check for the response type embedded in the certificate
+    // an error response means we can not go further and just return
+    // and error
+    let Ok(response) = cert.msg_response() else {
+        return ParserError::InvalidCertificate as u32;
+    };
+
+    if matches!(response.response_type(), ResponseType::Err) {
+        return ParserError::InvalidCertificate as u32;
+    }
 
     match cert.verify(root_key) {
         Ok(false) => return ParserError::InvalidCertificate as u32,
