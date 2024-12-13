@@ -13,6 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+mod buffer_writer;
 pub mod msg;
 pub mod msg_error;
 pub mod msg_info;
