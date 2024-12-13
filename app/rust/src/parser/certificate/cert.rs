@@ -264,12 +264,10 @@ impl<'a> Certificate<'a> {
     }
 
     // Safe to unwrap because this reply was parsed already
-    fn msg(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
+    pub fn msg_response(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
         let tree = self.tree();
         let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
         let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
-        #[cfg(test)]
-        std::println!("\nConsent message bytes: {:?}\n", hex::encode(bytes));
 
         let mut msg = MaybeUninit::uninit();
         ConsentMessageResponse::from_bytes_into(bytes, &mut msg)?;
@@ -305,7 +303,7 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
 impl<'a> DisplayableItem for Certificate<'a> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        let msg = self.msg().map_err(|_| ViewError::Unknown)?;
+        let msg = self.msg_response().map_err(|_| ViewError::Unknown)?;
         msg.num_items()
     }
 
@@ -318,7 +316,7 @@ impl<'a> DisplayableItem for Certificate<'a> {
         page: u8,
     ) -> Result<u8, ViewError> {
         zlog("Certificate::render_item\x00");
-        let msg = self.msg().map_err(|_| ViewError::Unknown)?;
+        let msg = self.msg_response().map_err(|_| ViewError::Unknown)?;
         msg.render_item(item_n, title, message, page)
     }
 }
@@ -374,7 +372,7 @@ mod test_certificate {
         let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
-        assert!(cert.msg().is_ok());
+        assert!(cert.msg_response().is_ok());
     }
 
     #[test]
@@ -445,7 +443,7 @@ mod test_certificate {
         let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
-        let msg = cert.msg().unwrap();
+        let msg = cert.msg_response().unwrap();
         assert_eq!(msg.response_type(), ResponseType::Ok);
     }
 
@@ -470,7 +468,7 @@ mod test_certificate {
 
         let root_key = extract_bls_from_der(&hex::decode(DER_ROOT_KEY).unwrap()).unwrap();
         std::println!("rootykey: {}", hex::encode(&root_key));
-        cert.msg().unwrap();
+        cert.msg_response().unwrap();
         assert!(cert.verify(&root_key).unwrap());
     }
 }
