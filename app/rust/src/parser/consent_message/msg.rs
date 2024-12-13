@@ -20,11 +20,14 @@ use nom::bytes::complete::take;
 use crate::{
     candid_header::CandidHeader,
     candid_utils::parse_text,
+    check_canary,
     constants::{MAX_CHARS_PER_LINE, MAX_LINES},
     error::{ParserError, ViewError},
     utils::{decompress_leb128, handle_ui_message},
     DisplayableItem, FromCandidHeader,
 };
+
+use super::buffer_writer::BufferWriter;
 
 #[repr(C)]
 struct GenericDisplayMessageVariant<'a>(MessageType, &'a str);
@@ -62,7 +65,7 @@ pub enum MessageType {
 //     },
 //   },
 // ],
-#[derive(Debug)]
+#[cfg_attr(test, derive(Debug))]
 #[repr(u8)] // Important: same representation as MessageType
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
@@ -78,8 +81,7 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
                                               // We got this after printing the type table
                                               // using candid_utils::print_type_table function
 
-    // TODO: Check that this holds true
-    // the idea snprintf(buffer, "%s\n%s\n", line1, line2)
+    // The idea snprintf(buffer, "%s\n%s\n", line1, line2)
     // but in bytes plus null terminator
     fn render_buffer() -> [u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1] {
         // Unfortunate we can not use const generic parameters in expresion bellow
@@ -89,103 +91,44 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
     fn format_page_content(
         &self,
         page: &ScreenPage<'_, LINES>,
-        output: &mut [u8],
+        out: &mut [u8],
     ) -> Result<u8, ViewError> {
-        crate::zlog("ConsentMessage::format_page_content\x00");
-        let mut output_idx = 0;
-        let mut current_line = 0;
+        let mut writer = BufferWriter::new(out);
 
-        // Process each segment (which is already pre-formatted to screen width)
-        for segment in page.segments.iter().take(page.num_segments) {
-            if current_line >= MAX_LINES {
-                break;
-            }
-
-            let input = segment.as_bytes();
-            if input.is_empty() {
-                continue;
-            }
-
-            // Copy the pre-formatted segment, filtering non-ASCII characters
-            let remaining_space = MAX_CHARS_PER_LINE.min(output.len() - output_idx);
-            if remaining_space == 0 {
-                break;
-            }
-
-            let mut copied = 0;
-            for &byte in input.iter() {
-                if copied >= remaining_space {
-                    break;
-                }
-
-                // Only copy ASCII printable characters (32-126) and safe symbols
-                if (byte >= 32 && byte <= 126) || byte == b'\n' {
-                    output[output_idx] = byte;
-                    output_idx += 1;
-                    copied += 1;
-                } else {
-                    crate::zlog("Skipping non-ascii\x00");
-                }
-            }
-
-            // Add newline if we're not at the last line
-            if current_line < MAX_LINES - 1 && output_idx < output.len() - 1 {
-                output[output_idx] = b'\n';
-                output_idx += 1;
-                current_line += 1;
-            }
+        for (i, &line) in page.segments.iter().take(page.num_segments).enumerate() {
+            // Format each line
+            writer.write_line(line, i < page.num_segments - 1)?;
         }
 
-        // Null-terminate the output if there's space
-        if output_idx < output.len() {
-            output[output_idx] = 0;
-            output_idx += 1;
-        }
-
-        Ok(output_idx as u8)
-    }
-}
-
-#[derive(Clone, Copy)]
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct Page<'a, const L: usize> {
-    lines: [&'a str; L],
-    num_lines: usize,
-}
-
-impl<'a, const L: usize> Iterator for Page<'a, L> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
-}
-
-impl<'a, const L: usize> Page<'a, L> {
-    pub fn lines(&self) -> &[&str] {
-        &self.lines[..self.num_lines]
-    }
-}
-
-impl<'a, const L: usize> Default for Page<'a, L> {
-    fn default() -> Self {
-        Self {
-            lines: [""; L],
-            num_lines: 0,
-        }
+        writer.finalize()
     }
 }
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 struct LineDisplayIterator<'b, const L: usize> {
+    data: PageData<'b>,
+    current_state: IteratorState,
+    config: DisplayConfig,
+}
+
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+struct PageData<'b> {
     current: &'b [u8],
+    current_line: &'b str,
+}
+
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+struct IteratorState {
     page_idx: usize,
-    page_count: u64,
-    screen_width: usize,
+    page_count: usize,
     current_line_offset: usize,
     current_line_in_page: usize,
     current_line_count: usize,
-    current_line: &'b str, // Store current line being processed
+}
+
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+struct DisplayConfig {
+    screen_width: usize,
 }
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
@@ -197,25 +140,53 @@ pub struct ScreenPage<'b, const L: usize> {
 impl<'b, const L: usize> LineDisplayIterator<'b, L> {
     fn new(data: &'b [u8], screen_width: usize) -> Self {
         let (rem, page_count) = decompress_leb128(data).unwrap();
+
         Self {
-            current: rem,
-            page_idx: 0,
-            page_count,
-            screen_width,
-            current_line_offset: 0,
-            current_line_in_page: 0,
-            current_line_count: 0,
-            current_line: "",
+            data: PageData {
+                current: rem,
+                current_line: "",
+            },
+            current_state: IteratorState {
+                page_idx: 0,
+                page_count: page_count as usize,
+                current_line_offset: 0,
+                current_line_in_page: 0,
+                current_line_count: 0,
+            },
+            config: DisplayConfig { screen_width },
         }
     }
 
-    fn get_line_segment<'a>(&self, line: &'a str) -> Option<&'a str> {
-        let start = self.current_line_offset * self.screen_width;
-        if start >= line.len() {
+    fn process_new_page(&mut self) -> Result<(), ParserError> {
+        let (rem, line_count) = decompress_leb128(self.data.current)?;
+        self.data.current = rem;
+
+        if line_count as usize > L {
+            return Err(ParserError::TooManyLines);
+        }
+
+        self.current_state.current_line_count = line_count.min(L as u64) as usize;
+        Ok(())
+    }
+
+    fn process_new_line(&mut self) -> Result<(), ParserError> {
+        let (new_rem, line) = parse_text(self.data.current)?;
+        self.data.current = new_rem;
+        self.data.current_line = line;
+        Ok(())
+    }
+
+    fn get_line_segment(&self) -> Option<&'b str> {
+        let start = self.current_state.current_line_offset * self.config.screen_width;
+        if start >= self.data.current_line.len() {
             return None;
         }
-        let end = (start + self.screen_width).min(line.len());
-        Some(&line[start..end])
+        let end = (start + self.config.screen_width).min(self.data.current_line.len());
+        Some(&self.data.current_line[start..end])
+    }
+
+    pub fn page_count(&self) -> usize {
+        self.current_state.page_count
     }
 }
 
@@ -223,76 +194,65 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
     type Item = ScreenPage<'b, L>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.page_idx >= self.page_count as usize {
-            return None;
-        }
+        check_canary();
 
+        // Initialize a new ScreenPage
         let mut screen_segments = [""; L];
         let mut segment_count = 0;
 
-        // If we're starting a new page, read its line count
-        if self.current_line_in_page == 0 {
-            let (rem, line_count) = decompress_leb128(self.current).ok()?;
-            self.current = rem;
-            self.current_line_count = line_count as usize;
-            if line_count > L as u64 {
+        // Check if we're starting a new page
+        if self.current_state.current_line_offset == 0
+            && self.current_state.current_line_in_page == 0
+        {
+            // Reset state for new page processing
+            if let Err(_) = self.process_new_page() {
                 return None;
             }
         }
 
-        // Process lines in the current page
-        while self.current_line_in_page < self.current_line_count {
-            // Parse the line text if we're at offset 0
-            if self.current_line_offset == 0 {
-                let (new_rem, line) = parse_text(self.current).ok()?;
-                self.current = new_rem;
-                self.current_line = line;
+        // Process lines for this page
+        while segment_count < L
+            && self.current_state.current_line_in_page < self.current_state.current_line_count
+        {
+            // Process new line if needed
+            if self.current_state.current_line_offset == 0 {
+                if let Err(_) = self.process_new_line() {
+                    return None;
+                }
             }
 
-            // Get the current segment of this line
-            if let Some(segment) = self.get_line_segment(self.current_line) {
+            // Get and process the current segment
+            if let Some(segment) = self.get_line_segment() {
                 screen_segments[segment_count] = segment;
                 segment_count += 1;
 
-                let line_finished =
-                    (self.current_line_offset + 1) * self.screen_width >= self.current_line.len();
+                let segment_end =
+                    (self.current_state.current_line_offset + 1) * self.config.screen_width;
 
-                if segment_count >= L || line_finished {
-                    // If line is finished, move to next line
-                    if line_finished {
-                        self.current_line_offset = 0;
-                        self.current_line_in_page += 1;
-                    } else {
-                        // Otherwise continue with next segment of current line
-                        self.current_line_offset += 1;
-                    }
-
-                    // Return screen if full
-                    if segment_count >= L {
-                        // Check if we need to move to next page
-                        if self.current_line_in_page >= self.current_line_count
-                            && self.current_line_offset == 0
-                        {
-                            self.page_idx += 1;
-                            self.current_line_in_page = 0;
-                        }
-                        return Some(ScreenPage {
-                            segments: screen_segments,
-                            num_segments: segment_count,
-                        });
-                    }
+                if segment_end >= self.data.current_line.len() {
+                    // Line is complete
+                    self.current_state.current_line_offset = 0;
+                    self.current_state.current_line_in_page += 1;
                 } else {
-                    // Move to next segment of current line
-                    self.current_line_offset += 1;
+                    // More segments in this line
+                    self.current_state.current_line_offset += 1;
                 }
+            } else {
+                // Move to next line
+                self.current_state.current_line_in_page += 1;
+                self.current_state.current_line_offset = 0;
             }
         }
 
-        // Return any remaining segments if we finished the page
+        // If we completed a page
         if segment_count > 0 {
-            self.page_idx += 1;
-            self.current_line_in_page = 0;
-            self.current_line_offset = 0;
+            // Update state for next iteration
+            if self.current_state.current_line_in_page >= self.current_state.current_line_count {
+                self.current_state.page_idx += 1;
+                self.current_state.current_line_in_page = 0;
+                self.current_state.current_line_offset = 0;
+            }
+
             Some(ScreenPage {
                 segments: screen_segments,
                 num_segments: segment_count,
@@ -308,43 +268,12 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
         &self,
         screen_width: usize,
     ) -> Option<impl Iterator<Item = ScreenPage<'a, LINES>>> {
-        crate::zlog("ConsentMessage::pages_iter\x00");
         if let ConsentMessage::LineDisplayMessage(data) = self {
+            #[cfg(test)]
+            std::println!("data: {}", hex::encode(data));
             Some(LineDisplayIterator::new(data, screen_width))
         } else {
             None
-        }
-    }
-
-    #[inline(never)]
-    fn render_item(
-        &self,
-        item_n: u8,
-        title: &mut [u8],
-        message: &mut [u8],
-        page: u8,
-    ) -> Result<u8, ViewError> {
-        // Title handling remains the same
-        let title_bytes = b"ConsentMsg";
-        let title_len = title_bytes.len().min(title.len() - 1);
-        title[..title_len].copy_from_slice(&title_bytes[..title_len]);
-        title[title_len] = 0;
-
-        match self {
-            ConsentMessage::GenericDisplayMessage(content) => {
-                let msg = content.as_bytes();
-                handle_ui_message(msg, message, page)
-            }
-            ConsentMessage::LineDisplayMessage(bytes) => {
-                // Use screen width of 35 characters
-                let mut pages = LineDisplayIterator::new(bytes, 35);
-                let current_page = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
-                let mut output = Self::render_buffer();
-
-                // Format the screen page content
-                self.format_page_content(&current_page, &mut output)?;
-                handle_ui_message(&output, message, page)
-            }
         }
     }
 }
@@ -470,19 +399,14 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         crate::zlog("ConsentMessage::num_items\x00");
+        check_canary();
         match self {
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
             ConsentMessage::LineDisplayMessage(_) => {
                 // Get an iterator using our standard screen width
-                if let Some(mut pages) = self.pages_iter(MAX_CHARS_PER_LINE) {
-                    let mut total_screens = 0u8;
-                    while pages.next().is_some() {
-                        total_screens = total_screens.saturating_add(1);
-                    }
-                    Ok(total_screens)
-                } else {
-                    Err(ViewError::NoData)
-                }
+                self.pages_iter(MAX_CHARS_PER_LINE)
+                    .ok_or(ViewError::NoData)
+                    .map(|pages| pages.count() as u8)
             }
         }
     }
@@ -496,6 +420,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
         page: u8,
     ) -> Result<u8, ViewError> {
         crate::zlog("ConsentMessage::render_item\x00");
+        check_canary();
         let title_bytes = b"ConsentMsg";
         let title_len = title_bytes.len().min(title.len() - 1);
         title[..title_len].copy_from_slice(&title_bytes[..title_len]);
@@ -514,8 +439,21 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
                 let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
                 let mut output = Self::render_buffer();
 
-                self.format_page_content(&current_screen, &mut output)?;
-                handle_ui_message(&output, message, page)
+                let written = self.format_page_content(&current_screen, &mut output)? as usize;
+                #[cfg(test)]
+                {
+                    let s = core::str::from_utf8(&output[..written]).unwrap();
+                    std::println!("rendered page: {}", s);
+                }
+                if written < message.len() {
+                    crate::zlog("1PAGE\x00");
+                    message[..written].copy_from_slice(&output[..written]);
+                    // no need for multiple pages, except the current written one
+                    Ok(1)
+                } else {
+                    crate::zlog("using handle_ui_message\x00");
+                    handle_ui_message(&output[..written], message, page)
+                }
             }
         }
     }
@@ -530,38 +468,44 @@ mod tests_msg_display {
     const SMALL_SCREEN_WIDTH: usize = 15;
     const LINES: usize = 3; // Each page has exactly 3 lines
     const MSG_DATA: &str = "07031e2320417574686f72697a6520616e6f74686572206164647265737320746f2077697468647261772066726f6d20796f7572206163636f756e74202a2a5468651f666f6c6c6f77696e67206164647265737320697320616c6c6f77656420746f031d77697468647261772066726f6d20796f7572206163636f756e743a2a2a2272646d78362d6a616161612d61616161612d61616164712d636169202a2a596f75720d7375626163636f756e743a2a2a032330303030303030303030303030303030303030303030303030303030303030303030301d3030303030303030303030303030303030303030303030303030303030232a2a526571756573746564207769746864726177616c20616c6c6f77616e63653a2a2a032031302049435020e29aa02054686520616c6c6f77616e63652077696c6c2062652273657420746f2031302049435020696e646570656e64656e746c79206f6620616e791e70726576696f757320616c6c6f77616e63652e20556e74696c207468697303217472616e73616374696f6e20686173206265656e206578656375746564207468651e7370656e6465722063616e207374696c6c206578657263697365207468652370726576696f757320616c6c6f77616e63652028696620616e792920746f2069742773032166756c6c20616d6f756e742e202a2a45787069726174696f6e20646174653a2a2a204e6f2065787069726174696f6e2e202a2a417070726f76616c206665653a2a2a23302e3030303120494350202a2a5472616e73616374696f6e206665657320746f206265031a7061696420627920796f7572207375626163636f756e743a2a2a2330303030303030303030303030303030303030303030303030303030303030303030301d3030303030303030303030303030303030303030303030303030303030";
-    // Expected content per page
     const EXPECTED_PAGES: &[&[&str]] = &[
+        // Page 0
         &[
             "# Authorize another address to",
             "withdraw from your account **The",
             "following address is allowed to",
         ],
+        // Page 1
         &[
             "withdraw from your account:**",
             "rdmx6-jaaaa-aaaaa-aaadq-cai **Your",
             "subaccount:**",
         ],
+        // Page 2
         &[
             "00000000000000000000000000000000000",
             "00000000000000000000000000000",
             "**Requested withdrawal allowance:**",
         ],
+        // Page 3
         &[
-            "10 ICP ⚠ The allowance will be",
+            "10 ICP ⚠ The allowance will be", // Non-ASCII '⚠' replaced with ' '
             "set to 10 ICP independently of any",
             "previous allowance. Until this",
         ],
+        // Page 4
         &[
             "transaction has been executed the",
             "spender can still exercise the",
             "previous allowance (if any) to it's",
         ],
+        // Page 5
         &[
             "full amount. **Expiration date:**",
             "No expiration. **Approval fee:**",
             "0.0001 ICP **Transaction fees to be",
         ],
+        // Page 6
         &[
             "paid by your subaccount:**",
             "00000000000000000000000000000000000",
@@ -574,13 +518,13 @@ mod tests_msg_display {
         let msg_bytes = hex::decode(MSG_DATA).unwrap();
 
         // Create iterator
-        let mut iterator = LineDisplayIterator::<LINES>::new(&msg_bytes, SCREEN_WIDTH);
+        let iterator = LineDisplayIterator::<LINES>::new(&msg_bytes, SCREEN_WIDTH);
 
         // Track which page we're on
         let mut page_idx = 0;
 
         // Test each page
-        while let Some(screen_page) = iterator.next() {
+        for screen_page in iterator {
             assert!(page_idx < EXPECTED_PAGES.len(), "Too many pages produced");
 
             // Verify number of segments matches expected

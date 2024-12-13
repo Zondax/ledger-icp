@@ -151,7 +151,10 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
         crate::zlog("ContentMessageResponse::render_item\x00");
         match self {
             Self::Ok(msg) => msg.render_item(item_n, title, message, page),
-            Self::Err(err) => err.render_item(item_n, title, message, page),
+            Self::Err(_) => {
+                crate::zlog("ContentMessageResponse::render_item::Err\x00");
+                Err(ViewError::NoData)
+            }
         }
     }
 }
@@ -160,7 +163,6 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
 mod msg_response_test {
     use serde::{Deserialize, Serialize};
     use std::string::String;
-    use std::vec::Vec;
     use zemu_sys::Viewable;
 
     use crate::{parser::snapshots_common::ReducedPage, test_ui::with_leaked};
