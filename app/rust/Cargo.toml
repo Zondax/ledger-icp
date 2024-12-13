@@ -36,10 +36,12 @@ serde = { version = "1.0.215", features = ["derive"] }
 no-std-compat = { version = "0.4.1", features = ["std"] }
 
 [profile.release]
-lto = false
 codegen-units = 1
 debug = false
 opt-level = "z"
+lto = "thin"
+overflow-checks = false
+strip = true
 
 [profile.dev]
 panic = "abort"
