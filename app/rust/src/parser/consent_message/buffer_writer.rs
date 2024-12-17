@@ -36,12 +36,12 @@ impl<'a> BufferWriter<'a> {
             chars_written += 1;
         }
 
-        // Pad with spaces if needed
-        while chars_written < MAX_CHARS_PER_LINE {
-            self.write_byte(b' ')?;
-            chars_written += 1;
-        }
-
+        // // Pad with spaces if needed
+        // while chars_written < MAX_CHARS_PER_LINE {
+        //     self.write_byte(b' ')?;
+        //     chars_written += 1;
+        // }
+        //
         // Add newline if not the last line
         if add_newline {
             self.write_byte(b'\n')?;
