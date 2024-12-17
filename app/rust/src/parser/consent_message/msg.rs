@@ -13,7 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use core::ptr::addr_of_mut;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use nom::bytes::complete::take;
 
@@ -27,7 +27,10 @@ use crate::{
     DisplayableItem, FromCandidHeader,
 };
 
-use super::buffer_writer::BufferWriter;
+use super::{
+    buffer_writer::BufferWriter,
+    msg_iter::{LineDisplayIterator, ScreenPage},
+};
 
 #[repr(C)]
 struct GenericDisplayMessageVariant<'a>(MessageType, &'a str);
@@ -39,6 +42,13 @@ struct LineDisplayMessageVariant<'a>(MessageType, &'a [u8]);
 pub enum MessageType {
     GenericDisplayMessage,
     LineDisplayMessage,
+}
+
+#[repr(C)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+pub struct Msg<'a, const PAGES: usize, const LINES: usize> {
+    num_items: u8,
+    msg: ConsentMessage<'a, PAGES, LINES>,
 }
 
 // (
@@ -65,8 +75,8 @@ pub enum MessageType {
 //     },
 //   },
 // ],
-#[cfg_attr(test, derive(Debug))]
 #[repr(u8)] // Important: same representation as MessageType
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
     LineDisplayMessage(&'a [u8]),
@@ -104,173 +114,12 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
     }
 }
 
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-struct LineDisplayIterator<'b, const L: usize> {
-    data: PageData<'b>,
-    current_state: IteratorState,
-    config: DisplayConfig,
-}
-
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-struct PageData<'b> {
-    current: &'b [u8],
-    current_line: &'b str,
-}
-
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-struct IteratorState {
-    page_idx: usize,
-    page_count: usize,
-    current_line_offset: usize,
-    current_line_in_page: usize,
-    current_line_count: usize,
-}
-
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-struct DisplayConfig {
-    screen_width: usize,
-}
-
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct ScreenPage<'b, const L: usize> {
-    segments: [&'b str; L],
-    num_segments: usize,
-}
-
-impl<'b, const L: usize> LineDisplayIterator<'b, L> {
-    fn new(data: &'b [u8], screen_width: usize) -> Self {
-        let (rem, page_count) = decompress_leb128(data).unwrap();
-
-        Self {
-            data: PageData {
-                current: rem,
-                current_line: "",
-            },
-            current_state: IteratorState {
-                page_idx: 0,
-                page_count: page_count as usize,
-                current_line_offset: 0,
-                current_line_in_page: 0,
-                current_line_count: 0,
-            },
-            config: DisplayConfig { screen_width },
-        }
-    }
-
-    fn process_new_page(&mut self) -> Result<(), ParserError> {
-        let (rem, line_count) = decompress_leb128(self.data.current)?;
-        self.data.current = rem;
-
-        if line_count as usize > L {
-            return Err(ParserError::TooManyLines);
-        }
-
-        self.current_state.current_line_count = line_count.min(L as u64) as usize;
-        Ok(())
-    }
-
-    fn process_new_line(&mut self) -> Result<(), ParserError> {
-        let (new_rem, line) = parse_text(self.data.current)?;
-        self.data.current = new_rem;
-        self.data.current_line = line;
-        Ok(())
-    }
-
-    fn get_line_segment(&self) -> Option<&'b str> {
-        let start = self.current_state.current_line_offset * self.config.screen_width;
-        if start >= self.data.current_line.len() {
-            return None;
-        }
-        let end = (start + self.config.screen_width).min(self.data.current_line.len());
-        Some(&self.data.current_line[start..end])
-    }
-
-    pub fn page_count(&self) -> usize {
-        self.current_state.page_count
-    }
-}
-
-impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
-    type Item = ScreenPage<'b, L>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        check_canary();
-
-        // Initialize a new ScreenPage
-        let mut screen_segments = [""; L];
-        let mut segment_count = 0;
-
-        // Check if we're starting a new page
-        if self.current_state.current_line_offset == 0
-            && self.current_state.current_line_in_page == 0
-        {
-            // Reset state for new page processing
-            if let Err(_) = self.process_new_page() {
-                return None;
-            }
-        }
-
-        // Process lines for this page
-        while segment_count < L
-            && self.current_state.current_line_in_page < self.current_state.current_line_count
-        {
-            // Process new line if needed
-            if self.current_state.current_line_offset == 0 {
-                if let Err(_) = self.process_new_line() {
-                    return None;
-                }
-            }
-
-            // Get and process the current segment
-            if let Some(segment) = self.get_line_segment() {
-                screen_segments[segment_count] = segment;
-                segment_count += 1;
-
-                let segment_end =
-                    (self.current_state.current_line_offset + 1) * self.config.screen_width;
-
-                if segment_end >= self.data.current_line.len() {
-                    // Line is complete
-                    self.current_state.current_line_offset = 0;
-                    self.current_state.current_line_in_page += 1;
-                } else {
-                    // More segments in this line
-                    self.current_state.current_line_offset += 1;
-                }
-            } else {
-                // Move to next line
-                self.current_state.current_line_in_page += 1;
-                self.current_state.current_line_offset = 0;
-            }
-        }
-
-        // If we completed a page
-        if segment_count > 0 {
-            // Update state for next iteration
-            if self.current_state.current_line_in_page >= self.current_state.current_line_count {
-                self.current_state.page_idx += 1;
-                self.current_state.current_line_in_page = 0;
-                self.current_state.current_line_offset = 0;
-            }
-
-            Some(ScreenPage {
-                segments: screen_segments,
-                num_segments: segment_count,
-            })
-        } else {
-            None
-        }
-    }
-}
-
 impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
     pub fn pages_iter(
         &self,
         screen_width: usize,
     ) -> Option<impl Iterator<Item = ScreenPage<'a, LINES>>> {
         if let ConsentMessage::LineDisplayMessage(data) = self {
-            #[cfg(test)]
-            std::println!("data: {}", hex::encode(data));
             Some(LineDisplayIterator::new(data, screen_width))
         } else {
             None
@@ -288,6 +137,42 @@ impl TryFrom<u64> for MessageType {
             1 => Ok(Self::GenericDisplayMessage),
             _ => Err(ParserError::UnexpectedValue),
         }
+    }
+}
+
+impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a, PAGES, LINES> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+    ) -> Result<&'a [u8], ParserError> {
+        crate::zlog("Msg::from_candid_header\x00");
+
+        let out = out.as_mut_ptr();
+
+        let consent_msg: &mut MaybeUninit<ConsentMessage<'a, PAGES, LINES>> =
+            unsafe { &mut *addr_of_mut!((*out).msg).cast() };
+
+        let rem = ConsentMessage::from_candid_header(input, consent_msg, header)?;
+
+        // Precompute number of items
+        unsafe {
+            let m = consent_msg.assume_init_ref();
+            match m {
+                ConsentMessage::GenericDisplayMessage(_) => {
+                    addr_of_mut!((*out).num_items).write(1);
+                }
+                ConsentMessage::LineDisplayMessage(_) => {
+                    addr_of_mut!((*out).num_items).write(
+                        m.pages_iter(MAX_CHARS_PER_LINE)
+                            .ok_or(ParserError::NoData)?
+                            .count() as u8,
+                    );
+                }
+            }
+        }
+
+        Ok(rem)
     }
 }
 
@@ -366,8 +251,6 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                 // Store raw bytes for lazy parsing
                 let data_len = start.len() - raw_line.len();
                 let (rem, data) = take(data_len)(start)?;
-                #[cfg(test)]
-                std::println!("LineDisplayContent****\n {}", hex::encode(data));
 
                 let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
                 unsafe {
@@ -390,6 +273,28 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
             }
             _ => Err(ParserError::UnexpectedType),
         }
+    }
+}
+
+impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAGES, LINES> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        crate::log_num("Msg::num_items: \x00", self.num_items as u32);
+        Ok(self.num_items)
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        crate::zlog("Msg::render_item\x00");
+        check_canary();
+
+        self.msg.render_item(item_n, title, message, page)
     }
 }
 
@@ -437,21 +342,15 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
                     .pages_iter(MAX_CHARS_PER_LINE)
                     .ok_or(ViewError::NoData)?;
                 let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
+
                 let mut output = Self::render_buffer();
 
                 let written = self.format_page_content(&current_screen, &mut output)? as usize;
-                #[cfg(test)]
-                {
-                    let s = core::str::from_utf8(&output[..written]).unwrap();
-                    std::println!("rendered page: {}", s);
-                }
                 if written < message.len() {
-                    crate::zlog("1PAGE\x00");
                     message[..written].copy_from_slice(&output[..written]);
                     // no need for multiple pages, except the current written one
                     Ok(1)
                 } else {
-                    crate::zlog("using handle_ui_message\x00");
                     handle_ui_message(&output[..written], message, page)
                 }
             }
