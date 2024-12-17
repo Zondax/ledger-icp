@@ -16,19 +16,19 @@
 
 use crate::{error::ParserError, DisplayableItem};
 
-use super::resources::CERTIFICATE;
+use super::resources::UI;
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_getNumItems(num_items: *mut u8) -> u32 {
     crate::zlog("rs_getNumItems\x00");
-    if num_items.is_null() || !CERTIFICATE.is_some() {
+    if num_items.is_null() || !UI.is_some() {
         return ParserError::ContextMismatch as u32;
     }
 
     // Safe to unwrap due to previous check
-    let cert = CERTIFICATE.as_ref().unwrap();
+    let ui = UI.as_ref().unwrap();
 
-    let Ok(num) = cert.num_items() else {
+    let Ok(num) = ui.num_items() else {
         crate::zlog("no_DATA\x00");
         return ParserError::NoData as _;
     };
@@ -56,14 +56,14 @@ pub unsafe extern "C" fn rs_getItem(
     let key = core::slice::from_raw_parts_mut(out_key as *mut u8, key_len as usize);
     let value = core::slice::from_raw_parts_mut(out_value as *mut u8, out_len as usize);
 
-    if !CERTIFICATE.is_some() {
+    if !UI.is_some() {
         return ParserError::ContextMismatch as _;
     }
 
     // Safe to unwrap due to previous check
-    let cert = CERTIFICATE.as_ref().unwrap();
+    let ui = UI.as_ref().unwrap();
 
-    match cert.render_item(display_idx, key, value, page_idx) {
+    match ui.render_item(display_idx, key, value, page_idx) {
         Ok(page) => {
             *page_count = page;
             ParserError::Ok as _
