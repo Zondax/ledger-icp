@@ -31,7 +31,7 @@ use super::{
     c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST},
+    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST, UI},
 };
 
 // This is use to check important fields in consent_msg_request and canister_call_request
@@ -101,17 +101,6 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     let cert = unsafe { cert.assume_init() };
 
-    // Check for the response type embedded in the certificate
-    // an error response means we can not go further and just return
-    // and error
-    let Ok(response) = cert.msg_response() else {
-        return ParserError::InvalidCertificate as u32;
-    };
-
-    if matches!(response.response_type(), ResponseType::Err) {
-        return ParserError::InvalidCertificate as u32;
-    }
-
     match cert.verify(root_key) {
         Ok(false) => return ParserError::InvalidCertificate as u32,
         Err(e) => return e as u32,
@@ -152,6 +141,19 @@ pub unsafe extern "C" fn rs_verify_certificate(
             return ParserError::InvalidCertificate as u32;
         }
     }
+
+    // Check for the response type embedded in the certificate
+    // an error response means we can not go further and just return
+    // and error
+    let Ok(response) = cert.msg_response() else {
+        return ParserError::InvalidCertificate as u32;
+    };
+
+    if matches!(response.response_type(), ResponseType::Err) {
+        return ParserError::InvalidCertificate as u32;
+    }
+
+    UI.replace(response);
 
     // Indicates certificate was valid
     CERTIFICATE.replace(cert);
