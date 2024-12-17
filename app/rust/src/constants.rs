@@ -15,17 +15,15 @@
 ********************************************************************************/
 
 pub const MAX_PAGES: usize = 10;
-// Value taken from ledger SDK
-// for the stax and flex devices
-pub const MAX_LINES_PER_PAGE_REVIEW: usize = 9;
 // Configuration constants based on target device
 // means max number of lines per page
 pub const MAX_LINES: usize = 3;
 // means max characteres per line
-pub const MAX_CHARS_PER_LINE: usize = 30;
-
-#[allow(dead_code)]
-pub const SEPARATOR: char = '\n';
+// this is a limit of the device
+// intended to control the already formatted
+// message response comming
+// from canisters
+pub const MAX_CHARS_PER_LINE: usize = 35;
 
 pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
 pub const BLS_SIGNATURE_SIZE: usize = 48;

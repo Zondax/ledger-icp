@@ -22,7 +22,7 @@ mod verify_certificate;
 
 #[cfg(test)]
 mod ffi_verify_cert {
-    use crate::{constants::CANISTER_ROOT_KEY, error::ParserError};
+    use crate::error::ParserError;
 
     use super::{
         call_request::rs_parse_canister_call_request, consent_request::rs_parse_consent_request,
@@ -78,19 +78,14 @@ mod ffi_verify_cert {
 
     #[test]
     fn test_bls_flow() {
-        let res = bls_flow(CERT, CALL, CONSENT, ROOT_KEY);
+        let t1 = (CERT, CALL, CONSENT, ROOT_KEY);
+        let t2 = (CERT2, CALL2, CONSENT2, ROOT_KEY2);
+        let res = bls_flow(t1.0, t1.1, t1.2, t1.3);
         assert_eq!(res, ParserError::Ok as u32);
         unsafe {
             rs_clear_resources();
         }
-    }
-
-    #[test]
-    fn test_flow2() {
-        let res = bls_flow(CERT2, CALL2, CONSENT2, ROOT_KEY2);
+        let res = bls_flow(t2.0, t2.1, t2.2, t2.3);
         assert_eq!(res, ParserError::Ok as u32);
-        unsafe {
-            rs_clear_resources();
-        }
     }
 }

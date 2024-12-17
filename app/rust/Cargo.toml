@@ -41,7 +41,8 @@ debug = false
 opt-level = "z"
 lto = "thin"
 overflow-checks = false
-strip = true
+strip = "symbols"
+panic = "abort"
 
 [profile.dev]
 panic = "abort"

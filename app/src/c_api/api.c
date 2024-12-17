@@ -14,6 +14,10 @@
  *  limitations under the License.
  ********************************************************************************/
 #if defined(BLS_SIGNATURE)
+#include <os.h>
+#include <os_io_seproxyhal.h>
+#include "zxcanary.h"
+#include "zxmacros.h"
 #include "crypto.h"
 #include "coin.h"
 
@@ -36,5 +40,19 @@ int8_t c_fill_principal(uint8_t *output, uint16_t output_len, uint16_t *response
     *response_len = DFINITY_PRINCIPAL_LEN;
 
     return 0;
+}
+
+void io_heartbeat() {
+    io_seproxyhal_io_heartbeat();
+}
+
+void log_number(const char *str, int number) {
+    ZEMU_LOGF(50, "%s: %d\n", str, number);
+    (void)str;
+    (void)number;
+}
+
+void _check_canary() {
+    CHECK_APP_CANARY();
 }
 #endif

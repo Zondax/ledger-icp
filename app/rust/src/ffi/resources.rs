@@ -1,6 +1,6 @@
 use bolos::{lazy_static, pic::PIC};
 
-use crate::{consent_message::msg_response::ConsentMessageResponse, Certificate};
+use crate::{consent_message::msg_info::ConsentInfo, Certificate};
 
 use super::{call_request::CanisterCallT, consent_request::ConsentRequestT};
 
@@ -18,7 +18,7 @@ pub static mut MEMORY_CALL_REQUEST: [u8; core::mem::size_of::<CanisterCallT>()];
 pub static mut CERTIFICATE: Option<Certificate<'static>> = None;
 
 #[lazy_static]
-pub static mut UI: Option<ConsentMessageResponse<'static>> = None;
+pub static mut UI: Option<ConsentInfo<'static>> = None;
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_clear_resources() {
