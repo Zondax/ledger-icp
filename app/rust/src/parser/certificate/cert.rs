@@ -24,8 +24,8 @@ use crate::{
         CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET, REPLY_PATH,
         SHA256_DIGEST_LENGTH,
     },
-    error::{ParserError, ViewError},
-    zlog, DisplayableItem, FromBytes, Signature,
+    error::ParserError,
+    zlog, FromBytes, Signature,
 };
 
 use super::{
@@ -297,27 +297,6 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
 
         Self::from_bytes_into(value.bytes(), &mut cert)?;
         Ok(unsafe { cert.assume_init() })
-    }
-}
-
-impl<'a> DisplayableItem for Certificate<'a> {
-    #[inline(never)]
-    fn num_items(&self) -> Result<u8, ViewError> {
-        let msg = self.msg_response().map_err(|_| ViewError::Unknown)?;
-        msg.num_items()
-    }
-
-    #[inline(never)]
-    fn render_item(
-        &self,
-        item_n: u8,
-        title: &mut [u8],
-        message: &mut [u8],
-        page: u8,
-    ) -> Result<u8, ViewError> {
-        zlog("Certificate::render_item\x00");
-        let msg = self.msg_response().map_err(|_| ViewError::Unknown)?;
-        msg.render_item(item_n, title, message, page)
     }
 }
 

@@ -1,0 +1,16 @@
+---
+source: src/parser/consent_message/msg_response.rs
+assertion_line: 234
+expression: reduced
+input_file: src/parser/consent_message/testvectors/ui_data.json
+snapshot_kind: text
+---
+[
+    "ConsentMsg": "HELLO_WORLD",
+    "ConsentMsg": "HELLO_WORLD",
+    "ConsentMsg": "HELLO_WORLD",
+    "ConsentMsg": "HELLO_WORLD",
+    "ConsentMsg": "HELLO_WORLD",
+    "ConsentMsg": "HELLO_WORLD",
+    "ConsentMsg": "HELLO_WORLD",
+]

@@ -79,7 +79,6 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
 impl<'a> DisplayableItem for ConsentInfo<'a> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        crate::zlog("ConsentInfo::num_items\x00");
         self.message.num_items()
     }
 
