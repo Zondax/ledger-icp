@@ -14,9 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 
-use crate::{
-    candid_utils::parse_text, check_canary, error::ParserError, heartbeat, utils::decompress_leb128,
-};
+use crate::{candid_utils::parse_text, error::ParserError, heartbeat, utils::decompress_leb128};
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct LineDisplayIterator<'b, const L: usize> {
@@ -53,8 +51,6 @@ pub struct ScreenPage<'b, const L: usize> {
 
 impl<'b, const L: usize> LineDisplayIterator<'b, L> {
     pub fn new(data: &'b [u8], screen_width: usize) -> Self {
-        crate::log_num("L\x00", L as u32);
-        crate::log_num("screen_width\x00", screen_width as u32);
         let (rem, page_count) = decompress_leb128(data).unwrap();
 
         Self {
@@ -74,12 +70,9 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
     }
 
     fn process_new_page(&mut self) -> Result<(), ParserError> {
-        crate::zlog("process_new_page>>\x00");
         check_canary();
         heartbeat();
         let (rem, line_count) = decompress_leb128(self.data.current)?;
-        crate::log_num("line_count: \x00", line_count as u32);
-        crate::log_num("after decompression: \x00", rem.len() as u32);
         self.data.current = rem;
 
         if line_count as usize > L {
@@ -102,17 +95,13 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
     fn get_line_segment(&self) -> Option<&'b str> {
         heartbeat();
         check_canary();
-        crate::zlog("get_line_segment>>\x00");
 
         let start = self.current_state.current_line_offset * self.config.screen_width;
         if start >= self.data.current_line.len() {
-            crate::zlog("NONE>>\x00");
             return None;
         }
         let end = (start + self.config.screen_width).min(self.data.current_line.len());
-        let ret = Some(&self.data.current_line[start..end]);
-        crate::zlog("get_line_segment ok>>\x00");
-        ret
+        Some(&self.data.current_line[start..end])
     }
 
     pub fn page_count(&self) -> usize {
@@ -130,14 +119,6 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
         // Initialize a new ScreenPage
         let mut screen_segments = [""; L];
         let mut segment_count = 0;
-        crate::log_num(
-            "current_line_offset: \x00",
-            self.current_state.current_line_offset as u32,
-        );
-        crate::log_num(
-            "current_line_in_page: \x00",
-            self.current_state.current_line_in_page as u32,
-        );
 
         // Check if we're starting a new page
         if self.current_state.current_line_offset == 0
@@ -146,7 +127,6 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
             // Reset state for new page processing
             self.process_new_page().ok()?;
         }
-        crate::zlog("page_Processed>>\x00");
         heartbeat();
         check_canary();
 
@@ -154,19 +134,15 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
         while segment_count < L
             && self.current_state.current_line_in_page < self.current_state.current_line_count
         {
-            crate::log_num("segment_count: \x00", segment_count as u32);
-            crate::log_num(
-                "line_offset: \x00",
-                self.current_state.current_line_offset as u32,
-            );
+            heartbeat();
             // Process new line if needed
             if self.current_state.current_line_offset == 0 {
-                crate::zlog("new_line_processed>>\x00");
                 self.process_new_line().ok()?;
             }
 
             // Get and process the current segment
             if let Some(segment) = self.get_line_segment() {
+                heartbeat();
                 screen_segments[segment_count] = segment;
                 segment_count += 1;
 
@@ -174,18 +150,15 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
                     (self.current_state.current_line_offset + 1) * self.config.screen_width;
 
                 if segment_end >= self.data.current_line.len() {
-                    crate::zlog("line_is_complete>>\x00");
                     // Line is complete
                     self.current_state.current_line_offset = 0;
                     self.current_state.current_line_in_page += 1;
                 } else {
-                    crate::zlog("more_segments>>\x00");
                     // More segments in this line
                     self.current_state.current_line_offset += 1;
                 }
             } else {
                 // Move to next line
-                crate::zlog("next_line>>\x00");
                 self.current_state.current_line_in_page += 1;
                 self.current_state.current_line_offset = 0;
             }
@@ -206,7 +179,6 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
                 num_segments: segment_count,
             })
         } else {
-            crate::zlog("segment_none>>\x00");
             None
         }
     }
