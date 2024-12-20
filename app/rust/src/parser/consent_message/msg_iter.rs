@@ -13,7 +13,6 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-
 use crate::{
     candid_utils::parse_text, check_canary, error::ParserError, heartbeat, utils::decompress_leb128,
 };
@@ -35,7 +34,6 @@ struct PageData<'b> {
 struct IteratorState {
     page_idx: usize,
     page_count: usize,
-    current_line_offset: usize,
     current_line_in_page: usize,
     current_line_count: usize,
 }
@@ -63,7 +61,6 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
             current_state: IteratorState {
                 page_idx: 0,
                 page_count: page_count as usize,
-                current_line_offset: 0,
                 current_line_in_page: 0,
                 current_line_count: 0,
             },
@@ -85,18 +82,16 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
 
     fn process_new_line(&mut self) -> Result<(), ParserError> {
         let (new_rem, line) = parse_text(self.data.current)?;
+
+        // Add check for line length
+        if line.len() > self.config.screen_width {
+            crate::log_num("Line too large\x00", line.len() as _);
+            return Err(ParserError::LineTooLong);
+        }
+
         self.data.current = new_rem;
         self.data.current_line = line;
         Ok(())
-    }
-
-    fn get_line_segment(&self) -> Option<&'b str> {
-        let start = self.current_state.current_line_offset * self.config.screen_width;
-        if start >= self.data.current_line.len() {
-            return None;
-        }
-        let end = (start + self.config.screen_width).min(self.data.current_line.len());
-        Some(&self.data.current_line[start..end])
     }
 
     pub fn page_count(&self) -> usize {
@@ -116,45 +111,19 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
         let mut segment_count = 0;
 
         // Check if we're starting a new page
-        if self.current_state.current_line_offset == 0
-            && self.current_state.current_line_in_page == 0
-        {
-            // Reset state for new page processing
-            if self.process_new_page().is_err() {
-                return None;
-            }
+        if self.current_state.current_line_in_page == 0 {
+            self.process_new_page().ok()?;
         }
 
         // Process lines for this page
         while segment_count < L
             && self.current_state.current_line_in_page < self.current_state.current_line_count
         {
-            // Process new line if needed
-            if self.current_state.current_line_offset == 0 && self.process_new_line().is_err() {
-                return None;
-            }
+            self.process_new_line().ok()?;
 
-            // Get and process the current segment
-            if let Some(segment) = self.get_line_segment() {
-                screen_segments[segment_count] = segment;
-                segment_count += 1;
-
-                let segment_end =
-                    (self.current_state.current_line_offset + 1) * self.config.screen_width;
-
-                if segment_end >= self.data.current_line.len() {
-                    // Line is complete
-                    self.current_state.current_line_offset = 0;
-                    self.current_state.current_line_in_page += 1;
-                } else {
-                    // More segments in this line
-                    self.current_state.current_line_offset += 1;
-                }
-            } else {
-                // Move to next line
-                self.current_state.current_line_in_page += 1;
-                self.current_state.current_line_offset = 0;
-            }
+            screen_segments[segment_count] = self.data.current_line;
+            segment_count += 1;
+            self.current_state.current_line_in_page += 1;
         }
 
         // If we completed a page
@@ -163,7 +132,6 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
             if self.current_state.current_line_in_page >= self.current_state.current_line_count {
                 self.current_state.page_idx += 1;
                 self.current_state.current_line_in_page = 0;
-                self.current_state.current_line_offset = 0;
             }
 
             Some(ScreenPage {

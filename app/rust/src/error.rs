@@ -83,6 +83,7 @@ pub enum ParserError {
     InvalidTime,
     TooManyLines,
     TooManyPages,
+    LineTooLong,
 }
 
 // minicibor error provides a reach
