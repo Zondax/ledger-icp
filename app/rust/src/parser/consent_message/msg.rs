@@ -279,7 +279,6 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
 impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAGES, LINES> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        crate::log_num("Msg::num_items: \x00", self.num_items as u32);
         Ok(self.num_items)
     }
 
@@ -291,9 +290,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAG
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
-        crate::zlog("Msg::render_item\x00");
         check_canary();
-
         self.msg.render_item(item_n, title, message, page)
     }
 }
@@ -303,7 +300,6 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
 {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        crate::zlog("ConsentMessage::num_items\x00");
         check_canary();
         match self {
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
@@ -324,7 +320,6 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
-        crate::zlog("ConsentMessage::render_item\x00");
         check_canary();
         let title_bytes = b"ConsentMsg";
         let title_len = title_bytes.len().min(title.len() - 1);
@@ -346,13 +341,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
                 let mut output = Self::render_buffer();
 
                 let written = self.format_page_content(&current_screen, &mut output)? as usize;
-                if written < message.len() {
-                    message[..written].copy_from_slice(&output[..written]);
-                    // no need for multiple pages, except the current written one
-                    Ok(1)
-                } else {
-                    handle_ui_message(&output[..written], message, page)
-                }
+                handle_ui_message(&output[..written], message, page)
             }
         }
     }

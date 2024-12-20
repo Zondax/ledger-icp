@@ -24,16 +24,13 @@ impl<'a> BufferWriter<'a> {
     }
 
     pub fn write_line(&mut self, line: &str, add_newline: bool) -> Result<(), ViewError> {
-        let mut chars_written = 0;
-
         // Process each character
-        for c in line.chars() {
+        for (chars_written, c) in line.chars().enumerate() {
             if chars_written >= MAX_CHARS_PER_LINE {
                 break;
             }
 
             self.write_byte(if c.is_ascii() { c as u8 } else { b' ' })?;
-            chars_written += 1;
         }
 
         // // Pad with spaces if needed
