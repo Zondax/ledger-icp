@@ -38,3 +38,15 @@ int8_t c_fill_principal(uint8_t *output, uint16_t output_len, uint16_t *response
     return 0;
 }
 #endif
+
+void io_heartbeat() {
+    io_seproxyhal_io_heartbeat();
+}
+
+void log_number(const char *str, int number) {
+    ZEMU_LOGF(50, "%s: %d\n", str, number)
+}
+
+void _check_canary() {
+    CHECK_APP_CANARY()
+}
