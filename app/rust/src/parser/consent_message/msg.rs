@@ -357,7 +357,6 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
 #[cfg(test)]
 mod tests_msg_display {
     use super::*;
-    use std::string::String;
 
     const SCREEN_WIDTH: usize = 35;
     const SMALL_SCREEN_WIDTH: usize = 15;

@@ -43,13 +43,12 @@ pub fn zlog(_msg: &str) {
     std::println!("{}", _msg);
 }
 
-#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
 pub fn check_canary() {
-    unsafe { _check_canary() }
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+    unsafe {
+        _check_canary()
+    }
 }
-
-#[cfg(test)]
-pub fn check_canary() {}
 
 extern "C" {
     fn zemu_log_stack(s: *const u8);
