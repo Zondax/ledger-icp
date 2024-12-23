@@ -68,7 +68,7 @@ endif
 
 APP_LOAD_PARAMS = --curve secp256k1 $(COMMON_LOAD_PARAMS) --path $(APPPATH)
 
-APP_STACK_MIN_SIZE := 2050
+# APP_STACK_MIN_SIZE := 2050
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.devices
 RUST_TARGET := thumbv6m-none-eabi
 
