@@ -13,13 +13,20 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+
+pub const MAX_PAGES: usize = 10;
+// Configuration constants based on target device
+// means max number of lines per page
+pub const MAX_LINES: usize = 3;
+// means max characteres per line
+// this is a limit of the device
+// intended to control the already formatted
+// message response comming
+// from canisters
+pub const MAX_CHARS_PER_LINE: usize = 35;
+
 pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
 pub const BLS_SIGNATURE_SIZE: usize = 48;
-// means max characteres per line
-pub const MAX_LINES: usize = 3;
-// means mx number of lines per page
-pub const MAX_PAGES: usize = 10;
-pub const MAX_CHARS_PER_LINE: usize = 25;
 pub const REPLY_PATH: &str = "reply";
 pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
 

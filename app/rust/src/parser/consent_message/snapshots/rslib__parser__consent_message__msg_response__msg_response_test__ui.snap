@@ -4,18 +4,11 @@ expression: reduced
 input_file: src/parser/consent_message/testvectors/ui_data.json
 ---
 [
-    "ConsentMsg": "# Authorize another addre\nss to\nwithdraw from your accoun",
-    "ConsentMsg": "t **The\nfollowing address is allo\nwed to",
-    "ConsentMsg": "withdraw from your accoun\nt:**\nrdmx6-jaaaa-aaaaa-aaadq-c",
-    "ConsentMsg": "ai **Your\nsubaccount:**\n",
-    "ConsentMsg": "0000000000000000000000000\n0000000000\n0000000000000000000000000",
-    "ConsentMsg": "0000\n**Requested withdrawal al\nlowance:**",
-    "ConsentMsg": "10 ICP ⚠ The allowance \nwill be\nset to 10 ICP independent",
-    "ConsentMsg": "ly of any\nprevious allowance. Until\n this",
-    "ConsentMsg": "transaction has been exec\nuted the\nspender can still exercis",
-    "ConsentMsg": "e the\nprevious allowance (if an\ny) to it's",
-    "ConsentMsg": "full amount. **Expiration\n date:**\nNo expiration. **Approval",
-    "ConsentMsg": " fee:**\n0.0001 ICP **Transaction \nfees to be",
-    "ConsentMsg": "paid by your subaccount:*\n*\n0000000000000000000000000",
-    "ConsentMsg": "0000000000\n0000000000000000000000000\n0000",
+    "ConsentMsg": "# Authorize another address to     \nwithdraw from your account **The   \nfollowing address is allowed to    ",
+    "ConsentMsg": "withdraw from your account:**      \nrdmx6-jaaaa-aaaaa-aaadq-cai **Your \nsubaccount:**                      ",
+    "ConsentMsg": "00000000000000000000000000000000000\n00000000000000000000000000000      \n**Requested withdrawal allowance:**",
+    "ConsentMsg": "10 ICP   The allowance will be     \nset to 10 ICP independently of any \nprevious allowance. Until this     ",
+    "ConsentMsg": "transaction has been executed the  \nspender can still exercise the     \nprevious allowance (if any) to it's",
+    "ConsentMsg": "full amount. **Expiration date:**  \nNo expiration. **Approval fee:**   \n0.0001 ICP **Transaction fees to be",
+    "ConsentMsg": "paid by your subaccount:**         \n00000000000000000000000000000000000\n00000000000000000000000000000      ",
 ]

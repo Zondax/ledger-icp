@@ -16,6 +16,7 @@
 
 use crate::{
     check_canary,
+    consent_message::msg_response::ConsentMessageResponse,
     constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
@@ -30,7 +31,7 @@ use super::{
     c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST},
+    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST, UI},
 };
 
 // This is use to check important fields in consent_msg_request and canister_call_request
@@ -67,12 +68,10 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     // Check values are set
-    crate::zlog("call_request****\x00");
     let Ok(call_request) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
         return ParserError::NoData as u32;
     };
 
-    crate::zlog("consent_request****\x00");
     let Ok(consent_request) = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST) else {
         return ParserError::NoData as u32;
     };
@@ -81,7 +80,6 @@ pub unsafe extern "C" fn rs_verify_certificate(
     // for canister_call_t and consent_request_t
     // which ensures canister_id, method and args are the same in both
     if call_request != consent_request {
-        crate::zlog("call != consent mistmatch\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -94,7 +92,6 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     let mut cert = MaybeUninit::uninit();
     let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
-        crate::zlog("Fail parsing certificate***\x00");
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -112,13 +109,11 @@ pub unsafe extern "C" fn rs_verify_certificate(
     let Ok(LookupResult::Found(_)) =
         HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
     else {
-        crate::zlog("request_id mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     };
-
+    //
     // Verify ingress_expiry aginst certificate timestamp
     if !cert.verify_time(call_request.ingress_expiry) {
-        crate::zlog("ingress_expiry mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -126,7 +121,6 @@ pub unsafe extern "C" fn rs_verify_certificate(
     let consent_sender = &consent_request.sender[..consent_request.sender_len as usize];
 
     if !validate_sender(call_sender, consent_sender) {
-        crate::zlog("sender_id mismatch****\x00");
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -136,10 +130,17 @@ pub unsafe extern "C" fn rs_verify_certificate(
         if !ranges.is_canister_in_range(
             &call_request.canister_id[..call_request.canister_id_len as usize],
         ) {
-            crate::zlog("canister_id mismatch****\x00");
             return ParserError::InvalidCertificate as u32;
         }
     }
+
+    // Check for the response type embedded in the certificate
+    // an error response means we can not go further
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+        return ParserError::InvalidCertificate as u32;
+    };
+
+    UI.replace(ui);
 
     // Indicates certificate was valid
     CERTIFICATE.replace(cert);

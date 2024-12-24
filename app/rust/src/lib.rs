@@ -35,7 +35,7 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 pub fn zlog(_msg: &str) {
-    #[cfg(not(test))]
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
     unsafe {
         zemu_log_stack(_msg.as_bytes().as_ptr());
     }
@@ -43,15 +43,38 @@ pub fn zlog(_msg: &str) {
     std::println!("{}", _msg);
 }
 
-#[cfg(not(test))]
 pub fn check_canary() {
-    unsafe { check_app_canary() }
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+    unsafe {
+        _check_canary()
+    }
 }
-
-#[cfg(test)]
-pub fn check_canary() {}
 
 extern "C" {
     fn zemu_log_stack(s: *const u8);
-    fn check_app_canary();
+    fn _check_canary();
+    fn log_number(e: *const u8, number: u32);
+}
+
+#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+extern "C" {
+    fn io_heartbeat();
+}
+
+// Lets the device breath between computations
+pub(crate) fn heartbeat() {
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+    unsafe {
+        io_heartbeat()
+    }
+}
+
+// Lets the device breath between computations
+pub(crate) fn log_num(s: &str, number: u32) {
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+    unsafe {
+        log_number(s.as_bytes().as_ptr(), number);
+    }
+    #[cfg(test)]
+    std::println!("{s}: {number}");
 }
