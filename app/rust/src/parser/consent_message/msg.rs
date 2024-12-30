@@ -83,13 +83,10 @@ pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
 }
 
 impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
-    // Hashes de los campos
     const LINE_DISPLAY_MESSAGE_HASH: u32 = 1124872921;
     const GENERIC_DISPLAY_MESSAGE_HASH: u32 = 4082495484;
-    const PAGES_FIELD_HASH: u32 = 3175951172; // hash del campo pages en el record
-    const LINES_FIELD_HASH: u32 = 1963056639; // hash del campo lines en el record de page
-                                              // We got this after printing the type table
-                                              // using candid_utils::print_type_table function
+    const PAGES_FIELD_HASH: u32 = 3175951172;
+    const LINES_FIELD_HASH: u32 = 1963056639;
 
     // The idea snprintf(buffer, "%s\n%s\n", line1, line2)
     // but in bytes plus null terminator
@@ -107,7 +104,8 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
 
         for (i, &line) in page.segments.iter().take(page.num_segments).enumerate() {
             // Format each line
-            writer.write_line(line, i < page.num_segments - 1)?;
+            // writer.write_line(line, i < page.num_segments - 1)?;
+            writer.write_line(line, false)?;
         }
 
         writer.finalize()

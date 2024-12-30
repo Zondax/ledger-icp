@@ -31,7 +31,12 @@ impl<'a> BufferWriter<'a> {
                 break;
             }
 
-            self.write_byte(if c.is_ascii() { c as u8 } else { b' ' })?;
+            let mut char = c;
+            if !c.is_ascii() || c == '\n' {
+                char = ' ';
+            }
+
+            self.write_byte(char as _)?;
             num_chars += 1;
         }
 
