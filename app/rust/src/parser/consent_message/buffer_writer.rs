@@ -32,7 +32,7 @@ impl<'a> BufferWriter<'a> {
             }
 
             let mut char = c;
-            if !c.is_ascii() || c == '\n' {
+            if !c.is_ascii() || c.is_ascii_control() || c == '\n' {
                 char = ' ';
             }
 
@@ -41,10 +41,10 @@ impl<'a> BufferWriter<'a> {
         }
 
         // // Pad with spaces if needed
-        while num_chars < MAX_CHARS_PER_LINE {
-            self.write_byte(b' ')?;
-            num_chars += 1;
-        }
+        // while num_chars < MAX_CHARS_PER_LINE {
+        //     self.write_byte(b' ')?;
+        //     num_chars += 1;
+        // }
 
         // Add newline if not the last line
         if add_newline {
