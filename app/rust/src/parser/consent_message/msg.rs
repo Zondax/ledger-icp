@@ -102,9 +102,9 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
     ) -> Result<u8, ViewError> {
         let mut writer = BufferWriter::new(out);
 
-        for (i, &line) in page.segments.iter().take(page.num_segments).enumerate() {
-            // Format each line
-            // writer.write_line(line, i < page.num_segments - 1)?;
+        // for (i, &line) in page.segments.iter().take(page.num_segments).enumerate() {
+        for &line in page.segments.iter().take(page.num_segments) {
+            // Format each line and do not add newline symbol
             writer.write_line(line, false)?;
         }
 
@@ -333,8 +333,24 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
 
         match self {
             ConsentMessage::GenericDisplayMessage(content) => {
-                let msg = content.as_bytes();
-                handle_ui_message(msg, message, page)
+                crate::zlog("UI::GenericDisplayMessage\x00");
+                let mut buff = [b'\x00'; 676];
+                if content.as_bytes().len() > buff.len() {
+                    crate::zlog("UI::GenericDisplayMessage ERROR!\x00");
+                    return Err(ViewError::NoData);
+                }
+                let mut len = 0;
+                for (i, c) in content.as_bytes().iter().enumerate() {
+                    let c = if !c.is_ascii() || c.is_ascii_control() || *c == b'\n' {
+                        b' '
+                    } else {
+                        *c
+                    };
+                    buff[i] = c;
+                    len += 1;
+                }
+                // handle_ui_message(content.as_bytes(), message, page)
+                handle_ui_message(&buff[..len], message, page)
             }
             ConsentMessage::LineDisplayMessage(_) => {
                 // Use the existing pages_iter method with our standard screen width
@@ -345,6 +361,8 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
 
                 let mut output = Self::render_buffer();
 
+                // bellow format_page_content
+                // will remove any non-ascii characters, ascii-control or \n
                 let written = self.format_page_content(&current_screen, &mut output)? as usize;
                 handle_ui_message(&output[..written], message, page)
             }
