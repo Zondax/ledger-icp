@@ -65,7 +65,7 @@ typedef enum {
 } method_type_e;
 
 typedef enum {
-Configure = 2,
+    Configure = 2,
     Configure_IncreaseDissolveDelay = 2001,
     Configure_StartDissolving = 2002,
     Configure_StopDissolving = 2003,
@@ -95,6 +95,8 @@ Configure = 2,
     Configure_RemoveHotkeyCandid = 1010,
     RegisterVoteCandid = 1011,
     FollowCandid = 1012,
+    // New command for manage neuron transactions
+    RefreshVotingPower = 973889507,
 
     SNS_AddNeuronPermissions = 3000,
     SNS_RemoveNeuronPermissions = 3001,

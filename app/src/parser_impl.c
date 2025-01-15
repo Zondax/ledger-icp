@@ -315,6 +315,9 @@ GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 GEN_PARSER_PB(ListNeurons)
 
 parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type) {
+    zemu_log("getManageNeuronType****\n");
+    ZEMU_LOGF(50, "method_type %d\n", v->tx_fields.call.method_type);
+
     switch (v->tx_fields.call.method_type) {
         case pb_manageneuron: {
             pb_size_t command = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.which_command;
@@ -431,7 +434,11 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
 }
 
 parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
+    zemu_log_stack("readPayload***\n");
     char *method = v->tx_fields.call.method_name.data;
+    zemu_log_stack("***method: ");
+    zemu_log_stack(method);
+    zemu_log_stack("\n");
     manageNeuron_e mn_type;
 
     v->tx_fields.call.is_sns = 0; // we'll set this var later if is sns
