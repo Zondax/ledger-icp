@@ -83,6 +83,7 @@ typedef enum {
     hash_field_proposal = 3000310834,
     hash_field_follow_topic = 338645423,
     hash_field_follow_followees = 3407357762,
+    // hash_neuron_voting_power = ,
 } txn_hash_fields;
 
 typedef enum {
@@ -124,6 +125,7 @@ typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
+    hash_command_RefreshVotingPower = 971637731,
     hash_command_ClaimOrRefresh = 1349619708,
     hash_command_Configure = 1647237574,
     hash_command_RegisterVote = 2455066893,
@@ -294,6 +296,10 @@ typedef struct {
 } candid_Follow_t;
 
 typedef struct {
+    candid_NeuronId neuron_id;
+} candid_RefreshVotingPower_t;
+
+typedef struct {
     uint8_t list_size;
     const uint8_t *permissions_list_ptr;
 } sns_NeuronPermissionList_t;
@@ -368,6 +374,7 @@ typedef struct {
         candid_Disburse_t disburse;
         candid_RegisterVote_t vote;
         candid_Follow_t follow;
+        candid_RefreshVotingPower_t refresh_voting_power;
 
         sns_NeuronPermissions_t neuronPermissions;
         sns_Disburse_t sns_disburse;
