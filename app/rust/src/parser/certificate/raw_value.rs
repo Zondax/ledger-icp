@@ -1,5 +1,3 @@
-use core::ptr::addr_of_mut;
-
 /*******************************************************************************
 *   (c) 2018 - 2024 Zondax AG
 *
@@ -15,13 +13,14 @@ use core::ptr::addr_of_mut;
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
+use core::ptr::addr_of_mut;
 use minicbor::{decode::Error, Decode, Decoder};
 
 use crate::{zlog, FromBytes};
 
 #[derive(Clone, Copy, PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct RawValue<'a>(&'a [u8]);
+pub struct RawValue<'a>(pub(crate) &'a [u8]);
 
 impl<'a> RawValue<'a> {
     pub fn bytes(&self) -> &'a [u8] {

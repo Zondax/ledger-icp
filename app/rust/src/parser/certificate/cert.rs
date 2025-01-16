@@ -114,7 +114,7 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         let _: HashTree = cert.tree.try_into().map_err(|_| ParserError::InvalidTree)?;
 
         #[cfg(test)]
-        HashTree::parse_and_print_hash_tree(&cert.tree, 0).unwrap();
+        std::println!("{}", &cert.tree);
 
         Ok(&input[d.position()..])
     }
