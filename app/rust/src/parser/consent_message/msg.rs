@@ -13,13 +13,14 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use core::ptr::addr_of_mut;
+use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use nom::bytes::complete::take;
 
 use crate::{
     candid_header::CandidHeader,
     candid_utils::parse_text,
+    check_canary,
     constants::{MAX_CHARS_PER_LINE, MAX_LINES},
     error::{ParserError, ViewError},
     utils::{decompress_leb128, handle_ui_message},
@@ -36,6 +37,13 @@ struct LineDisplayMessageVariant<'a>(MessageType, &'a [u8]);
 pub enum MessageType {
     GenericDisplayMessage,
     LineDisplayMessage,
+}
+
+#[repr(C)]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+pub struct Msg<'a, const PAGES: usize, const LINES: usize> {
+    num_items: u8,
+    msg: ConsentMessage<'a, PAGES, LINES>,
 }
 
 // (
@@ -139,14 +147,6 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
 pub struct Page<'a, const L: usize> {
     lines: [&'a str; L],
     num_lines: usize,
-}
-
-impl<'a, const L: usize> Iterator for Page<'a, L> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
 }
 
 impl<'a, const L: usize> Page<'a, L> {
@@ -296,7 +296,6 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
         &self,
         screen_width: usize,
     ) -> Option<impl Iterator<Item = ScreenPage<'a, LINES>>> {
-        crate::zlog("ConsentMessage::pages_iter\x00");
         if let ConsentMessage::LineDisplayMessage(data) = self {
             Some(LineDisplayIterator::new(data, screen_width))
         } else {
@@ -347,6 +346,42 @@ impl TryFrom<u64> for MessageType {
             1 => Ok(Self::GenericDisplayMessage),
             _ => Err(ParserError::UnexpectedValue),
         }
+    }
+}
+
+impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a, PAGES, LINES> {
+    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+        input: &'a [u8],
+        out: &mut core::mem::MaybeUninit<Self>,
+        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+    ) -> Result<&'a [u8], ParserError> {
+        crate::zlog("Msg::from_candid_header\x00");
+
+        let out = out.as_mut_ptr();
+
+        let consent_msg: &mut MaybeUninit<ConsentMessage<'a, PAGES, LINES>> =
+            unsafe { &mut *addr_of_mut!((*out).msg).cast() };
+
+        let rem = ConsentMessage::from_candid_header(input, consent_msg, header)?;
+
+        // Precompute number of items
+        unsafe {
+            let m = consent_msg.assume_init_ref();
+            match m {
+                ConsentMessage::GenericDisplayMessage(_) => {
+                    addr_of_mut!((*out).num_items).write(1);
+                }
+                ConsentMessage::LineDisplayMessage(_) => {
+                    addr_of_mut!((*out).num_items).write(
+                        m.pages_iter(MAX_CHARS_PER_LINE)
+                            .ok_or(ParserError::NoData)?
+                            .count() as u8,
+                    );
+                }
+            }
+        }
+
+        Ok(rem)
     }
 }
 
@@ -402,7 +437,6 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                     return Err(ParserError::ValueOutOfRange);
                 }
 
-                // Debug: intenta leer la primera página
                 let mut raw_line = rem;
                 for _page in 0..page_count {
                     let (rem, line_count) = decompress_leb128(raw_line)?;
@@ -450,25 +484,38 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
     }
 }
 
+impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAGES, LINES> {
+    #[inline(never)]
+    fn num_items(&self) -> Result<u8, ViewError> {
+        Ok(self.num_items)
+    }
+
+    #[inline(never)]
+    fn render_item(
+        &self,
+        item_n: u8,
+        title: &mut [u8],
+        message: &mut [u8],
+        page: u8,
+    ) -> Result<u8, ViewError> {
+        check_canary();
+        self.msg.render_item(item_n, title, message, page)
+    }
+}
+
 impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
     for ConsentMessage<'a, PAGES, LINES>
 {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        crate::zlog("ConsentMessage::num_items\x00");
+        check_canary();
         match self {
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
             ConsentMessage::LineDisplayMessage(_) => {
                 // Get an iterator using our standard screen width
-                if let Some(mut pages) = self.pages_iter(MAX_CHARS_PER_LINE) {
-                    let mut total_screens = 0u8;
-                    while pages.next().is_some() {
-                        total_screens = total_screens.saturating_add(1);
-                    }
-                    Ok(total_screens)
-                } else {
-                    Err(ViewError::NoData)
-                }
+                self.pages_iter(MAX_CHARS_PER_LINE)
+                    .ok_or(ViewError::NoData)
+                    .map(|pages| pages.count() as u8)
             }
         }
     }
@@ -481,7 +528,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
         message: &mut [u8],
         page: u8,
     ) -> Result<u8, ViewError> {
-        crate::zlog("ConsentMessage::render_item\x00");
+        check_canary();
         let title_bytes = b"ConsentMsg";
         let title_len = title_bytes.len().min(title.len() - 1);
         title[..title_len].copy_from_slice(&title_bytes[..title_len]);
@@ -498,6 +545,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
                     .pages_iter(MAX_CHARS_PER_LINE)
                     .ok_or(ViewError::NoData)?;
                 let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
+
                 let mut output = Self::render_buffer();
 
                 self.format_page_content(&current_screen, &mut output)?;
