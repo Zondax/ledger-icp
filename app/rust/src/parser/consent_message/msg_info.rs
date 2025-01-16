@@ -22,12 +22,12 @@ use crate::{
 };
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
-use super::{msg::ConsentMessage, msg_metadata::ConsentMessageMetadata};
+use super::{msg::Msg, msg_metadata::ConsentMessageMetadata};
 
 #[repr(C)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ConsentInfo<'a> {
-    pub message: ConsentMessage<'a, MAX_PAGES, MAX_LINES>,
+    pub message: Msg<'a, MAX_PAGES, MAX_LINES>,
     pub metadata: ConsentMessageMetadata<'a>,
 }
 
@@ -68,9 +68,9 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
         let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };
         let mut rem = ConsentMessageMetadata::from_candid_header(input, metadata, header)?;
 
-        let message: &mut MaybeUninit<ConsentMessage<'_, MAX_PAGES, MAX_LINES>> =
+        let message: &mut MaybeUninit<Msg<'_, MAX_PAGES, MAX_LINES>> =
             unsafe { &mut *addr_of_mut!((*out).message).cast() };
-        rem = ConsentMessage::from_candid_header(rem, message, header)?;
+        rem = Msg::from_candid_header(rem, message, header)?;
 
         Ok(rem)
     }
@@ -79,7 +79,6 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
 impl<'a> DisplayableItem for ConsentInfo<'a> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        crate::zlog("ConsentInfo::num_items\x00");
         self.message.num_items()
     }
 
