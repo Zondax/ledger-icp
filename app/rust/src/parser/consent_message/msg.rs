@@ -62,8 +62,8 @@ pub enum MessageType {
 //     },
 //   },
 // ],
-#[derive(Debug)]
 #[repr(u8)] // Important: same representation as MessageType
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
     LineDisplayMessage(&'a [u8]),
@@ -425,8 +425,6 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                 // Store raw bytes for lazy parsing
                 let data_len = start.len() - raw_line.len();
                 let (rem, data) = take(data_len)(start)?;
-                #[cfg(test)]
-                std::println!("LineDisplayContent****\n {}", hex::encode(data));
 
                 let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
                 unsafe {

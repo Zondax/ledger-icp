@@ -165,13 +165,11 @@ impl<'a> Certificate<'a> {
 
         // Step 4: Verify signature
         // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
-        crate::zlog("Certificate::separator****\x00");
         let mut message = [0u8; BLS_MSG_SIZE];
         message[0] = SEPARATOR_LEN as u8;
         // message[1..14].copy_from_slice(b"ic-state-root");
         message[1..14].copy_from_slice(SEPARATOR);
         message[14..].copy_from_slice(&root_hash);
-        crate::zlog("Certificate::separator**** OK\x00");
 
         Ok(message)
     }
@@ -198,14 +196,11 @@ impl<'a> Certificate<'a> {
             None => Ok(true),
             Some(delegation) => {
                 // Ensure the delegation's certificate contains the subnet's public key
-                zlog("delegation_pubkey\x00");
                 if delegation.public_key()?.is_none() {
-                    zlog("delegation_without_key\x00");
                     return Ok(false);
                 }
 
                 // Ensure the delegation's certificate does not have another delegation
-                zlog("no_delegation\x00");
                 if delegation.cert().delegation().is_some() {
                     return Ok(false);
                 }
@@ -230,7 +225,6 @@ impl<'a> Certificate<'a> {
         match &self.delegation {
             None => Ok(root_key), // Use root_public_key if no delegation
             Some(d) => {
-                zlog("using_delegation_key\x00");
                 let key = d.public_key()?.ok_or(ParserError::UnexpectedValue)?;
                 Ok(key.as_bytes())
             }
@@ -270,12 +264,10 @@ impl<'a> Certificate<'a> {
     }
 
     // Safe to unwrap because this reply was parsed already
-    fn msg(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
+    pub fn msg_response(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
         let tree = self.tree();
         let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
         let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
-        #[cfg(test)]
-        std::println!("\nConsent message bytes: {:?}\n", hex::encode(bytes));
 
         let mut msg = MaybeUninit::uninit();
         ConsentMessageResponse::from_bytes_into(bytes, &mut msg)?;
@@ -311,7 +303,8 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
 impl<'a> DisplayableItem for Certificate<'a> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        let msg = self.msg().map_err(|_| ViewError::Unknown)?;
+        let msg = self.msg_response().map_err(|_| ViewError::Unknown)?;
+
         msg.num_items()
     }
 
@@ -324,7 +317,8 @@ impl<'a> DisplayableItem for Certificate<'a> {
         page: u8,
     ) -> Result<u8, ViewError> {
         zlog("Certificate::render_item\x00");
-        let msg = self.msg().map_err(|_| ViewError::Unknown)?;
+        let msg = self.msg_response().map_err(|_| ViewError::Unknown)?;
+
         msg.render_item(item_n, title, message, page)
     }
 }

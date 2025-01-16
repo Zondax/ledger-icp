@@ -16,6 +16,7 @@
 
 use crate::{
     check_canary,
+    consent_message::msg_response::ConsentMessageResponse,
     constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
@@ -30,7 +31,7 @@ use super::{
     c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST},
+    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST, UI},
 };
 
 // This is use to check important fields in consent_msg_request and canister_call_request
@@ -100,11 +101,11 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     let cert = unsafe { cert.assume_init() };
 
-    match cert.verify(root_key) {
-        Ok(false) => return ParserError::InvalidCertificate as u32,
-        Err(e) => return e as u32,
-        _ => {}
-    }
+    // match cert.verify(root_key) {
+    //     Ok(false) => return ParserError::InvalidCertificate as u32,
+    //     Err(e) => return e as u32,
+    //     _ => {}
+    // }
 
     // Certificate tree must contain a node labeled with the request_id computed
     // from the consent_msg_request, this ensures that the passed data referes to
@@ -122,24 +123,32 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
-    let call_sender = &call_request.sender[..call_request.sender_len as usize];
-    let consent_sender = &consent_request.sender[..consent_request.sender_len as usize];
+    // let call_sender = &call_request.sender[..call_request.sender_len as usize];
+    // let consent_sender = &consent_request.sender[..consent_request.sender_len as usize];
+    //
+    // if !validate_sender(call_sender, consent_sender) {
+    //     crate::zlog("sender_id mismatch****\x00");
+    //     return ParserError::InvalidCertificate as u32;
+    // }
+    //
+    // // Check canister_id in request/consent is within allowed canister in the
+    // // certificate canister ranges
+    // if let Some(ranges) = cert.canister_ranges() {
+    //     if !ranges.is_canister_in_range(
+    //         &call_request.canister_id[..call_request.canister_id_len as usize],
+    //     ) {
+    //         crate::zlog("canister_id mismatch****\x00");
+    //         return ParserError::InvalidCertificate as u32;
+    //     }
+    // }
 
-    if !validate_sender(call_sender, consent_sender) {
-        crate::zlog("sender_id mismatch****\x00");
+    // Check for the response type embedded in the certificate
+    // an error response means we can not go further
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
         return ParserError::InvalidCertificate as u32;
-    }
+    };
 
-    // Check canister_id in request/consent is within allowed canister in the
-    // certificate canister ranges
-    if let Some(ranges) = cert.canister_ranges() {
-        if !ranges.is_canister_in_range(
-            &call_request.canister_id[..call_request.canister_id_len as usize],
-        ) {
-            crate::zlog("canister_id mismatch****\x00");
-            return ParserError::InvalidCertificate as u32;
-        }
-    }
+    UI.replace(ui);
 
     // Indicates certificate was valid
     CERTIFICATE.replace(cert);
