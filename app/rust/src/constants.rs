@@ -19,7 +19,7 @@ pub const BLS_SIGNATURE_SIZE: usize = 48;
 pub const MAX_LINES: usize = 3;
 // means mx number of lines per page
 pub const MAX_PAGES: usize = 10;
-pub const MAX_CHARS_PER_LINE: usize = 25;
+pub const MAX_CHARS_PER_LINE: usize = 35;
 pub const REPLY_PATH: &str = "reply";
 pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
 
