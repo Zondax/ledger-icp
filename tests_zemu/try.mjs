@@ -32,7 +32,7 @@ async function main() {
   ledger_logs.listen(log => {
     console.log(`${log.type} ${log.message}`)
   })
-  const app = new InternetComputerApp(transport)
+  const app = new InternetComputerApp.default(transport)
 
   console.time('bls_verify Duration')
   const resp = await bls_verify(app)
