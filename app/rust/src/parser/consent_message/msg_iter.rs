@@ -143,3 +143,48 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
         }
     }
 }
+
+#[cfg(test)]
+use std::fmt;
+
+#[cfg(test)]
+impl<'b, const L: usize> fmt::Display for LineDisplayIterator<'b, L> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "LineDisplayIterator {{")?;
+        writeln!(f, "  data: {}", self.data)?;
+        writeln!(f, "  current_state: {}", self.current_state)?;
+        writeln!(f, "  config: {}", self.config)?;
+        write!(f, "}}")
+    }
+}
+
+#[cfg(test)]
+impl<'b> fmt::Display for PageData<'b> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "PageData {{")?;
+        writeln!(f, "  current: {}", hex::encode(self.current))?;
+        writeln!(f, "  current_line: \"{}\"", self.current_line)?;
+        write!(f, "}}")
+    }
+}
+
+#[cfg(test)]
+impl fmt::Display for IteratorState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "IteratorState {{")?;
+        writeln!(f, "  page_idx: {}", self.page_idx)?;
+        writeln!(f, "  page_count: {}", self.page_count)?;
+        writeln!(f, "  current_line_in_page: {}", self.current_line_in_page)?;
+        writeln!(f, "  current_line_count: {}", self.current_line_count)?;
+        write!(f, "}}")
+    }
+}
+
+#[cfg(test)]
+impl fmt::Display for DisplayConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "DisplayConfig {{")?;
+        writeln!(f, "  screen_width: {}", self.screen_width)?;
+        write!(f, "}}")
+    }
+}

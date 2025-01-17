@@ -150,7 +150,6 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
         match self {
             Self::Ok(msg) => msg.render_item(item_n, title, message, page),
             Self::Err(_) => {
-                crate::zlog("ContentMessageResponse::render_item::Err\x00");
                 Err(ViewError::NoData)
             }
         }

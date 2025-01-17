@@ -242,7 +242,7 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                             // current limit is based on nano devices
                             // stax/flex support longer lines
                             if text.len() > MAX_CHARS_PER_LINE {
-                                crate::log_num("line length unsupported: \x00", text.len() as _);
+                                crate::log_num("Line Length Unsupported: \x00", text.len() as _);
                                 return Err(ParserError::ValueOutOfRange);
                             }
 
@@ -300,9 +300,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAG
     }
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
-    for ConsentMessage<'a, PAGES, LINES>
-{
+impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<'_, PAGES, LINES> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         check_canary();
