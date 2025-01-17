@@ -116,7 +116,7 @@ const CANDID_TRANSACTIONS = [
 ]
 
 describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
-  test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
+  test.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
@@ -159,7 +159,7 @@ describe.each(CANDID_TRANSACTIONS)('CANDID_SNS_ICRC', function (data) {
 })
 
 describe.each(STAKE_TXS)('CANDID_STAKE', function (data) {
-  test.concurrent.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
+  test.each(DEVICE_MODELS)(`Test: ${data.name}`, async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
