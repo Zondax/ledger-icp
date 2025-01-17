@@ -282,7 +282,7 @@ impl HashTree<'_> {
 impl<'a> TryFrom<RawValue<'a>> for HashTree<'a> {
     type Error = ParserError;
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
-        value.try_into()
+        HashTree::try_from(&value)
     }
 }
 
@@ -292,14 +292,22 @@ impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
         // This is unsafe and is dark magic to apply PIC offset
         // to the Decoder::new function pointer, this due to pic issues
         // at runtime
-        let f = unsafe {
-            let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
-            let adjusted_ptr = crate::pic_addr(raw_fn_ptr); // Apply PIC offset
-            core::mem::transmute::<u32, fn(&[u8]) -> Decoder>(adjusted_ptr) // Convert back to fn type
-        };
+        cfg_if::cfg_if! {
+            if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+                let f = unsafe {
+                    let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
+                    let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
+                    let adjusted_ptr = crate::pic_addr(raw_fn_ptr); // Apply PIC offset
+                    core::mem::transmute::<u32, fn(&[u8]) -> Decoder>(adjusted_ptr) // Convert back to fn type
+                };
 
-        let mut d = f(value.0);
-        HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)
+                let mut d = f(value.0);
+                HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)
+            } else {
+                let mut d = Decoder::new(value.0);
+                HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)
+            }
+        }
     }
 }
 
@@ -427,6 +435,17 @@ mod hash_tree_tests {
 
     #[test]
     fn test_example_tree() {
+        std::thread::Builder::new()
+            .stack_size(8 * 1024 * 1024) // 8MB stack
+            .spawn(|| {
+                check_example_tree();
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+
+    fn check_example_tree() {
         // example tree:
         //─┬─┬╴"a" ─┬─┬╴"x" ─╴"hello"
         // │ │      │ └╴Empty
@@ -443,12 +462,12 @@ mod hash_tree_tests {
         let LookupResult::Found(value) = a_value else {
             panic!("Node not found");
         };
-        let a_tree: HashTree = value.try_into().unwrap();
+        let a_tree = HashTree::try_from(value).unwrap();
         assert!(a_tree.is_fork());
 
         let a_empty = a_tree.fork_left().unwrap();
-        let a_empty: HashTree = a_empty.try_into().unwrap();
-        let a_empty: HashTree = (a_empty.fork_right().unwrap()).try_into().unwrap();
+        let a_empty = HashTree::try_from(a_empty).unwrap();
+        let a_empty = HashTree::try_from(a_empty.fork_right().unwrap()).unwrap();
         assert!(a_empty.is_empty());
 
         //   lookup x
