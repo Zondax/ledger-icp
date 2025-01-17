@@ -89,7 +89,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ github.sha }}
       - name: run rust tests
-        run: make rust_test
+        run: cd ./app/rust
+          cargo test
 
   size_nano_s:
     needs: build_ledger
