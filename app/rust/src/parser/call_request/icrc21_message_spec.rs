@@ -24,7 +24,7 @@ pub struct Icrc21ConsentMessageSpec<'a> {
     pub(crate) device_spec: Option<DeviceSpec>,      // 4
 }
 
-impl<'a> Icrc21ConsentMessageSpec<'a> {
+impl Icrc21ConsentMessageSpec<'_> {
     const METADATA_HASH: u32 = 1075439471;
     const DEVSPEC_HASH: u32 = 1534901700;
 

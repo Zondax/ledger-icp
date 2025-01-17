@@ -22,13 +22,13 @@ const METHOD_NAME: &[u8] = b"icrc21_canister_call_consent_message";
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ConsentMsgRequest<'a>(CanisterCall<'a>);
 
-impl<'a> ConsentMsgRequest<'a> {
+impl ConsentMsgRequest<'_> {
     // this sums up the nonce although
     // it could be missing
     const MAP_ENTRIES: u64 = 7;
 
     // Getter methods (unchanged)
-    pub fn arg(&'a self) -> &RawArg<'a> {
+    pub fn arg(&self) -> &RawArg<'_> {
         self.0.arg()
     }
 

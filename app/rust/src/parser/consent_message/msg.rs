@@ -82,7 +82,7 @@ pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     LineDisplayMessage(&'a [u8]),
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
+impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
     const LINE_DISPLAY_MESSAGE_HASH: u32 = 1124872921;
     const GENERIC_DISPLAY_MESSAGE_HASH: u32 = 4082495484;
     const PAGES_FIELD_HASH: u32 = 3175951172;
@@ -281,7 +281,7 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
     }
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAGES, LINES> {
+impl<const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'_, PAGES, LINES> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         Ok(self.num_items)
@@ -333,7 +333,7 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
             ConsentMessage::GenericDisplayMessage(content) => {
                 crate::zlog("UI::GenericDisplayMessage\x00");
                 let mut buff = [b'\x00'; 676];
-                if content.as_bytes().len() > buff.len() {
+                if content.len() > buff.len() {
                     crate::zlog("UI::GenericDisplayMessage ERROR!\x00");
                     return Err(ViewError::NoData);
                 }

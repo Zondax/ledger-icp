@@ -25,7 +25,6 @@ impl<'a> BufferWriter<'a> {
 
     pub fn write_line(&mut self, line: &str, add_newline: bool) -> Result<(), ViewError> {
         // Process each character
-        let mut num_chars = 0;
         for (chars_written, c) in line.chars().enumerate() {
             if chars_written >= MAX_CHARS_PER_LINE {
                 break;
@@ -37,7 +36,6 @@ impl<'a> BufferWriter<'a> {
             }
 
             self.write_byte(char as _)?;
-            num_chars += 1;
         }
 
         // // Pad with spaces if needed

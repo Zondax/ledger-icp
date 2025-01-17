@@ -27,7 +27,7 @@ impl<'a> FromBytes<'a> for RawArg<'a> {
     }
 }
 
-impl<'a> RawArg<'a> {
+impl RawArg<'_> {
     pub fn raw_data(&self) -> &[u8] {
         self.0
     }

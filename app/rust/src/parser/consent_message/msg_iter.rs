@@ -148,7 +148,7 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
 use std::fmt;
 
 #[cfg(test)]
-impl<'b, const L: usize> fmt::Display for LineDisplayIterator<'b, L> {
+impl<const L: usize> fmt::Display for LineDisplayIterator<'_, L> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "LineDisplayIterator {{")?;
         writeln!(f, "  data: {}", self.data)?;
@@ -159,7 +159,7 @@ impl<'b, const L: usize> fmt::Display for LineDisplayIterator<'b, L> {
 }
 
 #[cfg(test)]
-impl<'b> fmt::Display for PageData<'b> {
+impl fmt::Display for PageData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "PageData {{")?;
         writeln!(f, "  current: {}", hex::encode(self.current))?;

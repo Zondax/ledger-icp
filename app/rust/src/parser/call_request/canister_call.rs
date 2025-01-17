@@ -24,7 +24,7 @@ pub struct CanisterCall<'a> {
     pub ingress_expiry: u64,
 }
 
-impl<'a> CanisterCall<'a> {
+impl CanisterCall<'_> {
     // this sums up the nonce although
     // it could be missing
     //

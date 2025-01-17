@@ -25,7 +25,7 @@ use super::raw_value::RawValue;
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Signature<'a>(&'a [u8; BLS_SIGNATURE_SIZE]);
 
-impl<'a> Signature<'a> {
+impl Signature<'_> {
     pub fn bls_signature(&self) -> &[u8; BLS_SIGNATURE_SIZE] {
         self.0
     }

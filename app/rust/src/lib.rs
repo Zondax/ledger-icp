@@ -3,6 +3,11 @@
 #![macro_use]
 #![allow(dead_code)]
 #![deny(unused_crate_dependencies)]
+// We used different config flags names
+// in order to not possibly colide with other
+// defined in dependencies
+#![allow(unexpected_cfgs)]
+#![allow(static_mut_refs)]
 
 extern crate no_std_compat as std;
 

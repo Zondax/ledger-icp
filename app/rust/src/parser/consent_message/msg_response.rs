@@ -130,7 +130,7 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
     }
 }
 
-impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
+impl DisplayableItem for ConsentMessageResponse<'_> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         match self {
@@ -149,9 +149,7 @@ impl<'a> DisplayableItem for ConsentMessageResponse<'a> {
     ) -> Result<u8, ViewError> {
         match self {
             Self::Ok(msg) => msg.render_item(item_n, title, message, page),
-            Self::Err(_) => {
-                Err(ViewError::NoData)
-            }
+            Self::Err(_) => Err(ViewError::NoData),
         }
     }
 }
@@ -175,7 +173,7 @@ mod msg_response_test {
 
     /// This is only to be used for testing, hence why
     /// it's present inside the `mod test` block only
-    impl<'a> Viewable for ConsentMessageResponse<'a> {
+    impl Viewable for ConsentMessageResponse<'_> {
         fn num_items(&mut self) -> Result<u8, zemu_sys::ViewError> {
             DisplayableItem::num_items(&*self).map_err(|_| zemu_sys::ViewError::Unknown)
         }

@@ -1,4 +1,3 @@
-#![cfg(test)]
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::println;
@@ -239,12 +238,12 @@ impl<'b, const T: usize, const M: usize> From<&'b Page<T, M>> for ReducedPage<'b
     }
 }
 
-impl<'b> Debug for ReducedPage<'b> {
+impl Debug for ReducedPage<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(self, f)
     }
 }
-impl<'b> Display for ReducedPage<'b> {
+impl Display for ReducedPage<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{:?}: {:?}", self.title, self.message)
     }

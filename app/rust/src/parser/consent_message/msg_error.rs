@@ -50,7 +50,7 @@ pub struct ErrorInfo<'a> {
     pub description: &'a str,
 }
 
-impl<'a> ErrorInfo<'a> {
+impl ErrorInfo<'_> {
     pub const DESCRIPTION: u32 = 1595738364; // hash of "description"
 }
 
@@ -99,7 +99,7 @@ impl<'a> FromBytes<'a> for ErrorInfo<'a> {
     }
 }
 
-impl<'a> DisplayableItem for ErrorInfo<'a> {
+impl DisplayableItem for ErrorInfo<'_> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         Ok(1)
@@ -150,7 +150,7 @@ pub enum Error<'a> {
     },
 }
 
-impl<'a> Error<'a> {
+impl Error<'_> {
     pub const UNSUPPORTED_CANISTER_CALL: u32 = 260448849;
     pub const CONSENT_MESSAGE_UNAVAILABLE: u32 = 752613667;
     pub const INSUFFICIENT_PAYMENT: u32 = 1019593370;
@@ -311,7 +311,7 @@ impl<'a> FromBytes<'a> for Error<'a> {
     }
 }
 
-impl<'a> DisplayableItem for Error<'a> {
+impl DisplayableItem for Error<'_> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         match self {

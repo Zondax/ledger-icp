@@ -10,8 +10,8 @@ use super::{CanisterCall, RawArg};
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct CallRequest<'a>(CanisterCall<'a>);
 
-impl<'a> CallRequest<'a> {
-    pub fn arg(&'a self) -> &RawArg<'a> {
+impl CallRequest<'_> {
+    pub fn arg(&self) -> &RawArg {
         self.0.arg()
     }
     pub fn sender(&self) -> &[u8] {
