@@ -16,7 +16,7 @@
 #[cfg(test)]
 use std::fmt;
 
-use crate::error::ParserError;
+use crate::{check_canary, error::ParserError};
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 use sha2::Digest;
 
@@ -97,7 +97,7 @@ impl<'a> HashTree<'a> {
     // at parsing that we can handle its length
     // without reaching overflows, otherwise we error
     #[inline(never)]
-    pub fn check_integrity(&self, depth: usize) -> Result<(), ParserError> {
+    pub(crate) fn check_integrity(&self, depth: usize) -> Result<(), ParserError> {
         if depth >= MAX_TREE_DEPTH {
             return Err(ParserError::RecursionLimitReached);
         }
@@ -120,7 +120,7 @@ impl<'a> HashTree<'a> {
     }
 
     #[cfg(test)]
-    pub fn parse_and_print_hash_tree(raw_tree: &RawValue, indent: usize) -> Result<(), Error> {
+    pub fn parse_and_print_hash_tree(raw_tree: &RawValue, _indent: usize) -> Result<(), Error> {
         let mut decoder = Decoder::new(raw_tree.bytes());
         let tree = HashTree::decode(&mut decoder, &mut ())?;
 
@@ -142,7 +142,7 @@ impl<'a> HashTree<'a> {
             if depth >= MAX_TREE_DEPTH {
                 return Err(ParserError::RecursionLimitReached);
             }
-            let current_tree = tree.try_into()?;
+            let current_tree = HashTree::try_from(&tree)?;
 
             match current_tree {
                 HashTree::Fork(left, right) => match inner_lookup(label, left, depth + 1)? {
@@ -163,7 +163,6 @@ impl<'a> HashTree<'a> {
                 }
                 // Below we should return Found just if Label is empty &[]
                 // but currently we are taking a label not an slice of them
-                // HashTree::Leaf(_) => Ok(LookupResult::Found(tree)),
                 HashTree::Leaf(_) => Ok(LookupResult::Absent),
                 HashTree::Pruned(_) => Ok(LookupResult::Unknown),
                 HashTree::Empty => Ok(LookupResult::Absent),
@@ -177,11 +176,13 @@ impl<'a> HashTree<'a> {
     /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
     #[inline(never)]
     pub fn reconstruct(&self) -> Result<[u8; 32], ParserError> {
+        check_canary();
+        crate::zlog("HashTree::reconstruct\x00");
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
             HashTree::Fork(left, right) => {
-                let left: HashTree = left.try_into()?;
-                let right: HashTree = right.try_into()?;
+                let left = HashTree::try_from(left)?;
+                let right = HashTree::try_from(right)?;
 
                 let left_hash = left.reconstruct()?;
                 let right_hash = right.reconstruct()?;
@@ -193,7 +194,7 @@ impl<'a> HashTree<'a> {
                 hash_with_domain_sep("ic-hashtree-fork", &concat)
             }
             HashTree::Labeled(label, subtree) => {
-                let subtree: HashTree = subtree.try_into()?;
+                let subtree = HashTree::try_from(subtree)?;
                 let subtree_hash = subtree.reconstruct()?;
 
                 // domain.len() + label_max_len + hash_len
@@ -226,7 +227,7 @@ impl<'a> HashTree<'a> {
 }
 
 #[cfg(test)]
-impl<'a> HashTree<'a> {
+impl HashTree<'_> {
     fn format_tree(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         match self {
             HashTree::Empty => {
@@ -281,17 +282,24 @@ impl<'a> HashTree<'a> {
 impl<'a> TryFrom<RawValue<'a>> for HashTree<'a> {
     type Error = ParserError;
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
-        let mut d = Decoder::new(value.bytes());
-        let tree = HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)?;
-        tree.check_integrity(0)?;
-        Ok(tree)
+        value.try_into()
     }
 }
 
 impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
     type Error = ParserError;
     fn try_from(value: &RawValue<'a>) -> Result<Self, Self::Error> {
-        (*value).try_into()
+        // This is unsafe and is dark magic to apply PIC offset
+        // to the Decoder::new function pointer, this due to pic issues
+        // at runtime
+        let f = unsafe {
+            let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
+            let adjusted_ptr = crate::pic_addr(raw_fn_ptr); // Apply PIC offset
+            core::mem::transmute::<u32, fn(&[u8]) -> Decoder>(adjusted_ptr) // Convert back to fn type
+        };
+
+        let mut d = f(value.0);
+        HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)
     }
 }
 
