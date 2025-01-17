@@ -111,7 +111,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     else {
         return ParserError::InvalidCertificate as u32;
     };
-    //
+
     // Verify ingress_expiry aginst certificate timestamp
     if !cert.verify_time(call_request.ingress_expiry) {
         return ParserError::InvalidCertificate as u32;
