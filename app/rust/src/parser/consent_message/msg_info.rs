@@ -76,7 +76,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
     }
 }
 
-impl<'a> DisplayableItem for ConsentInfo<'a> {
+impl DisplayableItem for ConsentInfo<'_> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         self.message.num_items()

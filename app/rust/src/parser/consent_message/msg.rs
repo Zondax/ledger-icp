@@ -242,7 +242,7 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                             // current limit is based on nano devices
                             // stax/flex support longer lines
                             if text.len() > MAX_CHARS_PER_LINE {
-                                crate::log_num("line length unsupported: \x00", text.len() as _);
+                                crate::log_num("Line Length Unsupported: \x00", text.len() as _);
                                 return Err(ParserError::ValueOutOfRange);
                             }
 
@@ -300,21 +300,13 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAG
     }
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
-    for ConsentMessage<'a, PAGES, LINES>
-{
+impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<'_, PAGES, LINES> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        check_canary();
-        match self {
-            ConsentMessage::GenericDisplayMessage(_) => Ok(1),
-            ConsentMessage::LineDisplayMessage(_) => {
-                // Get an iterator using our standard screen width
-                self.pages_iter(MAX_CHARS_PER_LINE)
-                    .ok_or(ViewError::NoData)
-                    .map(|pages| pages.count() as u8)
-            }
-        }
+        // This wont panic as the owner of this
+        // struct mantaings a precomputed number
+        // of items
+        unimplemented!()
     }
 
     #[inline(never)]
@@ -349,7 +341,6 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
                     buff[i] = c;
                     len += 1;
                 }
-                // handle_ui_message(content.as_bytes(), message, page)
                 handle_ui_message(&buff[..len], message, page)
             }
             ConsentMessage::LineDisplayMessage(_) => {
@@ -360,11 +351,13 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
                 let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
 
                 let mut output = Self::render_buffer();
+                // let s = b"This project contains the Stacks app for Ledger Nano S and Xy";
 
                 // bellow format_page_content
                 // will remove any non-ascii characters, ascii-control or \n
                 let written = self.format_page_content(&current_screen, &mut output)? as usize;
                 handle_ui_message(&output[..written], message, page)
+                // handle_ui_message(s, message, page)
             }
         }
     }
