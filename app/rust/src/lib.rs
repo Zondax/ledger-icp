@@ -35,12 +35,15 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 pub fn zlog(_msg: &str) {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
-    unsafe {
-        zemu_log_stack(_msg.as_bytes().as_ptr());
+    cfg_if::cfg_if! {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+            unsafe {
+                zemu_log_stack(_msg.as_bytes().as_ptr());
+            }
+        } else {
+            std::println!("{}", _msg);
+        }
     }
-    #[cfg(test)]
-    std::println!("{}", _msg);
 }
 
 pub fn check_canary() {
@@ -72,21 +75,25 @@ pub(crate) fn heartbeat() {
 
 // Lets the device breath between computations
 pub(crate) fn log_num(s: &str, number: u32) {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
-    unsafe {
-        log_number(s.as_bytes().as_ptr(), number);
+    cfg_if::cfg_if! {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+            unsafe {
+                log_number(s.as_bytes().as_ptr(), number);
+            }
+        } else {
+            std::println!("{s}: {number}");
+        }
     }
-    #[cfg(test)]
-    std::println!("{s}: {number}");
 }
-#[cfg(feature = "ledger")]
-extern "C" {}
 
 pub fn pic_addr(addr: u32) -> u32 {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
-    unsafe {
-        pic(addr)
+    cfg_if::cfg_if! {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+        unsafe {
+            pic(addr)
+        }
+        } else {
+            addr
+        }
     }
-    #[cfg(not(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"))))]
-    addr
 }
