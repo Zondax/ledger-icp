@@ -59,6 +59,7 @@ extern "C" {
 #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
 extern "C" {
     fn io_heartbeat();
+    fn pic(link_address: u32) -> u32;
 }
 
 // Lets the device breath between computations
@@ -77,4 +78,15 @@ pub(crate) fn log_num(s: &str, number: u32) {
     }
     #[cfg(test)]
     std::println!("{s}: {number}");
+}
+#[cfg(feature = "ledger")]
+extern "C" {}
+
+pub fn pic_addr(addr: u32) -> u32 {
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+    unsafe {
+        pic(addr)
+    }
+    #[cfg(not(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"))))]
+    addr
 }
