@@ -296,7 +296,6 @@ impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
             if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
                 let f = unsafe {
                     let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
-                    let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
                     let adjusted_ptr = crate::pic_addr(raw_fn_ptr); // Apply PIC offset
                     core::mem::transmute::<u32, fn(&[u8]) -> Decoder>(adjusted_ptr) // Convert back to fn type
                 };
