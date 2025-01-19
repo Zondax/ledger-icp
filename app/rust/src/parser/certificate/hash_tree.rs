@@ -434,17 +434,6 @@ mod hash_tree_tests {
 
     #[test]
     fn test_example_tree() {
-        std::thread::Builder::new()
-            .stack_size(8 * 1024 * 1024) // 8MB stack
-            .spawn(|| {
-                check_example_tree();
-            })
-            .unwrap()
-            .join()
-            .unwrap();
-    }
-
-    fn check_example_tree() {
         // example tree:
         //─┬─┬╴"a" ─┬─┬╴"x" ─╴"hello"
         // │ │      │ └╴Empty
