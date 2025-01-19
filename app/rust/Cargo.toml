@@ -48,4 +48,4 @@ panic = "abort"
 [features]
 clippy = []
 derive-debug = []
-fuzzing = []
+fuzzing = ["derive-debug"]
