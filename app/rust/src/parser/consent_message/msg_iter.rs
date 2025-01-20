@@ -106,41 +106,44 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
         check_canary();
         heartbeat();
 
-        // Initialize a new ScreenPage
-        let mut screen_segments = [""; L];
-        let mut segment_count = 0;
+        // Early return if we've processed all pages
+        if self.current_state.page_idx >= self.current_state.page_count {
+            return None;
+        }
 
-        // Check if we're starting a new page
+        // Process new page header if needed
         if self.current_state.current_line_in_page == 0 {
-            self.process_new_page().ok()?;
-        }
-
-        // Process lines for this page
-        while segment_count < L
-            && self.current_state.current_line_in_page < self.current_state.current_line_count
-        {
-            self.process_new_line().ok()?;
-
-            screen_segments[segment_count] = self.data.current_line;
-            segment_count += 1;
-            self.current_state.current_line_in_page += 1;
-        }
-
-        // If we completed a page
-        if segment_count > 0 {
-            // Update state for next iteration
-            if self.current_state.current_line_in_page >= self.current_state.current_line_count {
-                self.current_state.page_idx += 1;
-                self.current_state.current_line_in_page = 0;
+            if let Err(_) = self.process_new_page() {
+                return None;
             }
-
-            Some(ScreenPage {
-                segments: screen_segments,
-                num_segments: segment_count,
-            })
-        } else {
-            None
         }
+
+        // Create ScreenPage with fixed array
+        let mut screen_page = ScreenPage {
+            segments: [""; L],
+            num_segments: 0,
+        };
+
+        // Process lines until page is full or we hit page line count
+        while screen_page.num_segments < self.current_state.current_line_count {
+            match self.process_new_line() {
+                Ok(()) => {
+                    screen_page.segments[screen_page.num_segments] = self.data.current_line;
+                    screen_page.num_segments += 1;
+                    self.current_state.current_line_in_page += 1;
+                }
+                Err(_) => break,
+            }
+        }
+
+        // Update state for next page if needed
+        if self.current_state.current_line_in_page >= self.current_state.current_line_count {
+            self.current_state.page_idx += 1;
+            self.current_state.current_line_in_page = 0;
+        }
+
+        // Return completed page
+        Some(screen_page)
     }
 }
 
