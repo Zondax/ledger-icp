@@ -102,12 +102,12 @@ impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
     ) -> Result<u8, ViewError> {
         let mut writer = BufferWriter::new(out);
 
-        // for (i, &line) in page.segments.iter().take(page.num_segments).enumerate() {
         for &line in page.segments.iter().take(page.num_segments) {
-            // Format each line and do not add newline symbol
-            writer.write_line(line, false)?;
+            // always add '\n' at the end of the written line
+            writer.write_line(line, true)?;
         }
 
+        // Add null terminator after joining all segments
         writer.finalize()
     }
 }
@@ -158,7 +158,10 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a
             let m = consent_msg.assume_init_ref();
             match m {
                 ConsentMessage::GenericDisplayMessage(_) => {
-                    addr_of_mut!((*out).num_items).write(1);
+                    // Do not accept generic messages
+                    // due to the possiblility of it containing
+                    // unsupported characters
+                    return Err(ParserError::UnexpectedType);
                 }
                 ConsentMessage::LineDisplayMessage(_) => {
                     addr_of_mut!((*out).num_items).write(
@@ -330,37 +333,24 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
         title[title_len] = 0;
 
         match self {
-            ConsentMessage::GenericDisplayMessage(content) => {
-                crate::zlog("UI::GenericDisplayMessage\x00");
-                let mut buff = [b'\x00'; 676];
-                if content.len() > buff.len() {
-                    crate::zlog("UI::GenericDisplayMessage ERROR!\x00");
-                    return Err(ViewError::NoData);
-                }
-                let mut len = 0;
-                for (i, c) in content.as_bytes().iter().enumerate() {
-                    let c = if !c.is_ascii() || c.is_ascii_control() || *c == b'\n' {
-                        b' '
-                    } else {
-                        *c
-                    };
-                    buff[i] = c;
-                    len += 1;
-                }
-                // handle_ui_message(content.as_bytes(), message, page)
-                handle_ui_message(&buff[..len], message, page)
+            ConsentMessage::GenericDisplayMessage(..) => {
+                crate::zlog("ConsentMessage::GenericDisplayMessage\x00");
+                // No Data as this kind of message is not supported
+                Err(ViewError::Reject)
             }
             ConsentMessage::LineDisplayMessage(_) => {
+                crate::zlog("ConsentMessage::LineDisplayMessage\x00");
                 // Use the existing pages_iter method with our standard screen width
                 let mut pages = self
                     .pages_iter(MAX_CHARS_PER_LINE)
                     .ok_or(ViewError::NoData)?;
+
                 let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
 
                 let mut output = Self::render_buffer();
 
-                // bellow format_page_content
-                // will remove any non-ascii characters, ascii-control or \n
+                // bellow format_page_content will join all segments in ScreenPage
+                // into one device screen(page)
                 let written = self.format_page_content(&current_screen, &mut output)? as usize;
                 handle_ui_message(&output[..written], message, page)
             }
