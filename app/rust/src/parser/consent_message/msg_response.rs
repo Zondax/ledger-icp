@@ -98,12 +98,10 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
             .find_type_entry(0)
             .ok_or(ParserError::UnexpectedType)?;
 
-        // Verificar que el índice es válido
         if variant_index >= root_entry.field_count as u64 {
             return Err(ParserError::UnexpectedType);
         }
 
-        // Obtener el hash del campo seleccionado
         let (field_hash, _) = root_entry.fields[variant_index as usize];
 
         match field_hash {

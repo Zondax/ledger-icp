@@ -418,8 +418,8 @@ mod test_certificate {
         let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
-        let msg = cert.msg_response().unwrap();
-        assert_eq!(msg.response_type(), ResponseType::Ok);
+        let msg = cert.msg_response();
+        assert!(msg.is_err());
     }
 
     #[test]

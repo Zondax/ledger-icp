@@ -4,11 +4,11 @@ expression: reduced
 input_file: src/parser/consent_message/testvectors/ui_data.json
 ---
 [
-    "ConsentMsg": "# Authorize another address towithdraw from your account **Thefollowing address is allowed to",
-    "ConsentMsg": "withdraw from your account:**rdmx6-jaaaa-aaaaa-aaadq-cai **Yoursubaccount:**",
-    "ConsentMsg": "0000000000000000000000000000000000000000000000000000000000000000**Requested withdrawal allowance:**",
-    "ConsentMsg": "10 ICP   The allowance will beset to 10 ICP independently of anyprevious allowance. Until this",
-    "ConsentMsg": "transaction has been executed thespender can still exercise theprevious allowance (if any) to it's",
-    "ConsentMsg": "full amount. **Expiration date:**No expiration. **Approval fee:**0.0001 ICP **Transaction fees to be",
-    "ConsentMsg": "paid by your subaccount:**0000000000000000000000000000000000000000000000000000000000000000",
+    "ConsentMsg": "# Authorize another address to\nwithdraw from your account **The\nfollowing address is allowed to\n",
+    "ConsentMsg": "withdraw from your account:**\nrdmx6-jaaaa-aaaaa-aaadq-cai **Your\nsubaccount:**\n",
+    "ConsentMsg": "00000000000000000000000000000000000\n00000000000000000000000000000\n**Requested withdrawal allowance:**\n",
+    "ConsentMsg": "10 ICP   The allowance will be\nset to 10 ICP independently of any\nprevious allowance. Until this\n",
+    "ConsentMsg": "transaction has been executed the\nspender can still exercise the\nprevious allowance (if any) to it's\n",
+    "ConsentMsg": "full amount. **Expiration date:**\nNo expiration. **Approval fee:**\n0.0001 ICP **Transaction fees to be\n",
+    "ConsentMsg": "paid by your subaccount:**\n00000000000000000000000000000000000\n00000000000000000000000000000\n",
 ]
