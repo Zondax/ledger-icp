@@ -31,7 +31,7 @@ pub struct ConsentInfo<'a> {
     pub metadata: ConsentMessageMetadata<'a>,
 }
 
-impl<'a> ConsentInfo<'a> {
+impl ConsentInfo<'_> {
     pub const METADATA: u32 = 1075439471;
     pub const MESSAGE: u32 = 1763119074;
 }
@@ -76,7 +76,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
     }
 }
 
-impl<'a> DisplayableItem for ConsentInfo<'a> {
+impl DisplayableItem for ConsentInfo<'_> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         self.message.num_items()

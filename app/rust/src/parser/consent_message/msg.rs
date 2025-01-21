@@ -82,14 +82,11 @@ pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     LineDisplayMessage(&'a [u8]),
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
-    // Hashes de los campos
+impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
     const LINE_DISPLAY_MESSAGE_HASH: u32 = 1124872921;
     const GENERIC_DISPLAY_MESSAGE_HASH: u32 = 4082495484;
-    const PAGES_FIELD_HASH: u32 = 3175951172; // hash del campo pages en el record
-    const LINES_FIELD_HASH: u32 = 1963056639; // hash del campo lines en el record de page
-                                              // We got this after printing the type table
-                                              // using candid_utils::print_type_table function
+    const PAGES_FIELD_HASH: u32 = 3175951172;
+    const LINES_FIELD_HASH: u32 = 1963056639;
 
     // The idea snprintf(buffer, "%s\n%s\n", line1, line2)
     // but in bytes plus null terminator
@@ -105,11 +102,12 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
     ) -> Result<u8, ViewError> {
         let mut writer = BufferWriter::new(out);
 
-        for (i, &line) in page.segments.iter().take(page.num_segments).enumerate() {
-            // Format each line
-            writer.write_line(line, i < page.num_segments - 1)?;
+        for &line in page.segments.iter().take(page.num_segments) {
+            // always add '\n' at the end of the written line
+            writer.write_line(line, true)?;
         }
 
+        // Add null terminator after joining all segments
         writer.finalize()
     }
 }
@@ -160,7 +158,10 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a
             let m = consent_msg.assume_init_ref();
             match m {
                 ConsentMessage::GenericDisplayMessage(_) => {
-                    addr_of_mut!((*out).num_items).write(1);
+                    // Do not accept generic messages
+                    // due to the possiblility of it containing
+                    // unsupported characters
+                    return Err(ParserError::UnexpectedType);
                 }
                 ConsentMessage::LineDisplayMessage(_) => {
                     addr_of_mut!((*out).num_items).write(
@@ -244,7 +245,7 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                             // current limit is based on nano devices
                             // stax/flex support longer lines
                             if text.len() > MAX_CHARS_PER_LINE {
-                                crate::log_num("line length unsupported: \x00", text.len() as _);
+                                crate::log_num("Line Length Unsupported: \x00", text.len() as _);
                                 return Err(ParserError::ValueOutOfRange);
                             }
 
@@ -283,7 +284,7 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
     }
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAGES, LINES> {
+impl<const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'_, PAGES, LINES> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         Ok(self.num_items)
@@ -302,9 +303,7 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem for Msg<'a, PAG
     }
 }
 
-impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
-    for ConsentMessage<'a, PAGES, LINES>
-{
+impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<'_, PAGES, LINES> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
         check_canary();
@@ -334,19 +333,24 @@ impl<'a, const PAGES: usize, const LINES: usize> DisplayableItem
         title[title_len] = 0;
 
         match self {
-            ConsentMessage::GenericDisplayMessage(content) => {
-                let msg = content.as_bytes();
-                handle_ui_message(msg, message, page)
+            ConsentMessage::GenericDisplayMessage(..) => {
+                crate::zlog("ConsentMessage::GenericDisplayMessage\x00");
+                // No Data as this kind of message is not supported
+                Err(ViewError::Reject)
             }
             ConsentMessage::LineDisplayMessage(_) => {
+                crate::zlog("ConsentMessage::LineDisplayMessage\x00");
                 // Use the existing pages_iter method with our standard screen width
                 let mut pages = self
                     .pages_iter(MAX_CHARS_PER_LINE)
                     .ok_or(ViewError::NoData)?;
+
                 let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
 
                 let mut output = Self::render_buffer();
 
+                // bellow format_page_content will join all segments in ScreenPage
+                // into one device screen(page)
                 let written = self.format_page_content(&current_screen, &mut output)? as usize;
                 handle_ui_message(&output[..written], message, page)
             }

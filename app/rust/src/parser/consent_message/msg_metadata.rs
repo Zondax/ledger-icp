@@ -30,7 +30,7 @@ pub struct ConsentMessageMetadata<'a> {
     pub utc_offset: Option<i16>,
 }
 
-impl<'a> ConsentMessageMetadata<'a> {
+impl ConsentMessageMetadata<'_> {
     pub const LANGUAGE: u32 = 2047967320; // hash of "language"
     pub const UTC_OFFSET: u32 = 1502369582;
 }

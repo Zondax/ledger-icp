@@ -3,6 +3,11 @@
 #![macro_use]
 #![allow(dead_code)]
 #![deny(unused_crate_dependencies)]
+// We used different config flags names
+// in order to not possibly colide with other
+// defined in dependencies
+#![allow(unexpected_cfgs)]
+#![allow(static_mut_refs)]
 
 extern crate no_std_compat as std;
 
@@ -35,12 +40,15 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 pub fn zlog(_msg: &str) {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
-    unsafe {
-        zemu_log_stack(_msg.as_bytes().as_ptr());
+    cfg_if::cfg_if! {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+            unsafe {
+                zemu_log_stack(_msg.as_bytes().as_ptr());
+            }
+        } else {
+            std::println!("{}", _msg);
+        }
     }
-    #[cfg(test)]
-    std::println!("{}", _msg);
 }
 
 pub fn check_canary() {
@@ -59,6 +67,7 @@ extern "C" {
 #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
 extern "C" {
     fn io_heartbeat();
+    fn pic(link_address: u32) -> u32;
 }
 
 // Lets the device breath between computations
@@ -71,10 +80,25 @@ pub(crate) fn heartbeat() {
 
 // Lets the device breath between computations
 pub(crate) fn log_num(s: &str, number: u32) {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
-    unsafe {
-        log_number(s.as_bytes().as_ptr(), number);
+    cfg_if::cfg_if! {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+            unsafe {
+                log_number(s.as_bytes().as_ptr(), number);
+            }
+        } else {
+            std::println!("{s}: {number}");
+        }
     }
-    #[cfg(test)]
-    std::println!("{s}: {number}");
+}
+
+pub fn pic_addr(addr: u32) -> u32 {
+    cfg_if::cfg_if! {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+        unsafe {
+            pic(addr)
+        }
+        } else {
+            addr
+        }
+    }
 }

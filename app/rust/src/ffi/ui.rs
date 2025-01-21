@@ -20,7 +20,6 @@ use super::resources::UI;
 
 #[no_mangle]
 pub unsafe extern "C" fn rs_getNumItems(num_items: *mut u8) -> u32 {
-    crate::zlog("rs_getNumItems\x00");
     if num_items.is_null() || !UI.is_some() {
         return ParserError::ContextMismatch as u32;
     }
@@ -29,7 +28,6 @@ pub unsafe extern "C" fn rs_getNumItems(num_items: *mut u8) -> u32 {
     let ui = UI.as_ref().unwrap();
 
     let Ok(num) = ui.num_items() else {
-        crate::zlog("no_DATA\x00");
         return ParserError::NoData as _;
     };
 
@@ -48,10 +46,7 @@ pub unsafe extern "C" fn rs_getItem(
     page_idx: u8,
     page_count: *mut u8,
 ) -> u32 {
-    crate::zlog("rs_getItem\x00");
     *page_count = 0u8;
-
-    let page_count = &mut *page_count;
 
     let key = core::slice::from_raw_parts_mut(out_key as *mut u8, key_len as usize);
     let value = core::slice::from_raw_parts_mut(out_value as *mut u8, out_len as usize);

@@ -13,12 +13,22 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use crate::error::ParserError;
+#[cfg(test)]
+use std::fmt;
+
+use crate::{check_canary, error::ParserError};
 use minicbor::{data::Type, decode::Error, Decode, Decoder};
 use sha2::Digest;
 
 use super::{label::Label, raw_value::RawValue};
 const MAX_TREE_DEPTH: usize = 32;
+
+#[cfg(test)]
+impl fmt::Display for HashTree<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.format_tree(f, 0)
+    }
+}
 
 #[derive(Clone, Copy, PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
@@ -87,7 +97,7 @@ impl<'a> HashTree<'a> {
     // at parsing that we can handle its length
     // without reaching overflows, otherwise we error
     #[inline(never)]
-    fn check_integrity(&self, depth: usize) -> Result<(), ParserError> {
+    pub(crate) fn check_integrity(&self, depth: usize) -> Result<(), ParserError> {
         if depth >= MAX_TREE_DEPTH {
             return Err(ParserError::RecursionLimitReached);
         }
@@ -110,44 +120,11 @@ impl<'a> HashTree<'a> {
     }
 
     #[cfg(test)]
-    pub fn parse_and_print_hash_tree(raw_tree: &RawValue, indent: usize) -> Result<(), Error> {
-        use std::println;
-
+    pub fn parse_and_print_hash_tree(raw_tree: &RawValue, _indent: usize) -> Result<(), Error> {
         let mut decoder = Decoder::new(raw_tree.bytes());
         let tree = HashTree::decode(&mut decoder, &mut ())?;
 
-        match tree {
-            HashTree::Empty => println!("{}Empty", " ".repeat(indent)),
-            HashTree::Fork(left, right) => {
-                println!("{}Fork", " ".repeat(indent));
-                println!("{}Left:", " ".repeat(indent + 2));
-                Self::parse_and_print_hash_tree(&left, indent + 4)?;
-                println!("{}Right:", " ".repeat(indent + 2));
-                Self::parse_and_print_hash_tree(&right, indent + 4)?;
-            }
-            HashTree::Labeled(label, subtree) => {
-                match label {
-                    Label::Blob(b) => println!("{}Labeled (Blob): {:?}", " ".repeat(indent), b),
-                    Label::String(s) => println!("{}Labeled (String): {}", " ".repeat(indent), s),
-                }
-                Self::parse_and_print_hash_tree(&subtree, indent + 2)?;
-            }
-            HashTree::Leaf(data) => {
-                // here data is arraw containing twoo elements:
-                // [hash_tree_variant_tag, CBOR_data]
-                // we are interested in printing CBOR data
-                // and it is just bytes(Blob) according to icp documentation
-                // https://internetcomputer.org/docs/current/references/ic-interface-spec/#certification
-                let mut d = Decoder::new(data.bytes());
-                println!("{}Leaf: {:?}", " ".repeat(indent), d.bytes());
-            }
-            HashTree::Pruned(hash) => {
-                let mut d = Decoder::new(hash.bytes());
-                let h = d.bytes()?;
-                println!("{}Pruned: {:?}", " ".repeat(indent), h)
-            }
-        }
-
+        std::println!("{}", tree);
         Ok(())
     }
 
@@ -165,7 +142,7 @@ impl<'a> HashTree<'a> {
             if depth >= MAX_TREE_DEPTH {
                 return Err(ParserError::RecursionLimitReached);
             }
-            let current_tree = tree.try_into()?;
+            let current_tree = HashTree::try_from(&tree)?;
 
             match current_tree {
                 HashTree::Fork(left, right) => match inner_lookup(label, left, depth + 1)? {
@@ -186,7 +163,6 @@ impl<'a> HashTree<'a> {
                 }
                 // Below we should return Found just if Label is empty &[]
                 // but currently we are taking a label not an slice of them
-                // HashTree::Leaf(_) => Ok(LookupResult::Found(tree)),
                 HashTree::Leaf(_) => Ok(LookupResult::Absent),
                 HashTree::Pruned(_) => Ok(LookupResult::Unknown),
                 HashTree::Empty => Ok(LookupResult::Absent),
@@ -200,11 +176,13 @@ impl<'a> HashTree<'a> {
     /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
     #[inline(never)]
     pub fn reconstruct(&self) -> Result<[u8; 32], ParserError> {
+        check_canary();
+        crate::zlog("HashTree::reconstruct\x00");
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
             HashTree::Fork(left, right) => {
-                let left: HashTree = left.try_into()?;
-                let right: HashTree = right.try_into()?;
+                let left = HashTree::try_from(left)?;
+                let right = HashTree::try_from(right)?;
 
                 let left_hash = left.reconstruct()?;
                 let right_hash = right.reconstruct()?;
@@ -216,7 +194,7 @@ impl<'a> HashTree<'a> {
                 hash_with_domain_sep("ic-hashtree-fork", &concat)
             }
             HashTree::Labeled(label, subtree) => {
-                let subtree: HashTree = subtree.try_into()?;
+                let subtree = HashTree::try_from(subtree)?;
                 let subtree_hash = subtree.reconstruct()?;
 
                 // domain.len() + label_max_len + hash_len
@@ -248,20 +226,87 @@ impl<'a> HashTree<'a> {
     }
 }
 
+#[cfg(test)]
+impl HashTree<'_> {
+    fn format_tree(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        match self {
+            HashTree::Empty => {
+                writeln!(f, "{}Empty", " ".repeat(indent))
+            }
+            HashTree::Fork(left, right) => {
+                writeln!(f, "{}Fork", " ".repeat(indent))?;
+                writeln!(f, "{}Left:", " ".repeat(indent + 2))?;
+                if let Ok(left) = HashTree::try_from(left) {
+                    left.format_tree(f, indent + 4)?;
+                }
+                writeln!(f, "{}Right:", " ".repeat(indent + 2))?;
+                if let Ok(right) = HashTree::try_from(right) {
+                    right.format_tree(f, indent + 4)
+                } else {
+                    Ok(())
+                }
+            }
+            HashTree::Labeled(label, subtree) => {
+                match label {
+                    Label::Blob(b) => writeln!(f, "{}Labeled (Blob): {:?}", " ".repeat(indent), b)?,
+                    Label::String(s) => {
+                        writeln!(f, "{}Labeled (String): {}", " ".repeat(indent), s)?
+                    }
+                }
+                if let Ok(subtree) = HashTree::try_from(subtree) {
+                    subtree.format_tree(f, indent + 2)
+                } else {
+                    Ok(())
+                }
+            }
+            HashTree::Leaf(data) => {
+                let mut d = Decoder::new(data.bytes());
+                if let Ok(bytes) = d.bytes() {
+                    writeln!(f, "{}Leaf: {:?}", " ".repeat(indent), bytes)
+                } else {
+                    writeln!(f, "{}Leaf: <invalid data>", " ".repeat(indent))
+                }
+            }
+            HashTree::Pruned(hash) => {
+                let mut d = Decoder::new(hash.bytes());
+                if let Ok(h) = d.bytes() {
+                    writeln!(f, "{}Pruned: {:?}", " ".repeat(indent), h)
+                } else {
+                    writeln!(f, "{}Pruned: <invalid hash>", " ".repeat(indent))
+                }
+            }
+        }
+    }
+}
+
 impl<'a> TryFrom<RawValue<'a>> for HashTree<'a> {
     type Error = ParserError;
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
-        let mut d = Decoder::new(value.bytes());
-        let tree = HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)?;
-        tree.check_integrity(0)?;
-        Ok(tree)
+        HashTree::try_from(&value)
     }
 }
 
 impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
     type Error = ParserError;
     fn try_from(value: &RawValue<'a>) -> Result<Self, Self::Error> {
-        (*value).try_into()
+        // This is unsafe and is dark magic to apply PIC offset
+        // to the Decoder::new function pointer, this due to pic issues
+        // at runtime
+        cfg_if::cfg_if! {
+            if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+                let f = unsafe {
+                    let raw_fn_ptr = Decoder::new as *const () as u32; // Convert to raw address
+                    let adjusted_ptr = crate::pic_addr(raw_fn_ptr); // Apply PIC offset
+                    core::mem::transmute::<u32, fn(&[u8]) -> Decoder>(adjusted_ptr) // Convert back to fn type
+                };
+
+                let mut d = f(value.0);
+                HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)
+            } else {
+                let mut d = Decoder::new(value.0);
+                HashTree::decode(&mut d, &mut ()).map_err(|_| ParserError::InvalidTree)
+            }
+        }
     }
 }
 
@@ -405,12 +450,12 @@ mod hash_tree_tests {
         let LookupResult::Found(value) = a_value else {
             panic!("Node not found");
         };
-        let a_tree: HashTree = value.try_into().unwrap();
+        let a_tree = HashTree::try_from(value).unwrap();
         assert!(a_tree.is_fork());
 
         let a_empty = a_tree.fork_left().unwrap();
-        let a_empty: HashTree = a_empty.try_into().unwrap();
-        let a_empty: HashTree = (a_empty.fork_right().unwrap()).try_into().unwrap();
+        let a_empty = HashTree::try_from(a_empty).unwrap();
+        let a_empty = HashTree::try_from(a_empty.fork_right().unwrap()).unwrap();
         assert!(a_empty.is_empty());
 
         //   lookup x

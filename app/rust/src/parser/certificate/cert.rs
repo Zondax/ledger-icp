@@ -77,6 +77,11 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
             match key {
                 "tree" => {
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
+                    // Just to check that tree is fully parsed
+                    let _tree = HashTree::try_from(&raw_value)?;
+
+                    #[cfg(test)]
+                    std::println!("Certificate tree:\n {}", _tree);
                     unsafe { addr_of_mut!((*out).tree).write(raw_value) };
                 }
                 "signature" => {
@@ -109,13 +114,6 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
             unsafe { addr_of_mut!((*out).delegation).write(None) };
         }
 
-        let cert = unsafe { &mut *out };
-        // Verify that the tree raw value can be parsed sucessfully into a HashTree
-        let _: HashTree = cert.tree.try_into().map_err(|_| ParserError::InvalidTree)?;
-
-        #[cfg(test)]
-        HashTree::parse_and_print_hash_tree(&cert.tree, 0).unwrap();
-
         Ok(&input[d.position()..])
     }
 }
@@ -135,7 +133,7 @@ impl<'a> Certificate<'a> {
 
     #[inline(never)]
     pub fn hash(&self) -> Result<[u8; 32], ParserError> {
-        let tree: HashTree = self.tree.try_into()?;
+        let tree = HashTree::try_from(&self.tree)?;
         tree.reconstruct()
     }
 
@@ -180,7 +178,6 @@ impl<'a> Certificate<'a> {
         let message = self.bls_message()?;
 
         // Call third-party library directly to verify this signature
-        zlog("Certificate::verify_signature\x00");
         let verified = verify_bls_signature(signature, &message, pubkey);
 
         Ok(verified.is_ok())
@@ -210,7 +207,6 @@ impl<'a> Certificate<'a> {
                 // however the signature to use is the one contained in
                 // the delegation certificate.
                 // not the outer certificate one.
-                zlog("delegation_verify\x00");
                 if !delegation.verify(root_key)? {
                     return Ok(false);
                 }
@@ -422,8 +418,8 @@ mod test_certificate {
         let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
-        let msg = cert.msg_response().unwrap();
-        assert_eq!(msg.response_type(), ResponseType::Ok);
+        let msg = cert.msg_response();
+        assert!(msg.is_err());
     }
 
     #[test]

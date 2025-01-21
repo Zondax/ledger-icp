@@ -25,20 +25,11 @@ impl<'a> BufferWriter<'a> {
 
     pub fn write_line(&mut self, line: &str, add_newline: bool) -> Result<(), ViewError> {
         // Process each character
-        let mut num_chars = 0;
-        for (chars_written, c) in line.chars().enumerate() {
-            if chars_written >= MAX_CHARS_PER_LINE {
-                break;
-            }
-
-            self.write_byte(if c.is_ascii() { c as u8 } else { b' ' })?;
-            num_chars += 1;
-        }
-
-        // // Pad with spaces if needed
-        while num_chars < MAX_CHARS_PER_LINE {
-            self.write_byte(b' ')?;
-            num_chars += 1;
+        // There is no risk of omiting data
+        // as parser would error if line.chars() is larger than internal buffer
+        for c in line.chars().take(MAX_CHARS_PER_LINE) {
+            let char = if c.is_ascii() { c } else { ' ' };
+            self.write_byte(char as _)?;
         }
 
         // Add newline if not the last line
