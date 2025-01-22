@@ -82,6 +82,7 @@ pub struct Msg<'a, const PAGES: usize, const LINES: usize> {
 // ],
 #[repr(u8)] // Important: same representation as MessageType
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+#[allow(clippy::large_enum_variant)]
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
     // LineDisplayMessage(&'a [u8]),
