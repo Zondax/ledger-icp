@@ -83,9 +83,6 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentMessageResponse::from_bytes_into");
 
-        #[cfg(test)]
-        std::println!("*********MsgResponse*********:\n {}", hex::encode(input));
-
         // Parse Candid header
         let (rem, header) = parse_candid_header::<MAX_TABLE_FIELDS, MAX_ARGS>(input)?;
 
