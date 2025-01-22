@@ -7,8 +7,7 @@ export interface ICPIns extends INSGeneric {
   SIGN_COMBINED: 0x03;
   SAVE_CONSENT: 0x04;
   SAVE_CANISTER_CALL: 0x05;
-  SAVE_ROOT_KEY: 0x06;
-  SAVE_CERITIFACE_AND_VERIFY: 0x07;
+  SAVE_CERITIFACE_AND_VERIFY: 0x06;
 }
 
 export interface ResponseAddress extends ResponseBase {

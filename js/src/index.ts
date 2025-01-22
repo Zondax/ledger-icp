@@ -44,8 +44,7 @@ export default class InternetComputerApp extends GenericApp {
         SIGN_COMBINED: 0x03,
         SAVE_CONSENT: 0x04,
         SAVE_CANISTER_CALL: 0x05,
-        SAVE_ROOT_KEY: 0x06,
-        SAVE_CERITIFACE_AND_VERIFY: 0x07,
+        SAVE_CERITIFACE_AND_VERIFY: 0x06,
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -323,7 +322,6 @@ export default class InternetComputerApp extends GenericApp {
     consent_request: string,
     canister_call: string,
     certificate: string,
-    root_key?: string,
   ): Promise<ResponseSign> {
     // Check if all strings are not empty
     if (!consent_request || !canister_call || !certificate) {
@@ -338,12 +336,6 @@ export default class InternetComputerApp extends GenericApp {
     // Send canister_call
     result = await this.sendData(path, canister_call, this.INS.SAVE_CANISTER_CALL);
     if (result.returnCode !== LedgerError.NoErrors) return result;
-
-    // Send root_key
-    if (root_key) {
-      result = await this.sendData(path, root_key, this.INS.SAVE_ROOT_KEY);
-      if (result.returnCode !== LedgerError.NoErrors) return result;
-    }
 
     // Send certificate and sign
     return await this.sendCertificateAndSig(path, certificate);

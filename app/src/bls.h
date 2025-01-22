@@ -16,8 +16,8 @@
 #if defined(BLS_SIGNATURE)
 #pragma once
 
-#include "zxerror.h"
 #include "rslib.h"
+#include "zxerror.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,7 +25,6 @@ extern "C" {
 
 zxerr_t bls_saveConsentRequest(void);
 zxerr_t bls_saveCanisterCall(void);
-zxerr_t bls_saveRootKey(uint8_t *root_key);
 zxerr_t bls_verify();
 uint8_t *bls_root_key();
 void reset_bls_state();
