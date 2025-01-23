@@ -56,37 +56,11 @@ pub struct Msg<'a, const PAGES: usize, const LINES: usize> {
     msg: ConsentMessage<'a, PAGES, LINES>,
 }
 
-// (
-//   record {
-//     arg = blob "\44\49\44\4c\00\01\71\04\74\6f\62\69";
-//     method = "greet";
-//     user_preferences = record {
-//       metadata = record { utc_offset_minutes = null; language = "en" };
-//       device_spec = opt variant {
-//         LineDisplay = record {
-//           characters_per_line = 30 : nat16;
-//           lines_per_page = 3 : nat16;
-//         }
-//       };
-//     };
-//   },
-// )
-// or:
-//device_spec: [
-//   {
-//     LineDisplay: {
-//       characters_per_line: 35,
-//       lines_per_page: 3,
-//     },
-//   },
-// ],
 #[repr(u8)] // Important: same representation as MessageType
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 #[allow(clippy::large_enum_variant)]
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
-    // LineDisplayMessage(&'a [u8]),
-    // page_info: (usize, u8),
     LineDisplayMessage {
         data: &'a [u8],
         offsets: Cell<Option<[(usize, u8); PAGES]>>,
@@ -100,8 +74,6 @@ impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
     const PAGES_FIELD_HASH: u32 = 3175951172;
     const LINES_FIELD_HASH: u32 = 1963056639;
 
-    // The idea snprintf(buffer, "%s\n%s\n", line1, line2)
-    // but in bytes plus null terminator
     fn render_buffer() -> [u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1] {
         // Unfortunate we can not use const generic parameters in expresion bellow
         [0u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1]
