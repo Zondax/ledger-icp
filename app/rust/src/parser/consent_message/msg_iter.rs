@@ -17,20 +17,20 @@ use crate::{
     candid_utils::parse_text, check_canary, error::ParserError, heartbeat, utils::decompress_leb128,
 };
 
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
 pub struct LineDisplayIterator<'b, const L: usize> {
     data: PageData<'b>,
     current_state: IteratorState,
     config: DisplayConfig,
 }
 
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
 struct PageData<'b> {
     current: &'b [u8],
     current_line: &'b str,
 }
 
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
 struct IteratorState {
     page_idx: usize,
     page_count: usize,
@@ -38,7 +38,7 @@ struct IteratorState {
     current_line_count: usize,
 }
 
-#[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
 struct DisplayConfig {
     screen_width: usize,
 }
@@ -50,12 +50,10 @@ pub struct ScreenPage<'b, const L: usize> {
 }
 
 impl<'b, const L: usize> LineDisplayIterator<'b, L> {
-    pub fn new(data: &'b [u8], screen_width: usize) -> Self {
-        let (rem, page_count) = decompress_leb128(data).unwrap();
-
+    pub fn new(data: &'b [u8], screen_width: usize, page_count: u8) -> Self {
         Self {
             data: PageData {
-                current: rem,
+                current: data,
                 current_line: "",
             },
             current_state: IteratorState {
@@ -63,6 +61,29 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
                 page_count: page_count as usize,
                 current_line_in_page: 0,
                 current_line_count: 0,
+            },
+            config: DisplayConfig { screen_width },
+        }
+    }
+
+    pub fn new_with_offsets(
+        data: &'b [u8],
+        screen_width: usize,
+        page_idx: usize,
+        page_info: (usize, u8),
+        page_count: u8,
+    ) -> Self {
+        let (offset, num_lines) = page_info;
+        Self {
+            data: PageData {
+                current: &data[offset..],
+                current_line: "",
+            },
+            current_state: IteratorState {
+                page_idx,
+                page_count: page_count as usize,
+                current_line_in_page: 0,
+                current_line_count: num_lines as usize,
             },
             config: DisplayConfig { screen_width },
         }
@@ -113,9 +134,7 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
 
         // Process new page header if needed
         if self.current_state.current_line_in_page == 0 {
-            if let Err(_) = self.process_new_page() {
-                return None;
-            }
+            self.process_new_page().ok()?;
         }
 
         // Create ScreenPage with fixed array
@@ -132,7 +151,7 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
                     screen_page.num_segments += 1;
                     self.current_state.current_line_in_page += 1;
                 }
-                Err(_) => break,
+                Err(_) => return None,
             }
         }
 

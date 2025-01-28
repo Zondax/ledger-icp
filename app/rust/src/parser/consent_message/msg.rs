@@ -13,7 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use core::{mem::MaybeUninit, ptr::addr_of_mut};
+use core::{cell::Cell, mem::MaybeUninit, ptr::addr_of_mut};
 
 use nom::bytes::complete::take;
 
@@ -35,7 +35,12 @@ use super::{
 #[repr(C)]
 struct GenericDisplayMessageVariant<'a>(MessageType, &'a str);
 #[repr(C)]
-struct LineDisplayMessageVariant<'a>(MessageType, &'a [u8]);
+struct LineDisplayMessageVariant<'a, const PAGES: usize> {
+    ty: MessageType,
+    data: &'a [u8],
+    offsets: Cell<Option<[(usize, u8); PAGES]>>,
+    page_count: u8,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -51,35 +56,16 @@ pub struct Msg<'a, const PAGES: usize, const LINES: usize> {
     msg: ConsentMessage<'a, PAGES, LINES>,
 }
 
-// (
-//   record {
-//     arg = blob "\44\49\44\4c\00\01\71\04\74\6f\62\69";
-//     method = "greet";
-//     user_preferences = record {
-//       metadata = record { utc_offset_minutes = null; language = "en" };
-//       device_spec = opt variant {
-//         LineDisplay = record {
-//           characters_per_line = 30 : nat16;
-//           lines_per_page = 3 : nat16;
-//         }
-//       };
-//     };
-//   },
-// )
-// or:
-//device_spec: [
-//   {
-//     LineDisplay: {
-//       characters_per_line: 35,
-//       lines_per_page: 3,
-//     },
-//   },
-// ],
 #[repr(u8)] // Important: same representation as MessageType
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
+#[allow(clippy::large_enum_variant)]
 pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
     GenericDisplayMessage(&'a str),
-    LineDisplayMessage(&'a [u8]),
+    LineDisplayMessage {
+        data: &'a [u8],
+        offsets: Cell<Option<[(usize, u8); PAGES]>>,
+        page_count: u8,
+    },
 }
 
 impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
@@ -88,8 +74,6 @@ impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
     const PAGES_FIELD_HASH: u32 = 3175951172;
     const LINES_FIELD_HASH: u32 = 1963056639;
 
-    // The idea snprintf(buffer, "%s\n%s\n", line1, line2)
-    // but in bytes plus null terminator
     fn render_buffer() -> [u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1] {
         // Unfortunate we can not use const generic parameters in expresion bellow
         [0u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1]
@@ -113,15 +97,66 @@ impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
 }
 
 impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
+    // Returns an iterator over the pages from the first item
     pub fn pages_iter(
         &self,
         screen_width: usize,
     ) -> Option<impl Iterator<Item = ScreenPage<'a, LINES>>> {
-        if let ConsentMessage::LineDisplayMessage(data) = self {
-            Some(LineDisplayIterator::new(data, screen_width))
-        } else {
-            None
+        match self {
+            ConsentMessage::LineDisplayMessage {
+                data,
+                offsets,
+                page_count,
+            } => {
+                // Get or compute offsets
+                let offsets = if let Some(cached) = offsets.get() {
+                    cached
+                } else {
+                    // Compute offsets
+                    let new_offsets = Self::compute_page_offsets(data, *page_count).ok()?;
+                    offsets.set(Some(new_offsets));
+                    new_offsets
+                };
+
+                Some(LineDisplayIterator::new_with_offsets(
+                    data,
+                    screen_width,
+                    0,
+                    offsets[0],
+                    *page_count,
+                ))
+            }
+            _ => None,
         }
+    }
+
+    // Returns for each page the data offset and the number
+    // of lines
+    fn compute_page_offsets(
+        data: &[u8],
+        page_count: u8,
+    ) -> Result<[(usize, u8); PAGES], ParserError> {
+        if page_count as usize > PAGES {
+            return Err(ParserError::ValueOutOfRange);
+        }
+
+        let mut offsets = [(0, 0); PAGES];
+        let mut current = data;
+
+        for element in offsets.iter_mut().take(page_count as usize) {
+            let offset = data.len() - current.len();
+            let (rem, line_count) = decompress_leb128(current)?;
+            *element = (offset, line_count as u8);
+
+            // Skip all lines in this page
+            let mut current_page = rem;
+            for _ in 0..line_count {
+                let (rem, _) = parse_text(current_page)?;
+                current_page = rem;
+            }
+            current = current_page;
+        }
+        Ok(offsets)
     }
 }
 
@@ -163,12 +198,16 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a
                     // unsupported characters
                     return Err(ParserError::UnexpectedType);
                 }
-                ConsentMessage::LineDisplayMessage(_) => {
-                    addr_of_mut!((*out).num_items).write(
-                        m.pages_iter(MAX_CHARS_PER_LINE)
-                            .ok_or(ParserError::NoData)?
-                            .count() as u8,
-                    );
+                ConsentMessage::LineDisplayMessage { .. } => {
+                    // Current design expects page lines to fit
+                    // into MAX_CHARS_PER_LINE(otherwise it errors), this means
+                    // that number of items is actually the number
+                    // of pages in the message
+                    let num_items = m
+                        .pages_iter(MAX_CHARS_PER_LINE)
+                        .ok_or(ParserError::NoData)?
+                        .count() as u8;
+                    addr_of_mut!((*out).num_items).write(num_items);
                 }
             }
         }
@@ -205,10 +244,6 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
 
         match field_hash {
             hash if hash == Self::LINE_DISPLAY_MESSAGE_HASH => {
-                // Start of the content message
-                // pointing to the page count
-                let start = rem;
-
                 // Get record type entry (type 5)
                 let record_entry = header
                     .type_table
@@ -224,6 +259,10 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
 
                 // Vector of pages
                 let (rem, page_count) = decompress_leb128(rem)?;
+
+                // Start of the content message
+                // pointing to where the page data starts
+                let start = rem;
 
                 if page_count as usize > PAGES {
                     return Err(ParserError::ValueOutOfRange);
@@ -257,15 +296,16 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
                     raw_line = current;
                 }
                 // Store raw bytes for lazy parsing
+                // let data_len = start.len() - raw_line.len();
                 let data_len = start.len() - raw_line.len();
                 let (rem, data) = take(data_len)(start)?;
 
-                let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant;
+                let out = out.as_mut_ptr() as *mut LineDisplayMessageVariant<PAGES>;
                 unsafe {
-                    // Write the variant tag first
-                    addr_of_mut!((*out).0).write(MessageType::LineDisplayMessage);
-                    // Then write the data
-                    addr_of_mut!((*out).1).write(data);
+                    addr_of_mut!((*out).ty).write(MessageType::LineDisplayMessage);
+                    addr_of_mut!((*out).data).write(data);
+                    addr_of_mut!((*out).page_count).write(page_count as u8);
+                    addr_of_mut!((*out).offsets).write(Cell::new(None));
                 }
 
                 Ok(rem)
@@ -309,7 +349,7 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
         check_canary();
         match self {
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
-            ConsentMessage::LineDisplayMessage(_) => {
+            ConsentMessage::LineDisplayMessage { .. } => {
                 // Get an iterator using our standard screen width
                 self.pages_iter(MAX_CHARS_PER_LINE)
                     .ok_or(ViewError::NoData)
@@ -334,25 +374,40 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
 
         match self {
             ConsentMessage::GenericDisplayMessage(..) => {
-                crate::zlog("ConsentMessage::GenericDisplayMessage\x00");
                 // No Data as this kind of message is not supported
                 Err(ViewError::Reject)
             }
-            ConsentMessage::LineDisplayMessage(_) => {
-                crate::zlog("ConsentMessage::LineDisplayMessage\x00");
-                // Use the existing pages_iter method with our standard screen width
-                let mut pages = self
-                    .pages_iter(MAX_CHARS_PER_LINE)
-                    .ok_or(ViewError::NoData)?;
+            ConsentMessage::LineDisplayMessage {
+                data,
+                offsets,
+                page_count,
+            } => {
+                let offsets = if let Some(cached) = offsets.get() {
+                    cached
+                } else {
+                    let new_offsets = Self::compute_page_offsets(data, *page_count)
+                        .map_err(|_| ViewError::NoData)?;
+                    offsets.set(Some(new_offsets));
+                    new_offsets
+                };
 
-                let current_screen = pages.nth(item_n as usize).ok_or(ViewError::NoData)?;
+                let page_info = *offsets.get(item_n as usize).ok_or(ViewError::NoData)?;
 
-                let mut output = Self::render_buffer();
+                let screen_page = LineDisplayIterator::new_with_offsets(
+                    data,
+                    MAX_CHARS_PER_LINE,
+                    item_n as usize,
+                    page_info,
+                    *page_count,
+                )
+                .next()
+                .ok_or(ViewError::NoData)?;
 
-                // bellow format_page_content will join all segments in ScreenPage
-                // into one device screen(page)
-                let written = self.format_page_content(&current_screen, &mut output)? as usize;
-                handle_ui_message(&output[..written], message, page)
+                let mut buff = Self::render_buffer();
+
+                self.format_page_content(&screen_page, &mut buff)?;
+
+                handle_ui_message(&buff, message, page)
             }
         }
     }
@@ -415,14 +470,16 @@ mod tests_msg_display {
     fn test_line_display_iterator() {
         let msg_bytes = hex::decode(MSG_DATA).unwrap();
 
+        let (rem, page_count) = decompress_leb128(&msg_bytes).unwrap();
+
         // Create iterator
-        let iterator = LineDisplayIterator::<LINES>::new(&msg_bytes, SCREEN_WIDTH);
+        let iterator = LineDisplayIterator::<LINES>::new(rem, SCREEN_WIDTH, page_count as _);
 
         // Track which page we're on
         let mut page_idx = 0;
 
         // Test each page
-        for screen_page in iterator {
+        for screen_page in iterator.clone() {
             assert!(page_idx < EXPECTED_PAGES.len(), "Too many pages produced");
 
             // Verify number of segments matches expected
@@ -467,9 +524,63 @@ mod tests_msg_display {
     }
 
     #[test]
+    fn test_line_display_iterator_with_index() {
+        let msg_bytes = hex::decode(MSG_DATA).unwrap();
+
+        let (rem, page_count) = decompress_leb128(&msg_bytes).unwrap();
+
+        let page_idx = 3;
+        let offsets: [(usize, u8); 7] =
+            ConsentMessage::<7, 3>::compute_page_offsets(rem, page_count as _).unwrap();
+
+        std::println!("offsets: {:?}", offsets);
+
+        // Create iterator
+        let mut iterator = LineDisplayIterator::<LINES>::new_with_offsets(
+            rem,
+            SCREEN_WIDTH,
+            3,
+            offsets[page_idx],
+            page_count as _,
+        );
+
+        let screen_page = iterator.next().unwrap();
+
+        // Test each page
+
+        // Verify each line matches expected
+        for (i, segment) in screen_page
+            .segments
+            .iter()
+            .take(screen_page.num_segments)
+            .enumerate()
+        {
+            std::println!("segment {segment}");
+            assert_eq!(
+                *segment, EXPECTED_PAGES[page_idx][i],
+                "Mismatch on page {}, line {}",
+                page_idx, i
+            );
+
+            // Verify line length is within screen width
+            assert!(
+                segment.len() <= SCREEN_WIDTH,
+                "Line exceeds screen width on page {}, line {}",
+                page_idx,
+                i
+            );
+        }
+    }
+
+    #[test]
     fn test_line_segments_within_width() {
         let msg_bytes = hex::decode(MSG_DATA).unwrap();
-        let mut iterator = LineDisplayIterator::<LINES>::new(&msg_bytes, SMALL_SCREEN_WIDTH);
+
+        let (rem, page_count) = decompress_leb128(&msg_bytes).unwrap();
+
+        // Create iterator
+        let mut iterator =
+            LineDisplayIterator::<LINES>::new(rem, SMALL_SCREEN_WIDTH, page_count as _);
 
         assert!(iterator.next().is_none());
     }
