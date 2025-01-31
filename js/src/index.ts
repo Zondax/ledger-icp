@@ -15,7 +15,15 @@
  *  limitations under the License.
  ******************************************************************************* */
 import { PREHASH_LEN, SIGRSLEN } from "./consts";
-import { type ICPIns, type ResponseAddress, type ResponseSign, type ResponseSignUpdateCall } from "./types";
+import {
+  type ICPIns,
+  type TokenInfo,
+  type ResponseAddress,
+  type ResponseSign,
+  type ResponseSignUpdateCall,
+  type ResponseTokenRegistry,
+  type ResponseTokenRegistrySize,
+} from "./types";
 
 import GenericApp, {
   type ConstructorParams,
@@ -25,7 +33,7 @@ import GenericApp, {
   processErrorResponse,
   type Transport,
 } from "@zondax/ledger-js";
-import { processGetAddrResponse } from "./helper";
+import { processGetAddrResponse, processTokenRegistrySizeResponse, processTokenInfoResponse } from "./helper";
 
 export * from "./types";
 export { SIGN_VALUES_P2 } from "./consts";
@@ -45,6 +53,8 @@ export default class InternetComputerApp extends GenericApp {
         SAVE_CONSENT: 0x04,
         SAVE_CANISTER_CALL: 0x05,
         SAVE_CERITIFACE_AND_VERIFY: 0x06,
+        GET_REGISTRY_LEN: 0x07,
+        GET_TOKEN_I: 0x08,
       },
       p1Values: {
         ONLY_RETRIEVE: 0x00,
@@ -339,5 +349,50 @@ export default class InternetComputerApp extends GenericApp {
 
     // Send certificate and sign
     return await this.sendCertificateAndSig(path, certificate);
+  }
+
+  async _getTokenRegistrySize(): Promise<ResponseTokenRegistrySize> {
+    return await this.transport
+      .send(this.CLA, this.INS.GET_REGISTRY_LEN, 0, 0)
+      .then(processTokenRegistrySizeResponse, processErrorResponse);
+  }
+
+  async tokenRegistry(): Promise<ResponseTokenRegistry> {
+    const registrySize = await this._getTokenRegistrySize();
+    if (registrySize.returnCode !== LedgerError.NoErrors || registrySize.RegistrySize === undefined) {
+      return {
+        returnCode: registrySize.returnCode,
+        errorMessage: registrySize.errorMessage,
+      };
+    }
+
+    let tokenRegistry: TokenInfo[] = [];
+
+    for (let i = 0; i < registrySize.RegistrySize; i += 1) {
+      // .send(this.CLA, this.INS.GET_ADDR_SECP256K1, this.P1_VALUES.ONLY_RETRIEVE, 0, serializedPath, [0x9000])
+      const response = await this.transport.send(this.CLA, this.INS.GET_TOKEN_I, i, 0).then(
+        (response: Buffer) => processTokenInfoResponse(response),
+        (error: any) => processErrorResponse(error),
+      );
+
+      // Type guard to check if response is ResponseTokenInfo
+      if (!response || "tokenInfo" in response === false || response.returnCode !== LedgerError.NoErrors) {
+        return {
+          returnCode: response?.returnCode || LedgerError.ExecutionError,
+          errorMessage: response?.errorMessage || "Failed to get token info",
+        };
+      }
+
+      // At this point TypeScript knows response has tokenInfo
+      if (response.tokenInfo) {
+        tokenRegistry.push(response.tokenInfo);
+      }
+    }
+
+    return {
+      returnCode: LedgerError.NoErrors,
+      errorMessage: "No errors",
+      tokenRegistry: tokenRegistry,
+    };
   }
 }
