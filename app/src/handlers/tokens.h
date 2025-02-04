@@ -28,9 +28,10 @@
 
 #include "token_info.h"
 
-__Z_INLINE void handleGetTokenIdx(volatile uint32_t *flags,
-                                  volatile uint32_t *tx, uint32_t rx) {
-   zemu_log_stack("handleGetTokenIdx\n");
+__Z_INLINE void handleGetTokenIdx(__Z_UNUSED volatile uint32_t *flags,
+                                  volatile uint32_t *tx,
+                                  __Z_UNUSED uint32_t rx) {
+  zemu_log_stack("handleGetTokenIdx\n");
   const uint8_t token_idx = G_io_apdu_buffer[OFFSET_P1];
 
   // Put data directly in the apdu buffer
@@ -45,8 +46,9 @@ __Z_INLINE void handleGetTokenIdx(volatile uint32_t *flags,
   THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleGetNumOfTokens(volatile uint32_t *flags,
-                                     volatile uint32_t *tx, uint32_t rx) {
+__Z_INLINE void handleGetNumOfTokens(__Z_UNUSED volatile uint32_t *flags,
+                                     volatile uint32_t *tx,
+                                     __Z_UNUSED uint32_t rx) {
 
   zemu_log_stack("handleGetNumOfTokens\n");
 
