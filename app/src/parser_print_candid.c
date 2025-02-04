@@ -1178,7 +1178,7 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
     displayIdx++;
 
   if (displayIdx == 5) {
-    char title[50] = {0}; // Buffer for the dynamic title
+    char title[50] = {0};
     if (tokenSymbol != NULL) {
       snprintf(title, sizeof(title), "Maximum fee (%s)", tokenSymbol);
     } else {
@@ -1189,7 +1189,7 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
     uint64_t fees = call->data.icrcTransfer.has_fee
                         ? call->data.icrcTransfer.fee
                         : DEFAULT_MAXIMUM_FEES;
-    return print_ICP(fees, outVal, outValLen, pageIdx, pageCount);
+    return print_Amount(fees, outVal, outValLen, pageIdx, pageCount, decimals);
   }
 
   if (displayIdx == 6) {
