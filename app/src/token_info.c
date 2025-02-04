@@ -162,32 +162,84 @@ static const size_t NUM_TOKENS = sizeof(TOKEN_REGISTRY) / sizeof(token_info_t);
 
 #define TOKEN_REGISTRY_SIZE (sizeof(TOKEN_REGISTRY) / sizeof(TOKEN_REGISTRY[0]))
 
+// Function to remove hyphens and spaces from a string
+void remove_hyphens(char *str) {
+  char *src = str;
+  char *dst = str;
+
+  while (*src) {
+    if (*src != '-' && *src != ' ') {
+      *dst++ = *src;
+    }
+    src++;
+  }
+  *dst = '\0';
+}
+
+bool compare_canister_ids(const char *id1, const char *id2) {
+  if (id1 == NULL || id2 == NULL) {
+    return false;
+  }
+
+  size_t i = 0;
+  size_t j = 0;
+
+  size_t count = 0;
+
+  while (id1[i] != '\0' && id2[j] != '\0' && count < CANISTER_ID_STR_MAX_LEN) {
+    // Skip hyphens and spaces in first ID
+    while ((id1[i] == '-' || id1[i] == ' ') &&
+           count < CANISTER_ID_STR_MAX_LEN) {
+      i++;
+    }
+
+    // Skip hyphens and spaces in second ID
+    while ((id2[j] == '-' || id2[j] == ' ') &&
+           count < CANISTER_ID_STR_MAX_LEN) {
+      j++;
+    }
+
+    if (id1[i] == '\0' || id2[j] == '\0') {
+      break;
+    }
+
+    if (id1[i] != id2[j]) {
+      return false;
+    }
+
+    i++;
+    j++;
+    count++;
+  }
+
+  while ((id1[i] == '-' || id1[i] == ' ') && count < CANISTER_ID_STR_MAX_LEN)
+    i++;
+  while ((id2[j] == '-' || id2[j] == ' ') && count < CANISTER_ID_STR_MAX_LEN)
+    j++;
+
+  // Both strings should be at their end
+  bool equal = (id1[i] == '\0' && id2[j] == '\0');
+  return equal;
+}
+
 // Function to get decimals for a canister ID
-const token_info_t *get_token(const uint8_t *canister_id, size_t len) {
+const token_info_t *get_token(const uint8_t *canister_id, uint8_t len) {
   if (canister_id == NULL) {
     return NULL;
   }
 
-  char canister[100] = {'\0'};
+  char canister[100] = {0};
 
   if (format_principal(canister_id, len, canister, 99) != parser_ok) {
     return NULL;
   }
 
-  zemu_log("\nlooking for->\n");
-  zemu_log(canister);
-
   // Now look up in registry
   const token_info_t *token = NULL;
   for (size_t i = 0; i < TOKEN_REGISTRY_SIZE; i++) {
-    zemu_log("with: ");
-    zemu_log(TOKEN_REGISTRY[i].canister_id);
-    zemu_log("\n");
-
-    if (strcmp(canister, TOKEN_REGISTRY[i].canister_id) == 0) {
-      zemu_log_stack("Found\n");
-      token = (const token_info_t *)&TOKEN_REGISTRY[i];
-      return token;
+    const char *id = TOKEN_REGISTRY[i].canister_id;
+    if (compare_canister_ids(canister, id)) {
+      return (const token_info_t *)&TOKEN_REGISTRY[i];
     }
   }
 
@@ -198,39 +250,38 @@ const token_info_t *get_token(const uint8_t *canister_id, size_t len) {
 uint8_t token_registry_size(void) { return NUM_TOKENS; }
 
 uint16_t get_token_i(size_t index, uint8_t *out, uint16_t out_len) {
-    if ((index >= NUM_TOKENS) || out == NULL) {
-        return 0;
-    }
-    const token_info_t *token = &TOKEN_REGISTRY[index];
+  if ((index >= NUM_TOKENS) || out == NULL) {
+    return 0;
+  }
+  const token_info_t *token = &TOKEN_REGISTRY[index];
 
-    uint8_t canister_len = strlen(token->canister_id);
-    uint8_t symbol_len = strlen(token->token_symbol);
+  uint8_t canister_len = strlen(token->canister_id);
+  uint8_t symbol_len = strlen(token->token_symbol);
 
-    // Calculate exact size needed for this specific token
-    uint16_t token_size = 1 + canister_len +
-                         1 + symbol_len +
-                         sizeof(token->decimals);
+  // Calculate exact size needed for this specific token
+  uint16_t token_size =
+      1 + canister_len + 1 + symbol_len + sizeof(token->decimals);
 
-    if (out_len < token_size) {
-        return 0;
-    }
+  if (out_len < token_size) {
+    return 0;
+  }
 
-    uint16_t offset = 0;
+  uint16_t offset = 0;
 
-    // Write canister id length and data
-    out[offset] = canister_len;
-    offset += 1;
-    MEMCPY(out + offset, token->canister_id, canister_len);
-    offset += canister_len;
+  // Write canister id length and data
+  out[offset] = canister_len;
+  offset += 1;
+  MEMCPY(out + offset, token->canister_id, canister_len);
+  offset += canister_len;
 
-    out[offset] = symbol_len;
-    offset += 1;
-    MEMCPY(out + offset, token->token_symbol, symbol_len);
-    offset += symbol_len;
+  out[offset] = symbol_len;
+  offset += 1;
+  MEMCPY(out + offset, token->token_symbol, symbol_len);
+  offset += symbol_len;
 
-    // Write decimals
-    MEMCPY(out + offset, &token->decimals, sizeof(token->decimals));
-    offset += sizeof(token->decimals);
+  // Write decimals
+  MEMCPY(out + offset, &token->decimals, sizeof(token->decimals));
+  offset += sizeof(token->decimals);
 
-    return offset;
+  return offset;
 }
