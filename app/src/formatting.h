@@ -27,6 +27,7 @@ zxerr_t inplace_insert_char(char *s, uint16_t sMaxLen, uint16_t pos, char separa
 zxerr_t number_inplace_thousands(char *s, uint16_t sMaxLen, char separator);
 
 zxerr_t formatICP(char *out, uint16_t outLen, uint64_t value);
+zxerr_t formatValue(char *out, uint16_t outLen, uint64_t value, uint8_t decimals);
 
 #ifdef __cplusplus
 }

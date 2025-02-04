@@ -159,4 +159,21 @@ describe('Standard', function () {
       await sim.close()
     }
   })
+
+  test.each(DEVICE_MODELS)('get token_registry', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const resp = await app.tokenRegistry()
+
+      console.log(resp)
+
+      expect(resp.returnCode).toEqual(0x9000)
+      expect(resp.errorMessage).toEqual('No errors')
+    } finally {
+      await sim.close()
+    }
+  })
 })

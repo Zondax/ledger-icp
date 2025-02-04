@@ -30,6 +30,7 @@
 #include "crypto.h"
 #include "handlers/path.h"
 #include "handlers/process_chunks.h"
+#include "handlers/tokens.h"
 #include "parser_impl.h"
 #include "tx.h"
 #include "view.h"
@@ -194,6 +195,18 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
         break;
       }
 #endif
+
+      case INS_SUPPORTED_TOKENS_LEN: {
+        CHECK_PIN_VALIDATED()
+        handleGetNumOfTokens(flags, tx, rx);
+        break;
+      }
+
+      case INS_TOKEN_AT_IDX: {
+        CHECK_PIN_VALIDATED()
+        handleGetTokenIdx(flags, tx, rx);
+        break;
+      }
 
       default:
         THROW(APDU_CODE_INS_NOT_SUPPORTED);
