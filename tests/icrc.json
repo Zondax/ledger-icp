@@ -42,8 +42,8 @@
       "2 | From account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Amount (Tokens) : 1.00",
-      "5 | Maximum fee (Tokens) : 0.0001",
+      "4 | Amount (Tokens) : 100000000",
+      "5 | Maximum fee (Tokens) : 10000",
       "6 | Memo : 0"
     ],
     "valid": true,
@@ -112,8 +112,8 @@
       "3 | To account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "4 | Amount (Tokens) : 3.30",
-      "5 | Maximum fee (Tokens) : 0.0001",
+      "4 | Amount (Tokens) : 330000000",
+      "5 | Maximum fee (Tokens) : 10000",
       "6 | Memo : 0"
     ],
     "valid": true,
@@ -215,8 +215,8 @@
       "3 | To account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "4 | Amount (Tokens) : 3.30",
-      "5 | Maximum fee (Tokens) : 0.0003",
+      "4 | Amount (Tokens) : 330000000",
+      "5 | Maximum fee (Tokens) : 30000",
       "6 | Memo : 11223312"
     ],
     "valid": true,
@@ -292,7 +292,7 @@
       "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | To account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | To account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
-      "4 | Amount (Tokens) : 3.14",
+      "4 | Amount (Tokens) : 314000000",
       "5 | Memo : 11223312"
     ],
     "valid": true,
@@ -337,8 +337,8 @@
       "3 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "3 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "3 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
-      "4 | Amount (Tokens) : 13.314",
-      "5 | Maximum fee (Tokens) : 0.0002",
+      "4 | Amount (Tokens) : 1331400000",
+      "5 | Maximum fee (Tokens) : 20000",
       "6 | Memo : 11223312"
     ],
     "valid": true,
