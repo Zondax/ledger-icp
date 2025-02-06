@@ -281,11 +281,9 @@ static parser_error_t parser_getItemDisburseCandid(
   uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  const char *tokenSymbol = NULL;
   uint8_t decimals = 0;
 
   if (token != NULL) {
-    tokenSymbol = token->token_symbol;
     decimals = token->decimals;
   }
 
@@ -325,8 +323,8 @@ static parser_error_t parser_getItemDisburseCandid(
   }
 
   if (displayIdx == 3) {
-    if (tokenSymbol != NULL) {
-      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
     } else {
       snprintf(outKey, outKeyLen, "Amount (Tokens)");
     }
@@ -687,11 +685,9 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx, char *outKey,
   uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  const char *tokenSymbol = NULL;
   uint8_t decimals = 0;
 
   if (token != NULL) {
-    tokenSymbol = token->token_symbol;
     decimals = token->decimals;
   }
 
@@ -719,8 +715,8 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx, char *outKey,
   }
 
   if (displayIdx == 2) {
-    if (tokenSymbol != NULL) {
-      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
     } else {
       snprintf(outKey, outKeyLen, "Amount (Tokens)");
     }
@@ -1009,11 +1005,8 @@ static parser_error_t parser_getItemCandidTransfer(
   uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  char *tokenSymbol = NULL;
   uint8_t decimals = 0;
-
   if (token != NULL) {
-    tokenSymbol = token->token_symbol;
     decimals = token->decimals;
   }
 
@@ -1062,8 +1055,8 @@ static parser_error_t parser_getItemCandidTransfer(
   }
 
   if (displayIdx == 3) {
-    if (tokenSymbol != NULL) {
-      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
     } else {
       snprintf(outKey, outKeyLen, "Amount (Tokens)");
     }
@@ -1072,8 +1065,8 @@ static parser_error_t parser_getItemCandidTransfer(
   }
 
   if (displayIdx == 4) {
-    if (tokenSymbol != NULL) {
-      snprintf(outKey, outKeyLen, "Maximum fee (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(outKey, outKeyLen, "Maximum fee (%s)", token->token_symbol);
     } else {
       snprintf(outKey, outKeyLen, "Maximum fee (Tokens)");
     }
@@ -1106,11 +1099,9 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   uint8_t canister_id_len = (uint8_t)call->canister_id.len;
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  char *tokenSymbol = NULL;
   uint8_t decimals = 0;
 
   if (token != NULL) {
-    tokenSymbol = token->token_symbol;
     decimals = token->decimals;
   }
 
@@ -1167,8 +1158,8 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   }
 
   if (displayIdx == 4) {
-    if (tokenSymbol != NULL) {
-      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
     } else {
       snprintf(outKey, outKeyLen, "Amount (Tokens)");
     }
@@ -1183,8 +1174,8 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
 
   if (displayIdx == 5) {
     char title[50] = {0};
-    if (tokenSymbol != NULL) {
-      snprintf(title, sizeof(title), "Maximum fee (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(title, sizeof(title), "Maximum fee (%s)", token->token_symbol);
     } else {
       snprintf(title, sizeof(title), "Maximum fee (Tokens)");
     }
@@ -1227,11 +1218,9 @@ parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  char *tokenSymbol = NULL;
   uint8_t decimals = 0;
 
   if (token != NULL) {
-    tokenSymbol = token->token_symbol;
     decimals = token->decimals;
   }
 
@@ -1285,8 +1274,8 @@ parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
     }
   }
   if (displayIdx == 4) {
-    if (tokenSymbol != NULL) {
-      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    if (token != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
     } else {
       snprintf(outKey, outKeyLen, "Amount (Tokens)");
     }
