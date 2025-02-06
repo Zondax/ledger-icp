@@ -1018,7 +1018,7 @@ static parser_error_t parser_getItemCandidTransfer(
   uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  const char *tokenSymbol = NULL;
+  char *tokenSymbol = NULL;
   uint8_t decimals = 0;
 
   if (token != NULL) {
@@ -1081,9 +1081,13 @@ static parser_error_t parser_getItemCandidTransfer(
   }
 
   if (displayIdx == 4) {
-    snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
-    return print_ICP(fields->data.candid_transfer.fee, outVal, outValLen,
-                     pageIdx, pageCount);
+    if (tokenSymbol != NULL) {
+      snprintf(outKey, outKeyLen, "Maximum fee (%s)", tokenSymbol);
+    } else {
+      snprintf(outKey, outKeyLen, "Maximum fee (Tokens)");
+    }
+    return print_Amount(fields->data.candid_transfer.fee, outVal, outValLen,
+                        pageIdx, pageCount, decimals);
   }
 
   if (displayIdx == 5) {
