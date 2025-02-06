@@ -325,18 +325,14 @@ static parser_error_t parser_getItemDisburseCandid(
   }
 
   if (displayIdx == 3) {
-    snprintf(outKey, outKeyLen, "%s", "Amount");
-    // TODO: to be remove os not?
-    // if (tokenSymbol != NULL) {
-    //   snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
-    // } else {
-    //   snprintf(outKey, outKeyLen, "Amount (Tokens)");
-    // }
+    if (tokenSymbol != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    } else {
+      snprintf(outKey, outKeyLen, "Amount (Tokens)");
+    }
     if (fields->command.disburse.has_amount) {
-      // return print_Amount(fields->command.disburse.amount, outVal, outValLen,
-      //                     pageIdx, pageCount, decimals);
-      return print_ICP(fields->command.disburse.amount, outVal, outValLen,
-                       pageIdx, pageCount);
+      return print_Amount(fields->command.disburse.amount, outVal, outValLen,
+                          pageIdx, pageCount, decimals);
     } else {
       snprintf(outVal, outValLen, "%s", "All");
       return parser_ok;
@@ -723,18 +719,13 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx, char *outKey,
   }
 
   if (displayIdx == 2) {
-    snprintf(outKey, outKeyLen, "%s", "Amount");
-    // TODO:  Open question, once answered we will
-    // decide if this code remains
-    // if (tokenSymbol != NULL) {
-    //   snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
-    // } else {
-    //   snprintf(outKey, outKeyLen, "Amount (Tokens)");
-    // }
-    return print_ICP(fields->command.disburse.amount, outVal, outValLen,
-                     pageIdx, pageCount);
-    // return print_Amount(fields->command.disburse.amount, outVal, outValLen,
-    //                     pageIdx, pageCount, decimals);
+    if (tokenSymbol != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    } else {
+      snprintf(outKey, outKeyLen, "Amount (Tokens)");
+    }
+    return print_Amount(fields->command.disburse.amount, outVal, outValLen,
+                        pageIdx, pageCount, decimals);
   }
 
   return parser_no_data;
@@ -1236,7 +1227,7 @@ parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
   const token_info_t *token = get_token(canister_id, canister_id_len);
 
-  const char *tokenSymbol = NULL;
+  char *tokenSymbol = NULL;
   uint8_t decimals = 0;
 
   if (token != NULL) {
@@ -1294,19 +1285,14 @@ parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
     }
   }
   if (displayIdx == 4) {
-    snprintf(outKey, outKeyLen, "%s", "Amount");
+    if (tokenSymbol != NULL) {
+      snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
+    } else {
+      snprintf(outKey, outKeyLen, "Amount (Tokens)");
+    }
     if (fields->has_amount) {
-      // TODO: Open question, once answered we will
-      // decide if leave this code here or removed it completly
-      // if (tokenSymbol != NULL) {
-      //   snprintf(outKey, outKeyLen, "Amount (%s)", tokenSymbol);
-      // } else {
-      //   snprintf(outKey, outKeyLen, "Amount (Tokens)");
-      // }
-      // return print_Amount(fields->amount, outVal, outValLen, pageIdx,
-      // pageCount,
-      //                     decimals);
-      return print_ICP(fields->amount, outVal, outValLen, pageIdx, pageCount);
+      return print_Amount(fields->amount, outVal, outValLen, pageIdx, pageCount,
+                          decimals);
     } else {
       snprintf(outVal, outValLen, "%s", "All");
       return parser_ok;
