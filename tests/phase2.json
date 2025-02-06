@@ -6,12 +6,12 @@
     "output": [
       "0 | Transaction type : Split Neuron",
       "1 | Neuron ID : 123",
-      "2 | Amount (ICP) : 0.00000123"
+      "2 | Amount (Tokens) : 123"
     ],
     "output_expert": [
       "0 | Transaction type : Split Neuron",
       "1 | Neuron ID : 123",
-      "2 | Amount (ICP) : 0.00000123"
+      "2 | Amount (Tokens) : 123"
     ],
     "valid": true
   },
@@ -22,12 +22,12 @@
     "output": [
       "0 | Transaction type : Split Neuron",
       "1 | Neuron ID : 123456789",
-      "2 | Amount (ICP) : 1.00"
+      "2 | Amount (Tokens) : 100000000"
     ],
     "output_expert": [
       "0 | Transaction type : Split Neuron",
       "1 | Neuron ID : 123456789",
-      "2 | Amount (ICP) : 1.00"
+      "2 | Amount (Tokens) : 100000000"
     ],
     "valid": true
   },
@@ -666,13 +666,13 @@
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To  : Self",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To  : Self",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ]
   },
   {
@@ -683,13 +683,13 @@
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To  : Self",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To  : Self",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ]
   },
   {
@@ -700,13 +700,13 @@
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To  : Self",
-      "3 | Amount (ICP) : 0.20"
+      "3 | Amount (Tokens) : 20000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To  : Self",
-      "3 | Amount (ICP) : 0.20"
+      "3 | Amount (Tokens) : 20000000"
     ]
   },
   {
@@ -718,14 +718,14 @@
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To [1/2] : d4685b31 b5145050 8aff0331 584df769",
       "2 | Disburse To [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
-      "3 | Amount (ICP) : 0.20"
+      "3 | Amount (Tokens) : 20000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To [1/2] : d4685b31 b5145050 8aff0331 584df769",
       "2 | Disburse To [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
-      "3 | Amount (ICP) : 0.20"
+      "3 | Amount (Tokens) : 20000000"
     ]
   },
   {
@@ -737,14 +737,14 @@
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : d4685b31 b5145050 8aff0331 584df769",
       "2 | Disburse To [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : d4685b31 b5145050 8aff0331 584df769",
       "2 | Disburse To [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ]
   },
   {
@@ -756,14 +756,14 @@
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : d4685b31 b5145050 8aff0331 584df769",
       "2 | Disburse To [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
-      "3 | Amount (ICP) : 0.25"
+      "3 | Amount (Tokens) : 25000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : d4685b31 b5145050 8aff0331 584df769",
       "2 | Disburse To [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
-      "3 | Amount (ICP) : 0.25"
+      "3 | Amount (Tokens) : 25000000"
     ]
   },
   {
@@ -775,14 +775,14 @@
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To [1/2] : b1cebc84 80a0afc9 1198a87d df52c6ca",
       "2 | Disburse To [2/2] : 7eb7ccdd b0cb3980 64f71d2b baf2f72b",
-      "3 | Amount (ICP) : 0.20"
+      "3 | Amount (Tokens) : 20000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 8836564053576663040",
       "2 | Disburse To [1/2] : b1cebc84 80a0afc9 1198a87d df52c6ca",
       "2 | Disburse To [2/2] : 7eb7ccdd b0cb3980 64f71d2b baf2f72b",
-      "3 | Amount (ICP) : 0.20"
+      "3 | Amount (Tokens) : 20000000"
     ]
   },
   {
@@ -794,14 +794,14 @@
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : b1cebc84 80a0afc9 1198a87d df52c6ca",
       "2 | Disburse To [2/2] : 7eb7ccdd b0cb3980 64f71d2b baf2f72b",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : b1cebc84 80a0afc9 1198a87d df52c6ca",
       "2 | Disburse To [2/2] : 7eb7ccdd b0cb3980 64f71d2b baf2f72b",
-      "3 | Amount (ICP) : All"
+      "3 | Amount (Tokens) : All"
     ]
   },
   {
@@ -813,14 +813,14 @@
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : b1cebc84 80a0afc9 1198a87d df52c6ca",
       "2 | Disburse To [2/2] : 7eb7ccdd b0cb3980 64f71d2b baf2f72b",
-      "3 | Amount (ICP) : 0.25"
+      "3 | Amount (Tokens) : 25000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
       "1 | Neuron Id : 15374508381553346560",
       "2 | Disburse To [1/2] : b1cebc84 80a0afc9 1198a87d df52c6ca",
       "2 | Disburse To [2/2] : 7eb7ccdd b0cb3980 64f71d2b baf2f72b",
-      "3 | Amount (ICP) : 0.25"
+      "3 | Amount (Tokens) : 25000000"
     ]
   },
   {
