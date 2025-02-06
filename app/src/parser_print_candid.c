@@ -724,7 +724,7 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx, char *outKey,
     } else {
       snprintf(outKey, outKeyLen, "Amount (Tokens)");
     }
-    return print_Amount(fields->command.disburse.amount, outVal, outValLen,
+    return print_Amount(fields->command.split.amount_e8s, outVal, outValLen,
                         pageIdx, pageCount, decimals);
   }
 
