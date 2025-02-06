@@ -10,7 +10,7 @@
       "2 | Neuron Id [2/2] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
       "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
-      "4 | Amount : 0.50"
+      "4 | Amount (Tokens) : 50000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
@@ -19,7 +19,7 @@
       "2 | Neuron Id [2/2] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
       "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
-      "4 | Amount : 0.50"
+      "4 | Amount (Tokens) : 50000000"
     ],
     "valid": true,
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
@@ -76,7 +76,7 @@
       "2 | Neuron Id [2/2] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
       "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
-      "4 | Amount : All"
+      "4 | Amount (Tokens) : All"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
@@ -85,7 +85,7 @@
       "2 | Neuron Id [2/2] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
       "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
-      "4 | Amount : All"
+      "4 | Amount (Tokens) : All"
     ],
     "valid": true,
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
@@ -140,7 +140,7 @@
       "2 | Neuron Id [2/2] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
       "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
       "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
-      "4 | Amount : 2.00"
+      "4 | Amount (Tokens) : 200000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
@@ -149,7 +149,7 @@
       "2 | Neuron Id [2/2] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
       "3 | Disburse to [1/2] : 5upke-tazvi-6ufqc i3v6r-j4gpu-dpwti",
       "3 | Disburse to [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
-      "4 | Amount : 2.00"
+      "4 | Amount (Tokens) : 200000000"
     ],
     "valid": true,
     "neuronIdString": "a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d",
@@ -208,7 +208,7 @@
       "3 | Disburse to [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "3 | Disburse to [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "3 | Disburse to [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
-      "4 | Amount : 2.00"
+      "4 | Amount (Tokens) : 200000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
@@ -219,7 +219,7 @@
       "3 | Disburse to [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "3 | Disburse to [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "3 | Disburse to [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
-      "4 | Amount : 2.00"
+      "4 | Amount (Tokens) : 200000000"
     ],
     "valid": true,
     "neuronIdString": "a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d",
@@ -327,7 +327,7 @@
       "3 | Disburse to [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | Disburse to [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | Disburse to [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "4 | Amount : 28.70"
+      "4 | Amount (Tokens) : 2870000000"
     ],
     "output_expert": [
       "0 | Transaction type : Disburse Neuron",
@@ -338,7 +338,7 @@
       "3 | Disburse to [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | Disburse to [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | Disburse to [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "4 | Amount : 28.70"
+      "4 | Amount (Tokens) : 2870000000"
     ],
     "valid": true,
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
