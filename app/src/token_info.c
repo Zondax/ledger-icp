@@ -235,7 +235,6 @@ const token_info_t *get_token(const uint8_t *canister_id, uint8_t len) {
   }
 
   // Now look up in registry
-  const token_info_t *token = NULL;
   for (size_t i = 0; i < TOKEN_REGISTRY_SIZE; i++) {
     const char *id = TOKEN_REGISTRY[i].canister_id;
     if (compare_canister_ids(canister, id)) {
