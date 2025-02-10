@@ -315,9 +315,6 @@ GEN_PARSER_PB(ic_nns_governance_pb_v1_ManageNeuron)
 GEN_PARSER_PB(ListNeurons)
 
 parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type) {
-    zemu_log("getManageNeuronType****\n");
-    ZEMU_LOGF(50, "method_type %d\n", v->tx_fields.call.method_type);
-
     switch (v->tx_fields.call.method_type) {
         case pb_manageneuron: {
             pb_size_t command = v->tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron.which_command;
@@ -349,6 +346,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
             }
         }
         case candid_manageneuron: {
+
             if (!v->tx_fields.call.data.candid_manageNeuron.has_command) {
                 return parser_unexpected_value;
             }
@@ -373,6 +371,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     return parser_ok;
                 case hash_command_Follow:
                     *mn_type = FollowCandid;
+                    return parser_ok;
+                case hash_command_RefreshVotingPower:
+                    *mn_type = RefreshVotingPower;
                     return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
@@ -434,11 +435,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
 }
 
 parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
-    zemu_log_stack("readPayload***\n");
     char *method = v->tx_fields.call.method_name.data;
-    zemu_log_stack("***method: ");
-    zemu_log_stack(method);
-    zemu_log_stack("\n");
     manageNeuron_e mn_type;
 
     v->tx_fields.call.is_sns = 0; // we'll set this var later if is sns
@@ -529,7 +526,6 @@ static bool isCandidTransaction(parser_tx_t *v) {
 
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     CborValue content_it;
-    zemu_log_stack("read content");
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(content_map), parser_unexpected_type)
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(content_map, &content_it))
     CHECK_CBOR_TYPE(cbor_value_get_type(content_map), CborMapType)
@@ -877,6 +873,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
 
         case SNS_StakeMaturity:
             return 3 + (v->tx_fields.call.data.sns_manageNeuron.command.stake.has_percentage_to_stake ? 1 : 0);
+        case RefreshVotingPower:
+            return 2;
 
         default:
             break;
