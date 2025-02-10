@@ -347,51 +347,16 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
 // according to spec this should ve an empty record
 // https://github.com/dfinity/ic/blob/master/rs/nns/governance/canister/governance.did#L111
 __Z_INLINE parser_error_t readCommandRefreshVotingPower(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t*  val) {
-    zemu_log("readCommandRefreshVotingPower\n");
-    // Check sanity Merge
+    // Check that this is an empty record type
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-    zemu_log("getCandidTypeFromTable\n");
-    zemu_log("is an Empty record\n");
-    CHECK_PARSER_ERR(readCandidRecordLength(txn))
-    zemu_log("readCandidRecordLength\n");
-    ZEMU_LOGF(50, "record_len: %d \n",txn->txn_length);
-    // if (txn->txn_length != 1) {
-    //     return parser_unexpected_value;
-    // }
-    // txn->element.variant_index = 0;
-    // CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    // zemu_log("readCandidInnerElement\n");
-    //
-    // uint64_t hash = txn->element.field_hash;
-    // ZEMU_LOGF(50, "field_hash: %02x%02x%02x%02x%02x%02x%02x%02x\n",
-    // (unsigned)((hash >> 56) & 0xFF),
-    // (unsigned)((hash >> 48) & 0xFF),
-    // (unsigned)((hash >> 40) & 0xFF),
-    // (unsigned)((hash >> 32) & 0xFF),
-    // (unsigned)((hash >> 24) & 0xFF),
-    // (unsigned)((hash >> 16) & 0xFF),
-    // (unsigned)((hash >> 8) & 0xFF),
-    // (unsigned)(hash & 0xFF));
-    //
-    // if (txn->element.field_hash != hash_source_neuron_id) {
-    //     return parser_unexpected_type;
-    // }
-    //
-    // CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-    // CHECK_PARSER_ERR(readCandidOptional(txn))
-    //
-    // CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
-    // CHECK_PARSER_ERR(readCandidRecordLength(txn))
-    // if (txn->txn_length != 1) {
-    //     return parser_unexpected_value;
-    // }
-    // CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    //
-    // if (txn->element.field_hash != hash_id || txn->element.implementation != Nat64) {
-    //     return parser_unexpected_type;
-    // }
-    //
-    // CHECK_PARSER_ERR(readCandidNat64(ctx, &val->command.refresh_voting_power.neuron_id.id))
+
+    // Read record length - for empty record this should be 0
+    CHECK_PARSER_ERR(readCandidRecordLength(txn));
+
+    // Verify the record is empty (length should be 0)
+    if (txn->txn_length != 0) {
+        return parser_unexpected_value;
+    }
 
     return parser_ok;
 }
