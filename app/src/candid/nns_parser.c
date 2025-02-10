@@ -346,7 +346,7 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
 // Note:
 // according to spec this should ve an empty record
 // https://github.com/dfinity/ic/blob/master/rs/nns/governance/canister/governance.did#L111
-__Z_INLINE parser_error_t readCommandRefreshVotingPower(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t*  val) {
+__Z_INLINE parser_error_t readCommandRefreshVotingPower(__Z_UNUSED parser_context_t *ctx, candid_transaction_t *txn, __Z_UNUSED candid_ManageNeuron_t*  val) {
     // Check that this is an empty record type
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
 
@@ -568,7 +568,6 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
     if (val->has_id) {
         CHECK_PARSER_ERR(readCandidNat64(ctx, &val->id.id))
     }
-    ZEMU_LOGF(50, "ID: %d\n", val->id.id);
 
     // Check sanity Command
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, ctx->tx_obj->candid_rootType))
@@ -637,7 +636,6 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
                 break;
 
             default:
-                ZEMU_LOGF(100, "Unimplemented command | Hash: %d%d\n", val->command.hash >> 32 , val->command.hash & 0xFFFFFFFF)
                 return parser_unexpected_type;
         }
     }
