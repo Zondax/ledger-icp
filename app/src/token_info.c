@@ -25,6 +25,7 @@ static const token_info_t TOKEN_REGISTRY[] = {
      .canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai",
      .token_symbol = "ICP",
      .decimals = 8},
+    //               ss2fx-dyaaa-aaaar-qacoq-cai
     {.canister_id = "ss2fx-dyaaa-aaaar-qacoq-cai",
      .token_symbol = "ckETH",
      .decimals = 18},
