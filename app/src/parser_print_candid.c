@@ -1110,7 +1110,6 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
       snprintf(outKey, outKeyLen, "Transaction type");
       snprintf(outVal, outValLen, is_stake_tx ? "Stake Neuron" : "Send ICP");
     } else {
-      bool found = token != NULL;
       if (token != NULL) {
         snprintf(outKey, outKeyLen, "Transaction type");
         snprintf(outVal, outValLen, "Send %s", token->token_symbol);
