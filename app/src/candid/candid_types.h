@@ -83,6 +83,7 @@ typedef enum {
   hash_field_proposal = 3000310834,
   hash_field_follow_topic = 338645423,
   hash_field_follow_followees = 3407357762,
+  hash_field_visibility = 3540889042,
 } txn_hash_fields;
 
 typedef enum {
@@ -164,6 +165,7 @@ typedef enum {
   hash_operation_StartDissolving = 1977744848,
   hash_operation_LeaveNeuronsFund = 3675510135,
   hash_operation_SetDissolvedTimestamp = 3913126211,
+  hash_operation_SetVisibility = 3161865204,
 } operation_variant_hash_e;
 
 typedef enum {
@@ -231,6 +233,12 @@ typedef struct {
   candid_Principal_t principal;
 } candid_AddRemoveHotkey_t;
 
+// This is a neuron configure operation
+typedef struct {
+    uint8_t has_visibility;
+    int32_t visibility;
+} candid_SetVisibility_t;
+
 typedef struct {
   uint64_t which;
   uint64_t hash;
@@ -239,6 +247,7 @@ typedef struct {
     candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
     candid_IncreaseDissolveDelay_t increaseDissolveDelay;
     candid_AddRemoveHotkey_t hotkey;
+    candid_SetVisibility_t set_visibility;
   };
 } candid_Operation_t;
 
@@ -295,6 +304,7 @@ typedef struct {
 } candid_Follow_t;
 
 typedef struct {
+  // Not used
   candid_NeuronId neuron_id;
 } candid_RefreshVotingPower_t;
 
@@ -374,6 +384,7 @@ typedef struct {
     candid_RegisterVote_t vote;
     candid_Follow_t follow;
     candid_RefreshVotingPower_t refresh_voting_power;
+    // candid_SetVisibility_t set_visibility;
 
     sns_NeuronPermissions_t neuronPermissions;
     sns_Disburse_t sns_disburse;

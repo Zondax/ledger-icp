@@ -1418,6 +1418,51 @@ static parser_error_t parser_getItemRefreshNeuronVotingPower(uint8_t displayIdx,
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemSetNeuronVisibility(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+
+
+    const candid_SetVisibility_t *neuron_visibility = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron.command
+        .configure.operation.set_visibility;
+
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    // Just in case, this check was done at parsing
+    if (neuron_visibility->has_visibility && (neuron_visibility->visibility < 1 || neuron_visibility->visibility > 2)) {
+        return parser_unexpected_value;
+    }
+
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        // visibility: 2 -> public
+        // visibility: 1 -> private
+        // visibility value enforced at parsing
+        snprintf(outVal, outValLen, "%s",
+            neuron_visibility->visibility == 2 ? "Make Neuron Public" :"Make Neuron Private");
+
+        return parser_ok;
+    }
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        return parser_unexpected_type;
+    }
+
+    return parser_no_data;
+}
+
 __Z_INLINE parser_error_t parser_getItemManageNeuron(
     const parser_context_t *ctx, uint8_t displayIdx, char *outKey,
     uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
@@ -1484,6 +1529,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(
   case Configure_StopDissolvingCandid:
     return parser_getItemConfigureNoElementsCandid(
         displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+  case Configure_SetVisibility:
+    return parser_getItemSetNeuronVisibility(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
   case SNS_Configure_StartDissolving:
   case SNS_Configure_StopDissolving:
     return parser_getItemConfigureDissolvingSNS(
@@ -1502,7 +1549,7 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(
   case SNS_Configure_SetDissolveDelay:
     return parser_getItemSNSSetDissolveDelay(
         displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
-  case RefreshVotingPower:
+  case NNS_RefreshVotingPower:
     return parser_getItemRefreshNeuronVotingPower(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
   default:

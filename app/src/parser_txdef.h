@@ -98,8 +98,7 @@ typedef enum {
   Configure_RemoveHotkeyCandid = 1010,
   RegisterVoteCandid = 1011,
   FollowCandid = 1012,
-  // New command for manage neuron transactions
-  RefreshVotingPower = 971637731,
+  Configure_SetVisibility = 1013,
 
   SNS_AddNeuronPermissions = 3000,
   SNS_RemoveNeuronPermissions = 3001,
@@ -108,6 +107,8 @@ typedef enum {
   SNS_Disburse = 3004,
   SNS_StakeMaturity = 3005,
   SNS_Configure_SetDissolveDelay = 3006,
+  // New command for manage neuron transactions
+  NNS_RefreshVotingPower = 3007,
 } manageNeuron_e;
 
 typedef enum {
@@ -205,9 +206,9 @@ typedef struct {
 } parser_tx_t;
 
 typedef struct {
-    char canister_id[CANISTER_ID_STR_MAX_LEN];  // Keeping as string for now
-    char token_symbol[TOKEN_SYMBOL_MAX_LEN];
-    uint8_t decimals;
+  char canister_id[CANISTER_ID_STR_MAX_LEN]; // Keeping as string for now
+  char token_symbol[TOKEN_SYMBOL_MAX_LEN];
+  uint8_t decimals;
 } token_info_t;
 
 #ifdef __cplusplus
