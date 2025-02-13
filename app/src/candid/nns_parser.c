@@ -347,7 +347,9 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
 // according to spec this should be an empty record
 // https://github.com/dfinity/ic/blob/master/rs/nns/governance/canister/governance.did#L111
 __Z_INLINE parser_error_t readCommandRefreshVotingPower(__Z_UNUSED parser_context_t *ctx, candid_transaction_t *txn, __Z_UNUSED candid_ManageNeuron_t*  val) {
-    // Check that this is an empty record type
+        if (txn == NULL) {
+             return parser_unexpected_error;
+        }
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
 
     // Read record length - for empty record this should be 0
