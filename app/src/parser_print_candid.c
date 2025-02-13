@@ -1389,6 +1389,35 @@ static parser_error_t parser_getItemSNSSetDissolveDelay(
   return parser_no_data;
 }
 
+static parser_error_t parser_getItemRefreshNeuronVotingPower(uint8_t displayIdx,
+                                                        char *outKey, uint16_t outKeyLen,
+                                                        char *outVal, uint16_t outValLen,
+                                                        uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        pageString(outVal, outValLen, "Refresh Neuron Voting Power", pageIdx, pageCount);
+        return parser_ok;
+    }
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        return parser_unexpected_type;
+    }
+
+    return parser_no_data;
+}
+
 __Z_INLINE parser_error_t parser_getItemManageNeuron(
     const parser_context_t *ctx, uint8_t displayIdx, char *outKey,
     uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
@@ -1473,6 +1502,8 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(
   case SNS_Configure_SetDissolveDelay:
     return parser_getItemSNSSetDissolveDelay(
         displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+  case RefreshVotingPower:
+    return parser_getItemRefreshNeuronVotingPower(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
   default:
     return parser_no_data;

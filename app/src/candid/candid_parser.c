@@ -151,7 +151,6 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
     CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
 
-
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
@@ -164,7 +163,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
             return readNNSManageNeuron(&ctx, &txn);
 
         default:
-            ZEMU_LOGF(100, "Error: transaction type not supported\n")
+            zemu_log("Error: transaction type not supported\n");
     }
 
     return parser_unexpected_value;
