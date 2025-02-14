@@ -140,6 +140,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
 }
 
 parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    zemu_log("readCandidManageNeuron\n");
     // Create context and auxiliary ctx
     CREATE_CTX(ctx, tx, input, inputSize)
     candid_transaction_t txn;

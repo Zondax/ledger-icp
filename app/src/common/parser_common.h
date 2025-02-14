@@ -84,6 +84,7 @@ typedef enum {
     parser_field_not_found,
     parser_leb128_overflow,
     parser_invalid_time,
+    parser_invalid_visibility,
 } parser_error_t;
 
 typedef struct {
