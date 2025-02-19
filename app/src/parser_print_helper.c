@@ -221,14 +221,18 @@ parser_error_t page_principal_with_subaccount(
   // print principal
   uint16_t principalLen = sizeof(text);
   zxerr_t err = zxerr_unknown;
+
   err = crypto_principalToTextual(sender, senderLen, text_ptr, &principalLen);
+
   // maximum length without separators is 53
   if (err != zxerr_ok || principalLen > 53) {
     return parser_unexpected_error;
   }
+
   // every 5 chars there's a separator, and last block has no separator after it
   const uint8_t principalTextLen =
       (uint8_t)(principalLen + principalLen / 5 - (principalLen % 5 ? 0 : 1));
+
   for (uint8_t i = 5; i < principalTextLen; i += 6) {
     // two blocks separated with dash, 3rd with SEPARATOR
     if ((i + 1) % 18 == 0)
@@ -240,11 +244,13 @@ parser_error_t page_principal_with_subaccount(
       return parser_unexpected_error;
     }
   }
+
   // we are sure it's going to be up to 63 (53 + 10)
   principalLen = (uint16_t)strnlen(text, sizeof(text));
   if (principalLen > 63) {
     return parser_unexpected_value;
   }
+
   *(text_ptr + principalLen) = '-';
   text_ptr += principalLen + 1;
 
@@ -253,14 +259,17 @@ parser_error_t page_principal_with_subaccount(
   char crc_text[10] = {0};
   uint8_t tmpArray[DFINITY_PRINCIPAL_LEN + DFINITY_SUBACCOUNT_LEN + 1] = {0};
   MEMCPY(tmpArray, sender, senderLen);
+
   // crc is computed with full subaccount with all zeros at the beginning
   MEMCPY(tmpArray + senderLen, fromSubaccount, fromSubaccountLen);
   uint32_t crc = 0;
+
   crc32_small(tmpArray, senderLen + fromSubaccountLen, &crc);
   crc_array[0] = (uint8_t)((crc & 0xFF000000) >> 24);
   crc_array[1] = (uint8_t)((crc & 0x00FF0000) >> 16);
   crc_array[2] = (uint8_t)((crc & 0x0000FF00) >> 8);
   crc_array[3] = (uint8_t)((crc & 0x000000FF) >> 0);
+
   uint8_t crcLen =
       (uint8_t)base32_encode(crc_array, 4, crc_text, sizeof(crc_text));
   if (crcLen == 0) {
@@ -271,6 +280,7 @@ parser_error_t page_principal_with_subaccount(
   MEMCPY(text_ptr, crc_text, crcLen);
   *(text_ptr + crcLen) = SEPARATOR;
   text_ptr += crcLen + 1;
+
 #if !defined(TARGET_STAX) &&                                                   \
     !defined(TARGET_FLEX) // needed if crc32 length is < 7
   for (uint8_t i = crcLen; i < 7; i++) {
@@ -280,28 +290,35 @@ parser_error_t page_principal_with_subaccount(
 #endif
   crcLen = 8; // also counting separator
 
-  // print subaccount
+  *text_ptr = '.';
+  text_ptr++;
+
+  uint16_t bytesToShow = subaccTrimLen;
+  if (subaccTrimLen > DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL) {
+    bytesToShow = DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL;
+  }
+
   array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen,
-                  subaccTrim, subaccTrimLen);
+                  subaccTrim, bytesToShow);
+
   const uint8_t subaccountTextLen =
-      2 * subaccTrimLen       // 1 hex byte ==> 2 chars
-      + subaccTrimLen / 4 - 1 // separator for every block except last one
-      + (subaccTrimLen % 4 ? 1 : 0);
-  // text_ptr is right at the start of subaccount
-  for (uint8_t i = 8; i < subaccountTextLen; i += 9) {
-    if ((i + 1) % 18 == 0)
-      err = inplace_insert_char(text_ptr, sizeof(text), i,
-                                SEPARATOR); // line break
-    else
-      err = inplace_insert_char(text_ptr, sizeof(text), i, ' ');
+      2 * bytesToShow + bytesToShow / 4 - 1 + (bytesToShow % 4 ? 1 : 0);
+
+  const uint8_t FIRST_BLOCK = 7;
+  const uint8_t OTHER_BLOCKS = 8;
+  for (uint8_t i = 0, pos = FIRST_BLOCK; i < 3; i++) {
+    err = inplace_insert_char(text_ptr, sizeof(text), pos, ' ');
     if (err != zxerr_ok) {
       return parser_unexpected_error;
     }
+    // +1 for the space we just inserted
+    pos += OTHER_BLOCKS + 1;
   }
 
   uint8_t finalStrLen = (uint8_t)strnlen(text, sizeof(text));
-  // [principal (<=64 chars) | crc32 (8 chars) | subaccount (<=71 chars)]
-  if (finalStrLen > 143) {
+  // [principal (<=64 chars) | crc32 (8 chars) | subaccount (<=71 chars) + 1
+  // ('.')]
+  if (finalStrLen > 144) {
     return parser_unexpected_error;
   }
 
@@ -311,11 +328,13 @@ parser_error_t page_principal_with_subaccount(
   *pageCount =
       finalStrLen / CHARS_PER_PAGE + (finalStrLen % CHARS_PER_PAGE ? 1 : 0);
   const char *textToPrint = text + pageIdx * CHARS_PER_PAGE;
+
   // we don't want to print last separator for each page
   if (CHARS_PER_PAGE > outValLen) {
     return parser_unexpected_error;
   }
   snprintf(outVal, CHARS_PER_PAGE, "%.*s", CHARS_PER_PAGE - 1, textToPrint);
+
   return parser_ok;
 }
 
