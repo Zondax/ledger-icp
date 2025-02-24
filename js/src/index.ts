@@ -369,7 +369,6 @@ export default class InternetComputerApp extends GenericApp {
     let tokenRegistry: TokenInfo[] = [];
 
     for (let i = 0; i < registrySize.RegistrySize; i += 1) {
-      // .send(this.CLA, this.INS.GET_ADDR_SECP256K1, this.P1_VALUES.ONLY_RETRIEVE, 0, serializedPath, [0x9000])
       const response = await this.transport.send(this.CLA, this.INS.GET_TOKEN_I, i, 0).then(
         (response: Buffer) => processTokenInfoResponse(response),
         (error: any) => processErrorResponse(error),
