@@ -21,11 +21,9 @@
 
 // Static definition of all tokens
 static const token_info_t TOKEN_REGISTRY[] = {
-    {//              ryjl3-tyaaa-aaaaa-aaaba-cai
-     .canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai",
+    {.canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai",
      .token_symbol = "ICP",
      .decimals = 8},
-    //               ss2fx-dyaaa-aaaar-qacoq-cai
     {.canister_id = "ss2fx-dyaaa-aaaar-qacoq-cai",
      .token_symbol = "ckETH",
      .decimals = 18},
