@@ -101,7 +101,7 @@ static parser_error_t parser_getItemTokenTransfer(uint8_t displayIdx,
     }
 
     if (displayIdx == 4) {
-        snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        snprintf(outKey, outKeyLen, "Max fee (ICP)");
         PARSER_ASSERT_OR_ERROR(fields->data.SendRequest.has_max_fee, parser_unexpected_number_items)
         return print_ICP(fields->data.SendRequest.max_fee.e8s,
                          outVal, outValLen,
@@ -174,7 +174,7 @@ static parser_error_t parser_getItemStakeNeuron(uint8_t displayIdx,
     }
 
     if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "Maximum fee (ICP)");
+        snprintf(outKey, outKeyLen, "Max fee (ICP)");
         PARSER_ASSERT_OR_ERROR(fields->data.SendRequest.has_max_fee, parser_unexpected_number_items)
         return print_ICP(fields->data.SendRequest.max_fee.e8s,
                          outVal, outValLen,

@@ -46,7 +46,7 @@
       "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Amount (ckETH) : 1.50",
-      "5 | Maximum fee (ckETH) : 0.0001",
+      "5 | Max fee (ckETH) : 0.0001",
       "6 | Memo : 0"
     ],
     "isICP": false,
@@ -118,7 +118,7 @@
       "3 | To account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | To account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
       "4 | Amount (ckETH) : 32.50",
-      "5 | Maximum fee (ckETH) : 0.0001",
+      "5 | Max fee (ckETH) : 0.0001",
       "6 | Memo : 0"
     ],
     "isICP": false,
@@ -226,7 +226,7 @@
       "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
       "4 | Amount (ckUSDC) : 3.30",
-      "5 | Maximum fee (ckUSDC) : 0.0003",
+      "5 | Max fee (ckUSDC) : 0.0003",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -338,7 +338,7 @@
       "3 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "3 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "4 | Amount (ckUSDC) : 13.314",
-      "5 | Maximum fee (ckUSDC) : 0.0002",
+      "5 | Max fee (ckUSDC) : 0.0002",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -447,7 +447,7 @@
       "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
       "4 | Amount (CHAT) : 3.30",
-      "5 | Maximum fee (CHAT) : 0.0003",
+      "5 | Max fee (CHAT) : 0.0003",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -559,7 +559,7 @@
       "3 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "3 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "4 | Amount (CHAT) : 13.314",
-      "5 | Maximum fee (CHAT) : 0.0002",
+      "5 | Max fee (CHAT) : 0.0002",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -668,7 +668,7 @@
       "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
       "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
       "4 | Amount (Tokens) : 330000000",
-      "5 | Maximum fee (Tokens) : 30000",
+      "5 | Max fee (Tokens) : 30000",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -780,7 +780,7 @@
       "3 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "3 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "4 | Amount (Tokens) : 1331400000",
-      "5 | Maximum fee (Tokens) : 20000",
+      "5 | Max fee (Tokens) : 20000",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -886,7 +886,7 @@
       "2 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "2 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | Amount (ICP) : 1.00",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
     "isICP": true,
@@ -922,7 +922,7 @@
       "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
     "isICP": true,
@@ -996,7 +996,7 @@
       "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
     "isICP": true,
@@ -1102,7 +1102,7 @@
       "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 11223312"
     ],
     "isICP": true,
@@ -1175,7 +1175,7 @@
       "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.001",
+      "4 | Max fee (ICP) : 0.001",
       "5 | Memo : 0"
     ],
     "isICP": true,
@@ -1248,7 +1248,7 @@
       "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 1.314",
-      "4 | Maximum fee (ICP) : 0.0003",
+      "4 | Max fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
     "isICP": true,
@@ -1358,7 +1358,7 @@
       "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 1.314",
-      "4 | Maximum fee (ICP) : 0.0003",
+      "4 | Max fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
     "isICP": true,
@@ -1467,7 +1467,7 @@
       "2 | To account [2/3] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [3/3] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 1.314",
-      "4 | Maximum fee (ICP) : 0.0003",
+      "4 | Max fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
     "isICP": true,
@@ -1572,7 +1572,7 @@
       "2 | To account [2/3] : d7e85165 2cd032ba 5ed76b17 f626aa47",
       "2 | To account [3/3] : 829f06e5 235a0d58 0e96d372 7729ea24",
       "3 | Amount (ICP) : 33.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 11223312"
     ],
     "isICP": true,
