@@ -140,6 +140,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
 }
 
 parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    zemu_log("readCandidManageNeuron\n");
     // Create context and auxiliary ctx
     CREATE_CTX(ctx, tx, input, inputSize)
     candid_transaction_t txn;
@@ -150,7 +151,6 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
     CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
 
     CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
-
 
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
@@ -164,7 +164,7 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
             return readNNSManageNeuron(&ctx, &txn);
 
         default:
-            ZEMU_LOGF(100, "Error: transaction type not supported\n")
+            zemu_log("Error: transaction type not supported\n");
     }
 
     return parser_unexpected_value;

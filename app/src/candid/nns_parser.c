@@ -343,6 +343,75 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
     return parser_ok;
 }
 
+// Note:
+// according to spec this should be an empty record
+// https://github.com/dfinity/ic/blob/master/rs/nns/governance/canister/governance.did#L111
+__Z_INLINE parser_error_t readCommandRefreshVotingPower(__Z_UNUSED parser_context_t *ctx, candid_transaction_t *txn, __Z_UNUSED candid_ManageNeuron_t*  val) {
+        if (txn == NULL) {
+             return parser_unexpected_error;
+        }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    // Read record length - for empty record this should be 0
+    CHECK_PARSER_ERR(readCandidRecordLength(txn));
+
+    // Verify the record is empty (length should be 0)
+    if (txn->txn_length != 0) {
+        return parser_unexpected_value;
+    }
+
+    return parser_ok;
+}
+
+__Z_INLINE parser_error_t readCommandSetNeuronVisibility(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+    // Check record type
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    // Read record length
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+
+    // Read the visibility field
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+
+    // Verify it's the visibility field (hash: 3540889042)
+    // 3540889042
+    if (txn->element.field_hash != hash_field_visibility) {
+        return parser_unexpected_type;
+    }
+
+    // Get the optional type
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    // Handle the optional
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    // If has value, read the int32
+    uint8_t has_visibility;
+    CHECK_PARSER_ERR(readCandidByte(ctx, &has_visibility))
+
+    if (has_visibility) {
+        int32_t visibility;
+        CHECK_PARSER_ERR(readCandidInt32(ctx, &visibility))
+
+        // visibility allowed at the time implementing this:
+        // [1, 2]
+        if (visibility < 1 || visibility > 2)
+            return parser_invalid_visibility;
+
+        // Store the value in your structure
+        operation->set_visibility.visibility = visibility;
+        operation->set_visibility.has_visibility = 1;
+    } else {
+        // Visibility must be present in this transaction
+        return parser_unexpected_value;
+    }
+
+    return parser_ok;
+}
+
 __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
     // Check sanity SetDissolvedTimestamp
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -510,9 +579,16 @@ __Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_tra
                 return parser_unexpected_number_items;
             }
             break;
+        case hash_operation_SetVisibility:
+            CHECK_PARSER_ERR(readCommandSetNeuronVisibility(ctx, txn, operation))
+            break;
+
 
         default:
-            ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
+            ZEMU_LOGF(50, "Unknown operation hash: 0x%08X%08X\n",
+                (uint32_t)(operation->hash >> 32),
+                (uint32_t)(operation->hash & 0xFFFFFFFF)
+            );
             return parser_unexpected_value;
     }
     return parser_ok;
@@ -612,9 +688,11 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             case hash_command_Follow:
                 CHECK_PARSER_ERR(readCommandFollow(ctx, txn, val))
                 break;
+            case hash_command_RefreshVotingPower:
+                CHECK_PARSER_ERR(readCommandRefreshVotingPower(ctx, txn, val))
+                break;
 
             default:
-                ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)
                 return parser_unexpected_type;
         }
     }

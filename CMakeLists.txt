@@ -124,6 +124,7 @@ file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/base32.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/protobuf/*.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_print_*.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/token_info.c
         )
 
 add_library(app_lib STATIC

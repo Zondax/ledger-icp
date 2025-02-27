@@ -15,6 +15,7 @@
 ********************************************************************************/
 
 #include <zxmacros.h>
+#include "candid/candid_types.h"
 #include "crypto.h"
 #include "parser_impl.h"
 #include "parser_txdef.h"
@@ -182,6 +183,8 @@ const char *parser_getErrorDescription(parser_error_t err) {
             return "LEB128 overflow";
         case parser_invalid_time:
             return "Invalid time";
+        case parser_invalid_visibility:
+            return "Invalid neuron visibility";
         default:
             return "Unrecognized error code";
     }
@@ -346,6 +349,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
             }
         }
         case candid_manageneuron: {
+
             if (!v->tx_fields.call.data.candid_manageNeuron.has_command) {
                 return parser_unexpected_value;
             }
@@ -370,6 +374,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                     return parser_ok;
                 case hash_command_Follow:
                     *mn_type = FollowCandid;
+                    return parser_ok;
+                case hash_command_RefreshVotingPower:
+                    *mn_type = NNS_RefreshVotingPower;
                     return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
@@ -403,7 +410,14 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                         case hash_operation_RemoveHotkey:
                             *mn_type = Configure_RemoveHotkeyCandid;
                             break;
+                        case hash_operation_SetVisibility:
+                            *mn_type = Configure_SetVisibility;
+                            break;
                         default:
+                            ZEMU_LOGF(50, "Unknow operation hash: 0x%08X%08X\n",
+                                (uint32_t)(command->configure.operation.hash >> 32),
+                                (uint32_t)(command->configure.operation.hash & 0xFFFFFFFF)
+                            );
                             return parser_unexpected_value;
                     }
                     return parser_ok;
@@ -522,7 +536,6 @@ static bool isCandidTransaction(parser_tx_t *v) {
 
 parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
     CborValue content_it;
-    zemu_log_stack("read content");
     PARSER_ASSERT_OR_ERROR(cbor_value_is_container(content_map), parser_unexpected_type)
     CHECK_CBOR_MAP_ERR(cbor_value_enter_container(content_map, &content_it))
     CHECK_CBOR_TYPE(cbor_value_get_type(content_map), CborMapType)
@@ -823,6 +836,9 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case Configure_SetDissolvedTimestamp: {
             return 3;
         }
+        case Configure_SetVisibility:
+            // items: title, neuron_id
+            return 2;
         case SNS_Configure_SetDissolveDelay:
         case RegisterVote :
         case RegisterVoteCandid:
@@ -870,6 +886,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
 
         case SNS_StakeMaturity:
             return 3 + (v->tx_fields.call.data.sns_manageNeuron.command.stake.has_percentage_to_stake ? 1 : 0);
+        case NNS_RefreshVotingPower:
+            return 2;
 
         default:
             break;
