@@ -49,6 +49,10 @@ extern "C" {
 #define DFINITY_SUBACCOUNT_LEN 32u
 #define DFINITY_PRINCIPAL_LEN 29u
 #define DFINITY_TEXTUAL_SIZE 100u
+// From an account we just display the first 16 bytes:
+// including the '.' prefix
+// 2 | From account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4"
+#define DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL 16u
 
 #define MAX_CHARS_PER_VALUE_LINE 18u
 

@@ -421,10 +421,9 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
 
     // Read has_created_at_time
     CHECK_PARSER_ERR(readCandidByte(&ctx, &icrc->has_created_at_time))
-    if (!icrc->has_created_at_time) {
-        return parser_required_method;
+    if (icrc->has_created_at_time) {
+        CHECK_PARSER_ERR(readCandidNat64(&ctx, &icrc->created_at_time))
     }
-    CHECK_PARSER_ERR(readCandidNat64(&ctx, &icrc->created_at_time)) // assume has_created_at_time
 
     // Read amount
     CHECK_PARSER_ERR(readCandidLEB128(&ctx, &icrc->amount))
