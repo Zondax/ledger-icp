@@ -308,10 +308,11 @@ parser_error_t page_principal_with_subaccount(
   const uint8_t OTHER_BLOCKS = 8;
   // Add boundary check before inserting spaces
   if (subaccountTextLen < FIRST_BLOCK) {
-      return parser_unexpected_error;
+    return parser_unexpected_error;
   }
 
-  for (uint8_t i = 0, pos = FIRST_BLOCK; i < 3 && pos < subaccountTextLen; i++) {
+  for (uint8_t i = 0, pos = FIRST_BLOCK; i < 3 && pos < subaccountTextLen;
+       i++) {
     err = inplace_insert_char(text_ptr, sizeof(text), pos, ' ');
     if (err != zxerr_ok) {
       return parser_unexpected_error;
