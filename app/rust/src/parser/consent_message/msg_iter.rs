@@ -18,10 +18,23 @@ use crate::{
 };
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
+pub struct FieldDisplayIterator<'b> {
+    data: FieldData<'b>,
+    current_state: IteratorState,
+}
+
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
 pub struct LineDisplayIterator<'b, const L: usize> {
     data: PageData<'b>,
     current_state: IteratorState,
     config: DisplayConfig,
+}
+
+#[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
+struct FieldData<'b> {
+    current: &'b [u8],
+    // label(key) and value
+    current_field: (&'b str, &'b str),
 }
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
@@ -30,10 +43,12 @@ struct PageData<'b> {
     current_line: &'b str,
 }
 
+#[derive(Default)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug, Clone))]
 struct IteratorState {
-    page_idx: usize,
-    page_count: usize,
+    item_idx: usize,
+    item_count: usize,
+    // Use only for the LineDisplayIterator
     current_line_in_page: usize,
     current_line_count: usize,
 }
@@ -49,16 +64,45 @@ pub struct ScreenPage<'b, const L: usize> {
     pub(crate) num_segments: usize,
 }
 
+impl<'b> FieldDisplayIterator<'b> {
+    pub fn new(data: &'b [u8], item_count: u8) -> Self {
+        Self {
+            data: FieldData {
+                current: data,
+                current_field: ("", ""),
+            },
+            current_state: IteratorState {
+                item_idx: 0,
+                item_count: item_count as usize,
+                ..Default::default()
+            },
+        }
+    }
+
+    fn process_current_item(&mut self) -> Result<(&'b str, &'b str), ParserError> {
+        let (rem, label) = parse_text(self.data.current)?;
+        let (rem, value) = parse_text(rem)?;
+
+        self.data.current = rem;
+
+        Ok((label, value))
+    }
+
+    pub fn item_count(&self) -> usize {
+        self.current_state.item_count
+    }
+}
+
 impl<'b, const L: usize> LineDisplayIterator<'b, L> {
-    pub fn new(data: &'b [u8], screen_width: usize, page_count: u8) -> Self {
+    pub fn new(data: &'b [u8], screen_width: usize, item_count: u8) -> Self {
         Self {
             data: PageData {
                 current: data,
                 current_line: "",
             },
             current_state: IteratorState {
-                page_idx: 0,
-                page_count: page_count as usize,
+                item_idx: 0,
+                item_count: item_count as usize,
                 current_line_in_page: 0,
                 current_line_count: 0,
             },
@@ -69,9 +113,9 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
     pub fn new_with_offsets(
         data: &'b [u8],
         screen_width: usize,
-        page_idx: usize,
+        item_idx: usize,
         page_info: (usize, u8),
-        page_count: u8,
+        item_count: u8,
     ) -> Self {
         let (offset, num_lines) = page_info;
         Self {
@@ -80,8 +124,8 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
                 current_line: "",
             },
             current_state: IteratorState {
-                page_idx,
-                page_count: page_count as usize,
+                item_idx,
+                item_count: item_count as usize,
                 current_line_in_page: 0,
                 current_line_count: num_lines as usize,
             },
@@ -115,8 +159,26 @@ impl<'b, const L: usize> LineDisplayIterator<'b, L> {
         Ok(())
     }
 
-    pub fn page_count(&self) -> usize {
-        self.current_state.page_count
+    pub fn item_count(&self) -> usize {
+        self.current_state.item_count
+    }
+}
+
+impl<'b> Iterator for FieldDisplayIterator<'b> {
+    type Item = (&'b str, &'b str);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        check_canary();
+        heartbeat();
+
+        // Early return if we've processed all pages
+        if self.current_state.item_idx >= self.current_state.item_count {
+            return None;
+        }
+
+        self.current_state.item_idx += 1;
+
+        self.process_current_item().ok()
     }
 }
 
@@ -128,7 +190,7 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
         heartbeat();
 
         // Early return if we've processed all pages
-        if self.current_state.page_idx >= self.current_state.page_count {
+        if self.current_state.item_idx >= self.current_state.item_count {
             return None;
         }
 
@@ -157,7 +219,7 @@ impl<'b, const L: usize> Iterator for LineDisplayIterator<'b, L> {
 
         // Update state for next page if needed
         if self.current_state.current_line_in_page >= self.current_state.current_line_count {
-            self.current_state.page_idx += 1;
+            self.current_state.item_idx += 1;
             self.current_state.current_line_in_page = 0;
         }
 
@@ -194,8 +256,8 @@ impl fmt::Display for PageData<'_> {
 impl fmt::Display for IteratorState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "IteratorState {{")?;
-        writeln!(f, "  page_idx: {}", self.page_idx)?;
-        writeln!(f, "  page_count: {}", self.page_count)?;
+        writeln!(f, "  item_idx: {}", self.item_idx)?;
+        writeln!(f, "  item_count: {}", self.item_count)?;
         writeln!(f, "  current_line_in_page: {}", self.current_line_in_page)?;
         writeln!(f, "  current_line_count: {}", self.current_line_count)?;
         write!(f, "}}")

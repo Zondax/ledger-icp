@@ -24,6 +24,7 @@ pub const MAX_LINES: usize = 3;
 // message response comming
 // from canisters
 pub const MAX_CHARS_PER_LINE: usize = 35;
+pub const MAX_LABEL_LEN: usize = 20;
 
 pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
 pub const BLS_SIGNATURE_SIZE: usize = 48;

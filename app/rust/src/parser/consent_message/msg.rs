@@ -21,7 +21,7 @@ use crate::{
     candid_header::CandidHeader,
     candid_utils::parse_text,
     check_canary,
-    constants::{MAX_CHARS_PER_LINE, MAX_LINES},
+    constants::{MAX_CHARS_PER_LINE, MAX_LABEL_LEN, MAX_LINES},
     error::{ParserError, ViewError},
     utils::{decompress_leb128, handle_ui_message},
     DisplayableItem, FromCandidHeader,
@@ -29,7 +29,7 @@ use crate::{
 
 use super::{
     buffer_writer::BufferWriter,
-    msg_iter::{LineDisplayIterator, ScreenPage},
+    msg_iter::{FieldDisplayIterator, LineDisplayIterator, ScreenPage},
 };
 
 #[repr(C)]
@@ -42,11 +42,21 @@ struct LineDisplayMessageVariant<'a, const PAGES: usize> {
     page_count: u8,
 }
 
+#[repr(C)]
+struct FieldsDisplayMessageVariant<'a, const PAGES: usize> {
+    ty: MessageType,
+    intent: &'a str,
+    fields: &'a [u8],
+    offsets: Cell<Option<[usize; PAGES]>>,
+    fields_count: u8,
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum MessageType {
     GenericDisplayMessage,
     LineDisplayMessage,
+    FieldsDisplayMessage,
 }
 
 #[repr(C)]
@@ -66,6 +76,12 @@ pub enum ConsentMessage<'a, const PAGES: usize, const LINES: usize> {
         offsets: Cell<Option<[(usize, u8); PAGES]>>,
         page_count: u8,
     },
+    FieldsDisplayMessage {
+        intent: &'a str,
+        fields: &'a [u8],
+        offsets: Cell<Option<[usize; PAGES]>>,
+        fields_count: u8,
+    },
 }
 
 impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
@@ -73,6 +89,10 @@ impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
     const GENERIC_DISPLAY_MESSAGE_HASH: u32 = 4082495484;
     const PAGES_FIELD_HASH: u32 = 3175951172;
     const LINES_FIELD_HASH: u32 = 1963056639;
+
+    const FIELDS_DISPLAY_MESSAGE_HASH: u32 = 124612638;
+    const INTENT_FIELD_HASH: u32 = 2156826233;
+    const FIELDS_FIELD_HASH: u32 = 2659612252;
 
     fn render_buffer() -> [u8; MAX_CHARS_PER_LINE * MAX_LINES + MAX_LINES + 1] {
         // Unfortunate we can not use const generic parameters in expresion bellow
@@ -97,6 +117,33 @@ impl<const PAGES: usize, const LINES: usize> ConsentMessage<'_, PAGES, LINES> {
 }
 
 impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES> {
+    // Returns an iterator over the fields from the first item
+    pub fn fields_iter(&self) -> Option<impl Iterator<Item = (&'a str, &'a str)>> {
+        match self {
+            ConsentMessage::FieldsDisplayMessage {
+                fields,
+                offsets,
+                fields_count,
+                ..
+            } => {
+                // Get or compute offsets
+                let offsets = if let Some(cached) = offsets.get() {
+                    cached
+                } else {
+                    // Compute offsets
+                    let new_offsets = Self::compute_fields_offsets(fields, *fields_count).ok()?;
+                    offsets.set(Some(new_offsets));
+                    new_offsets
+                };
+
+                Some(FieldDisplayIterator::new(
+                    &fields[offsets[0]..],
+                    *fields_count,
+                ))
+            }
+            _ => None,
+        }
+    }
     // Returns an iterator over the pages from the first item
     pub fn pages_iter(
         &self,
@@ -128,6 +175,24 @@ impl<'a, const PAGES: usize, const LINES: usize> ConsentMessage<'a, PAGES, LINES
             }
             _ => None,
         }
+    }
+
+    fn compute_fields_offsets(
+        data: &[u8],
+        fields_count: u8,
+    ) -> Result<[usize; PAGES], ParserError> {
+        let mut offsets = [0; PAGES];
+        let mut current = data;
+
+        for element in offsets.iter_mut().take(fields_count as usize) {
+            let offset = data.len() - current.len();
+            // Each field is a record with two text values
+            let (rem, _) = parse_text(current)?;
+            let (rem, _) = parse_text(rem)?;
+            *element = offset;
+            current = rem;
+        }
+        Ok(offsets)
     }
 
     // Returns for each page the data offset and the number
@@ -168,6 +233,7 @@ impl TryFrom<u64> for MessageType {
             // so it is assigned index 0
             0 => Ok(Self::LineDisplayMessage),
             1 => Ok(Self::GenericDisplayMessage),
+            2 => Ok(Self::FieldsDisplayMessage),
             _ => Err(ParserError::UnexpectedValue),
         }
     }
@@ -207,6 +273,11 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a
                         .pages_iter(MAX_CHARS_PER_LINE)
                         .ok_or(ParserError::NoData)?
                         .count() as u8;
+                    addr_of_mut!((*out).num_items).write(num_items);
+                }
+                ConsentMessage::FieldsDisplayMessage { .. } => {
+                    // Number of items is the number of fields + 1 for the intent
+                    let num_items = m.fields_iter().ok_or(ParserError::NoData)?.count() as u8 + 1;
                     addr_of_mut!((*out).num_items).write(num_items);
                 }
             }
@@ -310,6 +381,74 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a>
 
                 Ok(rem)
             }
+            hash if hash == Self::FIELDS_DISPLAY_MESSAGE_HASH => {
+                // Get record type entry (type 1 from the type table)
+                let record_entry = header
+                    .type_table
+                    // TODO: This could varies depending on the enum and number of elements
+                    // original type containing fields displays, does not have a line display
+                    // variant
+                    .find_type_entry(1)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Verify intent field hash
+                let _ = record_entry
+                    .fields
+                    .iter()
+                    .find(|(hash, _)| *hash == Self::INTENT_FIELD_HASH)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Verify fields field hash
+                let _ = record_entry
+                    .fields
+                    .iter()
+                    .find(|(hash, _)| *hash == Self::FIELDS_FIELD_HASH)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Parse intent text
+                let (rem, intent) = parse_text(rem)?;
+
+                // Parse fields vector
+                let (rem, fields_count) = decompress_leb128(rem)?;
+
+                if fields_count as usize > PAGES {
+                    return Err(ParserError::ValueOutOfRange);
+                }
+
+                // Store fields data for lazy parsing
+                let fields_start = rem;
+
+                // We need to validate the fields by iterating through them
+                let mut current = rem;
+                for _ in 0..fields_count {
+                    // Each field is a record with two text values
+                    // Parse first text (label)
+                    let (new_rem, label) = parse_text(current)?;
+                    if label.len() > MAX_LABEL_LEN {
+                        return Err(ParserError::ValueOutOfRange);
+                    }
+
+                    // Parse second text (value)
+                    let (new_rem, _) = parse_text(new_rem)?;
+
+                    current = new_rem;
+                }
+
+                // Calculate fields data length
+                let fields_data_len = fields_start.len() - current.len();
+                let (rem, fields_data) = take(fields_data_len)(fields_start)?;
+
+                let out = out.as_mut_ptr() as *mut FieldsDisplayMessageVariant<PAGES>;
+                unsafe {
+                    addr_of_mut!((*out).ty).write(MessageType::FieldsDisplayMessage);
+                    addr_of_mut!((*out).intent).write(intent);
+                    addr_of_mut!((*out).fields).write(fields_data);
+                    addr_of_mut!((*out).fields_count).write(fields_count as u8);
+                }
+
+                Ok(rem)
+            }
+
             hash if hash == Self::GENERIC_DISPLAY_MESSAGE_HASH => {
                 let out = out.as_mut_ptr() as *mut GenericDisplayMessageVariant;
                 let (rem, text) = parse_text(rem)?;
@@ -355,6 +494,9 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
                     .ok_or(ViewError::NoData)
                     .map(|pages| pages.count() as u8)
             }
+
+            // Fields + intent title
+            ConsentMessage::FieldsDisplayMessage { fields_count, .. } => Ok(*fields_count + 1),
         }
     }
 
@@ -408,6 +550,45 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
                 self.format_page_content(&screen_page, &mut buff)?;
 
                 handle_ui_message(&buff, message, page)
+            }
+            ConsentMessage::FieldsDisplayMessage {
+                intent,
+                fields,
+                offsets,
+                fields_count,
+            } => {
+                if item_n == 0 {
+                    let title_bytes = b" ";
+                    let title_len = title_bytes.len().min(title.len() - 1);
+                    title[..title_len].copy_from_slice(&title_bytes[..title_len]);
+                    title[title_len] = 0;
+
+                    return handle_ui_message(intent.as_bytes(), message, page);
+                }
+
+                let item = item_n - 1;
+
+                let offsets = if let Some(cached) = offsets.get() {
+                    cached
+                } else {
+                    let new_offsets = Self::compute_fields_offsets(fields, *fields_count)
+                        .map_err(|_| ViewError::NoData)?;
+                    offsets.set(Some(new_offsets));
+                    new_offsets
+                };
+
+                let index = *offsets.get(item as usize).ok_or(ViewError::NoData)?;
+
+                let (label, value) = FieldDisplayIterator::new(&fields[index..], *fields_count)
+                    .next()
+                    .ok_or(ViewError::NoData)?;
+
+                let label_len = label.len().min(title.len() - 1);
+
+                title[..label_len].copy_from_slice(&title_bytes[..label_len]);
+                title[label_len] = 0;
+
+                handle_ui_message(value.as_bytes(), message, page)
             }
         }
     }
@@ -583,5 +764,18 @@ mod tests_msg_display {
             LineDisplayIterator::<LINES>::new(rem, SMALL_SCREEN_WIDTH, page_count as _);
 
         assert!(iterator.next().is_none());
+    }
+
+    #[test]
+    fn fields_display_test() {
+        const FIELDS_DISPLAY_MESSAGE: &str = "4449444c046b029ee0b53b01fcdfd79a0f716c02f99cba840802dcec99f409716d036c02007101710100000306416d6f756e740a3233342e37332049435002546f0a616232332e2e66353637034665650a302e30303031204943500853656e6420494350";
+        let bytes = hex::decode(FIELDS_DISPLAY_MESSAGE).unwrap();
+        // 1. Magic number
+        let (rem, _) = nom::bytes::complete::tag("DIDL")(&bytes[..])
+            .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)
+            .unwrap();
+
+        let (_, table) = crate::type_table::parse_type_table::<40>(rem).unwrap();
+        crate::type_table::print_type_table(&table);
     }
 }
