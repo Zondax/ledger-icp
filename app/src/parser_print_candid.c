@@ -134,24 +134,41 @@ __Z_INLINE parser_error_t print_follow_topic(int32_t topic, char *outVal,
   return parser_ok;
 }
 
+// Stick to the spec for printing accounts
+// https://internetcomputer.org/docs/current/references/icrc1-standard#textual-encoding-of-accounts
 __Z_INLINE parser_error_t print_accountBytes(
     sender_t sender, const candid_transfer_t *sendrequest, char *outVal,
     uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
-  uint8_t address[32] = {0};
+
+  // First check if we have a subaccount and if it's non-zero
+  bool has_subaccount = sendrequest->has_from_subaccount;
+  bool is_default_subaccount = true;
+
+  if (has_subaccount) {
+    // Check if subaccount is all zeros
+    for (uint16_t i = 0; i < sendrequest->from_subaccount.len; i++) {
+      if (sendrequest->from_subaccount.p[i] != 0) {
+        is_default_subaccount = false;
+        break;
+      }
+    }
+  }
+
+  // If no subaccount or all zeros, just print the principal
+  if (!has_subaccount || is_default_subaccount) {
+    return print_principal(sender.data, (uint16_t)sender.len, outVal, outValLen,
+                           pageIdx, pageCount);
+  }
+
+  // For non-default subaccount, we need to handle the full format
   uint8_t subaccount[32] = {0};
-  if (sendrequest->has_from_subaccount) {
+  if (has_subaccount) {
     MEMCPY(subaccount, sendrequest->from_subaccount.p,
            (size_t)sendrequest->from_subaccount.len);
   }
 
-  zxerr_t err = crypto_principalToSubaccount(sender.data, (uint16_t)sender.len,
-                                             subaccount, sizeof(subaccount),
-                                             address, sizeof(address));
-  if (err != zxerr_ok) {
-    return parser_unexpected_error;
-  }
-
-  return page_hexstring_with_delimiters(address, sizeof(address), outVal,
+  return page_principal_with_subaccount(sender.data, (uint16_t)sender.len,
+                                        subaccount, sizeof(subaccount), outVal,
                                         outValLen, pageIdx, pageCount);
 }
 
@@ -1602,7 +1619,7 @@ parser_error_t parser_getItemCandid(const parser_context_t *ctx,
   }
 
   default:
-    ZEMU_LOGF(50, "Candid type not supported\n")
+    zemu_log("Candid type not supported\n");
     break;
   }
 

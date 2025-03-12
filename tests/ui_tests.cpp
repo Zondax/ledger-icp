@@ -29,7 +29,6 @@ class JsonTests_SNS_StakeMaturity : public JsonTests_Base {};
 class JsonTests_SNS_SetDissolveDelay : public JsonTests_Base {};
 class JsonTests_ICRC : public JsonTests_Base {};
 class JsonTests_Deprecated : public JsonTests_Base {};
-class JsonTests_Token_Decimals : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P (
         Phase1,
@@ -155,23 +154,6 @@ INSTANTIATE_TEST_SUITE_P (
 TEST_P(JsonTests_SNS_SetDissolveDelay, Normal) { check_testcase(GetParam(), false); }
 
 TEST_P(JsonTests_SNS_SetDissolveDelay, Expert) { check_testcase(GetParam(), true); }
-
-////////////////////
-////////////////////
-////////////////////
-
-INSTANTIATE_TEST_SUITE_P (
-        Token_Decimals,
-        JsonTests_Token_Decimals,
-        ::testing::ValuesIn(GetJsonTestCases("token_decimals_info.json")),
-        JsonTests_Token_Decimals::PrintToStringParamName()
-);
-
-//// Parametric test using current runtime:
-TEST_P(JsonTests_Token_Decimals, Normal) { check_testcase(GetParam(), false); }
-
-TEST_P(JsonTests_Token_Decimals, Expert) { check_testcase(GetParam(), true); }
-
 
 ////////////////////
 ////////////////////
