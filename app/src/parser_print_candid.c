@@ -1167,6 +1167,7 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   if (is_stake_tx) {
     displayIdx++; // skip field To account
   }
+
   if (displayIdx == 3) {
     snprintf(outKey, outKeyLen, "To account ");
     const candid_Principal_t *owner = &call->data.icrcTransfer.account.owner;
@@ -1613,10 +1614,9 @@ parser_error_t parser_getItemCandid(const parser_context_t *ctx,
     return parser_getItemCandidTransfer(displayIdx, outKey, outKeyLen, outVal,
                                         outValLen, pageIdx, pageCount);
 
-  case candid_icrc_transfer: {
+  case candid_icrc_transfer:
     return parser_getItemICRCTransfer(displayIdx, outKey, outKeyLen, outVal,
                                       outValLen, pageIdx, pageCount);
-  }
 
   default:
     zemu_log("Candid type not supported\n");
