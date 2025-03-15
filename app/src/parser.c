@@ -146,6 +146,7 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
 }
 
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
+    zemu_log_stack("parser_getNumItems");
     *num_items = _getNumItems(ctx, &parser_tx_obj);
     PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
     return parser_ok;
