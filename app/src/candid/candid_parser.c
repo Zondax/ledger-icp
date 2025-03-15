@@ -452,6 +452,7 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
 }
 
 parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    zemu_log("readCandidICRC2Approve\n");
 
     // Create context and auxiliary ctx
     CREATE_CTX(ctx, tx, input, inputSize)

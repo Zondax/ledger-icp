@@ -755,8 +755,14 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
-    if (v->txtype != call || v->tx_fields.call.method_type != candid_icrc_transfer) {
+#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
+    // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
+    bool skip_validation = (v->txtype == call &&
+                          (v->tx_fields.call.method_type == candid_icrc_transfer ||
+                           v->tx_fields.call.method_type == candid_icrc2_approve));
+
+    if (!skip_validation) {
+        zemu_log("Performing sender validation\n");
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
 
@@ -769,8 +775,11 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
 
         if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+            zemu_log("Sender mismatch\n");
             return parser_unexpected_value;
         }
+    } else {
+        zemu_log("Skipping sender validation\n");
     }
 #endif
 
