@@ -1055,7 +1055,13 @@ static parser_error_t parser_getItemCandidTransfer(
   }
 
   if (displayIdx == 1) {
+// The "From account" title might be truncated on Nano devices
+// due to the device's limited screen space.
+#if defined(TARGET_NANOS)
+    snprintf(outKey, outKeyLen, "From ");
+#else
     snprintf(outKey, outKeyLen, "From account ");
+#endif
     return print_accountBytes(fields->sender, &fields->data.candid_transfer,
                               outVal, outValLen, pageIdx, pageCount);
   }
@@ -1065,7 +1071,13 @@ static parser_error_t parser_getItemCandidTransfer(
   }
 
   if (displayIdx == 2) {
+// The "To account" title might be truncated on Nano devices
+// due to the device's limited screen space.
+#if defined(TARGET_NANOS)
+    snprintf(outKey, outKeyLen, "To ");
+#else
     snprintf(outKey, outKeyLen, "To account ");
+#endif
     return page_hexstring_with_delimiters(fields->data.candid_transfer.to,
                                           DFINITY_ADDR_LEN, outVal, outValLen,
                                           pageIdx, pageCount);
@@ -1152,7 +1164,13 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   }
 
   if (displayIdx == 2) {
+// The "From account" title might be truncated on Nano devices
+// due to the device's limited screen space.
+#if defined(TARGET_NANOS)
+    snprintf(outKey, outKeyLen, "From ");
+#else
     snprintf(outKey, outKeyLen, "From account ");
+#endif
     const uint8_t *sender = (uint8_t *)call->sender.data;
     const uint16_t senderLen = (uint16_t)call->sender.len;
     const uint8_t *fromSubaccount = call->data.icrcTransfer.from_subaccount.p;
@@ -1169,7 +1187,13 @@ parser_getItemICRCTransfer(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   }
 
   if (displayIdx == 3) {
+// The "To account" title might be truncated on Nano devices
+// due to the device's limited screen space.
+#if defined(TARGET_NANOS)
+    snprintf(outKey, outKeyLen, "To ");
+#else
     snprintf(outKey, outKeyLen, "To account ");
+#endif
     const candid_Principal_t *owner = &call->data.icrcTransfer.account.owner;
     const uint8_t *subaccount = call->data.icrcTransfer.account.subaccount.p;
     const uint16_t subaccountLen =
