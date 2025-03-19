@@ -1257,7 +1257,7 @@ static parser_error_t
 parser_getItemICRC2Approve(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                            char *outVal, uint16_t outValLen, uint8_t pageIdx,
                            uint8_t *pageCount) {
-   zemu_log("parser_getItemICRC2Approve\n");
+  zemu_log("parser_getItemICRC2Approve\n");
   *pageCount = 1;
   call_t *call = &parser_tx_obj.tx_fields.call;
   const bool icp_canisterId = call->data.icrc2_approve.icp_canister;
@@ -1274,7 +1274,11 @@ parser_getItemICRC2Approve(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
 
   if (displayIdx == 0) {
     snprintf(outKey, outKeyLen, "Transaction type");
-    snprintf(outVal, outValLen, "Allow another account to withdraw tokens");
+#if defined(TARGET_NANOS)
+    snprintf(outKey, outKeyLen, "Allow account to withdraw tokens");
+#else
+    snprintf(outKey, outKeyLen, "Allow another account to withdraw tokens");
+#endif
     return parser_ok;
   }
 
@@ -1292,7 +1296,11 @@ parser_getItemICRC2Approve(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   }
 
   if (displayIdx == 2) {
+#if defined(TARGET_NANOS)
+    snprintf(outKey, outKeyLen, "From ");
+#else
     snprintf(outKey, outKeyLen, "From account ");
+#endif
     const uint8_t *sender = (uint8_t *)call->sender.data;
     const uint16_t senderLen = (uint16_t)call->sender.len;
     const uint8_t *fromSubaccount = call->data.icrc2_approve.from_subaccount.p;
@@ -1305,7 +1313,13 @@ parser_getItemICRC2Approve(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   }
 
   if (displayIdx == 3) {
+#if defined(TARGET_NANOS)
+    // Removed the allowed part of the tittle
+    // nanos screen is too small
+    snprintf(outKey, outKeyLen, "Spender ");
+#else
     snprintf(outKey, outKeyLen, "Allowed Spender ");
+#endif
     const candid_Principal_t *owner = &call->data.icrc2_approve.spender.owner;
     const uint8_t *subaccount = call->data.icrc2_approve.spender.subaccount.p;
     const uint16_t subaccountLen =
