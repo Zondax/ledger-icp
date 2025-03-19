@@ -1275,9 +1275,9 @@ parser_getItemICRC2Approve(uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
   if (displayIdx == 0) {
     snprintf(outKey, outKeyLen, "Transaction type");
 #if defined(TARGET_NANOS)
-    snprintf(outKey, outKeyLen, "Allow account to withdraw tokens");
+    snprintf(outVal, outValLen, "Allow account to withdraw tokens");
 #else
-    snprintf(outKey, outKeyLen, "Allow another account to withdraw tokens");
+    snprintf(outVal, outValLen, "Allow another account to withdraw tokens");
 #endif
     return parser_ok;
   }
