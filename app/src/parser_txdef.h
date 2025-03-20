@@ -65,6 +65,7 @@ typedef enum {
   candid_updatenodeprovider = 0xF003,
   candid_listneurons = 0xF004,
   candid_icrc_transfer = 0xF005,
+  candid_icrc2_approve = 0xF006
 } method_type_e;
 
 typedef enum {
@@ -184,6 +185,7 @@ typedef struct {
     sns_ManageNeuron_t sns_manageNeuron;
     icrc_transfer_t icrcTransfer;
     candid_transfer_t candid_transfer;
+    icrc2_approve_t icrc2_approve;
   } data;
 } call_t;
 

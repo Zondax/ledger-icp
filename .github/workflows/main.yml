@@ -165,7 +165,7 @@ jobs:
       - name: Run zemu tests
         run: |
           cd tests_zemu
-          yarn jest ${{ matrix.test.file }} --maxConcurrency 2 \
+          yarn jest ${{ matrix.test.file }} --maxConcurrency 1 \
                 --reporters='@matteoh2o1999/github-actions-jest-reporter'
         env:
           FORCE_COLOR: 1
