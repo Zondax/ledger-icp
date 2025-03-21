@@ -221,7 +221,11 @@ static const token_info_t TOKEN_REGISTRY[] = {
      .decimals = 8},
     {.canister_id = "lvfsa-2aaaa-aaaaq-aaeyq-cai",
      .token_symbol = "ICX",
-     .decimals = 8}};
+     .decimals = 8},
+    {.token_symbol = "nICP",
+     .decimals = 8,
+     .canister_id = "buwm7-7yaaa-aaaar-qagva-cai"},
+};
 
 static const size_t NUM_TOKENS = sizeof(TOKEN_REGISTRY) / sizeof(token_info_t);
 
