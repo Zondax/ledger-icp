@@ -53,7 +53,7 @@ $(info COIN  = [$(COIN)])
 ifeq ($(COIN),ICP)
 # Main app configuration
 DEFINES += APP_STANDARD
-APPNAME = "InternetComputer"
+APPNAME = "Internet Computer"
 APPPATH = "44'/223'"
 
 else ifeq ($(COIN),ICP_INVALID)
