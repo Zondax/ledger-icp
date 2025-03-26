@@ -148,6 +148,7 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
 }
 
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
+    zemu_log_stack("parser_getNumItems");
     *num_items = _getNumItems(ctx, &parser_tx_obj);
     PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
     return parser_ok;
@@ -215,8 +216,12 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
                 case candid_listneurons:
                 case candid_updatenodeprovider:
                 case candid_transfer:
-                case candid_icrc_transfer: {
-                    return parser_getItemCandid(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+                case candid_icrc_transfer:
+                case candid_icrc2_approve:{
+                    return parser_getItemCandid(ctx, displayIdx,
+                                                outKey, outKeyLen,
+                                                outVal, outValLen,
+                                                pageIdx, pageCount);
                 }
 
                 default:
