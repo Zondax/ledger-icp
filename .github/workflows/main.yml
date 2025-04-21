@@ -92,6 +92,13 @@ jobs:
         run: cd ./app/rust
           cargo test
 
+  build_application:
+    name: Build application using the reusable workflow
+    uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
+    with:
+      upload_app_binaries_artifact: "compiled_app_binaries"
+      builder: ledger-app-builder
+
   size_nano_s:
     needs: build_ledger
     runs-on: ubuntu-latest
@@ -214,7 +221,7 @@ jobs:
           prerelease: false
 
   build_package_nanosp:
-    needs: [configure, build, build_ledger, test_zemu]
+    needs: [configure, build, build_ledger, test_zemu, rust_tests]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -250,7 +257,7 @@ jobs:
           prerelease: false
 
   build_package_stax:
-    needs: [configure, build, build_ledger, test_zemu]
+    needs: [configure, build, build_ledger, test_zemu, rust_tests]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -286,7 +293,7 @@ jobs:
           prerelease: false
 
   build_package_flex:
-    needs: [configure, build, build_ledger, test_zemu]
+    needs: [configure, build, build_ledger, test_zemu, rust_tests]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:

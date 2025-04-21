@@ -81,7 +81,7 @@ INCLUDES_PATH += $(CURDIR)/../deps/tinycbor/src
 INCLUDES_PATH += $(CURDIR)/../deps/nanopb/
 
 ########################################
-#         NBGL custom features         # F
+#         NBGL custom features         #
 ########################################
 ENABLE_NBGL_QRCODE = 1
 #ENABLE_NBGL_KEYBOARD = 1
