@@ -940,6 +940,7 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                 default:
                     break;
             }
+            break;
         }
         case state_transaction_read : {
             // based on https://github.com/Zondax/ledger-dfinity/issues/48

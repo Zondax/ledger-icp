@@ -231,7 +231,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 default :
                     break;
             }
-
+            break;
         }
         case state_transaction_read: {
             return parser_getItemTransactionStateRead(ctx, displayIdx,
