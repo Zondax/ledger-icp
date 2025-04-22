@@ -5,8 +5,9 @@
 #define PB_IC_NNS_GOVERNANCE_PB_V1_GOVERNANCE_PB_H_INCLUDED
 
 #include <pb.h>
-#include "types.pb.h"
+
 #include "base_types.pb.h"
+#include "types.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
@@ -123,7 +124,7 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse {
 
 typedef struct _ic_nns_governance_pb_v1_ManageNeuron_AddHotKey {
     /* Was originally `map<fixed64, NeuronInfo> neuron_infos = 1`
- It had to be modified to this form to annotate the key with js_type. */
+  It had to be modified to this form to annotate the key with js_type. */
     bool has_new_hot_key;
     ic_base_types_pb_v1_PrincipalId new_hot_key;
 } ic_nns_governance_pb_v1_ManageNeuron_AddHotKey;
@@ -282,88 +283,222 @@ typedef struct _ic_nns_governance_pb_v1_ManageNeuron {
     } neuron_id_or_subaccount;
 } ic_nns_governance_pb_v1_ManageNeuron;
 
-
 /* Helper constants for enums */
 #define _ic_nns_governance_pb_v1_Vote_MIN ic_nns_governance_pb_v1_Vote_VOTE_UNSPECIFIED
 #define _ic_nns_governance_pb_v1_Vote_MAX ic_nns_governance_pb_v1_Vote_VOTE_NO
-#define _ic_nns_governance_pb_v1_Vote_ARRAYSIZE ((ic_nns_governance_pb_v1_Vote)(ic_nns_governance_pb_v1_Vote_VOTE_NO+1))
+#define _ic_nns_governance_pb_v1_Vote_ARRAYSIZE ((ic_nns_governance_pb_v1_Vote)(ic_nns_governance_pb_v1_Vote_VOTE_NO + 1))
 
 #define _ic_nns_governance_pb_v1_Topic_MIN ic_nns_governance_pb_v1_Topic_TOPIC_UNSPECIFIED
 #define _ic_nns_governance_pb_v1_Topic_MAX ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS
-#define _ic_nns_governance_pb_v1_Topic_ARRAYSIZE ((ic_nns_governance_pb_v1_Topic)(ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS+1))
+#define _ic_nns_governance_pb_v1_Topic_ARRAYSIZE \
+    ((ic_nns_governance_pb_v1_Topic)(ic_nns_governance_pb_v1_Topic_TOPIC_NODE_PROVIDER_REWARDS + 1))
 
-#define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNSPECIFIED
-#define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MAX ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL
-#define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_ARRAYSIZE ((ic_nns_governance_pb_v1_GovernanceError_ErrorType)(ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL+1))
-
+#define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN \
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_UNSPECIFIED
+#define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MAX \
+    ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL
+#define _ic_nns_governance_pb_v1_GovernanceError_ErrorType_ARRAYSIZE                                                                     \
+    ((ic_nns_governance_pb_v1_GovernanceError_ErrorType)(ic_nns_governance_pb_v1_GovernanceError_ErrorType_ERROR_TYPE_INVALID_PROPOSAL + \
+                                                         1))
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ic_nns_governance_pb_v1_ManageNeuron_init_default {false, ic_base_types_pb_v1_NeuronId_init_default, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default}, 0, {{0, {0}}}}
-#define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default {0, {ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default}}
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_default {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_default {_ic_nns_governance_pb_v1_Topic_MIN, 0, {ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default}}
-#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_default {false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_init_default {0, {ic_nns_governance_pb_v1_GovernanceError_init_default}}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_default {false, ic_base_types_pb_v1_NeuronId_init_default}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_init_default {0, 0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_init_default {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_init_default {0}
-#define ic_nns_governance_pb_v1_GovernanceError_init_default {_ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListNeurons_init_default {{{NULL}, NULL}, 0}
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_init_default {{{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_init_default {0, false, ic_nns_governance_pb_v1_NeuronInfo_init_default}
-#define ic_nns_governance_pb_v1_BallotInfo_init_default {false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_NeuronInfo_init_default {0, 0, 0, {{NULL}, NULL}, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_init_default {false, ic_base_types_pb_v1_NeuronId_init_default, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_Followees_init_default {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_default {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default}
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default {0, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
-#define ic_nns_governance_pb_v1_ManageNeuron_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero}, 0, {{0, {0}}}}
-#define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero {0, {ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero}}
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_zero {false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_zero {_ic_nns_governance_pb_v1_Topic_MIN, 0, {ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero}}
-#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_zero {false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_init_zero {0, {ic_nns_governance_pb_v1_GovernanceError_init_zero}}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_init_zero {0, 0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_init_zero {0}
-#define ic_nns_governance_pb_v1_GovernanceError_init_zero {_ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListNeurons_init_zero {{{NULL}, NULL}, 0}
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_init_zero {{{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_init_zero {0, false, ic_nns_governance_pb_v1_NeuronInfo_init_zero}
-#define ic_nns_governance_pb_v1_BallotInfo_init_zero {false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN}
-#define ic_nns_governance_pb_v1_NeuronInfo_init_zero {0, 0, 0, {{NULL}, NULL}, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_init_zero {false, ic_base_types_pb_v1_NeuronId_init_zero, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero, 0, 0}
-#define ic_nns_governance_pb_v1_Neuron_Followees_init_zero {{{NULL}, NULL}}
-#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_zero {0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_zero}
-#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero {0, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0}
+#define ic_nns_governance_pb_v1_ManageNeuron_init_default                                                                   \
+    {                                                                                                                       \
+        false, ic_base_types_pb_v1_NeuronId_init_default, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default}, \
+            0, {                                                                                                            \
+            {                                                                                                               \
+                0, { 0 }                                                                                                    \
+            }                                                                                                               \
+        }                                                                                                                   \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_default \
+    { false, ic_base_types_pb_v1_PrincipalId_init_default }
+#define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_default \
+    { false, ic_base_types_pb_v1_PrincipalId_init_default }
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_default                    \
+    {                                                                                  \
+        0, { ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_default } \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_default \
+    { false, ic_base_types_pb_v1_PrincipalId_init_default }
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_default                       \
+    {                                                                                    \
+        false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default, false, \
+            ic_ledger_pb_v1_AccountIdentifier_init_default                               \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_default                                      \
+    {                                                                                                 \
+        _ic_nns_governance_pb_v1_Topic_MIN, 0, {                                                      \
+            ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default,     \
+                ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, \
+                ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, \
+                ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, \
+                ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, \
+                ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, \
+                ic_base_types_pb_v1_NeuronId_init_default, ic_base_types_pb_v1_NeuronId_init_default, \
+                ic_base_types_pb_v1_NeuronId_init_default                                             \
+        }                                                                                             \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_default \
+    { false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN }
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_init_default   \
+    {                                                               \
+        0, { ic_nns_governance_pb_v1_GovernanceError_init_default } \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_default \
+    { false, ic_base_types_pb_v1_NeuronId_init_default }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_init_default \
+    { 0, 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_init_default \
+    { 0 }
+#define ic_nns_governance_pb_v1_GovernanceError_init_default                     \
+    {                                                                            \
+        _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN, { {NULL}, NULL } \
+    }
+#define ic_nns_governance_pb_v1_ListNeurons_init_default \
+    { {{NULL}, NULL}, 0 }
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_init_default \
+    {                                                            \
+        {{NULL}, NULL}, { {NULL}, NULL }                         \
+    }
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_init_default \
+    { 0, false, ic_nns_governance_pb_v1_NeuronInfo_init_default }
+#define ic_nns_governance_pb_v1_BallotInfo_init_default \
+    { false, ic_base_types_pb_v1_ProposalId_init_default, _ic_nns_governance_pb_v1_Vote_MIN }
+#define ic_nns_governance_pb_v1_NeuronInfo_init_default \
+    { 0, 0, 0, {{NULL}, NULL}, 0, 0 }
+#define ic_nns_governance_pb_v1_Neuron_init_default                                                           \
+    {                                                                                                         \
+        false, ic_base_types_pb_v1_NeuronId_init_default, {{NULL}, NULL}, false,                              \
+            ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, \
+            {{NULL}, NULL}, 0, false, ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default, 0, 0          \
+    }
+#define ic_nns_governance_pb_v1_Neuron_Followees_init_default \
+    {                                                         \
+        { {NULL}, NULL }                                      \
+    }
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_default \
+    { 0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_default }
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_default \
+    { 0, false, ic_base_types_pb_v1_PrincipalId_init_default, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_init_zero                                                                     \
+    {                                                                                                                      \
+        false, ic_base_types_pb_v1_NeuronId_init_zero, 0, {ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero}, 0, { \
+            {                                                                                                              \
+                0, { 0 }                                                                                                   \
+            }                                                                                                              \
+        }                                                                                                                  \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_init_zero \
+    { false, ic_base_types_pb_v1_PrincipalId_init_zero }
+#define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_init_zero \
+    { false, ic_base_types_pb_v1_PrincipalId_init_zero }
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_init_zero                    \
+    {                                                                               \
+        0, { ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_init_zero } \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_init_zero \
+    { false, ic_base_types_pb_v1_PrincipalId_init_zero }
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_init_zero                       \
+    {                                                                                 \
+        false, ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero, false, \
+            ic_ledger_pb_v1_AccountIdentifier_init_zero                               \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuron_Follow_init_zero                                   \
+    {                                                                                           \
+        _ic_nns_governance_pb_v1_Topic_MIN, 0, {                                                \
+            ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero,     \
+                ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, \
+                ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, \
+                ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, \
+                ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, \
+                ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, \
+                ic_base_types_pb_v1_NeuronId_init_zero, ic_base_types_pb_v1_NeuronId_init_zero, \
+                ic_base_types_pb_v1_NeuronId_init_zero                                          \
+        }                                                                                       \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_init_zero \
+    { false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN }
+#define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_init_zero   \
+    {                                                            \
+        0, { ic_nns_governance_pb_v1_GovernanceError_init_zero } \
+    }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_init_zero \
+    { false, ic_base_types_pb_v1_NeuronId_init_zero }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_init_zero \
+    { 0, 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_init_zero \
+    { 0 }
+#define ic_nns_governance_pb_v1_GovernanceError_init_zero                        \
+    {                                                                            \
+        _ic_nns_governance_pb_v1_GovernanceError_ErrorType_MIN, { {NULL}, NULL } \
+    }
+#define ic_nns_governance_pb_v1_ListNeurons_init_zero \
+    { {{NULL}, NULL}, 0 }
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_init_zero \
+    {                                                         \
+        {{NULL}, NULL}, { {NULL}, NULL }                      \
+    }
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_init_zero \
+    { 0, false, ic_nns_governance_pb_v1_NeuronInfo_init_zero }
+#define ic_nns_governance_pb_v1_BallotInfo_init_zero \
+    { false, ic_base_types_pb_v1_ProposalId_init_zero, _ic_nns_governance_pb_v1_Vote_MIN }
+#define ic_nns_governance_pb_v1_NeuronInfo_init_zero \
+    { 0, 0, 0, {{NULL}, NULL}, 0, 0 }
+#define ic_nns_governance_pb_v1_Neuron_init_zero                                                                         \
+    {                                                                                                                    \
+        false, ic_base_types_pb_v1_NeuronId_init_zero, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_zero, \
+            {{NULL}, NULL}, 0, 0, 0, 0, 0, {0}, {{NULL}, NULL}, {{NULL}, NULL}, 0, false,                                \
+            ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero, 0, 0                                                  \
+    }
+#define ic_nns_governance_pb_v1_Neuron_Followees_init_zero \
+    {                                                      \
+        { {NULL}, NULL }                                   \
+    }
+#define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_init_zero \
+    { 0, false, ic_nns_governance_pb_v1_Neuron_Followees_init_zero }
+#define ic_nns_governance_pb_v1_NeuronStakeTransfer_init_zero \
+    { 0, false, ic_base_types_pb_v1_PrincipalId_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0 }
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_ids_tag 1
@@ -421,7 +556,7 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_join_community_fund_tag 7
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_amount_tag 1
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_to_account_tag 2
-#define ic_nns_governance_pb_v1_Neuron_id_tag    1
+#define ic_nns_governance_pb_v1_Neuron_id_tag 1
 #define ic_nns_governance_pb_v1_Neuron_account_tag 2
 #define ic_nns_governance_pb_v1_Neuron_controller_tag 3
 #define ic_nns_governance_pb_v1_Neuron_hot_keys_tag 4
@@ -448,16 +583,16 @@ extern "C" {
 #define ic_nns_governance_pb_v1_ManageNeuron_neuron_id_tag 12
 
 /* Struct field encoding specification for nanopb */
-#define ic_nns_governance_pb_v1_ManageNeuron_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,configure,command.configure),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,follow,command.follow),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,register_vote,command.register_vote),   7) \
-X(a, STATIC,   ONEOF,    BYTES,    (neuron_id_or_subaccount,subaccount,neuron_id_or_subaccount.subaccount),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (neuron_id_or_subaccount,neuron_id,neuron_id_or_subaccount.neuron_id),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,merge_maturity,command.merge_maturity),  13)
+#define ic_nns_governance_pb_v1_ManageNeuron_FIELDLIST(X, a)                                                  \
+    X(a, STATIC, OPTIONAL, MESSAGE, id, 1)                                                                    \
+    X(a, STATIC, ONEOF, MESSAGE, (command, configure, command.configure), 2)                                  \
+    X(a, STATIC, ONEOF, MESSAGE, (command, disburse, command.disburse), 3)                                    \
+    X(a, STATIC, ONEOF, MESSAGE, (command, spawn, command.spawn), 4)                                          \
+    X(a, STATIC, ONEOF, MESSAGE, (command, follow, command.follow), 5)                                        \
+    X(a, STATIC, ONEOF, MESSAGE, (command, register_vote, command.register_vote), 7)                          \
+    X(a, STATIC, ONEOF, BYTES, (neuron_id_or_subaccount, subaccount, neuron_id_or_subaccount.subaccount), 11) \
+    X(a, STATIC, ONEOF, MESSAGE, (neuron_id_or_subaccount, neuron_id, neuron_id_or_subaccount.neuron_id), 12) \
+    X(a, STATIC, ONEOF, MESSAGE, (command, merge_maturity, command.merge_maturity), 13)
 #define ic_nns_governance_pb_v1_ManageNeuron_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
@@ -467,206 +602,218 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (command,merge_maturity,command.merge_maturit
 #define ic_nns_governance_pb_v1_ManageNeuron_command_follow_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Follow
 #define ic_nns_governance_pb_v1_ManageNeuron_command_register_vote_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_RegisterVote
 #define ic_nns_governance_pb_v1_ManageNeuron_neuron_id_or_subaccount_neuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
-#define ic_nns_governance_pb_v1_ManageNeuron_command_merge_maturity_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity
+#define ic_nns_governance_pb_v1_ManageNeuron_command_merge_maturity_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity
 
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   additional_dissolve_delay_seconds,   1)
+    X(a, STATIC, SINGULAR, UINT32, additional_dissolve_delay_seconds, 1)
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_FIELDLIST(X, a)
 
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_FIELDLIST(X, a)
 
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_hot_key,       1)
+#define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, new_hot_key, 1)
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_new_hot_key_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  hot_key_to_remove,   1)
+    X(a, STATIC, OPTIONAL, MESSAGE, hot_key_to_remove, 1)
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_hot_key_to_remove_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
-#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_FIELDLIST(X, a)
 
 #define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,increase_dissolve_delay,operation.increase_dissolve_delay),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,start_dissolving,operation.start_dissolving),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,stop_dissolving,operation.stop_dissolving),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,add_hot_key,operation.add_hot_key),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,remove_hot_key,operation.remove_hot_key),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (operation,join_community_fund,operation.join_community_fund),   7)
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_FIELDLIST(X, a)                                       \
+    X(a, STATIC, ONEOF, MESSAGE, (operation, increase_dissolve_delay, operation.increase_dissolve_delay), 1) \
+    X(a, STATIC, ONEOF, MESSAGE, (operation, start_dissolving, operation.start_dissolving), 2)               \
+    X(a, STATIC, ONEOF, MESSAGE, (operation, stop_dissolving, operation.stop_dissolving), 3)                 \
+    X(a, STATIC, ONEOF, MESSAGE, (operation, add_hot_key, operation.add_hot_key), 4)                         \
+    X(a, STATIC, ONEOF, MESSAGE, (operation, remove_hot_key, operation.remove_hot_key), 5)                   \
+    X(a, STATIC, ONEOF, MESSAGE, (operation, join_community_fund, operation.join_community_fund), 7)
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_increase_dissolve_delay_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_start_dissolving_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_StartDissolving
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_stop_dissolving_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_StopDissolving
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_add_hot_key_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_AddHotKey
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_remove_hot_key_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey
-#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_join_community_fund_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_increase_dissolve_delay_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_start_dissolving_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_StartDissolving
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_stop_dissolving_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_StopDissolving
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_add_hot_key_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_AddHotKey
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_remove_hot_key_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey
+#define ic_nns_governance_pb_v1_ManageNeuron_Configure_operation_join_community_fund_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund
 
-#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  new_controller,    1)
+#define ic_nns_governance_pb_v1_ManageNeuron_Spawn_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, new_controller, 1)
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_new_controller_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to_account,        2)
+    X(a, STATIC, OPTIONAL, MESSAGE, amount, 1)                        \
+    X(a, STATIC, OPTIONAL, MESSAGE, to_account, 2)
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_amount_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_to_account_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
 
-#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   e8s,               1)
+#define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, e8s, 1)
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_Amount_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    topic,             1) \
-X(a, STATIC,   REPEATED, MESSAGE,  followees,         2)
+    X(a, STATIC, SINGULAR, UENUM, topic, 1)                         \
+    X(a, STATIC, REPEATED, MESSAGE, followees, 2)
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_Follow_followees_MSGTYPE ic_base_types_pb_v1_NeuronId
 
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal,          1) \
-X(a, STATIC,   SINGULAR, UENUM,    vote,              2)
+    X(a, STATIC, OPTIONAL, MESSAGE, proposal, 1)                          \
+    X(a, STATIC, SINGULAR, UENUM, vote, 2)
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_proposal_MSGTYPE ic_base_types_pb_v1_ProposalId
 
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   percentage_to_merge,   1)
+    X(a, STATIC, SINGULAR, UINT32, percentage_to_merge, 1)
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,error,command.error),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,configure,command.configure),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,disburse,command.disburse),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,spawn,command.spawn),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,follow,command.follow),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,register_vote,command.register_vote),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (command,merge_maturity,command.merge_maturity),  11)
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_FIELDLIST(X, a)                 \
+    X(a, STATIC, ONEOF, MESSAGE, (command, error, command.error), 1)                 \
+    X(a, STATIC, ONEOF, MESSAGE, (command, configure, command.configure), 2)         \
+    X(a, STATIC, ONEOF, MESSAGE, (command, disburse, command.disburse), 3)           \
+    X(a, STATIC, ONEOF, MESSAGE, (command, spawn, command.spawn), 4)                 \
+    X(a, STATIC, ONEOF, MESSAGE, (command, follow, command.follow), 5)               \
+    X(a, STATIC, ONEOF, MESSAGE, (command, register_vote, command.register_vote), 7) \
+    X(a, STATIC, ONEOF, MESSAGE, (command, merge_maturity, command.merge_maturity), 11)
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_command_error_MSGTYPE ic_nns_governance_pb_v1_GovernanceError
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_configure_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_disburse_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_spawn_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_follow_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_register_vote_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_merge_maturity_MSGTYPE ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_configure_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_disburse_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_spawn_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_follow_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_register_vote_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_command_merge_maturity_MSGTYPE \
+    ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse
 
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_FIELDLIST(X, a)
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   transfer_block_height,   1)
+    X(a, STATIC, SINGULAR, UINT64, transfer_block_height, 1)
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_neuron_id,   1)
+    X(a, STATIC, OPTIONAL, MESSAGE, created_neuron_id, 1)
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_created_neuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   merged_maturity_e8s,   1) \
-X(a, STATIC,   SINGULAR, UINT64,   new_stake_e8s,     2)
+    X(a, STATIC, SINGULAR, UINT64, merged_maturity_e8s, 1)                                 \
+    X(a, STATIC, SINGULAR, UINT64, new_stake_e8s, 2)
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_FIELDLIST(X, a)
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_DEFAULT NULL
 
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_FIELDLIST(X, a) \
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_FIELDLIST(X, a)
 
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_GovernanceError_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UENUM,    error_type,        1) \
-X(a, CALLBACK, SINGULAR, STRING,   error_message,     2)
+    X(a, STATIC, SINGULAR, UENUM, error_type, 1)                \
+    X(a, CALLBACK, SINGULAR, STRING, error_message, 2)
 #define ic_nns_governance_pb_v1_GovernanceError_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_GovernanceError_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ListNeurons_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, FIXED64,  neuron_ids,        1) \
-X(a, STATIC,   SINGULAR, BOOL,     include_neurons_readable_by_caller,   2)
+    X(a, CALLBACK, REPEATED, FIXED64, neuron_ids, 1)        \
+    X(a, STATIC, SINGULAR, BOOL, include_neurons_readable_by_caller, 2)
 #define ic_nns_governance_pb_v1_ListNeurons_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_ListNeurons_DEFAULT NULL
 
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  neuron_ids,        1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  full_neurons,      2)
+    X(a, CALLBACK, REPEATED, MESSAGE, neuron_ids, 1)                \
+    X(a, CALLBACK, REPEATED, MESSAGE, full_neurons, 2)
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_DEFAULT NULL
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_ids_MSGTYPE ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_neuron_ids_MSGTYPE \
+    ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_full_neurons_MSGTYPE ic_nns_governance_pb_v1_Neuron
 
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED64,  key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
+    X(a, STATIC, SINGULAR, FIXED64, key, 1)                                        \
+    X(a, STATIC, OPTIONAL, MESSAGE, value, 2)
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_CALLBACK NULL
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_DEFAULT NULL
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_value_MSGTYPE ic_nns_governance_pb_v1_NeuronInfo
 
 #define ic_nns_governance_pb_v1_BallotInfo_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  proposal_id,       1) \
-X(a, STATIC,   SINGULAR, UENUM,    vote,              2)
+    X(a, STATIC, OPTIONAL, MESSAGE, proposal_id, 1)        \
+    X(a, STATIC, SINGULAR, UENUM, vote, 2)
 #define ic_nns_governance_pb_v1_BallotInfo_CALLBACK NULL
 #define ic_nns_governance_pb_v1_BallotInfo_DEFAULT NULL
 #define ic_nns_governance_pb_v1_BallotInfo_proposal_id_MSGTYPE ic_base_types_pb_v1_ProposalId
 
-#define ic_nns_governance_pb_v1_NeuronInfo_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   retrieved_at_timestamp_seconds,   1) \
-X(a, STATIC,   SINGULAR, UINT64,   age_seconds,       3) \
-X(a, STATIC,   SINGULAR, UINT64,   dissolve_delay_seconds,   4) \
-X(a, CALLBACK, REPEATED, MESSAGE,  recent_ballots,    5) \
-X(a, STATIC,   SINGULAR, UINT64,   voting_power,      6) \
-X(a, STATIC,   SINGULAR, UINT64,   created_timestamp_seconds,   7)
+#define ic_nns_governance_pb_v1_NeuronInfo_FIELDLIST(X, a)            \
+    X(a, STATIC, SINGULAR, UINT64, retrieved_at_timestamp_seconds, 1) \
+    X(a, STATIC, SINGULAR, UINT64, age_seconds, 3)                    \
+    X(a, STATIC, SINGULAR, UINT64, dissolve_delay_seconds, 4)         \
+    X(a, CALLBACK, REPEATED, MESSAGE, recent_ballots, 5)              \
+    X(a, STATIC, SINGULAR, UINT64, voting_power, 6)                   \
+    X(a, STATIC, SINGULAR, UINT64, created_timestamp_seconds, 7)
 #define ic_nns_governance_pb_v1_NeuronInfo_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_NeuronInfo_DEFAULT NULL
 #define ic_nns_governance_pb_v1_NeuronInfo_recent_ballots_MSGTYPE ic_nns_governance_pb_v1_BallotInfo
 
-#define ic_nns_governance_pb_v1_Neuron_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  id,                1) \
-X(a, CALLBACK, SINGULAR, BYTES,    account,           2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  controller,        3) \
-X(a, CALLBACK, REPEATED, MESSAGE,  hot_keys,          4) \
-X(a, STATIC,   SINGULAR, UINT64,   cached_neuron_stake_e8s,   5) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_fees_e8s,   6) \
-X(a, STATIC,   SINGULAR, UINT64,   created_timestamp_seconds,   7) \
-X(a, STATIC,   SINGULAR, UINT64,   aging_since_timestamp_seconds,   8) \
-X(a, STATIC,   ONEOF,    UINT64,   (dissolve_state,when_dissolved_timestamp_seconds,dissolve_state.when_dissolved_timestamp_seconds),   9) \
-X(a, STATIC,   ONEOF,    UINT64,   (dissolve_state,dissolve_delay_seconds,dissolve_state.dissolve_delay_seconds),  10) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,        11) \
-X(a, CALLBACK, REPEATED, MESSAGE,  recent_ballots,   12) \
-X(a, STATIC,   SINGULAR, BOOL,     kyc_verified,     13) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  transfer,         14) \
-X(a, STATIC,   SINGULAR, UINT64,   maturity_e8s_equivalent,  15) \
-X(a, STATIC,   SINGULAR, BOOL,     not_for_profit,   16)
+#define ic_nns_governance_pb_v1_Neuron_FIELDLIST(X, a)                                                               \
+    X(a, STATIC, OPTIONAL, MESSAGE, id, 1)                                                                           \
+    X(a, CALLBACK, SINGULAR, BYTES, account, 2)                                                                      \
+    X(a, STATIC, OPTIONAL, MESSAGE, controller, 3)                                                                   \
+    X(a, CALLBACK, REPEATED, MESSAGE, hot_keys, 4)                                                                   \
+    X(a, STATIC, SINGULAR, UINT64, cached_neuron_stake_e8s, 5)                                                       \
+    X(a, STATIC, SINGULAR, UINT64, neuron_fees_e8s, 6)                                                               \
+    X(a, STATIC, SINGULAR, UINT64, created_timestamp_seconds, 7)                                                     \
+    X(a, STATIC, SINGULAR, UINT64, aging_since_timestamp_seconds, 8)                                                 \
+    X(a, STATIC, ONEOF, UINT64,                                                                                      \
+      (dissolve_state, when_dissolved_timestamp_seconds, dissolve_state.when_dissolved_timestamp_seconds), 9)        \
+    X(a, STATIC, ONEOF, UINT64, (dissolve_state, dissolve_delay_seconds, dissolve_state.dissolve_delay_seconds), 10) \
+    X(a, CALLBACK, REPEATED, MESSAGE, followees, 11)                                                                 \
+    X(a, CALLBACK, REPEATED, MESSAGE, recent_ballots, 12)                                                            \
+    X(a, STATIC, SINGULAR, BOOL, kyc_verified, 13)                                                                   \
+    X(a, STATIC, OPTIONAL, MESSAGE, transfer, 14)                                                                    \
+    X(a, STATIC, SINGULAR, UINT64, maturity_e8s_equivalent, 15)                                                      \
+    X(a, STATIC, SINGULAR, BOOL, not_for_profit, 16)
 #define ic_nns_governance_pb_v1_Neuron_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_Neuron_DEFAULT NULL
 #define ic_nns_governance_pb_v1_Neuron_id_MSGTYPE ic_base_types_pb_v1_NeuronId
@@ -676,27 +823,26 @@ X(a, STATIC,   SINGULAR, BOOL,     not_for_profit,   16)
 #define ic_nns_governance_pb_v1_Neuron_recent_ballots_MSGTYPE ic_nns_governance_pb_v1_BallotInfo
 #define ic_nns_governance_pb_v1_Neuron_transfer_MSGTYPE ic_nns_governance_pb_v1_NeuronStakeTransfer
 
-#define ic_nns_governance_pb_v1_Neuron_Followees_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  followees,         1)
+#define ic_nns_governance_pb_v1_Neuron_Followees_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, followees, 1)
 #define ic_nns_governance_pb_v1_Neuron_Followees_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_Neuron_Followees_DEFAULT NULL
 #define ic_nns_governance_pb_v1_Neuron_Followees_followees_MSGTYPE ic_base_types_pb_v1_NeuronId
 
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, INT32,    key,               1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  value,             2)
+    X(a, STATIC, SINGULAR, INT32, key, 1)                             \
+    X(a, STATIC, OPTIONAL, MESSAGE, value, 2)
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_CALLBACK NULL
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_DEFAULT NULL
 #define ic_nns_governance_pb_v1_Neuron_FolloweesEntry_value_MSGTYPE ic_nns_governance_pb_v1_Neuron_Followees
 
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   transfer_timestamp,   1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from,              2) \
-X(a, CALLBACK, SINGULAR, BYTES,    from_subaccount,   3) \
-X(a, CALLBACK, SINGULAR, BYTES,    to_subaccount,     4) \
-X(a, STATIC,   SINGULAR, UINT64,   neuron_stake_e8s,   5) \
-X(a, STATIC,   SINGULAR, UINT64,   block_height,      6) \
-X(a, STATIC,   SINGULAR, UINT64,   memo,              7)
+    X(a, STATIC, SINGULAR, UINT64, transfer_timestamp, 1)           \
+    X(a, STATIC, OPTIONAL, MESSAGE, from, 2)                        \
+    X(a, CALLBACK, SINGULAR, BYTES, from_subaccount, 3)             \
+    X(a, CALLBACK, SINGULAR, BYTES, to_subaccount, 4)               \
+    X(a, STATIC, SINGULAR, UINT64, neuron_stake_e8s, 5)             \
+    X(a, STATIC, SINGULAR, UINT64, block_height, 6)                 \
+    X(a, STATIC, SINGULAR, UINT64, memo, 7)
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_CALLBACK pb_default_field_callback
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_DEFAULT NULL
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_from_MSGTYPE ic_base_types_pb_v1_PrincipalId
@@ -735,12 +881,14 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define ic_nns_governance_pb_v1_ManageNeuron_fields &ic_nns_governance_pb_v1_ManageNeuron_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_fields &ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_msg
+#define ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_fields \
+    &ic_nns_governance_pb_v1_ManageNeuron_IncreaseDissolveDelay_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_fields &ic_nns_governance_pb_v1_ManageNeuron_StartDissolving_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_fields &ic_nns_governance_pb_v1_ManageNeuron_StopDissolving_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_fields &ic_nns_governance_pb_v1_ManageNeuron_AddHotKey_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_fields &ic_nns_governance_pb_v1_ManageNeuron_RemoveHotKey_msg
-#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_fields &ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_msg
+#define ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_fields \
+    &ic_nns_governance_pb_v1_ManageNeuron_JoinCommunityFund_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Configure_fields &ic_nns_governance_pb_v1_ManageNeuron_Configure_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Spawn_fields &ic_nns_governance_pb_v1_ManageNeuron_Spawn_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_Disburse_fields &ic_nns_governance_pb_v1_ManageNeuron_Disburse_msg
@@ -749,16 +897,23 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_fields &ic_nns_governance_pb_v1_ManageNeuron_RegisterVote_msg
 #define ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_fields &ic_nns_governance_pb_v1_ManageNeuron_MergeMaturity_msg
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_msg
-#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_fields &ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_fields \
+    &ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_fields \
+    &ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_fields \
+    &ic_nns_governance_pb_v1_ManageNeuronResponse_SpawnResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_fields \
+    &ic_nns_governance_pb_v1_ManageNeuronResponse_MergeMaturityResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_fields \
+    &ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_msg
+#define ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_fields \
+    &ic_nns_governance_pb_v1_ManageNeuronResponse_RegisterVoteResponse_msg
 #define ic_nns_governance_pb_v1_GovernanceError_fields &ic_nns_governance_pb_v1_GovernanceError_msg
 #define ic_nns_governance_pb_v1_ListNeurons_fields &ic_nns_governance_pb_v1_ListNeurons_msg
 #define ic_nns_governance_pb_v1_ListNeuronsResponse_fields &ic_nns_governance_pb_v1_ListNeuronsResponse_msg
-#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_fields &ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_msg
+#define ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_fields \
+    &ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_msg
 #define ic_nns_governance_pb_v1_BallotInfo_fields &ic_nns_governance_pb_v1_BallotInfo_msg
 #define ic_nns_governance_pb_v1_NeuronInfo_fields &ic_nns_governance_pb_v1_NeuronInfo_msg
 #define ic_nns_governance_pb_v1_Neuron_fields &ic_nns_governance_pb_v1_Neuron_msg
@@ -767,17 +922,23 @@ extern const pb_msgdesc_t ic_nns_governance_pb_v1_NeuronStakeTransfer_msg;
 #define ic_nns_governance_pb_v1_NeuronStakeTransfer_fields &ic_nns_governance_pb_v1_NeuronStakeTransfer_msg
 
 /* Maximum encoded size of messages (where known) */
-/* ic_nns_governance_pb_v1_ManageNeuronResponse_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_ManageNeuronResponse_size depends on runtime
+ * parameters */
 /* ic_nns_governance_pb_v1_GovernanceError_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_ListNeurons_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListNeuronsResponse_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_size depends on runtime parameters */
+/* ic_nns_governance_pb_v1_ListNeuronsResponse_size depends on runtime
+ * parameters */
+/* ic_nns_governance_pb_v1_ListNeuronsResponse_NeuronMapEntry_size depends on
+ * runtime parameters */
 /* ic_nns_governance_pb_v1_NeuronInfo_size depends on runtime parameters */
 /* ic_nns_governance_pb_v1_Neuron_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Neuron_Followees_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_Neuron_FolloweesEntry_size depends on runtime parameters */
-/* ic_nns_governance_pb_v1_NeuronStakeTransfer_size depends on runtime parameters */
-#define ic_nns_governance_pb_v1_BallotInfo_size  15
+/* ic_nns_governance_pb_v1_Neuron_Followees_size depends on runtime parameters
+ */
+/* ic_nns_governance_pb_v1_Neuron_FolloweesEntry_size depends on runtime
+ * parameters */
+/* ic_nns_governance_pb_v1_NeuronStakeTransfer_size depends on runtime
+ * parameters */
+#define ic_nns_governance_pb_v1_BallotInfo_size 15
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_ConfigureResponse_size 0
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_DisburseResponse_size 11
 #define ic_nns_governance_pb_v1_ManageNeuronResponse_FollowResponse_size 0

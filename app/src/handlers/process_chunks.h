@@ -1,40 +1,39 @@
 /*******************************************************************************
-*   (c) 2018, 2019 Zondax GmbH
-*   (c) 2016 Ledger
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2018, 2019 Zondax AG
+ *   (c) 2016 Ledger
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 
 #pragma once
-#include "app_main.h"
-
-#include <string.h>
-#include <os_io_seproxyhal.h>
 #include <os.h>
+#include <os_io_seproxyhal.h>
+#include <string.h>
 #include <ux.h>
 
+#include "actions.h"
+#include "addr.h"
+#include "app_main.h"
 #include "app_mode.h"
+#include "bls.h"
+#include "coin.h"
+#include "crypto.h"
+#include "nvdata.h"
 #include "parser_impl.h"
+#include "tx.h"
 #include "view.h"
 #include "view_internal.h"
-#include "actions.h"
-#include "tx.h"
-#include "addr.h"
-#include "crypto.h"
-#include "coin.h"
 #include "zxmacros.h"
-#include "bls.h"
-#include "nvdata.h"
 
 static bool tx_initialized = false;
 
@@ -102,4 +101,3 @@ __Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
     tx_initialized = false;
     THROW(APDU_CODE_INVALIDP1P2);
 }
-

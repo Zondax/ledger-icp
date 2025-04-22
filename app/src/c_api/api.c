@@ -16,20 +16,21 @@
 #if defined(BLS_SIGNATURE)
 #include <os.h>
 #include <os_io_seproxyhal.h>
+
+#include "coin.h"
+#include "crypto.h"
 #include "zxcanary.h"
 #include "zxmacros.h"
-#include "crypto.h"
-#include "coin.h"
 
 int8_t c_fill_principal(uint8_t *output, uint16_t output_len, uint16_t *response_len) {
     answer_t answer = {0};
     uint16_t addr_len = 0;
 
-    if (output_len < DFINITY_PRINCIPAL_LEN){
+    if (output_len < DFINITY_PRINCIPAL_LEN) {
         *response_len = 0;
         return -1;
     }
-    zxerr_t err = crypto_fillAddress((uint8_t*)&answer, sizeof(answer), &addr_len);
+    zxerr_t err = crypto_fillAddress((uint8_t *)&answer, sizeof(answer), &addr_len);
     if (err != zxerr_ok) {
         *response_len = 0;
         return -1;
@@ -42,9 +43,7 @@ int8_t c_fill_principal(uint8_t *output, uint16_t output_len, uint16_t *response
     return 0;
 }
 
-void io_heartbeat() {
-    io_seproxyhal_io_heartbeat();
-}
+void io_heartbeat() { io_seproxyhal_io_heartbeat(); }
 
 void log_number(const char *str, int number) {
     ZEMU_LOGF(50, "%s: %d\n", str, number);
@@ -52,7 +51,5 @@ void log_number(const char *str, int number) {
     (void)number;
 }
 
-void _check_canary() {
-    CHECK_APP_CANARY();
-}
+void _check_canary() { CHECK_APP_CANARY(); }
 #endif

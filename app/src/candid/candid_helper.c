@@ -1,26 +1,27 @@
 /*******************************************************************************
-*   (c) 2018 - 2023s Zondax AG
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2018 - 2023s Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #define CANDID_TESTING 0
 
 #include "candid_helper.h"
+
 #include "leb128.h"
 
 #define MAX_TYPE_TABLE_SIZE 16384
 
-// Good reference:  https://github.com/dfinity/agent-js/tree/main/packages/candid
+// Good reference: https://github.com/dfinity/agent-js/tree/main/packages/candid
 // https://github.com/dfinity/candid/blob/master/spec/Candid.md#deserialisation
 
 static parser_error_t checkCandidMAGIC(parser_context_t *ctx) {
@@ -47,7 +48,7 @@ const char *IDLTypeToString(IDLTypes_e t) {
             return "Nat";
         case Int:
             return "Int";
-////
+            ////
         case Nat8:
             return "Nat8";
         case Nat16:
@@ -56,7 +57,7 @@ const char *IDLTypeToString(IDLTypes_e t) {
             return "Nat32";
         case Nat64:
             return "Nat64";
-////
+            ////
         case Int8:
             return "Int8";
         case Int16:
@@ -65,7 +66,7 @@ const char *IDLTypeToString(IDLTypes_e t) {
             return "Int32";
         case Int64:
             return "Int64";
-////
+            ////
         case Float32:
             return "Float32";
         case Float64:
@@ -154,7 +155,7 @@ parser_error_t readCandidNat32(parser_context_t *ctx, uint32_t *v) {
 
     for (uint8_t i = 0; i < 32; i += 8) {
         CHECK_PARSER_ERR(readCandidByte(ctx, &b))
-        *v += (uint32_t) b << i;
+        *v += (uint32_t)b << i;
     }
     return parser_ok;
 }
@@ -166,7 +167,7 @@ parser_error_t readCandidInt32(parser_context_t *ctx, int32_t *v) {
 
     for (uint8_t i = 0; i < 32; i += 8) {
         CHECK_PARSER_ERR(readCandidByte(ctx, &b))
-        *v += (int32_t) b << i;
+        *v += (int32_t)b << i;
     }
     return parser_ok;
 }
@@ -178,7 +179,7 @@ parser_error_t readCandidNat64(parser_context_t *ctx, uint64_t *v) {
 
     for (uint8_t i = 0; i < 64; i += 8) {
         CHECK_PARSER_ERR(readCandidByte(ctx, &b))
-        *v += (uint64_t) b << i;
+        *v += (uint64_t)b << i;
     }
     return parser_ok;
 }
@@ -200,7 +201,7 @@ parser_error_t readCandidType(parser_context_t *ctx, int64_t *t) {
         return parser_value_out_of_range;
     }
 
-    if (*t > (int64_t) ctx->tx_obj->candid_typetableSize) {
+    if (*t > (int64_t)ctx->tx_obj->candid_typetableSize) {
         return parser_value_out_of_range;
     }
 
@@ -210,11 +211,11 @@ parser_error_t readCandidType(parser_context_t *ctx, int64_t *t) {
 parser_error_t readAndCheckRootType(parser_context_t *ctx) {
     int64_t tmpType = -1;
     CHECK_PARSER_ERR(readCandidType(ctx, &tmpType))
-    if (tmpType < 0 || (uint64_t) tmpType >= ctx->tx_obj->candid_typetableSize) {
+    if (tmpType < 0 || (uint64_t)tmpType >= ctx->tx_obj->candid_typetableSize) {
         return parser_unexpected_type;
     }
 
-    ctx->tx_obj->candid_rootType = (uint64_t) tmpType;
+    ctx->tx_obj->candid_rootType = (uint64_t)tmpType;
 
     return parser_ok;
 }
@@ -283,8 +284,7 @@ parser_error_t readCandidInnerElement(candid_transaction_t *txn, candid_element_
         CHECK_PARSER_ERR(readCandidType(&txn->ctx, &t))
 #if CANDID_TESTING
         if (t < 0) {
-            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %s", i, hash, CustomTypeToString(hash),
-                      IDLTypeToString(t))
+            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %s", i, hash, CustomTypeToString(hash), IDLTypeToString(t))
         } else {
             ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %03lld", i, hash, CustomTypeToString(hash), t)
         }
@@ -318,8 +318,7 @@ static parser_error_t readCandidTypeTable_Variant(parser_context_t *ctx) {
         CHECK_PARSER_ERR(readCandidType(ctx, &t))
 #if CANDID_TESTING
         if (t < 0) {
-            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %s", i, hash, CustomTypeToString(hash),
-                      IDLTypeToString(t))
+            ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %s", i, hash, CustomTypeToString(hash), IDLTypeToString(t))
         } else {
             ZEMU_LOGF(100, "          [idx %lld] %016lld %s -> %03lld", i, hash, CustomTypeToString(hash), t)
         }
@@ -335,9 +334,7 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
             zemu_log_stack("readCandidTypeTable::Opt");
             CHECK_PARSER_ERR(readCandidTypeTable_Opt(ctx))
 #if CANDID_TESTING
-            ZEMU_LOGF(50, "[%03llu/%03llu] [opt    ]",
-                      typeIdx,
-                      ctx->tx_obj->candid_typetableSize - 1)
+            ZEMU_LOGF(50, "[%03llu/%03llu] [opt    ]", typeIdx, ctx->tx_obj->candid_typetableSize - 1)
 #endif
             break;
         }
@@ -345,9 +342,7 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
             zemu_log_stack("readCandidTypeTable::Vector");
             CHECK_PARSER_ERR(readCandidTypeTable_VectorItem(ctx))
 #if CANDID_TESTING
-            ZEMU_LOGF(50, "[%03llu/%03llu] [vector ]",
-                      typeIdx,
-                      ctx->tx_obj->candid_typetableSize - 1)
+            ZEMU_LOGF(50, "[%03llu/%03llu] [vector ]", typeIdx, ctx->tx_obj->candid_typetableSize - 1)
 #endif
             break;
         }
@@ -357,9 +352,7 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
             zemu_log_stack("readCandidTypeTable::Record");
             CHECK_PARSER_ERR(readCandidTypeTable_Variant(ctx))
 #if CANDID_TESTING
-            ZEMU_LOGF(50, "[%03llu/%03llu] [record ]",
-                      typeIdx,
-                      ctx->tx_obj->candid_typetableSize - 1)
+            ZEMU_LOGF(50, "[%03llu/%03llu] [record ]", typeIdx, ctx->tx_obj->candid_typetableSize - 1)
 #endif
             break;
         }
@@ -367,9 +360,7 @@ parser_error_t readCandidTypeTable_Item(parser_context_t *ctx, const int64_t *ty
             zemu_log_stack("readCandidTypeTable::Variant");
             CHECK_PARSER_ERR(readCandidTypeTable_Variant(ctx))
 #if CANDID_TESTING
-            ZEMU_LOGF(50, "[%03llu/%03llu] [variant]",
-                      typeIdx,
-                      ctx->tx_obj->candid_typetableSize - 1)
+            ZEMU_LOGF(50, "[%03llu/%03llu] [variant]", typeIdx, ctx->tx_obj->candid_typetableSize - 1)
 #endif
             break;
         }
@@ -443,7 +434,7 @@ static parser_error_t readCandidTypeTable(parser_context_t *ctx, candid_transact
     ZEMU_LOGF(50, "-------------------------------\n")
     for (uint64_t itemIdx = 0; itemIdx < ctx->tx_obj->candid_typetableSize; itemIdx++) {
         CHECK_PARSER_ERR(readCandidType(ctx, &type))
-        txn->txn_type = (IDLTypes_e) type;
+        txn->txn_type = (IDLTypes_e)type;
         CHECK_PARSER_ERR(readCandidTypeTable_Item(ctx, &type, itemIdx))
     }
     ZEMU_LOGF(50, "-------------------------------\n")
