@@ -21,6 +21,7 @@ RUST_TARGET := thumbv6m-none-eabi
 
 RUST_TARGET_NAME := $(TARGET_NAME)
 
+# This is to support Flex in the ledger-rust dependency 
 NBGL_TARGETS := TARGET_STAX TARGET_FLEX
 ifeq ($(TARGET_NAME),$(filter $(TARGET_NAME), $(NBGL_TARGETS)))
 RUST_TARGET_NAME := TARGET_STAX
