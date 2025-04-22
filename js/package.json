@@ -1,6 +1,6 @@
 {
   "name": "@zondax/ledger-icp",
-  "author": "Zondax GmbH",
+  "author": "Zondax AG",
   "license": "Apache-2.0",
   "version": "0.1.0",
   "description": "Node API for the Internet Computer App (Ledger Nano S/X)",

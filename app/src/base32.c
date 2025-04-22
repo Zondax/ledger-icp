@@ -1,4 +1,4 @@
-// Modified by Zondax GmbH
+// Modified by Zondax AG
 //
 // Base32 implementation
 //
