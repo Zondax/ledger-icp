@@ -14,7 +14,7 @@
 *  limitations under the License.
 ********************************************************************************/
 
-pub const MAX_PAGES: usize = 10;
+pub const MAX_PAGES: usize = 9;
 // Configuration constants based on target device
 // means max number of lines per page
 pub const MAX_LINES: usize = 3;
