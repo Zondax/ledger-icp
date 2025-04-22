@@ -1,57 +1,59 @@
 /*******************************************************************************
-*   (c) 2019 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2019 Zondax GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 
+#include "parser.h"
+
+#include <app_mode.h>
 #include <stdio.h>
 #include <zxmacros.h>
-#include <app_mode.h>
+
 #include "candid_parser.h"
-#include "parser_impl.h"
-#include "parser.h"
 #include "coin.h"
-#include "parser_txdef.h"
 #include "crypto.h"
 #include "formatting.h"
-#include "zxformat.h"
-#include "timeutils.h"
+#include "parser_impl.h"
 #include "parser_print_candid.h"
 #include "parser_print_helper.h"
 #include "parser_print_protobuf.h"
+#include "parser_txdef.h"
+#include "timeutils.h"
+#include "zxformat.h"
 #if defined(BLS_SIGNATURE)
 #include "rslib.h"
 #endif
 
-
-
 #if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
 // For some reason NanoX requires this function
-void __assert_fail(__Z_UNUSED const char * assertion, __Z_UNUSED const char * file, __Z_UNUSED unsigned int line, __Z_UNUSED const char * function){
-    while(1) {};
+void __assert_fail(__Z_UNUSED const char *assertion, __Z_UNUSED const char *file, __Z_UNUSED unsigned int line,
+                   __Z_UNUSED const char *function) {
+    while (1) {
+    };
 }
 #endif
 
-#define GEN_DEC_READFIX_UNSIGNED(BITS) parser_error_t _readUInt ## BITS(parser_context_t *ctx, uint ## BITS ##_t *value) \
-{                                                                                           \
-    if (value == NULL)  return parser_no_data;                                              \
-    *value = 0u;                                                                            \
-    for(uint8_t i=0u; i < (BITS##u>>3u); i++, ctx->offset++) {                              \
-        if (ctx->offset >= ctx->bufferLen) return parser_unexpected_buffer_end;             \
-        *value += (uint ## BITS ##_t) *(ctx->buffer + ctx->offset) << (8u*i);               \
-    }                                                                                       \
-    return parser_ok;                                                                       \
-}
+#define GEN_DEC_READFIX_UNSIGNED(BITS)                                              \
+    parser_error_t _readUInt##BITS(parser_context_t *ctx, uint##BITS##_t *value) {  \
+        if (value == NULL) return parser_no_data;                                   \
+        *value = 0u;                                                                \
+        for (uint8_t i = 0u; i < (BITS##u >> 3u); i++, ctx->offset++) {             \
+            if (ctx->offset >= ctx->bufferLen) return parser_unexpected_buffer_end; \
+            *value += (uint##BITS##_t) * (ctx->buffer + ctx->offset) << (8u * i);   \
+        }                                                                           \
+        return parser_ok;                                                           \
+    }
 
 GEN_DEC_READFIX_UNSIGNED(8)
 
@@ -66,11 +68,11 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
         return parser_no_data;
     }
     zemu_log_stack("parser parse combined");
-    //if combined_tx:
-    //split data in two transactions
-    //should start with checking status
-    //add one more check in validate
-    //define txtype
+    // if combined_tx:
+    // split data in two transactions
+    // should start with checking status
+    // add one more check in validate
+    // define txtype
     const uint8_t *start_state_read_data = data;
     CHECK_PARSER_ERR(parser_init(ctx, start_state_read_data, dataLen))
     uint32_t dataLen_state_read = 0;
@@ -135,7 +137,7 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
 
     char tmpKey[70] = {0};
-    char tmpVal[180] = {0}; // up to 180 in stax
+    char tmpVal[180] = {0};  // up to 180 in stax
 
     for (uint8_t idx = 0; idx < numItems; idx++) {
         uint8_t pageCount = 0;
@@ -151,11 +153,9 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     return parser_ok;
 }
 
-static parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx,
-                                                  uint8_t displayIdx,
-                                                  char *outKey, uint16_t outKeyLen,
-                                                  char *outVal, uint16_t outValLen,
-                                                  uint8_t pageIdx, uint8_t *pageCount) {
+static parser_error_t parser_getItemTransactionStateRead(const parser_context_t *ctx, uint8_t displayIdx, char *outKey,
+                                                         uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                                         uint8_t pageIdx, uint8_t *pageCount) {
     MEMZERO(outKey, outKeyLen);
     MEMZERO(outVal, outValLen);
     snprintf(outKey, outKeyLen, "?");
@@ -181,7 +181,7 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
 
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
-            return print_principal(fields->sender.data, (uint16_t) fields->sender.len, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(fields->sender.data, (uint16_t)fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
 
         displayIdx -= 2;
@@ -191,18 +191,15 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
         }
 
         snprintf(outKey, outKeyLen, "Request ID ");
-        return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len,
-                                              outVal, outValLen, pageIdx, pageCount);
+        return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len, outVal, outValLen,
+                                              pageIdx, pageCount);
     }
 
     return parser_ok;
 }
 
-parser_error_t parser_getItem(const parser_context_t *ctx,
-                              uint8_t displayIdx,
-                              char *outKey, uint16_t outKeyLen,
-                              char *outVal, uint16_t outValLen,
-                              uint8_t pageIdx, uint8_t *pageCount) {
+parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
+                              char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
     switch (parser_tx_obj.txtype) {
         case call: {
@@ -211,10 +208,7 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 case pb_manageneuron:
                 case pb_listneurons:
                 case pb_claimneurons: {
-                    return parser_getItemProtobuf(displayIdx,
-                                                  outKey, outKeyLen,
-                                                  outVal, outValLen,
-                                                  pageIdx, pageCount);
+                    return parser_getItemProtobuf(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
                 }
 
                 case candid_manageneuron:
@@ -222,24 +216,19 @@ parser_error_t parser_getItem(const parser_context_t *ctx,
                 case candid_updatenodeprovider:
                 case candid_transfer:
                 case candid_icrc_transfer: {
-                    return parser_getItemCandid(ctx, displayIdx,
-                                                outKey, outKeyLen,
-                                                outVal, outValLen,
-                                                pageIdx, pageCount);
+                    return parser_getItemCandid(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
                 }
 
-                default :
+                default:
                     break;
             }
             break;
         }
         case state_transaction_read: {
-            return parser_getItemTransactionStateRead(ctx, displayIdx,
-                                                      outKey, outKeyLen,
-                                                      outVal, outValLen,
-                                                      pageIdx, pageCount);
+            return parser_getItemTransactionStateRead(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx,
+                                                      pageCount);
         }
-        default :
+        default:
             break;
     }
 
@@ -255,11 +244,8 @@ parser_error_t parser_certNumItems(uint8_t *num_items) {
     return parser_ok;
 }
 
-parser_error_t parser_certGetItem(uint8_t displayIdx,
-                              char *outKey, uint16_t outKeyLen,
-                              char *outVal, uint16_t outValLen,
-                              uint8_t pageIdx, uint8_t *pageCount) {
-
+parser_error_t parser_certGetItem(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                  uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
     return rs_getItem(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 }

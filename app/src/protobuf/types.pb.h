@@ -5,6 +5,7 @@
 #define PB_IC_LEDGER_PB_V1_TYPES_PB_H_INCLUDED
 
 #include <pb.h>
+
 #include "base_types.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
@@ -54,7 +55,8 @@ typedef struct _ic_ledger_pb_v1_IterBlocksResponse {
     pb_callback_t blocks;
 } ic_ledger_pb_v1_IterBlocksResponse;
 
-/* The format of values serialized to/from the stable memory during and upgrade */
+/* The format of values serialized to/from the stable memory during and upgrade
+ */
 typedef struct _ic_ledger_pb_v1_LedgerUpgrade {
     char dummy_field;
 } ic_ledger_pb_v1_LedgerUpgrade;
@@ -324,117 +326,328 @@ typedef struct _ic_ledger_pb_v1_Block {
     ic_ledger_pb_v1_Transaction transaction;
 } ic_ledger_pb_v1_Block;
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ic_ledger_pb_v1_LedgerInit_init_default  {false, ic_ledger_pb_v1_AccountIdentifier_init_default, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_default, 0}
-#define ic_ledger_pb_v1_LedgerUpgrade_init_default {0}
-#define ic_ledger_pb_v1_SendRequest_init_default {false, ic_ledger_pb_v1_Memo_init_default, false, ic_ledger_pb_v1_Payment_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_TimeStamp_init_default}
-#define ic_ledger_pb_v1_SendResponse_init_default {false, ic_ledger_pb_v1_BlockHeight_init_default}
-#define ic_ledger_pb_v1_NotifyRequest_init_default {false, ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false, ic_base_types_pb_v1_PrincipalId_init_default, false, ic_ledger_pb_v1_Subaccount_init_default}
-#define ic_ledger_pb_v1_NotifyResponse_init_default {0}
-#define ic_ledger_pb_v1_TransactionNotificationRequest_init_default {false, ic_base_types_pb_v1_PrincipalId_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false, ic_base_types_pb_v1_PrincipalId_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false, ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_Memo_init_default}
-#define ic_ledger_pb_v1_TransactionNotificationResponse_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_CyclesNotificationResponse_init_default {0, {ic_base_types_pb_v1_PrincipalId_init_default}}
-#define ic_ledger_pb_v1_AccountBalanceRequest_init_default {false, ic_ledger_pb_v1_AccountIdentifier_init_default}
-#define ic_ledger_pb_v1_AccountBalanceResponse_init_default {false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_TipOfChainRequest_init_default {0}
-#define ic_ledger_pb_v1_TipOfChainResponse_init_default {false, ic_ledger_pb_v1_Certification_init_default, false, ic_ledger_pb_v1_BlockHeight_init_default}
-#define ic_ledger_pb_v1_TotalSupplyRequest_init_default {0}
-#define ic_ledger_pb_v1_TotalSupplyResponse_init_default {false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_LedgerArchiveRequest_init_default {false, ic_ledger_pb_v1_TimeStamp_init_default}
-#define ic_ledger_pb_v1_BlockRequest_init_default {0}
-#define ic_ledger_pb_v1_EncodedBlock_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_BlockResponse_init_default {0, {ic_ledger_pb_v1_EncodedBlock_init_default}}
-#define ic_ledger_pb_v1_GetBlocksRequest_init_default {0, 0}
-#define ic_ledger_pb_v1_Refund_init_default      {false, ic_ledger_pb_v1_BlockHeight_init_default, {{NULL}, NULL}}
-#define ic_ledger_pb_v1_ToppedUp_init_default    {0}
-#define ic_ledger_pb_v1_EncodedBlocks_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_GetBlocksResponse_init_default {0, {ic_ledger_pb_v1_EncodedBlocks_init_default}}
-#define ic_ledger_pb_v1_IterBlocksRequest_init_default {0, 0}
-#define ic_ledger_pb_v1_IterBlocksResponse_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ArchiveIndexEntry_init_default {0, 0, false, ic_base_types_pb_v1_PrincipalId_init_default}
-#define ic_ledger_pb_v1_ArchiveIndexResponse_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ArchiveInit_init_default {0, 0}
-#define ic_ledger_pb_v1_ArchiveAddRequest_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ArchiveAddResponse_init_default {0}
-#define ic_ledger_pb_v1_GetNodesRequest_init_default {0}
-#define ic_ledger_pb_v1_GetNodesResponse_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ICPTs_init_default       {0}
-#define ic_ledger_pb_v1_Payment_init_default     {false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_BlockHeight_init_default {0}
-#define ic_ledger_pb_v1_Block_init_default       {false, ic_ledger_pb_v1_Hash_init_default, false, ic_ledger_pb_v1_TimeStamp_init_default, false, ic_ledger_pb_v1_Transaction_init_default}
-#define ic_ledger_pb_v1_Hash_init_default        {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_Account_init_default     {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_Transaction_init_default {0, {ic_ledger_pb_v1_Burn_init_default}, false, ic_ledger_pb_v1_Memo_init_default, false, ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_TimeStamp_init_default}
-#define ic_ledger_pb_v1_Send_init_default        {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_Mint_init_default        {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_Burn_init_default        {false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default}
-#define ic_ledger_pb_v1_AccountIdentifier_init_default {{0, {0}}}
-#define ic_ledger_pb_v1_Subaccount_init_default  {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_Memo_init_default        {0}
-#define ic_ledger_pb_v1_TimeStamp_init_default   {0}
-#define ic_ledger_pb_v1_Certification_init_default {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_LedgerInit_init_zero     {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, {{NULL}, NULL}, false, ic_base_types_pb_v1_PrincipalId_init_zero, 0}
-#define ic_ledger_pb_v1_LedgerUpgrade_init_zero  {0}
-#define ic_ledger_pb_v1_SendRequest_init_zero    {false, ic_ledger_pb_v1_Memo_init_zero, false, ic_ledger_pb_v1_Payment_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_TimeStamp_init_zero}
-#define ic_ledger_pb_v1_SendResponse_init_zero   {false, ic_ledger_pb_v1_BlockHeight_init_zero}
-#define ic_ledger_pb_v1_NotifyRequest_init_zero  {false, ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false, ic_base_types_pb_v1_PrincipalId_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero}
-#define ic_ledger_pb_v1_NotifyResponse_init_zero {0}
-#define ic_ledger_pb_v1_TransactionNotificationRequest_init_zero {false, ic_base_types_pb_v1_PrincipalId_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false, ic_base_types_pb_v1_PrincipalId_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false, ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_Memo_init_zero}
-#define ic_ledger_pb_v1_TransactionNotificationResponse_init_zero {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_CyclesNotificationResponse_init_zero {0, {ic_base_types_pb_v1_PrincipalId_init_zero}}
-#define ic_ledger_pb_v1_AccountBalanceRequest_init_zero {false, ic_ledger_pb_v1_AccountIdentifier_init_zero}
-#define ic_ledger_pb_v1_AccountBalanceResponse_init_zero {false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_TipOfChainRequest_init_zero {0}
-#define ic_ledger_pb_v1_TipOfChainResponse_init_zero {false, ic_ledger_pb_v1_Certification_init_zero, false, ic_ledger_pb_v1_BlockHeight_init_zero}
-#define ic_ledger_pb_v1_TotalSupplyRequest_init_zero {0}
-#define ic_ledger_pb_v1_TotalSupplyResponse_init_zero {false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_LedgerArchiveRequest_init_zero {false, ic_ledger_pb_v1_TimeStamp_init_zero}
-#define ic_ledger_pb_v1_BlockRequest_init_zero   {0}
-#define ic_ledger_pb_v1_EncodedBlock_init_zero   {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_BlockResponse_init_zero  {0, {ic_ledger_pb_v1_EncodedBlock_init_zero}}
-#define ic_ledger_pb_v1_GetBlocksRequest_init_zero {0, 0}
-#define ic_ledger_pb_v1_Refund_init_zero         {false, ic_ledger_pb_v1_BlockHeight_init_zero, {{NULL}, NULL}}
-#define ic_ledger_pb_v1_ToppedUp_init_zero       {0}
-#define ic_ledger_pb_v1_EncodedBlocks_init_zero  {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_GetBlocksResponse_init_zero {0, {ic_ledger_pb_v1_EncodedBlocks_init_zero}}
-#define ic_ledger_pb_v1_IterBlocksRequest_init_zero {0, 0}
-#define ic_ledger_pb_v1_IterBlocksResponse_init_zero {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ArchiveIndexEntry_init_zero {0, 0, false, ic_base_types_pb_v1_PrincipalId_init_zero}
-#define ic_ledger_pb_v1_ArchiveIndexResponse_init_zero {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ArchiveInit_init_zero    {0, 0}
-#define ic_ledger_pb_v1_ArchiveAddRequest_init_zero {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ArchiveAddResponse_init_zero {0}
-#define ic_ledger_pb_v1_GetNodesRequest_init_zero {0}
-#define ic_ledger_pb_v1_GetNodesResponse_init_zero {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_ICPTs_init_zero          {0}
-#define ic_ledger_pb_v1_Payment_init_zero        {false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_BlockHeight_init_zero    {0}
-#define ic_ledger_pb_v1_Block_init_zero          {false, ic_ledger_pb_v1_Hash_init_zero, false, ic_ledger_pb_v1_TimeStamp_init_zero, false, ic_ledger_pb_v1_Transaction_init_zero}
-#define ic_ledger_pb_v1_Hash_init_zero           {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_Account_init_zero        {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_Transaction_init_zero    {0, {ic_ledger_pb_v1_Burn_init_zero}, false, ic_ledger_pb_v1_Memo_init_zero, false, ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_TimeStamp_init_zero}
-#define ic_ledger_pb_v1_Send_init_zero           {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_Mint_init_zero           {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_Burn_init_zero           {false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero}
-#define ic_ledger_pb_v1_AccountIdentifier_init_zero {{0, {0}}}
-#define ic_ledger_pb_v1_Subaccount_init_zero     {{{NULL}, NULL}}
-#define ic_ledger_pb_v1_Memo_init_zero           {0}
-#define ic_ledger_pb_v1_TimeStamp_init_zero      {0}
-#define ic_ledger_pb_v1_Certification_init_zero  {{{NULL}, NULL}}
+#define ic_ledger_pb_v1_LedgerInit_init_default                                       \
+    {                                                                                 \
+        false, ic_ledger_pb_v1_AccountIdentifier_init_default, {{NULL}, NULL}, false, \
+            ic_base_types_pb_v1_PrincipalId_init_default, 0                           \
+    }
+#define ic_ledger_pb_v1_LedgerUpgrade_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_SendRequest_init_default                                                                    \
+    {                                                                                                               \
+        false, ic_ledger_pb_v1_Memo_init_default, false, ic_ledger_pb_v1_Payment_init_default, false,               \
+            ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false,              \
+            ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_BlockHeight_init_default, false, \
+            ic_ledger_pb_v1_TimeStamp_init_default                                                                  \
+    }
+#define ic_ledger_pb_v1_SendResponse_init_default \
+    { false, ic_ledger_pb_v1_BlockHeight_init_default }
+#define ic_ledger_pb_v1_NotifyRequest_init_default                                                               \
+    {                                                                                                            \
+        false, ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false,       \
+            ic_ledger_pb_v1_Subaccount_init_default, false, ic_base_types_pb_v1_PrincipalId_init_default, false, \
+            ic_ledger_pb_v1_Subaccount_init_default                                                              \
+    }
+#define ic_ledger_pb_v1_NotifyResponse_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_TransactionNotificationRequest_init_default                                                 \
+    {                                                                                                               \
+        false, ic_base_types_pb_v1_PrincipalId_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false, \
+            ic_base_types_pb_v1_PrincipalId_init_default, false, ic_ledger_pb_v1_Subaccount_init_default, false,    \
+            ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_ICPTs_init_default, false,             \
+            ic_ledger_pb_v1_Memo_init_default                                                                       \
+    }
+#define ic_ledger_pb_v1_TransactionNotificationResponse_init_default \
+    {                                                                \
+        { {NULL}, NULL }                                             \
+    }
+#define ic_ledger_pb_v1_CyclesNotificationResponse_init_default \
+    {                                                           \
+        0, { ic_base_types_pb_v1_PrincipalId_init_default }     \
+    }
+#define ic_ledger_pb_v1_AccountBalanceRequest_init_default \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_default }
+#define ic_ledger_pb_v1_AccountBalanceResponse_init_default \
+    { false, ic_ledger_pb_v1_ICPTs_init_default }
+#define ic_ledger_pb_v1_TipOfChainRequest_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_TipOfChainResponse_init_default \
+    { false, ic_ledger_pb_v1_Certification_init_default, false, ic_ledger_pb_v1_BlockHeight_init_default }
+#define ic_ledger_pb_v1_TotalSupplyRequest_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_TotalSupplyResponse_init_default \
+    { false, ic_ledger_pb_v1_ICPTs_init_default }
+#define ic_ledger_pb_v1_LedgerArchiveRequest_init_default \
+    { false, ic_ledger_pb_v1_TimeStamp_init_default }
+#define ic_ledger_pb_v1_BlockRequest_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_EncodedBlock_init_default \
+    {                                             \
+        { {NULL}, NULL }                          \
+    }
+#define ic_ledger_pb_v1_BlockResponse_init_default       \
+    {                                                    \
+        0, { ic_ledger_pb_v1_EncodedBlock_init_default } \
+    }
+#define ic_ledger_pb_v1_GetBlocksRequest_init_default \
+    { 0, 0 }
+#define ic_ledger_pb_v1_Refund_init_default                               \
+    {                                                                     \
+        false, ic_ledger_pb_v1_BlockHeight_init_default, { {NULL}, NULL } \
+    }
+#define ic_ledger_pb_v1_ToppedUp_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_EncodedBlocks_init_default \
+    {                                              \
+        { {NULL}, NULL }                           \
+    }
+#define ic_ledger_pb_v1_GetBlocksResponse_init_default    \
+    {                                                     \
+        0, { ic_ledger_pb_v1_EncodedBlocks_init_default } \
+    }
+#define ic_ledger_pb_v1_IterBlocksRequest_init_default \
+    { 0, 0 }
+#define ic_ledger_pb_v1_IterBlocksResponse_init_default \
+    {                                                   \
+        { {NULL}, NULL }                                \
+    }
+#define ic_ledger_pb_v1_ArchiveIndexEntry_init_default \
+    { 0, 0, false, ic_base_types_pb_v1_PrincipalId_init_default }
+#define ic_ledger_pb_v1_ArchiveIndexResponse_init_default \
+    {                                                     \
+        { {NULL}, NULL }                                  \
+    }
+#define ic_ledger_pb_v1_ArchiveInit_init_default \
+    { 0, 0 }
+#define ic_ledger_pb_v1_ArchiveAddRequest_init_default \
+    {                                                  \
+        { {NULL}, NULL }                               \
+    }
+#define ic_ledger_pb_v1_ArchiveAddResponse_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_GetNodesRequest_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_GetNodesResponse_init_default \
+    {                                                 \
+        { {NULL}, NULL }                              \
+    }
+#define ic_ledger_pb_v1_ICPTs_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_Payment_init_default \
+    { false, ic_ledger_pb_v1_ICPTs_init_default }
+#define ic_ledger_pb_v1_BlockHeight_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_Block_init_default                                                              \
+    {                                                                                                   \
+        false, ic_ledger_pb_v1_Hash_init_default, false, ic_ledger_pb_v1_TimeStamp_init_default, false, \
+            ic_ledger_pb_v1_Transaction_init_default                                                    \
+    }
+#define ic_ledger_pb_v1_Hash_init_default \
+    {                                     \
+        { {NULL}, NULL }                  \
+    }
+#define ic_ledger_pb_v1_Account_init_default \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default }
+#define ic_ledger_pb_v1_Transaction_init_default                                                    \
+    {                                                                                               \
+        0, {ic_ledger_pb_v1_Burn_init_default}, false, ic_ledger_pb_v1_Memo_init_default, false,    \
+            ic_ledger_pb_v1_BlockHeight_init_default, false, ic_ledger_pb_v1_TimeStamp_init_default \
+    }
+#define ic_ledger_pb_v1_Send_init_default                                                                             \
+    {                                                                                                                 \
+        false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_AccountIdentifier_init_default, \
+            false, ic_ledger_pb_v1_ICPTs_init_default, false, ic_ledger_pb_v1_ICPTs_init_default                      \
+    }
+#define ic_ledger_pb_v1_Mint_init_default \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default }
+#define ic_ledger_pb_v1_Burn_init_default \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_default, false, ic_ledger_pb_v1_ICPTs_init_default }
+#define ic_ledger_pb_v1_AccountIdentifier_init_default \
+    {                                                  \
+        {                                              \
+            0, { 0 }                                   \
+        }                                              \
+    }
+#define ic_ledger_pb_v1_Subaccount_init_default \
+    {                                           \
+        { {NULL}, NULL }                        \
+    }
+#define ic_ledger_pb_v1_Memo_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_TimeStamp_init_default \
+    { 0 }
+#define ic_ledger_pb_v1_Certification_init_default \
+    {                                              \
+        { {NULL}, NULL }                           \
+    }
+#define ic_ledger_pb_v1_LedgerInit_init_zero                                       \
+    {                                                                              \
+        false, ic_ledger_pb_v1_AccountIdentifier_init_zero, {{NULL}, NULL}, false, \
+            ic_base_types_pb_v1_PrincipalId_init_zero, 0                           \
+    }
+#define ic_ledger_pb_v1_LedgerUpgrade_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_SendRequest_init_zero                                                                 \
+    {                                                                                                         \
+        false, ic_ledger_pb_v1_Memo_init_zero, false, ic_ledger_pb_v1_Payment_init_zero, false,               \
+            ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false,              \
+            ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_BlockHeight_init_zero, false, \
+            ic_ledger_pb_v1_TimeStamp_init_zero                                                               \
+    }
+#define ic_ledger_pb_v1_SendResponse_init_zero \
+    { false, ic_ledger_pb_v1_BlockHeight_init_zero }
+#define ic_ledger_pb_v1_NotifyRequest_init_zero                                                            \
+    {                                                                                                      \
+        false, ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false,       \
+            ic_ledger_pb_v1_Subaccount_init_zero, false, ic_base_types_pb_v1_PrincipalId_init_zero, false, \
+            ic_ledger_pb_v1_Subaccount_init_zero                                                           \
+    }
+#define ic_ledger_pb_v1_NotifyResponse_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_TransactionNotificationRequest_init_zero                                              \
+    {                                                                                                         \
+        false, ic_base_types_pb_v1_PrincipalId_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false, \
+            ic_base_types_pb_v1_PrincipalId_init_zero, false, ic_ledger_pb_v1_Subaccount_init_zero, false,    \
+            ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero, false,             \
+            ic_ledger_pb_v1_Memo_init_zero                                                                    \
+    }
+#define ic_ledger_pb_v1_TransactionNotificationResponse_init_zero \
+    {                                                             \
+        { {NULL}, NULL }                                          \
+    }
+#define ic_ledger_pb_v1_CyclesNotificationResponse_init_zero \
+    {                                                        \
+        0, { ic_base_types_pb_v1_PrincipalId_init_zero }     \
+    }
+#define ic_ledger_pb_v1_AccountBalanceRequest_init_zero \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_zero }
+#define ic_ledger_pb_v1_AccountBalanceResponse_init_zero \
+    { false, ic_ledger_pb_v1_ICPTs_init_zero }
+#define ic_ledger_pb_v1_TipOfChainRequest_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_TipOfChainResponse_init_zero \
+    { false, ic_ledger_pb_v1_Certification_init_zero, false, ic_ledger_pb_v1_BlockHeight_init_zero }
+#define ic_ledger_pb_v1_TotalSupplyRequest_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_TotalSupplyResponse_init_zero \
+    { false, ic_ledger_pb_v1_ICPTs_init_zero }
+#define ic_ledger_pb_v1_LedgerArchiveRequest_init_zero \
+    { false, ic_ledger_pb_v1_TimeStamp_init_zero }
+#define ic_ledger_pb_v1_BlockRequest_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_EncodedBlock_init_zero \
+    {                                          \
+        { {NULL}, NULL }                       \
+    }
+#define ic_ledger_pb_v1_BlockResponse_init_zero       \
+    {                                                 \
+        0, { ic_ledger_pb_v1_EncodedBlock_init_zero } \
+    }
+#define ic_ledger_pb_v1_GetBlocksRequest_init_zero \
+    { 0, 0 }
+#define ic_ledger_pb_v1_Refund_init_zero                               \
+    {                                                                  \
+        false, ic_ledger_pb_v1_BlockHeight_init_zero, { {NULL}, NULL } \
+    }
+#define ic_ledger_pb_v1_ToppedUp_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_EncodedBlocks_init_zero \
+    {                                           \
+        { {NULL}, NULL }                        \
+    }
+#define ic_ledger_pb_v1_GetBlocksResponse_init_zero    \
+    {                                                  \
+        0, { ic_ledger_pb_v1_EncodedBlocks_init_zero } \
+    }
+#define ic_ledger_pb_v1_IterBlocksRequest_init_zero \
+    { 0, 0 }
+#define ic_ledger_pb_v1_IterBlocksResponse_init_zero \
+    {                                                \
+        { {NULL}, NULL }                             \
+    }
+#define ic_ledger_pb_v1_ArchiveIndexEntry_init_zero \
+    { 0, 0, false, ic_base_types_pb_v1_PrincipalId_init_zero }
+#define ic_ledger_pb_v1_ArchiveIndexResponse_init_zero \
+    {                                                  \
+        { {NULL}, NULL }                               \
+    }
+#define ic_ledger_pb_v1_ArchiveInit_init_zero \
+    { 0, 0 }
+#define ic_ledger_pb_v1_ArchiveAddRequest_init_zero \
+    {                                               \
+        { {NULL}, NULL }                            \
+    }
+#define ic_ledger_pb_v1_ArchiveAddResponse_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_GetNodesRequest_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_GetNodesResponse_init_zero \
+    {                                              \
+        { {NULL}, NULL }                           \
+    }
+#define ic_ledger_pb_v1_ICPTs_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_Payment_init_zero \
+    { false, ic_ledger_pb_v1_ICPTs_init_zero }
+#define ic_ledger_pb_v1_BlockHeight_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_Block_init_zero                                                           \
+    {                                                                                             \
+        false, ic_ledger_pb_v1_Hash_init_zero, false, ic_ledger_pb_v1_TimeStamp_init_zero, false, \
+            ic_ledger_pb_v1_Transaction_init_zero                                                 \
+    }
+#define ic_ledger_pb_v1_Hash_init_zero \
+    {                                  \
+        { {NULL}, NULL }               \
+    }
+#define ic_ledger_pb_v1_Account_init_zero \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero }
+#define ic_ledger_pb_v1_Transaction_init_zero                                                 \
+    {                                                                                         \
+        0, {ic_ledger_pb_v1_Burn_init_zero}, false, ic_ledger_pb_v1_Memo_init_zero, false,    \
+            ic_ledger_pb_v1_BlockHeight_init_zero, false, ic_ledger_pb_v1_TimeStamp_init_zero \
+    }
+#define ic_ledger_pb_v1_Send_init_zero                                                                                 \
+    {                                                                                                                  \
+        false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, \
+            ic_ledger_pb_v1_ICPTs_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero                                    \
+    }
+#define ic_ledger_pb_v1_Mint_init_zero \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero }
+#define ic_ledger_pb_v1_Burn_init_zero \
+    { false, ic_ledger_pb_v1_AccountIdentifier_init_zero, false, ic_ledger_pb_v1_ICPTs_init_zero }
+#define ic_ledger_pb_v1_AccountIdentifier_init_zero \
+    {                                               \
+        {                                           \
+            0, { 0 }                                \
+        }                                           \
+    }
+#define ic_ledger_pb_v1_Subaccount_init_zero \
+    {                                        \
+        { {NULL}, NULL }                     \
+    }
+#define ic_ledger_pb_v1_Memo_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_TimeStamp_init_zero \
+    { 0 }
+#define ic_ledger_pb_v1_Certification_init_zero \
+    {                                           \
+        { {NULL}, NULL }                        \
+    }
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ic_ledger_pb_v1_ArchiveAddRequest_blocks_tag 1
 #define ic_ledger_pb_v1_ArchiveIndexResponse_entries_tag 1
 #define ic_ledger_pb_v1_Certification_certification_tag 1
-#define ic_ledger_pb_v1_EncodedBlock_block_tag   1
+#define ic_ledger_pb_v1_EncodedBlock_block_tag 1
 #define ic_ledger_pb_v1_EncodedBlocks_blocks_tag 1
 #define ic_ledger_pb_v1_GetNodesResponse_nodes_tag 1
-#define ic_ledger_pb_v1_Hash_hash_tag            1
+#define ic_ledger_pb_v1_Hash_hash_tag 1
 #define ic_ledger_pb_v1_IterBlocksResponse_blocks_tag 1
 #define ic_ledger_pb_v1_Subaccount_sub_account_tag 1
 #define ic_ledger_pb_v1_TransactionNotificationResponse_response_tag 1
@@ -444,44 +657,44 @@ extern "C" {
 #define ic_ledger_pb_v1_ArchiveIndexEntry_canister_id_tag 3
 #define ic_ledger_pb_v1_ArchiveInit_node_max_memory_size_bytes_tag 1
 #define ic_ledger_pb_v1_ArchiveInit_max_message_size_bytes_tag 2
-#define ic_ledger_pb_v1_BlockHeight_height_tag   1
+#define ic_ledger_pb_v1_BlockHeight_height_tag 1
 #define ic_ledger_pb_v1_BlockRequest_block_height_tag 1
-#define ic_ledger_pb_v1_BlockResponse_block_tag  1
+#define ic_ledger_pb_v1_BlockResponse_block_tag 1
 #define ic_ledger_pb_v1_BlockResponse_canister_id_tag 2
 #define ic_ledger_pb_v1_GetBlocksRequest_start_tag 1
 #define ic_ledger_pb_v1_GetBlocksRequest_length_tag 2
 #define ic_ledger_pb_v1_GetBlocksResponse_blocks_tag 1
 #define ic_ledger_pb_v1_GetBlocksResponse_error_tag 2
-#define ic_ledger_pb_v1_ICPTs_e8s_tag            1
+#define ic_ledger_pb_v1_ICPTs_e8s_tag 1
 #define ic_ledger_pb_v1_IterBlocksRequest_start_tag 1
 #define ic_ledger_pb_v1_IterBlocksRequest_length_tag 2
-#define ic_ledger_pb_v1_Memo_memo_tag            1
+#define ic_ledger_pb_v1_Memo_memo_tag 1
 #define ic_ledger_pb_v1_TimeStamp_timestamp_nanos_tag 1
-#define ic_ledger_pb_v1_Account_identifier_tag   1
-#define ic_ledger_pb_v1_Account_balance_tag      2
+#define ic_ledger_pb_v1_Account_identifier_tag 1
+#define ic_ledger_pb_v1_Account_balance_tag 2
 #define ic_ledger_pb_v1_AccountBalanceRequest_account_tag 1
 #define ic_ledger_pb_v1_AccountBalanceResponse_balance_tag 1
-#define ic_ledger_pb_v1_Burn_from_tag            1
-#define ic_ledger_pb_v1_Burn_amount_tag          3
+#define ic_ledger_pb_v1_Burn_from_tag 1
+#define ic_ledger_pb_v1_Burn_amount_tag 3
 #define ic_ledger_pb_v1_LedgerArchiveRequest_timestamp_tag 1
 #define ic_ledger_pb_v1_LedgerInit_minting_account_tag 1
 #define ic_ledger_pb_v1_LedgerInit_initial_values_tag 2
 #define ic_ledger_pb_v1_LedgerInit_archive_canister_tag 3
 #define ic_ledger_pb_v1_LedgerInit_max_message_size_bytes_tag 4
-#define ic_ledger_pb_v1_Mint_to_tag              2
-#define ic_ledger_pb_v1_Mint_amount_tag          3
+#define ic_ledger_pb_v1_Mint_to_tag 2
+#define ic_ledger_pb_v1_Mint_amount_tag 3
 #define ic_ledger_pb_v1_NotifyRequest_block_height_tag 1
 #define ic_ledger_pb_v1_NotifyRequest_max_fee_tag 2
 #define ic_ledger_pb_v1_NotifyRequest_from_subaccount_tag 3
 #define ic_ledger_pb_v1_NotifyRequest_to_canister_tag 4
 #define ic_ledger_pb_v1_NotifyRequest_to_subaccount_tag 5
 #define ic_ledger_pb_v1_Payment_receiver_gets_tag 1
-#define ic_ledger_pb_v1_Refund_refund_tag        2
-#define ic_ledger_pb_v1_Refund_error_tag         3
-#define ic_ledger_pb_v1_Send_from_tag            1
-#define ic_ledger_pb_v1_Send_to_tag              2
-#define ic_ledger_pb_v1_Send_amount_tag          3
-#define ic_ledger_pb_v1_Send_max_fee_tag         4
+#define ic_ledger_pb_v1_Refund_refund_tag 2
+#define ic_ledger_pb_v1_Refund_error_tag 3
+#define ic_ledger_pb_v1_Send_from_tag 1
+#define ic_ledger_pb_v1_Send_to_tag 2
+#define ic_ledger_pb_v1_Send_amount_tag 3
+#define ic_ledger_pb_v1_Send_max_fee_tag 4
 #define ic_ledger_pb_v1_SendResponse_resulting_height_tag 1
 #define ic_ledger_pb_v1_TipOfChainResponse_certification_tag 1
 #define ic_ledger_pb_v1_TipOfChainResponse_chain_length_tag 2
@@ -496,48 +709,48 @@ extern "C" {
 #define ic_ledger_pb_v1_CyclesNotificationResponse_created_canister_id_tag 1
 #define ic_ledger_pb_v1_CyclesNotificationResponse_refund_tag 2
 #define ic_ledger_pb_v1_CyclesNotificationResponse_topped_up_tag 3
-#define ic_ledger_pb_v1_SendRequest_memo_tag     1
-#define ic_ledger_pb_v1_SendRequest_payment_tag  2
-#define ic_ledger_pb_v1_SendRequest_max_fee_tag  3
+#define ic_ledger_pb_v1_SendRequest_memo_tag 1
+#define ic_ledger_pb_v1_SendRequest_payment_tag 2
+#define ic_ledger_pb_v1_SendRequest_max_fee_tag 3
 #define ic_ledger_pb_v1_SendRequest_from_subaccount_tag 4
-#define ic_ledger_pb_v1_SendRequest_to_tag       5
+#define ic_ledger_pb_v1_SendRequest_to_tag 5
 #define ic_ledger_pb_v1_SendRequest_created_at_tag 6
 #define ic_ledger_pb_v1_SendRequest_created_at_time_tag 7
-#define ic_ledger_pb_v1_Transaction_burn_tag     1
-#define ic_ledger_pb_v1_Transaction_mint_tag     2
-#define ic_ledger_pb_v1_Transaction_send_tag     3
-#define ic_ledger_pb_v1_Transaction_memo_tag     4
+#define ic_ledger_pb_v1_Transaction_burn_tag 1
+#define ic_ledger_pb_v1_Transaction_mint_tag 2
+#define ic_ledger_pb_v1_Transaction_send_tag 3
+#define ic_ledger_pb_v1_Transaction_memo_tag 4
 #define ic_ledger_pb_v1_Transaction_created_at_tag 5
 #define ic_ledger_pb_v1_Transaction_created_at_time_tag 6
-#define ic_ledger_pb_v1_Block_parent_hash_tag    1
-#define ic_ledger_pb_v1_Block_timestamp_tag      2
-#define ic_ledger_pb_v1_Block_transaction_tag    3
+#define ic_ledger_pb_v1_Block_parent_hash_tag 1
+#define ic_ledger_pb_v1_Block_timestamp_tag 2
+#define ic_ledger_pb_v1_Block_transaction_tag 3
 
 /* Struct field encoding specification for nanopb */
-#define ic_ledger_pb_v1_LedgerInit_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  minting_account,   1) \
-X(a, CALLBACK, REPEATED, MESSAGE,  initial_values,    2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  archive_canister,   3) \
-X(a, STATIC,   SINGULAR, UINT32,   max_message_size_bytes,   4)
+#define ic_ledger_pb_v1_LedgerInit_FIELDLIST(X, a)       \
+    X(a, STATIC, OPTIONAL, MESSAGE, minting_account, 1)  \
+    X(a, CALLBACK, REPEATED, MESSAGE, initial_values, 2) \
+    X(a, STATIC, OPTIONAL, MESSAGE, archive_canister, 3) \
+    X(a, STATIC, SINGULAR, UINT32, max_message_size_bytes, 4)
 #define ic_ledger_pb_v1_LedgerInit_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_LedgerInit_DEFAULT NULL
 #define ic_ledger_pb_v1_LedgerInit_minting_account_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
 #define ic_ledger_pb_v1_LedgerInit_initial_values_MSGTYPE ic_ledger_pb_v1_Account
 #define ic_ledger_pb_v1_LedgerInit_archive_canister_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
-#define ic_ledger_pb_v1_LedgerUpgrade_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_LedgerUpgrade_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_LedgerUpgrade_CALLBACK NULL
 #define ic_ledger_pb_v1_LedgerUpgrade_DEFAULT NULL
 
-#define ic_ledger_pb_v1_SendRequest_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  memo,              1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  payment,           2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  max_fee,           3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from_subaccount,   4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to,                5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_at,        6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   7)
+#define ic_ledger_pb_v1_SendRequest_FIELDLIST(X, a)     \
+    X(a, STATIC, OPTIONAL, MESSAGE, memo, 1)            \
+    X(a, STATIC, OPTIONAL, MESSAGE, payment, 2)         \
+    X(a, STATIC, OPTIONAL, MESSAGE, max_fee, 3)         \
+    X(a, STATIC, OPTIONAL, MESSAGE, from_subaccount, 4) \
+    X(a, STATIC, OPTIONAL, MESSAGE, to, 5)              \
+    X(a, STATIC, OPTIONAL, MESSAGE, created_at, 6)      \
+    X(a, STATIC, OPTIONAL, MESSAGE, created_at_time, 7)
 #define ic_ledger_pb_v1_SendRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_SendRequest_DEFAULT NULL
 #define ic_ledger_pb_v1_SendRequest_memo_MSGTYPE ic_ledger_pb_v1_Memo
@@ -548,18 +761,17 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   7)
 #define ic_ledger_pb_v1_SendRequest_created_at_MSGTYPE ic_ledger_pb_v1_BlockHeight
 #define ic_ledger_pb_v1_SendRequest_created_at_time_MSGTYPE ic_ledger_pb_v1_TimeStamp
 
-#define ic_ledger_pb_v1_SendResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  resulting_height,   1)
+#define ic_ledger_pb_v1_SendResponse_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, resulting_height, 1)
 #define ic_ledger_pb_v1_SendResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_SendResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_SendResponse_resulting_height_MSGTYPE ic_ledger_pb_v1_BlockHeight
 
-#define ic_ledger_pb_v1_NotifyRequest_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  block_height,      1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  max_fee,           2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from_subaccount,   3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to_canister,       4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to_subaccount,     5)
+#define ic_ledger_pb_v1_NotifyRequest_FIELDLIST(X, a)   \
+    X(a, STATIC, OPTIONAL, MESSAGE, block_height, 1)    \
+    X(a, STATIC, OPTIONAL, MESSAGE, max_fee, 2)         \
+    X(a, STATIC, OPTIONAL, MESSAGE, from_subaccount, 3) \
+    X(a, STATIC, OPTIONAL, MESSAGE, to_canister, 4)     \
+    X(a, STATIC, OPTIONAL, MESSAGE, to_subaccount, 5)
 #define ic_ledger_pb_v1_NotifyRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_NotifyRequest_DEFAULT NULL
 #define ic_ledger_pb_v1_NotifyRequest_block_height_MSGTYPE ic_ledger_pb_v1_BlockHeight
@@ -568,19 +780,19 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  to_subaccount,     5)
 #define ic_ledger_pb_v1_NotifyRequest_to_canister_MSGTYPE ic_base_types_pb_v1_PrincipalId
 #define ic_ledger_pb_v1_NotifyRequest_to_subaccount_MSGTYPE ic_ledger_pb_v1_Subaccount
 
-#define ic_ledger_pb_v1_NotifyResponse_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_NotifyResponse_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_NotifyResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_NotifyResponse_DEFAULT NULL
 
 #define ic_ledger_pb_v1_TransactionNotificationRequest_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from,              1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from_subaccount,   2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to,                3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to_subaccount,     4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  block_height,      5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  memo,              7)
+    X(a, STATIC, OPTIONAL, MESSAGE, from, 1)                           \
+    X(a, STATIC, OPTIONAL, MESSAGE, from_subaccount, 2)                \
+    X(a, STATIC, OPTIONAL, MESSAGE, to, 3)                             \
+    X(a, STATIC, OPTIONAL, MESSAGE, to_subaccount, 4)                  \
+    X(a, STATIC, OPTIONAL, MESSAGE, block_height, 5)                   \
+    X(a, STATIC, OPTIONAL, MESSAGE, amount, 6)                         \
+    X(a, STATIC, OPTIONAL, MESSAGE, memo, 7)
 #define ic_ledger_pb_v1_TransactionNotificationRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_TransactionNotificationRequest_DEFAULT NULL
 #define ic_ledger_pb_v1_TransactionNotificationRequest_from_MSGTYPE ic_base_types_pb_v1_PrincipalId
@@ -591,212 +803,196 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  memo,              7)
 #define ic_ledger_pb_v1_TransactionNotificationRequest_amount_MSGTYPE ic_ledger_pb_v1_ICPTs
 #define ic_ledger_pb_v1_TransactionNotificationRequest_memo_MSGTYPE ic_ledger_pb_v1_Memo
 
-#define ic_ledger_pb_v1_TransactionNotificationResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    response,          1)
+#define ic_ledger_pb_v1_TransactionNotificationResponse_FIELDLIST(X, a) X(a, CALLBACK, SINGULAR, BYTES, response, 1)
 #define ic_ledger_pb_v1_TransactionNotificationResponse_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_TransactionNotificationResponse_DEFAULT NULL
 
-#define ic_ledger_pb_v1_CyclesNotificationResponse_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (response,created_canister_id,response.created_canister_id),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (response,refund,response.refund),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (response,topped_up,response.topped_up),   3)
+#define ic_ledger_pb_v1_CyclesNotificationResponse_FIELDLIST(X, a)                                 \
+    X(a, STATIC, ONEOF, MESSAGE, (response, created_canister_id, response.created_canister_id), 1) \
+    X(a, STATIC, ONEOF, MESSAGE, (response, refund, response.refund), 2)                           \
+    X(a, STATIC, ONEOF, MESSAGE, (response, topped_up, response.topped_up), 3)
 #define ic_ledger_pb_v1_CyclesNotificationResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_CyclesNotificationResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_CyclesNotificationResponse_response_created_canister_id_MSGTYPE ic_base_types_pb_v1_PrincipalId
 #define ic_ledger_pb_v1_CyclesNotificationResponse_response_refund_MSGTYPE ic_ledger_pb_v1_Refund
 #define ic_ledger_pb_v1_CyclesNotificationResponse_response_topped_up_MSGTYPE ic_ledger_pb_v1_ToppedUp
 
-#define ic_ledger_pb_v1_AccountBalanceRequest_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  account,           1)
+#define ic_ledger_pb_v1_AccountBalanceRequest_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, account, 1)
 #define ic_ledger_pb_v1_AccountBalanceRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_AccountBalanceRequest_DEFAULT NULL
 #define ic_ledger_pb_v1_AccountBalanceRequest_account_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
 
-#define ic_ledger_pb_v1_AccountBalanceResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  balance,           1)
+#define ic_ledger_pb_v1_AccountBalanceResponse_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, balance, 1)
 #define ic_ledger_pb_v1_AccountBalanceResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_AccountBalanceResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_AccountBalanceResponse_balance_MSGTYPE ic_ledger_pb_v1_ICPTs
 
-#define ic_ledger_pb_v1_TipOfChainRequest_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_TipOfChainRequest_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_TipOfChainRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_TipOfChainRequest_DEFAULT NULL
 
 #define ic_ledger_pb_v1_TipOfChainResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  certification,     1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  chain_length,      2)
+    X(a, STATIC, OPTIONAL, MESSAGE, certification, 1)      \
+    X(a, STATIC, OPTIONAL, MESSAGE, chain_length, 2)
 #define ic_ledger_pb_v1_TipOfChainResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_TipOfChainResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_TipOfChainResponse_certification_MSGTYPE ic_ledger_pb_v1_Certification
 #define ic_ledger_pb_v1_TipOfChainResponse_chain_length_MSGTYPE ic_ledger_pb_v1_BlockHeight
 
-#define ic_ledger_pb_v1_TotalSupplyRequest_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_TotalSupplyRequest_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_TotalSupplyRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_TotalSupplyRequest_DEFAULT NULL
 
-#define ic_ledger_pb_v1_TotalSupplyResponse_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  total_supply,      1)
+#define ic_ledger_pb_v1_TotalSupplyResponse_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, total_supply, 1)
 #define ic_ledger_pb_v1_TotalSupplyResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_TotalSupplyResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_TotalSupplyResponse_total_supply_MSGTYPE ic_ledger_pb_v1_ICPTs
 
-#define ic_ledger_pb_v1_LedgerArchiveRequest_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  timestamp,         1)
+#define ic_ledger_pb_v1_LedgerArchiveRequest_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, timestamp, 1)
 #define ic_ledger_pb_v1_LedgerArchiveRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_LedgerArchiveRequest_DEFAULT NULL
 #define ic_ledger_pb_v1_LedgerArchiveRequest_timestamp_MSGTYPE ic_ledger_pb_v1_TimeStamp
 
-#define ic_ledger_pb_v1_BlockRequest_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   block_height,      1)
+#define ic_ledger_pb_v1_BlockRequest_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, block_height, 1)
 #define ic_ledger_pb_v1_BlockRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_BlockRequest_DEFAULT NULL
 
-#define ic_ledger_pb_v1_EncodedBlock_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    block,             1)
+#define ic_ledger_pb_v1_EncodedBlock_FIELDLIST(X, a) X(a, CALLBACK, SINGULAR, BYTES, block, 1)
 #define ic_ledger_pb_v1_EncodedBlock_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_EncodedBlock_DEFAULT NULL
 
-#define ic_ledger_pb_v1_BlockResponse_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (block_content,block,block_content.block),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (block_content,canister_id,block_content.canister_id),   2)
+#define ic_ledger_pb_v1_BlockResponse_FIELDLIST(X, a)                            \
+    X(a, STATIC, ONEOF, MESSAGE, (block_content, block, block_content.block), 1) \
+    X(a, STATIC, ONEOF, MESSAGE, (block_content, canister_id, block_content.canister_id), 2)
 #define ic_ledger_pb_v1_BlockResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_BlockResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_BlockResponse_block_content_block_MSGTYPE ic_ledger_pb_v1_EncodedBlock
 #define ic_ledger_pb_v1_BlockResponse_block_content_canister_id_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
 #define ic_ledger_pb_v1_GetBlocksRequest_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   start,             1) \
-X(a, STATIC,   SINGULAR, UINT64,   length,            2)
+    X(a, STATIC, SINGULAR, UINT64, start, 1)             \
+    X(a, STATIC, SINGULAR, UINT64, length, 2)
 #define ic_ledger_pb_v1_GetBlocksRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_GetBlocksRequest_DEFAULT NULL
 
 #define ic_ledger_pb_v1_Refund_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  refund,            2) \
-X(a, CALLBACK, SINGULAR, STRING,   error,             3)
+    X(a, STATIC, OPTIONAL, MESSAGE, refund, 2) \
+    X(a, CALLBACK, SINGULAR, STRING, error, 3)
 #define ic_ledger_pb_v1_Refund_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_Refund_DEFAULT NULL
 #define ic_ledger_pb_v1_Refund_refund_MSGTYPE ic_ledger_pb_v1_BlockHeight
 
-#define ic_ledger_pb_v1_ToppedUp_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_ToppedUp_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_ToppedUp_CALLBACK NULL
 #define ic_ledger_pb_v1_ToppedUp_DEFAULT NULL
 
-#define ic_ledger_pb_v1_EncodedBlocks_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  blocks,            1)
+#define ic_ledger_pb_v1_EncodedBlocks_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, blocks, 1)
 #define ic_ledger_pb_v1_EncodedBlocks_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_EncodedBlocks_DEFAULT NULL
 #define ic_ledger_pb_v1_EncodedBlocks_blocks_MSGTYPE ic_ledger_pb_v1_EncodedBlock
 
-#define ic_ledger_pb_v1_GetBlocksResponse_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (get_blocks_content,blocks,get_blocks_content.blocks),   1) \
-X(a, CALLBACK, ONEOF,    STRING,   (get_blocks_content,error,get_blocks_content.error),   2)
+#define ic_ledger_pb_v1_GetBlocksResponse_FIELDLIST(X, a)                                    \
+    X(a, STATIC, ONEOF, MESSAGE, (get_blocks_content, blocks, get_blocks_content.blocks), 1) \
+    X(a, CALLBACK, ONEOF, STRING, (get_blocks_content, error, get_blocks_content.error), 2)
 #define ic_ledger_pb_v1_GetBlocksResponse_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_GetBlocksResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_GetBlocksResponse_get_blocks_content_blocks_MSGTYPE ic_ledger_pb_v1_EncodedBlocks
 
 #define ic_ledger_pb_v1_IterBlocksRequest_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   start,             1) \
-X(a, STATIC,   SINGULAR, UINT64,   length,            2)
+    X(a, STATIC, SINGULAR, UINT64, start, 1)              \
+    X(a, STATIC, SINGULAR, UINT64, length, 2)
 #define ic_ledger_pb_v1_IterBlocksRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_IterBlocksRequest_DEFAULT NULL
 
-#define ic_ledger_pb_v1_IterBlocksResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  blocks,            1)
+#define ic_ledger_pb_v1_IterBlocksResponse_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, blocks, 1)
 #define ic_ledger_pb_v1_IterBlocksResponse_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_IterBlocksResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_IterBlocksResponse_blocks_MSGTYPE ic_ledger_pb_v1_EncodedBlock
 
 #define ic_ledger_pb_v1_ArchiveIndexEntry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   height_from,       1) \
-X(a, STATIC,   SINGULAR, UINT64,   height_to,         2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  canister_id,       3)
+    X(a, STATIC, SINGULAR, UINT64, height_from, 1)        \
+    X(a, STATIC, SINGULAR, UINT64, height_to, 2)          \
+    X(a, STATIC, OPTIONAL, MESSAGE, canister_id, 3)
 #define ic_ledger_pb_v1_ArchiveIndexEntry_CALLBACK NULL
 #define ic_ledger_pb_v1_ArchiveIndexEntry_DEFAULT NULL
 #define ic_ledger_pb_v1_ArchiveIndexEntry_canister_id_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
-#define ic_ledger_pb_v1_ArchiveIndexResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  entries,           1)
+#define ic_ledger_pb_v1_ArchiveIndexResponse_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, entries, 1)
 #define ic_ledger_pb_v1_ArchiveIndexResponse_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_ArchiveIndexResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_ArchiveIndexResponse_entries_MSGTYPE ic_ledger_pb_v1_ArchiveIndexEntry
 
-#define ic_ledger_pb_v1_ArchiveInit_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   node_max_memory_size_bytes,   1) \
-X(a, STATIC,   SINGULAR, UINT32,   max_message_size_bytes,   2)
+#define ic_ledger_pb_v1_ArchiveInit_FIELDLIST(X, a)               \
+    X(a, STATIC, SINGULAR, UINT32, node_max_memory_size_bytes, 1) \
+    X(a, STATIC, SINGULAR, UINT32, max_message_size_bytes, 2)
 #define ic_ledger_pb_v1_ArchiveInit_CALLBACK NULL
 #define ic_ledger_pb_v1_ArchiveInit_DEFAULT NULL
 
-#define ic_ledger_pb_v1_ArchiveAddRequest_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  blocks,            1)
+#define ic_ledger_pb_v1_ArchiveAddRequest_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, blocks, 1)
 #define ic_ledger_pb_v1_ArchiveAddRequest_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_ArchiveAddRequest_DEFAULT NULL
 #define ic_ledger_pb_v1_ArchiveAddRequest_blocks_MSGTYPE ic_ledger_pb_v1_Block
 
-#define ic_ledger_pb_v1_ArchiveAddResponse_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_ArchiveAddResponse_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_ArchiveAddResponse_CALLBACK NULL
 #define ic_ledger_pb_v1_ArchiveAddResponse_DEFAULT NULL
 
-#define ic_ledger_pb_v1_GetNodesRequest_FIELDLIST(X, a) \
+#define ic_ledger_pb_v1_GetNodesRequest_FIELDLIST(X, a)
 
 #define ic_ledger_pb_v1_GetNodesRequest_CALLBACK NULL
 #define ic_ledger_pb_v1_GetNodesRequest_DEFAULT NULL
 
-#define ic_ledger_pb_v1_GetNodesResponse_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  nodes,             1)
+#define ic_ledger_pb_v1_GetNodesResponse_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, nodes, 1)
 #define ic_ledger_pb_v1_GetNodesResponse_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_GetNodesResponse_DEFAULT NULL
 #define ic_ledger_pb_v1_GetNodesResponse_nodes_MSGTYPE ic_base_types_pb_v1_PrincipalId
 
-#define ic_ledger_pb_v1_ICPTs_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   e8s,               1)
+#define ic_ledger_pb_v1_ICPTs_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, e8s, 1)
 #define ic_ledger_pb_v1_ICPTs_CALLBACK NULL
 #define ic_ledger_pb_v1_ICPTs_DEFAULT NULL
 
-#define ic_ledger_pb_v1_Payment_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  receiver_gets,     1)
+#define ic_ledger_pb_v1_Payment_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, receiver_gets, 1)
 #define ic_ledger_pb_v1_Payment_CALLBACK NULL
 #define ic_ledger_pb_v1_Payment_DEFAULT NULL
 #define ic_ledger_pb_v1_Payment_receiver_gets_MSGTYPE ic_ledger_pb_v1_ICPTs
 
-#define ic_ledger_pb_v1_BlockHeight_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   height,            1)
+#define ic_ledger_pb_v1_BlockHeight_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, height, 1)
 #define ic_ledger_pb_v1_BlockHeight_CALLBACK NULL
 #define ic_ledger_pb_v1_BlockHeight_DEFAULT NULL
 
-#define ic_ledger_pb_v1_Block_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  parent_hash,       1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  timestamp,         2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  transaction,       3)
+#define ic_ledger_pb_v1_Block_FIELDLIST(X, a)       \
+    X(a, STATIC, OPTIONAL, MESSAGE, parent_hash, 1) \
+    X(a, STATIC, OPTIONAL, MESSAGE, timestamp, 2)   \
+    X(a, STATIC, OPTIONAL, MESSAGE, transaction, 3)
 #define ic_ledger_pb_v1_Block_CALLBACK NULL
 #define ic_ledger_pb_v1_Block_DEFAULT NULL
 #define ic_ledger_pb_v1_Block_parent_hash_MSGTYPE ic_ledger_pb_v1_Hash
 #define ic_ledger_pb_v1_Block_timestamp_MSGTYPE ic_ledger_pb_v1_TimeStamp
 #define ic_ledger_pb_v1_Block_transaction_MSGTYPE ic_ledger_pb_v1_Transaction
 
-#define ic_ledger_pb_v1_Hash_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    hash,              1)
+#define ic_ledger_pb_v1_Hash_FIELDLIST(X, a) X(a, CALLBACK, SINGULAR, BYTES, hash, 1)
 #define ic_ledger_pb_v1_Hash_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_Hash_DEFAULT NULL
 
-#define ic_ledger_pb_v1_Account_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  identifier,        1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  balance,           2)
+#define ic_ledger_pb_v1_Account_FIELDLIST(X, a)    \
+    X(a, STATIC, OPTIONAL, MESSAGE, identifier, 1) \
+    X(a, STATIC, OPTIONAL, MESSAGE, balance, 2)
 #define ic_ledger_pb_v1_Account_CALLBACK NULL
 #define ic_ledger_pb_v1_Account_DEFAULT NULL
 #define ic_ledger_pb_v1_Account_identifier_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
 #define ic_ledger_pb_v1_Account_balance_MSGTYPE ic_ledger_pb_v1_ICPTs
 
-#define ic_ledger_pb_v1_Transaction_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (transfer,burn,transfer.burn),   1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (transfer,mint,transfer.mint),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (transfer,send,transfer.send),   3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  memo,              4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_at,        5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   6)
+#define ic_ledger_pb_v1_Transaction_FIELDLIST(X, a)                  \
+    X(a, STATIC, ONEOF, MESSAGE, (transfer, burn, transfer.burn), 1) \
+    X(a, STATIC, ONEOF, MESSAGE, (transfer, mint, transfer.mint), 2) \
+    X(a, STATIC, ONEOF, MESSAGE, (transfer, send, transfer.send), 3) \
+    X(a, STATIC, OPTIONAL, MESSAGE, memo, 4)                         \
+    X(a, STATIC, OPTIONAL, MESSAGE, created_at, 5)                   \
+    X(a, STATIC, OPTIONAL, MESSAGE, created_at_time, 6)
 #define ic_ledger_pb_v1_Transaction_CALLBACK NULL
 #define ic_ledger_pb_v1_Transaction_DEFAULT NULL
 #define ic_ledger_pb_v1_Transaction_transfer_burn_MSGTYPE ic_ledger_pb_v1_Burn
@@ -806,11 +1002,11 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   6)
 #define ic_ledger_pb_v1_Transaction_created_at_MSGTYPE ic_ledger_pb_v1_BlockHeight
 #define ic_ledger_pb_v1_Transaction_created_at_time_MSGTYPE ic_ledger_pb_v1_TimeStamp
 
-#define ic_ledger_pb_v1_Send_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from,              1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to,                2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  max_fee,           4)
+#define ic_ledger_pb_v1_Send_FIELDLIST(X, a)   \
+    X(a, STATIC, OPTIONAL, MESSAGE, from, 1)   \
+    X(a, STATIC, OPTIONAL, MESSAGE, to, 2)     \
+    X(a, STATIC, OPTIONAL, MESSAGE, amount, 3) \
+    X(a, STATIC, OPTIONAL, MESSAGE, max_fee, 4)
 #define ic_ledger_pb_v1_Send_CALLBACK NULL
 #define ic_ledger_pb_v1_Send_DEFAULT NULL
 #define ic_ledger_pb_v1_Send_from_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
@@ -819,43 +1015,38 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  max_fee,           4)
 #define ic_ledger_pb_v1_Send_max_fee_MSGTYPE ic_ledger_pb_v1_ICPTs
 
 #define ic_ledger_pb_v1_Mint_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to,                2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            3)
+    X(a, STATIC, OPTIONAL, MESSAGE, to, 2)   \
+    X(a, STATIC, OPTIONAL, MESSAGE, amount, 3)
 #define ic_ledger_pb_v1_Mint_CALLBACK NULL
 #define ic_ledger_pb_v1_Mint_DEFAULT NULL
 #define ic_ledger_pb_v1_Mint_to_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
 #define ic_ledger_pb_v1_Mint_amount_MSGTYPE ic_ledger_pb_v1_ICPTs
 
 #define ic_ledger_pb_v1_Burn_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from,              1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  amount,            3)
+    X(a, STATIC, OPTIONAL, MESSAGE, from, 1) \
+    X(a, STATIC, OPTIONAL, MESSAGE, amount, 3)
 #define ic_ledger_pb_v1_Burn_CALLBACK NULL
 #define ic_ledger_pb_v1_Burn_DEFAULT NULL
 #define ic_ledger_pb_v1_Burn_from_MSGTYPE ic_ledger_pb_v1_AccountIdentifier
 #define ic_ledger_pb_v1_Burn_amount_MSGTYPE ic_ledger_pb_v1_ICPTs
 
-#define ic_ledger_pb_v1_AccountIdentifier_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, BYTES,    hash,              1)
+#define ic_ledger_pb_v1_AccountIdentifier_FIELDLIST(X, a) X(a, STATIC, SINGULAR, BYTES, hash, 1)
 #define ic_ledger_pb_v1_AccountIdentifier_CALLBACK NULL
 #define ic_ledger_pb_v1_AccountIdentifier_DEFAULT NULL
 
-#define ic_ledger_pb_v1_Subaccount_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    sub_account,       1)
+#define ic_ledger_pb_v1_Subaccount_FIELDLIST(X, a) X(a, CALLBACK, SINGULAR, BYTES, sub_account, 1)
 #define ic_ledger_pb_v1_Subaccount_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_Subaccount_DEFAULT NULL
 
-#define ic_ledger_pb_v1_Memo_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   memo,              1)
+#define ic_ledger_pb_v1_Memo_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, memo, 1)
 #define ic_ledger_pb_v1_Memo_CALLBACK NULL
 #define ic_ledger_pb_v1_Memo_DEFAULT NULL
 
-#define ic_ledger_pb_v1_TimeStamp_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   timestamp_nanos,   1)
+#define ic_ledger_pb_v1_TimeStamp_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, timestamp_nanos, 1)
 #define ic_ledger_pb_v1_TimeStamp_CALLBACK NULL
 #define ic_ledger_pb_v1_TimeStamp_DEFAULT NULL
 
-#define ic_ledger_pb_v1_Certification_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    certification,     1)
+#define ic_ledger_pb_v1_Certification_FIELDLIST(X, a) X(a, CALLBACK, SINGULAR, BYTES, certification, 1)
 #define ic_ledger_pb_v1_Certification_CALLBACK pb_default_field_callback
 #define ic_ledger_pb_v1_Certification_DEFAULT NULL
 
@@ -962,9 +1153,12 @@ extern const pb_msgdesc_t ic_ledger_pb_v1_Certification_msg;
 /* ic_ledger_pb_v1_LedgerInit_size depends on runtime parameters */
 /* ic_ledger_pb_v1_SendRequest_size depends on runtime parameters */
 /* ic_ledger_pb_v1_NotifyRequest_size depends on runtime parameters */
-/* ic_ledger_pb_v1_TransactionNotificationRequest_size depends on runtime parameters */
-/* ic_ledger_pb_v1_TransactionNotificationResponse_size depends on runtime parameters */
-/* ic_ledger_pb_v1_CyclesNotificationResponse_size depends on runtime parameters */
+/* ic_ledger_pb_v1_TransactionNotificationRequest_size depends on runtime
+ * parameters */
+/* ic_ledger_pb_v1_TransactionNotificationResponse_size depends on runtime
+ * parameters */
+/* ic_ledger_pb_v1_CyclesNotificationResponse_size depends on runtime parameters
+ */
 /* ic_ledger_pb_v1_TipOfChainResponse_size depends on runtime parameters */
 /* ic_ledger_pb_v1_EncodedBlock_size depends on runtime parameters */
 /* ic_ledger_pb_v1_BlockResponse_size depends on runtime parameters */
@@ -981,32 +1175,32 @@ extern const pb_msgdesc_t ic_ledger_pb_v1_Certification_msg;
 /* ic_ledger_pb_v1_Certification_size depends on runtime parameters */
 #define ic_ledger_pb_v1_AccountBalanceRequest_size 37
 #define ic_ledger_pb_v1_AccountBalanceResponse_size 13
-#define ic_ledger_pb_v1_AccountIdentifier_size   35
-#define ic_ledger_pb_v1_Account_size             50
-#define ic_ledger_pb_v1_ArchiveAddResponse_size  0
-#define ic_ledger_pb_v1_ArchiveIndexEntry_size   56
-#define ic_ledger_pb_v1_ArchiveInit_size         12
-#define ic_ledger_pb_v1_BlockHeight_size         11
-#define ic_ledger_pb_v1_BlockRequest_size        11
-#define ic_ledger_pb_v1_Burn_size                50
-#define ic_ledger_pb_v1_GetBlocksRequest_size    22
-#define ic_ledger_pb_v1_GetNodesRequest_size     0
-#define ic_ledger_pb_v1_ICPTs_size               11
-#define ic_ledger_pb_v1_IterBlocksRequest_size   22
+#define ic_ledger_pb_v1_AccountIdentifier_size 35
+#define ic_ledger_pb_v1_Account_size 50
+#define ic_ledger_pb_v1_ArchiveAddResponse_size 0
+#define ic_ledger_pb_v1_ArchiveIndexEntry_size 56
+#define ic_ledger_pb_v1_ArchiveInit_size 12
+#define ic_ledger_pb_v1_BlockHeight_size 11
+#define ic_ledger_pb_v1_BlockRequest_size 11
+#define ic_ledger_pb_v1_Burn_size 50
+#define ic_ledger_pb_v1_GetBlocksRequest_size 22
+#define ic_ledger_pb_v1_GetNodesRequest_size 0
+#define ic_ledger_pb_v1_ICPTs_size 11
+#define ic_ledger_pb_v1_IterBlocksRequest_size 22
 #define ic_ledger_pb_v1_LedgerArchiveRequest_size 13
-#define ic_ledger_pb_v1_LedgerUpgrade_size       0
-#define ic_ledger_pb_v1_Memo_size                11
-#define ic_ledger_pb_v1_Mint_size                50
-#define ic_ledger_pb_v1_NotifyResponse_size      0
-#define ic_ledger_pb_v1_Payment_size             13
-#define ic_ledger_pb_v1_SendResponse_size        13
-#define ic_ledger_pb_v1_Send_size                100
-#define ic_ledger_pb_v1_TimeStamp_size           11
-#define ic_ledger_pb_v1_TipOfChainRequest_size   0
-#define ic_ledger_pb_v1_ToppedUp_size            0
-#define ic_ledger_pb_v1_TotalSupplyRequest_size  0
+#define ic_ledger_pb_v1_LedgerUpgrade_size 0
+#define ic_ledger_pb_v1_Memo_size 11
+#define ic_ledger_pb_v1_Mint_size 50
+#define ic_ledger_pb_v1_NotifyResponse_size 0
+#define ic_ledger_pb_v1_Payment_size 13
+#define ic_ledger_pb_v1_SendResponse_size 13
+#define ic_ledger_pb_v1_Send_size 100
+#define ic_ledger_pb_v1_TimeStamp_size 11
+#define ic_ledger_pb_v1_TipOfChainRequest_size 0
+#define ic_ledger_pb_v1_ToppedUp_size 0
+#define ic_ledger_pb_v1_TotalSupplyRequest_size 0
 #define ic_ledger_pb_v1_TotalSupplyResponse_size 13
-#define ic_ledger_pb_v1_Transaction_size         141
+#define ic_ledger_pb_v1_Transaction_size 141
 
 #ifdef __cplusplus
 } /* extern "C" */

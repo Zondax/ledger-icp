@@ -17,15 +17,15 @@
 #if defined(BLS_SIGNATURE)
 #pragma once
 
-#include "app_main.h"
-
 #include <os.h>
 #include <os_io_seproxyhal.h>
+#include <stdint.h>
 #include <string.h>
 #include <ux.h>
 
 #include "actions.h"
 #include "addr.h"
+#include "app_main.h"
 #include "app_mode.h"
 #include "bls.h"
 #include "coin.h"
@@ -38,71 +38,67 @@
 #include "view.h"
 #include "view_internal.h"
 #include "zxmacros.h"
-#include <stdint.h>
 
-__Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags,
-                                     volatile uint32_t *tx, uint32_t rx) {
-  zemu_log_stack("handleConsentRequest");
-  if (!process_chunk(tx, rx)) {
+__Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log_stack("handleConsentRequest");
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    CHECK_APP_CANARY()
+    zxerr_t err = bls_saveConsentRequest();
+    CHECK_APP_CANARY()
+
+    if (err != zxerr_ok) {
+        // Reset state and resources
+        reset_bls_state();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
     THROW(APDU_CODE_OK);
-  }
-
-  CHECK_APP_CANARY()
-  zxerr_t err = bls_saveConsentRequest();
-  CHECK_APP_CANARY()
-
-  if (err != zxerr_ok) {
-    // Reset state and resources
-    reset_bls_state();
-    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    THROW(APDU_CODE_DATA_INVALID);
-  }
-  THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags,
-                                   volatile uint32_t *tx, uint32_t rx) {
-  zemu_log_stack("handleCanisterCall");
-  if (!process_chunk(tx, rx)) {
+__Z_INLINE void handleCanisterCall(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log_stack("handleCanisterCall");
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
+
+    CHECK_APP_CANARY()
+    zxerr_t err = bls_saveCanisterCall();
+    CHECK_APP_CANARY()
+
+    if (err != zxerr_ok) {
+        // Reset state and resources
+        reset_bls_state();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
     THROW(APDU_CODE_OK);
-  }
-
-  CHECK_APP_CANARY()
-  zxerr_t err = bls_saveCanisterCall();
-  CHECK_APP_CANARY()
-
-  if (err != zxerr_ok) {
-    // Reset state and resources
-    reset_bls_state();
-    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    THROW(APDU_CODE_DATA_INVALID);
-  }
-  THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx,
-                              uint32_t rx) {
-  zemu_log_stack("handleSignBls");
-  if (!process_chunk(tx, rx)) {
-    THROW(APDU_CODE_OK);
-  }
+__Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
+    zemu_log_stack("handleSignBls");
+    if (!process_chunk(tx, rx)) {
+        THROW(APDU_CODE_OK);
+    }
 
-  // Parser Certificate and verify
-  CHECK_APP_CANARY()
-  zxerr_t err = tx_certVerify();
-  CHECK_APP_CANARY()
+    // Parser Certificate and verify
+    CHECK_APP_CANARY()
+    zxerr_t err = tx_certVerify();
+    CHECK_APP_CANARY()
 
-  if (err != zxerr_ok) {
-    // Reset state and resources
-    reset_bls_state();
-    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
-    THROW(APDU_CODE_DATA_INVALID);
-  }
-  zemu_log_stack("cert_ok");
+    if (err != zxerr_ok) {
+        // Reset state and resources
+        reset_bls_state();
+        MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+    zemu_log_stack("cert_ok");
 
-  CHECK_APP_CANARY()
-  view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
-  view_review_show(REVIEW_TXN);
-  *flags |= IO_ASYNCH_REPLY;
+    CHECK_APP_CANARY()
+    view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
+    view_review_show(REVIEW_TXN);
+    *flags |= IO_ASYNCH_REPLY;
 }
 #endif

@@ -9,22 +9,12 @@
 
 PB_BIND(ic_base_types_pb_v1_PrincipalId, ic_base_types_pb_v1_PrincipalId, AUTO)
 
-
 PB_BIND(ic_base_types_pb_v1_CanisterId, ic_base_types_pb_v1_CanisterId, AUTO)
-
 
 PB_BIND(ic_base_types_pb_v1_NeuronId, ic_base_types_pb_v1_NeuronId, AUTO)
 
-
 PB_BIND(ic_base_types_pb_v1_ProposalId, ic_base_types_pb_v1_ProposalId, AUTO)
-
 
 PB_BIND(ic_base_types_pb_v1_MethodAuthzInfo, ic_base_types_pb_v1_MethodAuthzInfo, AUTO)
 
-
 PB_BIND(ic_base_types_pb_v1_CanisterAuthzInfo, ic_base_types_pb_v1_CanisterAuthzInfo, AUTO)
-
-
-
-
-

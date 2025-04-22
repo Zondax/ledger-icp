@@ -1,35 +1,35 @@
 /*******************************************************************************
-*   (c) 2019-2021 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2019-2021 Zondax GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
+#include "common.h"
+
+#include <app_mode.h>
+#include <fmt/core.h>
+#include <hexutils.h>
+#include <json/json.h>
+#include <parser.h>
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+
 #include "gmock/gmock.h"
 #include "parser_impl.h"
 
-#include <parser.h>
-#include <sstream>
-#include <string>
-#include <fmt/core.h>
-#include "common.h"
-#include <iostream>
-#include <fstream>
-#include <json/json.h>
-#include <app_mode.h>
-#include <hexutils.h>
-
-std::vector<std::string> dumpUI(parser_context_t *ctx,
-                                uint16_t maxKeyLen,
-                                uint16_t maxValueLen) {
+std::vector<std::string> dumpUI(parser_context_t *ctx, uint16_t maxKeyLen, uint16_t maxValueLen) {
     auto answer = std::vector<std::string>();
 
     uint8_t numItems;
@@ -47,11 +47,7 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
         while (pageIdx < pageCount) {
             std::stringstream ss;
 
-            err = parser_getItem(ctx,
-                                 (uint8_t) idx,
-                                 keyBuffer, maxKeyLen,
-                                 valueBuffer, maxValueLen,
-                                 pageIdx, &pageCount);
+            err = parser_getItem(ctx, (uint8_t)idx, keyBuffer, maxKeyLen, valueBuffer, maxValueLen, pageIdx, &pageCount);
 
             ss << fmt::format("{} | {}", idx, keyBuffer);
             if (pageCount > 1) {
@@ -81,9 +77,11 @@ std::vector<std::string> dumpUI(parser_context_t *ctx,
 }
 
 std::string CleanTestname(std::string s) {
-    s.erase(remove_if(s.begin(), s.end(), [](char v) -> bool {
-        return v == ':' || v == ' ' || v == '/' || v == '-' || v == '.' || v == '_' || v == '#';
-    }), s.end());
+    s.erase(remove_if(s.begin(), s.end(),
+                      [](char v) -> bool {
+                          return v == ':' || v == ' ' || v == '/' || v == '-' || v == '.' || v == '_' || v == '#';
+                      }),
+            s.end());
     return s;
 }
 
@@ -106,7 +104,6 @@ std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
     std::cout << "Number of testcases: " << obj.size() << std::endl;
 
     for (auto &i : obj) {
-
         auto outputs = std::vector<std::string>();
         for (const auto &s : i["output"]) {
             outputs.push_back(s.asString());
@@ -124,14 +121,7 @@ std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
 
         auto name = CleanTestname(i["name"].asString());
 
-        answer.push_back(testcase_t{
-                i["index"].asUInt64(),
-                name,
-                i["blob"].asString(),
-                valid,
-                outputs,
-                outputs_expert
-        });
+        answer.push_back(testcase_t{i["index"].asUInt64(), name, i["blob"].asString(), valid, outputs, outputs_expert});
     }
 
     return answer;

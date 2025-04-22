@@ -16,47 +16,39 @@
  ********************************************************************************/
 #pragma once
 
-#include "app_main.h"
-
 #include <os.h>
 #include <os_io_seproxyhal.h>
+#include <stdint.h>
 #include <string.h>
 #include <ux.h>
 
-#include "zxmacros.h"
-#include <stdint.h>
-
+#include "app_main.h"
 #include "token_info.h"
+#include "zxmacros.h"
 
-__Z_INLINE void handleGetTokenIdx(__Z_UNUSED volatile uint32_t *flags,
-                                  volatile uint32_t *tx,
-                                  __Z_UNUSED uint32_t rx) {
-  zemu_log_stack("handleGetTokenIdx\n");
-  const uint8_t token_idx = G_io_apdu_buffer[OFFSET_P1];
+__Z_INLINE void handleGetTokenIdx(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {
+    zemu_log_stack("handleGetTokenIdx\n");
+    const uint8_t token_idx = G_io_apdu_buffer[OFFSET_P1];
 
-  // Put data directly in the apdu buffer
-  MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    // Put data directly in the apdu buffer
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
 
-  // retrieve token at token_idx
-  uint16_t len =
-      get_token_i(token_idx, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
+    // retrieve token at token_idx
+    uint16_t len = get_token_i(token_idx, G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 2);
 
-  *tx = len;
+    *tx = len;
 
-  THROW(APDU_CODE_OK);
+    THROW(APDU_CODE_OK);
 }
 
-__Z_INLINE void handleGetNumOfTokens(__Z_UNUSED volatile uint32_t *flags,
-                                     volatile uint32_t *tx,
-                                     __Z_UNUSED uint32_t rx) {
+__Z_INLINE void handleGetNumOfTokens(__Z_UNUSED volatile uint32_t *flags, volatile uint32_t *tx, __Z_UNUSED uint32_t rx) {
+    zemu_log_stack("handleGetNumOfTokens\n");
 
-  zemu_log_stack("handleGetNumOfTokens\n");
+    uint8_t num_tokens = token_registry_size();
 
-  uint8_t num_tokens = token_registry_size();
+    MEMCPY(G_io_apdu_buffer, &num_tokens, sizeof(uint8_t));
 
-  MEMCPY(G_io_apdu_buffer, &num_tokens, sizeof(uint8_t));
+    *tx = sizeof(uint8_t);
 
-  *tx = sizeof(uint8_t);
-
-  THROW(APDU_CODE_OK);
+    THROW(APDU_CODE_OK);
 }

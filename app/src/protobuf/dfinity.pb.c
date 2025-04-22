@@ -9,32 +9,20 @@
 
 PB_BIND(TimeStamp, TimeStamp, AUTO)
 
-
 PB_BIND(Memo, Memo, AUTO)
-
 
 PB_BIND(ICPTs, ICPTs, AUTO)
 
-
 PB_BIND(Payment, Payment, AUTO)
-
 
 PB_BIND(Subaccount, Subaccount, AUTO)
 
-
 PB_BIND(AccountIdentifier, AccountIdentifier, AUTO)
-
 
 PB_BIND(BlockHeight, BlockHeight, AUTO)
 
-
 PB_BIND(SendRequest, SendRequest, AUTO)
-
 
 PB_BIND(ManageNeuronPb, ManageNeuronPb, AUTO)
 
-
 PB_BIND(ListNeurons, ListNeurons, AUTO)
-
-
-
