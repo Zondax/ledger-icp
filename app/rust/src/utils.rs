@@ -13,7 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use crate::error::{ParserError, ViewError};
+use crate::{constants::SHA256_DIGEST_LENGTH, error::{ParserError, ViewError}};
 
 pub trait ByteSerializable: Sized {
     fn fill_to(&self, output: &mut [u8]) -> Result<(), ParserError>;
@@ -142,25 +142,25 @@ pub fn decompress_sleb128(input: &[u8]) -> Result<(&[u8], i64), ParserError> {
 }
 
 // Helper function to hash data with SHA256
-pub fn hash(data: &[u8]) -> [u8; 32] {
+pub fn hash(data: &[u8]) -> [u8; SHA256_DIGEST_LENGTH] {
     use sha2::{Digest, Sha256};
 
     let mut hasher = Sha256::new();
     hasher.update(data);
     let result = hasher.finalize();
-    let mut hash = [0u8; 32];
+    let mut hash = [0u8; SHA256_DIGEST_LENGTH];
     hash.copy_from_slice(&result);
     hash
 }
 
 #[inline(never)]
-pub fn hash_str(s: &str) -> [u8; 32] {
+pub fn hash_str(s: &str) -> [u8; SHA256_DIGEST_LENGTH] {
     hash(s.as_bytes())
 }
 
 // Function to hash binary blobs
 #[inline(never)]
-pub fn hash_blob(blob: &[u8]) -> [u8; 32] {
+pub fn hash_blob(blob: &[u8]) -> [u8; SHA256_DIGEST_LENGTH] {
     hash(blob)
 }
 

@@ -41,6 +41,7 @@ pub const CANISTER_CALL_TAG: u64 = CBOR_TAG;
 pub const PRINCIPAL_MAX_LEN: usize = 29;
 // Sender are principals
 pub const SENDER_MAX_LEN: usize = PRINCIPAL_MAX_LEN;
+pub const ARG_HASH_LEN: usize = 32;  
 pub const CANISTER_MAX_LEN: usize = 10;
 pub const REQUEST_MAX_LEN: usize = 10;
 pub const METHOD_MAX_LEN: usize = 20;

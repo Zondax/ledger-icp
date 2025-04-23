@@ -30,7 +30,7 @@ use super::resources::MEMORY_CONSENT_REQUEST;
 #[repr(C)]
 #[derive(PartialEq, Default)]
 pub struct ConsentRequestT {
-    pub arg_hash: [u8; 32],
+    pub arg_hash: [u8; ARG_HASH_LEN],
     pub canister_id: [u8; CANISTER_MAX_LEN],
     pub canister_id_len: u16,
     pub ingress_expiry: u64,
@@ -43,7 +43,7 @@ pub struct ConsentRequestT {
     // in a certificate, this ensures that
     // the consent_request being processed refers to the provided
     // BLS certificate
-    pub request_id: [u8; 32],
+    pub request_id: [u8; SHA256_DIGEST_LENGTH],
 }
 
 impl ByteSerializable for ConsentRequestT {

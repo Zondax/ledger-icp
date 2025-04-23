@@ -202,12 +202,12 @@ static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx, cha
             return parser_unexpected_value;
         }
 
-        char tmpBuffer[100];
+        char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
         // YYYYmmdd HH:MM:SS
-        snprintf(tmpBuffer, sizeof(tmpBuffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day,
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day,
                  td.tm_hour, td.tm_min, td.tm_sec);
 
-        pageString(outVal, outValLen, tmpBuffer, pageIdx, pageCount);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
 
@@ -454,8 +454,7 @@ static parser_error_t parser_getItemIncreaseDissolveDelayCandid(uint8_t displayI
             return parser_ok;
         }
 
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
+        char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.configure.operation.increaseDissolveDelay.dissolve_timestamp_seconds, 4);
 
@@ -1015,7 +1014,9 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
     }
 
     // Don't display Canister Id if ICP canister
-    if (icp_canisterId) displayIdx++;
+    if (icp_canisterId) {
+        displayIdx++;
+    }
 
     if (displayIdx == 1) {
         const uint8_t *canisterId = (const uint8_t *)call->canister_id.data;
@@ -1073,7 +1074,9 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
     }
 
     // Skip fee if not present and not icp canister id
-    if (!(call->data.icrcTransfer.has_fee || icp_canisterId)) displayIdx++;
+    if (!(call->data.icrcTransfer.has_fee || icp_canisterId)) {
+        displayIdx++;
+    }
 
     if (displayIdx == 5) {
         char title[50] = {0};
@@ -1246,12 +1249,12 @@ static parser_error_t parser_getItemSNSSetDissolveDelay(uint8_t displayIdx, char
             return parser_unexpected_value;
         }
 
-        char tmpBuffer[30] = {0};
+        char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
         // YYYYmmdd HH:MM:SS
-        snprintf(tmpBuffer, sizeof(tmpBuffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day,
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day,
                  td.tm_hour, td.tm_min, td.tm_sec);
 
-        pageString(outVal, outValLen, tmpBuffer, pageIdx, pageCount);
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
     }
     return parser_no_data;

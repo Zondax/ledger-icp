@@ -24,6 +24,7 @@
 #define ICP_HOUR_IN_SECONDS (uint64_t)(ICP_MINUTE_IN_SECONDS * 60)
 #define ICP_DAY_IN_SECONDS (uint64_t)(ICP_HOUR_IN_SECONDS * 24)
 #define ICP_YEAR_IN_SECONDS (uint64_t)(ICP_DAY_IN_SECONDS * 365.25)
+#define MAX_OUTPUT_LEN 35
 
 #if defined(TARGET_STAX) || defined(TARGET_FLEX)
 #include "view_internal.h"
@@ -41,7 +42,7 @@ parser_error_t format_principal_with_delimiters(const char *input, const uint16_
                                                 const uint16_t outputLen) {
     const uint8_t CHARS_PER_CHUNK = 5;
 
-    if (outputLen < 35) {
+    if (outputLen < MAX_OUTPUT_LEN) {
         return parser_unexpected_buffer_end;
     }
 
@@ -78,7 +79,7 @@ parser_error_t page_textual_with_delimiters(const char *input, const uint16_t in
     const uint8_t CHARS_PER_PAGE = 15 * LINES_PER_PAGE;
     const uint8_t CHUNKS_PER_PAGE = 3 * LINES_PER_PAGE;
 
-    if (outputLen < 35) {
+    if (outputLen < MAX_OUTPUT_LEN) {
         return parser_unexpected_buffer_end;
     }
 
@@ -105,7 +106,9 @@ parser_error_t page_textual_with_delimiters(const char *input, const uint16_t in
             snprintf(output, CHARS_PER_CHUNK + 2, "%.*s-", CHARS_PER_CHUNK, input);
         }
 
-        if (endOfInput) break;
+        if (endOfInput) {
+            break;
+        }
 
         input += CHARS_PER_CHUNK;
         output += CHARS_PER_CHUNK + (skipDash ? 0 : 1);
@@ -120,28 +123,28 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
     const uint8_t CHARS_PER_PAGE = 16 * LINES_PER_PAGE;
     const uint8_t CHUNKS_PER_PAGE = 2 * LINES_PER_PAGE;
 
-    if (outputLen < 35) {
+    if (outputLen < MAX_OUTPUT_LEN) {
         return parser_unexpected_buffer_end;
     }
 
-    char tmpBuf[100] = {0};
-    uint16_t tmpBufLen = sizeof(tmpBuf);
+    char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
+    uint16_t bufferLen = sizeof(buffer);
     const uint16_t inputStrLen = 2 * (uint16_t)inputLen;  // 2 chars per byte without null terminator
-    if (tmpBufLen < inputStrLen + 1) {                    // with null terminator
+    if (bufferLen < inputStrLen + 1) {                    // with null terminator
         return parser_unexpected_buffer_end;
     }
     if (inputLen > UINT16_MAX) {
         return parser_unexpected_value;
     }
-    array_to_hexstr(tmpBuf, tmpBufLen, input, (uint16_t)inputLen);
+    array_to_hexstr(buffer, bufferLen, input, (uint16_t)inputLen);
 
     *pageCount = (uint8_t)(inputStrLen / CHARS_PER_PAGE) + ((inputStrLen % CHARS_PER_PAGE) ? 1 : 0);
     if (pageIdx >= *pageCount) {
         return parser_display_idx_out_of_range;
     }
 
-    uint16_t tmpBufIdx = pageIdx * CHARS_PER_PAGE;
-    for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++, tmpBufIdx += CHARS_PER_CHUNK) {
+    uint16_t bufferIdx = pageIdx * CHARS_PER_PAGE;
+    for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++, bufferIdx += CHARS_PER_CHUNK) {
         if (idx % 2 == 0 && idx != 0) {
             snprintf(output, 2, "%c", SEPARATOR);
             output += 1;
@@ -152,12 +155,14 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
         const bool skipSpace = (idx % 2 == 1);
 
         if (skipSpace || endOfInput) {
-            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, &tmpBuf[tmpBufIdx]);
+            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, &buffer[bufferIdx]);
         } else {
-            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s ", CHARS_PER_CHUNK, &tmpBuf[tmpBufIdx]);
+            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s ", CHARS_PER_CHUNK, &buffer[bufferIdx]);
         }
 
-        if (endOfInput) break;
+        if (endOfInput) {
+            break;
+        }
 
         output += CHARS_PER_CHUNK + (skipSpace ? 0 : 1);
     }
@@ -212,11 +217,12 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
 
     for (uint8_t i = 5; i < principalTextLen; i += 6) {
         // two blocks separated with dash, 3rd with SEPARATOR
-        if ((i + 1) % 18 == 0)
+        if ((i + 1) % 18 == 0) {
             err = inplace_insert_char(text_ptr, sizeof(text), i,
                                       SEPARATOR);  // line break
-        else
+        } else {
             err = inplace_insert_char(text_ptr, sizeof(text), i, '-');
+        }
         if (err != zxerr_ok) {
             return parser_unexpected_error;
         }
@@ -314,15 +320,14 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
 }
 
 parser_error_t print_u64(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
-    char buffer[100];
-    MEMZERO(buffer, sizeof(buffer));
+    char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
     fpuint64_to_str(buffer, sizeof(buffer), value, 0);
     pageString(outVal, outValLen, buffer, pageIdx, pageCount);
     return parser_ok;
 }
 
 parser_error_t print_ICP(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
-    char buffer[200] = {0};
+    char buffer[PRINT_BUFFER_MEDIUM_LEN] = {0};
     zxerr_t err = formatICP(buffer, sizeof(buffer), value);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
@@ -334,7 +339,7 @@ parser_error_t print_ICP(uint64_t value, char *outVal, uint16_t outValLen, uint8
 
 parser_error_t print_Amount(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount,
                             uint8_t decimals) {
-    char buffer[200] = {0};
+    char buffer[PRINT_BUFFER_MEDIUM_LEN] = {0};
     zxerr_t err = formatValue(buffer, sizeof(buffer), value, decimals);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
@@ -346,14 +351,14 @@ parser_error_t print_Amount(uint64_t value, char *outVal, uint16_t outValLen, ui
 
 parser_error_t print_principal(const uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen, uint8_t pageIdx,
                                uint8_t *pageCount) {
-    char tmpBuffer[100] = {0};
-    uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual(data, len, (char *)tmpBuffer, &outLen);
+    char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
+    uint16_t outLen = sizeof(buffer);
+    zxerr_t err = crypto_principalToTextual(data, len, (char *)buffer, &outLen);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
     }
 
-    return page_textual_with_delimiters(tmpBuffer, outLen, outVal, outValLen, pageIdx, pageCount);
+    return page_textual_with_delimiters(buffer, outLen, outVal, outValLen, pageIdx, pageCount);
 }
 
 parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSize) {
@@ -428,25 +433,25 @@ parser_error_t parser_printDelay(uint64_t value, char *buffer, uint16_t bufferSi
 }
 
 parser_error_t format_principal(const uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen) {
-    if (outValLen < 35) {
+    if (outValLen < MAX_OUTPUT_LEN) {
         return parser_unexpected_buffer_end;
     }
 
     // First convert to textual representation
-    char tmpBuffer[100] = {'\0'};
-    uint16_t outLen = sizeof(tmpBuffer);
-    zxerr_t err = crypto_principalToTextual(data, len, tmpBuffer, &outLen);
+    char buffer[PRINT_BUFFER_SMALL_LEN] = {'\0'};
+    uint16_t outLen = sizeof(buffer);
+    zxerr_t err = crypto_principalToTextual(data, len, buffer, &outLen);
     if (err != zxerr_ok) {
         return parser_unexpected_error;
     }
 
     // Remove any newlines that might have been added
-    char *newline = strchr(tmpBuffer, '\n');
+    char *newline = strchr(buffer, '\n');
     if (newline != NULL) {
         *newline = '\0';
-        outLen = (uint16_t)(newline - tmpBuffer);
+        outLen = (uint16_t)(newline - buffer);
     }
 
     // Now format with delimiters
-    return format_principal_with_delimiters(tmpBuffer, outLen, outVal, outValLen);
+    return format_principal_with_delimiters(buffer, outLen, outVal, outValLen);
 }
