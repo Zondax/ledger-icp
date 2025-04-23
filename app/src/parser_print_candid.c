@@ -204,8 +204,8 @@ static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx, cha
 
         char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
         // YYYYmmdd HH:MM:SS
-        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day,
-                 td.tm_hour, td.tm_min, td.tm_sec);
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
+                 td.tm_min, td.tm_sec);
 
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
@@ -1251,8 +1251,8 @@ static parser_error_t parser_getItemSNSSetDissolveDelay(uint8_t displayIdx, char
 
         char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
         // YYYYmmdd HH:MM:SS
-        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day,
-                 td.tm_hour, td.tm_min, td.tm_sec);
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
+                 td.tm_min, td.tm_sec);
 
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;
