@@ -678,7 +678,9 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
         case candid_updatenodeprovider:
         case candid_listneurons:
         case candid_manageneuron: {
-            if (v->tx_fields.call.is_sns) return parser_ok;  // sns has dynamic canister id
+            if (v->tx_fields.call.is_sns) {
+                return parser_ok;  // sns has dynamic canister id
+            }
             CHECK_METHOD_WITH_CANISTER("rrkahfqaaaaaaaaaaaaqcai")
         }
 
@@ -903,8 +905,12 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
 
                     uint8_t itemCount = 6;
 
-                    if (is_stake_tx) itemCount--;
-                    if (app_mode_expert()) itemCount += 2;
+                    if (is_stake_tx) {
+                        itemCount--;
+                    }
+                    if (app_mode_expert()) {
+                        itemCount += 2;
+                    }
 
                     return itemCount;
                 }

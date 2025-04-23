@@ -314,13 +314,7 @@ impl<'a> FromBytes<'a> for Error<'a> {
 impl DisplayableItem for Error<'_> {
     #[inline(never)]
     fn num_items(&self) -> Result<u8, ViewError> {
-        match self {
-            Error::UnsupportedCanisterCall(e)
-            | Error::ConsentMessageUnavailable(e)
-            | Error::InsufficientPayment(e) => e.num_items(),
-            // TODO: Check if it is worth to display error code
-            Error::GenericError { .. } => Ok(1),
-        }
+        Ok(1)
     }
 
     #[inline(never)]
@@ -337,12 +331,10 @@ impl DisplayableItem for Error<'_> {
         title[title_len] = 0;
 
         match self {
-            // TODO: maybe we just show the variant name as the error message?
             // description message could contain symbols
             Error::UnsupportedCanisterCall(e)
             | Error::ConsentMessageUnavailable(e)
             | Error::InsufficientPayment(e) => e.render_item(item_n, title, message, page),
-            // TODO: Check if it is worth to display error code
             Error::GenericError { description, .. } => {
                 let msg = description.as_bytes();
                 handle_ui_message(msg, message, page)

@@ -582,7 +582,9 @@ zxerr_t crypto_principalToSubaccount(const uint8_t *principal, uint16_t principa
 
 uint32_t crc32_for_byte(uint8_t rbyte) {
     uint32_t r = (uint32_t)(rbyte) & (uint32_t)0x000000FF;
-    for (int j = 0; j < 8; ++j) r = (r & 1 ? 0 : (uint32_t)0xEDB88320L) ^ r >> 1;
+    for (int j = 0; j < 8; ++j) {
+        r = (r & 1 ? 0 : (uint32_t)0xEDB88320L) ^ r >> 1;
+    }
     return r ^ (uint32_t)0xFF000000L;
 }
 
@@ -643,7 +645,9 @@ zxerr_t compressLEB128(const uint64_t input, uint16_t maxSize, uint8_t *output, 
             return zxerr_buffer_too_small;
         }
         output[bytes] = num & 0x7fU;
-        if (num >>= 7) output[bytes] |= 0x80U;
+        if (num >>= 7) {
+            output[bytes] |= 0x80U;
+        }
         ++bytes;
     }
     *outLen = bytes;

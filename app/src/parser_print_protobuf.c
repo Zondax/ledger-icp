@@ -233,8 +233,7 @@ static parser_error_t parser_getItemIncreaseNeuronTimer(uint8_t displayIdx, char
             return parser_ok;
         }
 
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
+        char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.configure.operation.increase_dissolve_delay.additional_dissolve_delay_seconds, 4);
 
@@ -523,8 +522,6 @@ static parser_error_t parser_getItemRegisterVote(uint8_t displayIdx, char *outKe
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Proposal ID");
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
         uint64_t value = 0;
         MEMCPY(&value, &fields->command.register_vote.proposal.id, 8);
         return print_u64(value, outVal, outValLen, pageIdx, pageCount);
@@ -668,8 +665,7 @@ static parser_error_t parser_getItemFollow(uint8_t displayIdx, char *outKey, uin
     if (new_displayIdx < follow_count) {
         uint64_t id = fields->command.follow.followees[new_displayIdx].id;
         new_displayIdx++;  // higher by 1
-        char buffer[100];
-        MEMZERO(buffer, sizeof(buffer));
+        char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
         uint16_t index = 0;
         MEMCPY(buffer, (char *)"Followees (", 11);
         index += 11;

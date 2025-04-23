@@ -23,7 +23,6 @@ pub enum Label<'a> {
 }
 
 impl<'a> Label<'a> {
-    // TODO: Check if docs tell something about
     // max label length
     pub const MAX_LEN: usize = 32;
     pub fn as_bytes(&self) -> &'a [u8] {

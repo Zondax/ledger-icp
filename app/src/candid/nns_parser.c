@@ -402,7 +402,9 @@ __Z_INLINE parser_error_t readCommandSetNeuronVisibility(parser_context_t *ctx, 
 
         // visibility allowed at the time implementing this:
         // [1, 2]
-        if (visibility < 1 || visibility > 2) return parser_invalid_visibility;
+        if (visibility < 1 || visibility > 2) {
+            return parser_invalid_visibility;
+        }
 
         // Store the value in your structure
         operation->set_visibility.visibility = visibility;

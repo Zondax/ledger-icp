@@ -37,7 +37,7 @@ zxerr_t addr_getNumItems(uint8_t *num_items) {
 
 zxerr_t addr_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
                      uint8_t *pageCount) {
-    char buffer[50] = {0};
+    char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
     snprintf(buffer, sizeof(buffer), "addr_getItem %d/%d", displayIdx, pageIdx);
     zemu_log_stack(buffer);
     if (action_addrResponseLen < VIEW_PRINCIPAL_OFFSET_TEXT || IO_APDU_BUFFER_SIZE < action_addrResponseLen) {

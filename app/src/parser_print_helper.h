@@ -26,6 +26,10 @@ extern "C" {
 #include "parser_common.h"
 #include "parser_impl.h"
 
+#define PRINT_NUMBER_BUFFER_LEN 30
+#define PRINT_BUFFER_SMALL_LEN 100
+#define PRINT_BUFFER_MEDIUM_LEN 200
+
 parser_error_t print_u64(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount);
 parser_error_t print_ICP(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount);
 parser_error_t print_Amount(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount,
