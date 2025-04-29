@@ -1,6 +1,7 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
 use crate::{
+    constants::SHA256_DIGEST_LENGTH,
     error::ParserError,
     utils::{compress_leb128, hash_blob, hash_str},
     zlog, FromBytes,
@@ -66,7 +67,7 @@ impl ConsentMsgRequest<'_> {
     /// of this struct using independent hash of structured data
     /// as described (here)[https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map]
     #[inline(never)]
-    pub fn request_id(&self) -> [u8; 32] {
+    pub fn request_id(&self) -> [u8; SHA256_DIGEST_LENGTH] {
         crate::zlog("ConsentMsgRequest::request_id\x00");
 
         const MAX_FIELDS: usize = 7;
@@ -111,8 +112,8 @@ impl ConsentMsgRequest<'_> {
                 _ => unreachable!(),
             };
 
-            field_hashes[field_count][..32].copy_from_slice(&key_hash);
-            field_hashes[field_count][32..].copy_from_slice(&value_hash);
+            field_hashes[field_count][..SHA256_DIGEST_LENGTH].copy_from_slice(&key_hash);
+            field_hashes[field_count][SHA256_DIGEST_LENGTH..].copy_from_slice(&value_hash);
             field_count += 1;
         }
 

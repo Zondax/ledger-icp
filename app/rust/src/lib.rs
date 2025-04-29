@@ -30,10 +30,15 @@ pub use parser::*;
 
 fn debug(_msg: &str) {}
 
-#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
 use core::panic::PanicInfo;
 
-#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+#[cfg(all(
+    not(test),
+    not(feature = "clippy"),
+    not(feature = "fuzzing"),
+    target_os = "none"
+))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}

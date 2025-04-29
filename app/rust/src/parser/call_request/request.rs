@@ -1,6 +1,6 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
-use crate::{error::ParserError, utils::compress_leb128, zlog, FromBytes};
+use crate::{constants::SHA256_DIGEST_LENGTH, error::ParserError, utils::compress_leb128, zlog, FromBytes};
 
 use super::{CanisterCall, RawArg};
 
@@ -37,15 +37,15 @@ impl CallRequest<'_> {
     // Compute the hash of the call request
     // this is going to be signed
     // order of the fields is important
-    pub fn digest(&self) -> [u8; 32] {
+    pub fn digest(&self) -> [u8; SHA256_DIGEST_LENGTH] {
         use sha2::{Digest, Sha256};
         let mut hasher = sha2::Sha256::new();
 
         // Helper function to hash a field
         let mut hash_field = |name: &str, value: &[u8]| {
-            let tmp: [u8; 32] = Sha256::digest(name.as_bytes()).into();
+            let tmp: [u8; SHA256_DIGEST_LENGTH] = Sha256::digest(name.as_bytes()).into();
             hasher.update(tmp);
-            let tmp: [u8; 32] = Sha256::digest(value).into();
+            let tmp: [u8; SHA256_DIGEST_LENGTH] = Sha256::digest(value).into();
             hasher.update(tmp);
         };
 
@@ -73,7 +73,7 @@ impl CallRequest<'_> {
 
         // Finalize and return the hash
         let result = hasher.finalize();
-        let mut hash = [0u8; 32];
+        let mut hash = [0u8; SHA256_DIGEST_LENGTH];
         hash.copy_from_slice(&result);
         hash
     }

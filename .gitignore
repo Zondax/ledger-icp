@@ -97,4 +97,6 @@ app/rust/target/
 app/rust/.cargo/.package-cache
 app/rust/.cargo/.package-cache-mutate
 app/rust/.cargo/git/
+app/rust/.cargo/.global-cache
+
 deps/nanopb

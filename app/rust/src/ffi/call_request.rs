@@ -28,7 +28,7 @@ use super::resources::MEMORY_CALL_REQUEST;
 #[derive(PartialEq, Default)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct CanisterCallT {
-    pub arg_hash: [u8; 32],
+    pub arg_hash: [u8; ARG_HASH_LEN],
     pub canister_id: [u8; CANISTER_MAX_LEN],
     pub canister_id_len: u16,
     pub ingress_expiry: u64,
@@ -39,7 +39,7 @@ pub struct CanisterCallT {
 
     // The hash of this call request
     // which is going to be signed
-    pub hash: [u8; 32],
+    pub hash: [u8; SHA256_DIGEST_LENGTH],
 }
 
 impl ByteSerializable for CanisterCallT {

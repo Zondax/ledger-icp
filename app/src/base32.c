@@ -1,4 +1,4 @@
-// Modified by Zondax GmbH
+// Modified by Zondax AG
 //
 // Base32 implementation
 //
@@ -21,10 +21,7 @@
 
 #include <string.h>
 
-uint32_t base32_encode(const uint8_t *data,
-                       uint32_t length,
-                       char *result,
-                       uint32_t resultLen) {
+uint32_t base32_encode(const uint8_t *data, uint32_t length, char *result, uint32_t resultLen) {
     if (length > (1 << 28)) {
         return 0;
     }

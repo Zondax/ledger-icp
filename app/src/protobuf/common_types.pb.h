@@ -5,6 +5,7 @@
 #define PB_IC_NNS_COMMON_PB_V1_COMMON_TYPES_PB_H_INCLUDED
 
 #include <pb.h>
+
 #include "base_types.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
@@ -44,55 +45,72 @@ typedef struct _ic_nns_common_pb_v1_ProposalId {
     uint64_t id;
 } ic_nns_common_pb_v1_ProposalId;
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define ic_nns_common_pb_v1_CanisterId_init_default {{{NULL}, NULL}}
-#define ic_nns_common_pb_v1_NeuronId_init_default {0}
-#define ic_nns_common_pb_v1_ProposalId_init_default {0}
-#define ic_nns_common_pb_v1_MethodAuthzInfo_init_default {{{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_common_pb_v1_CanisterAuthzInfo_init_default {{{NULL}, NULL}}
-#define ic_nns_common_pb_v1_CanisterId_init_zero {{{NULL}, NULL}}
-#define ic_nns_common_pb_v1_NeuronId_init_zero   {0}
-#define ic_nns_common_pb_v1_ProposalId_init_zero {0}
-#define ic_nns_common_pb_v1_MethodAuthzInfo_init_zero {{{NULL}, NULL}, {{NULL}, NULL}}
-#define ic_nns_common_pb_v1_CanisterAuthzInfo_init_zero {{{NULL}, NULL}}
+#define ic_nns_common_pb_v1_CanisterId_init_default \
+    {                                               \
+        { {NULL}, NULL }                            \
+    }
+#define ic_nns_common_pb_v1_NeuronId_init_default \
+    { 0 }
+#define ic_nns_common_pb_v1_ProposalId_init_default \
+    { 0 }
+#define ic_nns_common_pb_v1_MethodAuthzInfo_init_default \
+    {                                                    \
+        {{NULL}, NULL}, { {NULL}, NULL }                 \
+    }
+#define ic_nns_common_pb_v1_CanisterAuthzInfo_init_default \
+    {                                                      \
+        { {NULL}, NULL }                                   \
+    }
+#define ic_nns_common_pb_v1_CanisterId_init_zero \
+    {                                            \
+        { {NULL}, NULL }                         \
+    }
+#define ic_nns_common_pb_v1_NeuronId_init_zero \
+    { 0 }
+#define ic_nns_common_pb_v1_ProposalId_init_zero \
+    { 0 }
+#define ic_nns_common_pb_v1_MethodAuthzInfo_init_zero \
+    {                                                 \
+        {{NULL}, NULL}, { {NULL}, NULL }              \
+    }
+#define ic_nns_common_pb_v1_CanisterAuthzInfo_init_zero \
+    {                                                   \
+        { {NULL}, NULL }                                \
+    }
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ic_nns_common_pb_v1_CanisterAuthzInfo_methods_authz_tag 1
 #define ic_nns_common_pb_v1_CanisterId_serialized_id_tag 1
 #define ic_nns_common_pb_v1_MethodAuthzInfo_method_name_tag 1
 #define ic_nns_common_pb_v1_MethodAuthzInfo_principal_ids_tag 2
-#define ic_nns_common_pb_v1_NeuronId_id_tag      2
-#define ic_nns_common_pb_v1_ProposalId_id_tag    1
+#define ic_nns_common_pb_v1_NeuronId_id_tag 2
+#define ic_nns_common_pb_v1_ProposalId_id_tag 1
 
 /* Struct field encoding specification for nanopb */
-#define ic_nns_common_pb_v1_CanisterId_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, BYTES,    serialized_id,     1)
+#define ic_nns_common_pb_v1_CanisterId_FIELDLIST(X, a) X(a, CALLBACK, SINGULAR, BYTES, serialized_id, 1)
 #define ic_nns_common_pb_v1_CanisterId_CALLBACK pb_default_field_callback
 #define ic_nns_common_pb_v1_CanisterId_DEFAULT NULL
 
-#define ic_nns_common_pb_v1_NeuronId_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   id,                2)
+#define ic_nns_common_pb_v1_NeuronId_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, id, 2)
 #define ic_nns_common_pb_v1_NeuronId_CALLBACK NULL
 #define ic_nns_common_pb_v1_NeuronId_DEFAULT NULL
 
-#define ic_nns_common_pb_v1_ProposalId_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   id,                1)
+#define ic_nns_common_pb_v1_ProposalId_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, id, 1)
 #define ic_nns_common_pb_v1_ProposalId_CALLBACK NULL
 #define ic_nns_common_pb_v1_ProposalId_DEFAULT NULL
 
 #define ic_nns_common_pb_v1_MethodAuthzInfo_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   method_name,       1) \
-X(a, CALLBACK, REPEATED, BYTES,    principal_ids,     2)
+    X(a, CALLBACK, SINGULAR, STRING, method_name, 1)        \
+    X(a, CALLBACK, REPEATED, BYTES, principal_ids, 2)
 #define ic_nns_common_pb_v1_MethodAuthzInfo_CALLBACK pb_default_field_callback
 #define ic_nns_common_pb_v1_MethodAuthzInfo_DEFAULT NULL
 
-#define ic_nns_common_pb_v1_CanisterAuthzInfo_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  methods_authz,     1)
+#define ic_nns_common_pb_v1_CanisterAuthzInfo_FIELDLIST(X, a) X(a, CALLBACK, REPEATED, MESSAGE, methods_authz, 1)
 #define ic_nns_common_pb_v1_CanisterAuthzInfo_CALLBACK pb_default_field_callback
 #define ic_nns_common_pb_v1_CanisterAuthzInfo_DEFAULT NULL
 #define ic_nns_common_pb_v1_CanisterAuthzInfo_methods_authz_MSGTYPE ic_nns_common_pb_v1_MethodAuthzInfo
@@ -114,8 +132,8 @@ extern const pb_msgdesc_t ic_nns_common_pb_v1_CanisterAuthzInfo_msg;
 /* ic_nns_common_pb_v1_CanisterId_size depends on runtime parameters */
 /* ic_nns_common_pb_v1_MethodAuthzInfo_size depends on runtime parameters */
 /* ic_nns_common_pb_v1_CanisterAuthzInfo_size depends on runtime parameters */
-#define ic_nns_common_pb_v1_NeuronId_size        11
-#define ic_nns_common_pb_v1_ProposalId_size      11
+#define ic_nns_common_pb_v1_NeuronId_size 11
+#define ic_nns_common_pb_v1_ProposalId_size 11
 
 #ifdef __cplusplus
 } /* extern "C" */

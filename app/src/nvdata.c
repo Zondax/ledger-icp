@@ -25,15 +25,9 @@
 bls_header_t bls_header = {CERT_STATE_INITIAL};
 
 // STATE
-uint8_t get_state() {
-    return bls_header.state;
-}
+uint8_t get_state() { return bls_header.state; }
 
-void set_state(uint8_t state) {
-    bls_header.state = state;
-}
+void set_state(uint8_t state) { bls_header.state = state; }
 
-void state_reset() {
-    bls_header.state = CERT_STATE_INITIAL;
-}
+void state_reset() { bls_header.state = CERT_STATE_INITIAL; }
 #endif
