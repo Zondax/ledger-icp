@@ -1,5 +1,5 @@
 #*******************************************************************************
-#*   (c) 2019 Zondax GmbH
+#*   (c) 2019 Zondax AG
 #*
 #*  Licensed under the Apache License, Version 2.0 (the "License");
 #*  you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 # BOLOS_SDK IS  DEFINED	 	We use the plain Makefile for Ledger
 # BOLOS_SDK NOT DEFINED		We use a containerized build approach
 
-TESTS_JS_PACKAGE = "@zondax/ledger-icp"
-TESTS_JS_DIR = $(CURDIR)/js
+# TESTS_JS_PACKAGE = "@zondax/ledger-icp"
+# TESTS_JS_DIR = $(CURDIR)/../ledger-icp-js
 
 ifeq ($(BOLOS_SDK),)
 

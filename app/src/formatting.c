@@ -1,19 +1,20 @@
 /*******************************************************************************
-*   (c) 2021 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2021 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #include "formatting.h"
+
 #include "zxformat.h"
 
 zxerr_t inplace_insert_char(char *s, uint16_t sMaxLen, uint16_t pos, char separator) {
@@ -26,7 +27,8 @@ zxerr_t inplace_insert_char(char *s, uint16_t sMaxLen, uint16_t pos, char separa
         return zxerr_out_of_bounds;
     }
 
-    MEMMOVE(s + pos + 1, s + pos, len - pos + 1);  // len-pos+1 because we copy zero terminator
+    MEMMOVE(s + pos + 1, s + pos,
+            len - pos + 1);  // len-pos+1 because we copy zero terminator
     s[pos] = separator;
 
     return zxerr_ok;
@@ -47,7 +49,7 @@ zxerr_t number_inplace_thousands(char *s, uint16_t sMaxLen, char separator) {
     }
 
     if (dec_point < 0) {
-        dec_point = (uint16_t) len;
+        dec_point = (uint16_t)len;
     }
 
     if (dec_point < 4) {
@@ -71,11 +73,17 @@ zxerr_t number_inplace_thousands(char *s, uint16_t sMaxLen, char separator) {
 }
 
 zxerr_t formatICP(char *out, uint16_t outLen, uint64_t value) {
+    return formatValue(out, outLen, value, COIN_AMOUNT_DECIMAL_PLACES);
+}
+
+zxerr_t formatValue(char *out, uint16_t outLen, uint64_t value, uint8_t decimals) {
     MEMZERO(out, outLen);
 
-    fpuint64_to_str(out, outLen, value, COIN_AMOUNT_DECIMAL_PLACES);
-    number_inplace_trimming(out, COIN_AMOUNT_DECIMAL_NON_TRIMMED_PLACES);
-    CHECK_ZXERR(number_inplace_thousands(out, outLen, COIN_AMOUNT_THOUSAND_SEPARATOR));
+    fpuint64_to_str(out, outLen, value, decimals);
+    if (decimals != 0) {
+        number_inplace_trimming(out, COIN_AMOUNT_DECIMAL_NON_TRIMMED_PLACES);
+        CHECK_ZXERR(number_inplace_thousands(out, outLen, COIN_AMOUNT_THOUSAND_SEPARATOR));
+    }
 
     return zxerr_ok;
 }

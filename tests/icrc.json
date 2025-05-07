@@ -1,28 +1,252 @@
 [
   {
-    "index": 1,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758684449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902000000000080c2d72f6b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b173faee3b1dd66806b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758754449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020000000001000011a4c4149c16808090bbbad6adf00d6b63616e69737465725f69644a000000000230009d01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
     "output": [
-      "0 | Transaction type : Send Tokens",
-      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
+      "0 | Transaction type : Send ckETH",
+      "1 | Canister Id : ss2fx-dyaaa-aaaar qacoq-cai",
       "2 | From account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Amount (Tokens) : 1.00",
+      "4 | Amount (ckETH) : 1.00",
       "5 | Memo : 0"
     ],
-    "valid": false,
     "isICP": false,
-    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
+    "valid": true,
+    "name": "ICRC1 Transfer1 ckETH - 18 decimals",
+    "canisterId": "ss2fx-dyaaa-aaaar-qacoq-cai",
     "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
     "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
       "to": {
-        "owner": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
         "subaccount": []
       },
-      "amount": "100000000",
+      "amount": "1000000000000000000",
+      "canisterId": { "__principal__": "ss2fx-dyaaa-aaaar-qacoq-cai" },
+      "index": 1,
+      "fee": [],
+      "memo": [],
+      "from_subaccount": [],
+      "created_at_time": ["1629200000000000000"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a663617267589d4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e90200018080e983b1de16000120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401000011a4c4149c168080d8d8d7c1c4e8146b63616e69737465725f69644a000000000230009d01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "output": [
+      "0 | Transaction type : Send ckETH",
+      "1 | Canister Id : ss2fx-dyaaa-aaaar qacoq-cai",
+      "2 | From account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | From account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | From account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
+      "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
+      "4 | Amount (ckETH) : 1.50",
+      "5 | Max fee (ckETH) : 0.0001",
+      "6 | Memo : 0"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer2 ckETH - 18 decimals",
+    "canisterId": "ss2fx-dyaaa-aaaar-qacoq-cai",
+    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+    "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
+        "subaccount": []
+      },
+      "amount": "1500000000000000000",
+      "canisterId": { "__principal__": "ss2fx-dyaaa-aaaar-qacoq-cai" },
+      "index": 2,
+      "fee": ["100000000000000"],
+      "memo": [],
+      "from_subaccount": [
+        {
+          "0": 215,
+          "1": 232,
+          "2": 81,
+          "3": 101,
+          "4": 44,
+          "5": 208,
+          "6": 50,
+          "7": 186,
+          "8": 94,
+          "9": 215,
+          "10": 107,
+          "11": 23,
+          "12": 246,
+          "13": 38,
+          "14": 170,
+          "15": 71,
+          "16": 130,
+          "17": 159,
+          "18": 6,
+          "19": 229,
+          "20": 35,
+          "21": 90,
+          "22": 13,
+          "23": 88,
+          "24": 14,
+          "25": 150,
+          "26": 211,
+          "27": 114,
+          "28": 119,
+          "29": 41,
+          "30": 234,
+          "31": 36
+        }
+      ],
+      "created_at_time": ["1629200000000000000"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a66361726758bf4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d018080e983b1de16000120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401000011a4c4149c168080c881ecb9cc83c3036b63616e69737465725f69644a000000000230009d01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "output": [
+      "0 | Transaction type : Send ckETH",
+      "1 | Canister Id : ss2fx-dyaaa-aaaar qacoq-cai",
+      "2 | From account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | From account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | From account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
+      "3 | To account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | To account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "3 | To account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "4 | Amount (ckETH) : 32.50",
+      "5 | Max fee (ckETH) : 0.0001",
+      "6 | Memo : 0"
+    ],
+    "isICP": false,
+    "valid": false,
+    "name": "ICRC1 Transfer3 ckETH - 18 decimals",
+    "canisterId": "ss2fx-dyaaa-aaaar-qacoq-cai",
+    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+    "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
+        "subaccount": [
+          {
+            "0": 163,
+            "1": 110,
+            "2": 20,
+            "3": 60,
+            "4": 134,
+            "5": 231,
+            "6": 228,
+            "7": 113,
+            "8": 231,
+            "9": 199,
+            "10": 25,
+            "11": 80,
+            "12": 100,
+            "13": 135,
+            "14": 207,
+            "15": 122,
+            "16": 108,
+            "17": 244,
+            "18": 13,
+            "19": 167,
+            "20": 99,
+            "21": 97,
+            "22": 174,
+            "23": 175,
+            "24": 238,
+            "25": 81,
+            "26": 51,
+            "27": 225,
+            "28": 217,
+            "29": 172,
+            "30": 234,
+            "31": 61
+          }
+        ]
+      },
+      "amount": "32500000000000000000",
+      "canisterId": { "__principal__": "ss2fx-dyaaa-aaaar-qacoq-cai" },
+      "index": 3,
+      "fee": ["100000000000000"],
+      "memo": [],
+      "from_subaccount": [
+        {
+          "0": 215,
+          "1": 232,
+          "2": 81,
+          "3": 101,
+          "4": 44,
+          "5": 208,
+          "6": 50,
+          "7": 186,
+          "8": 94,
+          "9": 215,
+          "10": 107,
+          "11": 23,
+          "12": 246,
+          "13": 38,
+          "14": 170,
+          "15": 71,
+          "16": 130,
+          "17": 159,
+          "18": 6,
+          "19": 229,
+          "20": 35,
+          "21": 90,
+          "22": 13,
+          "23": 88,
+          "24": 14,
+          "25": 150,
+          "26": 211,
+          "27": 114,
+          "28": 119,
+          "29": 41,
+          "30": 234,
+          "31": 36
+        }
+      ],
+      "created_at_time": ["1629200000000000000"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a663617267586e4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e90200000000008080f0b38f93d0a3fb056b63616e69737465725f69644a000000000230009d01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "output": [
+      "0 | Transaction type : Send ckETH",
+      "1 | Canister Id : ss2fx-dyaaa-aaaar qacoq-cai",
+      "2 | From account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
+      "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
+      "4 | Amount (ckETH) : 55.00",
+      "5 | Memo : 0"
+    ],
+    "isICP": false,
+    "valid": false,
+    "name": "ICRC1 Transfer4 ckETH - 18 decimals",
+    "canisterId": "ss2fx-dyaaa-aaaar-qacoq-cai",
+    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+    "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
+        "subaccount": []
+      },
+      "amount": "55000000000000000000",
+      "canisterId": { "__principal__": "ss2fx-dyaaa-aaaar-qacoq-cai" },
+      "index": 4,
       "fee": [],
       "memo": [],
       "from_subaccount": [],
@@ -30,202 +254,32 @@
     }
   },
   {
-    "index": 2,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758934449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020001904e000120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401000011a4c4149c1680c2d72f6b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b173faee3b24836406b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "blob": "d9d9f7a167636f6e74656e74a663617267589c4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01ac0201080000000000ab411000010049030855ae3f17a0b5c9016b63616e69737465725f69644a000000000230015b01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
     "output": [
-      "0 | Transaction type : Send Tokens",
-      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
-      "2 | From account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | From account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | From account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | From account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
-      "3 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "3 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Amount (Tokens) : 1.00",
-      "5 | Maximum fee (Tokens) : 0.0001",
-      "6 | Memo : 0"
-    ],
-    "valid": true,
-    "isICP": false,
-    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
-    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
-    "candid_request": {
-      "to": {
-        "owner": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
-        "subaccount": []
-      },
-      "amount": "100000000",
-      "fee": ["10000"],
-      "memo": [],
-      "from_subaccount": [
-        {
-          "0": 215,
-          "1": 232,
-          "2": 81,
-          "3": 101,
-          "4": 44,
-          "5": 208,
-          "6": 50,
-          "7": 186,
-          "8": 94,
-          "9": 215,
-          "10": 107,
-          "11": 23,
-          "12": 246,
-          "13": 38,
-          "14": 170,
-          "15": 71,
-          "16": 130,
-          "17": 159,
-          "18": 6,
-          "19": 229,
-          "20": 35,
-          "21": 90,
-          "22": 13,
-          "23": 88,
-          "24": 14,
-          "25": 150,
-          "26": 211,
-          "27": 114,
-          "28": 119,
-          "29": 41,
-          "30": 234,
-          "31": 36
-        }
-      ],
-      "created_at_time": ["1629200000000000000"]
-    }
-  },
-  {
-    "index": 3,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758b54449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01904e000120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401000011a4c4149c1680cdad9d016b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b173faee3b25778806b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
-    "output": [
-      "0 | Transaction type : Send Tokens",
-      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
-      "2 | From account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | From account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | From account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | From account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
-      "3 | To account [1/4] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "3 | To account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
-      "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
-      "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "4 | Amount (Tokens) : 3.30",
-      "5 | Maximum fee (Tokens) : 0.0001",
-      "6 | Memo : 0"
-    ],
-    "valid": true,
-    "isICP": false,
-    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
-    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
-    "candid_request": {
-      "to": {
-        "owner": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
-        "subaccount": [
-          {
-            "0": 163,
-            "1": 110,
-            "2": 20,
-            "3": 60,
-            "4": 134,
-            "5": 231,
-            "6": 228,
-            "7": 113,
-            "8": 231,
-            "9": 199,
-            "10": 25,
-            "11": 80,
-            "12": 100,
-            "13": 135,
-            "14": 207,
-            "15": 122,
-            "16": 108,
-            "17": 244,
-            "18": 13,
-            "19": 167,
-            "20": 99,
-            "21": 97,
-            "22": 174,
-            "23": 175,
-            "24": 238,
-            "25": 81,
-            "26": 51,
-            "27": 225,
-            "28": 217,
-            "29": 172,
-            "30": 234,
-            "31": 61
-          }
-        ]
-      },
-      "amount": "330000000",
-      "fee": ["10000"],
-      "memo": [],
-      "from_subaccount": [
-        {
-          "0": 215,
-          "1": 232,
-          "2": 81,
-          "3": 101,
-          "4": 44,
-          "5": 208,
-          "6": 50,
-          "7": 186,
-          "8": 94,
-          "9": 215,
-          "10": 107,
-          "11": 23,
-          "12": 246,
-          "13": 38,
-          "14": 170,
-          "15": 71,
-          "16": 130,
-          "17": 159,
-          "18": 6,
-          "19": 229,
-          "20": 35,
-          "21": 90,
-          "22": 13,
-          "23": 88,
-          "24": 14,
-          "25": 150,
-          "26": 211,
-          "27": 114,
-          "28": 119,
-          "29": 41,
-          "30": 234,
-          "31": 36
-        }
-      ],
-      "created_at_time": ["1629200000000000000"]
-    }
-  },
-  {
-    "index": 4,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a663617267589e4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01b0ea0101080000000000ab411000010049030855ae3f1780cdad9d016b63616e69737465725f69644a000000000000001401016e696e67726573735f6578706972791b173faee3b25778806b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
-    "output": [
-      "0 | Transaction type : Send Tokens",
-      "1 | Canister Id : s24we-diaaa-aaaaa aaaka-cai",
+      "0 | Transaction type : Send ckUSDC",
+      "1 | Canister Id : xevnm-gaaaa-aaaar qafnq-cai",
       "2 | From account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
-      "3 | To account [1/4] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "3 | To account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
-      "3 | To account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
-      "3 | To account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "4 | Amount (Tokens) : 3.30",
-      "5 | Maximum fee (Tokens) : 0.0003",
+      "3 | To account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | To account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "3 | To account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "4 | Amount (ckUSDC) : 3.30",
+      "5 | Max fee (ckUSDC) : 0.0003",
       "6 | Memo : 11223312"
     ],
-    "valid": true,
     "isICP": false,
-    "canisterId": "s24we-diaaa-aaaaa-aaaka-cai",
+    "valid": true,
+    "name": "ICRC1 Transfer1 ckUSDC - 6 decimals",
+    "canisterId": "xevnm-gaaaa-aaaar-qafnq-cai",
     "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
     "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
       "to": {
-        "owner": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
         "subaccount": [
           {
             "0": 163,
@@ -263,91 +317,307 @@
           }
         ]
       },
-      "amount": "330000000",
-      "fee": ["30000"],
+      "amount": "3300000",
+      "canisterId": { "__principal__": "xevnm-gaaaa-aaaar-qafnq-cai" },
+      "index": 1,
+      "fee": ["300"],
       "memo": [
-        {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 171,
-          "6": 65,
-          "7": 16
-        }
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
       ],
       "from_subaccount": [],
       "created_at_time": ["1675249266635000064"]
     }
   },
   {
-    "index": 5,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a663617267587a4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802000001080000000000ab411000010049030855ae3f178085dd95016b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b173faee3b266bac06b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758794449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802000001080000000000ab411000010049030855ae3f17a0d3bf016b63616e69737465725f69644a000000000230015b01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
-      "0 | Transaction type : Send Tokens",
-      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
+      "0 | Transaction type : Send ckUSDC",
+      "1 | Canister Id : xevnm-gaaaa-aaaar qafnq-cai",
       "2 | From account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | To account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | To account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
-      "4 | Amount (Tokens) : 3.14",
+      "4 | Amount (ckUSDC) : 3.14",
       "5 | Memo : 11223312"
     ],
-    "valid": true,
     "isICP": false,
-    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
+    "valid": true,
+    "name": "ICRC1 Transfer2 ckUSDC - 6 decimals",
+    "canisterId": "xevnm-gaaaa-aaaar-qafnq-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": []
       },
-      "amount": "314000000",
+      "amount": "3140000",
+      "canisterId": { "__principal__": "xevnm-gaaaa-aaaar-qafnq-cai" },
+      "index": 2,
       "fee": [],
       "memo": [
-        {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 171,
-          "6": 65,
-          "7": 16
-        }
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
       ],
       "from_subaccount": [],
       "created_at_time": ["1675249266635000064"]
     }
   },
   {
-    "index": 6,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758bf4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401a09c0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c09aeefa046b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b173faee3b266bac06b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758bd4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401c80101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17d0cfac066b63616e69737465725f69644a000000000230015b01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
-      "0 | Transaction type : Send Tokens",
-      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
-      "2 | From account [1/4] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "2 | From account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
-      "2 | From account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
-      "2 | From account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "3 | To account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "3 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "3 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "3 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
-      "4 | Amount (Tokens) : 13.314",
-      "5 | Maximum fee (Tokens) : 0.0002",
+      "0 | Transaction type : Send ckUSDC",
+      "1 | Canister Id : xevnm-gaaaa-aaaar qafnq-cai",
+      "2 | From account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "2 | From account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "2 | From account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "3 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "3 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
+      "4 | Amount (ckUSDC) : 13.314",
+      "5 | Max fee (ckUSDC) : 0.0002",
       "6 | Memo : 11223312"
     ],
-    "valid": true,
     "isICP": false,
-    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
+    "valid": true,
+    "name": "ICRC1 Transfer3 ckUSDC - 6 decimals",
+    "canisterId": "xevnm-gaaaa-aaaar-qafnq-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
+        "subaccount": [
+          {
+            "0": 215,
+            "1": 232,
+            "2": 81,
+            "3": 101,
+            "4": 44,
+            "5": 208,
+            "6": 50,
+            "7": 186,
+            "8": 94,
+            "9": 215,
+            "10": 107,
+            "11": 23,
+            "12": 246,
+            "13": 38,
+            "14": 170,
+            "15": 71,
+            "16": 130,
+            "17": 159,
+            "18": 6,
+            "19": 229,
+            "20": 35,
+            "21": 90,
+            "22": 13,
+            "23": 88,
+            "24": 14,
+            "25": 150,
+            "26": 211,
+            "27": 114,
+            "28": 119,
+            "29": 41,
+            "30": 234,
+            "31": 36
+          }
+        ]
+      },
+      "amount": "13314000",
+      "canisterId": { "__principal__": "xevnm-gaaaa-aaaar-qafnq-cai" },
+      "index": 3,
+      "fee": ["200"],
+      "memo": [
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
+      ],
+      "from_subaccount": [
+        {
+          "0": 163,
+          "1": 110,
+          "2": 20,
+          "3": 60,
+          "4": 134,
+          "5": 231,
+          "6": 228,
+          "7": 113,
+          "8": 231,
+          "9": 199,
+          "10": 25,
+          "11": 80,
+          "12": 100,
+          "13": 135,
+          "14": 207,
+          "15": 122,
+          "16": 108,
+          "17": 244,
+          "18": 13,
+          "19": 167,
+          "20": 99,
+          "21": 97,
+          "22": 174,
+          "23": 175,
+          "24": 238,
+          "25": 81,
+          "26": 51,
+          "27": 225,
+          "28": 217,
+          "29": 172,
+          "30": 234,
+          "31": 61
+        }
+      ],
+      "created_at_time": ["1675249266635000064"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a663617267589e4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01b0ea0101080000000000ab411000010049030855ae3f1780cdad9d016b63616e69737465725f69644a000000000200001901016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "output": [
+      "0 | Transaction type : Send CHAT",
+      "1 | Canister Id : 2ouva-viaaa-aaaaq aaamq-cai",
+      "2 | From account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
+      "3 | To account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | To account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "3 | To account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "4 | Amount (CHAT) : 3.30",
+      "5 | Max fee (CHAT) : 0.0003",
+      "6 | Memo : 11223312"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer1 CHAT - 8 decimals",
+    "canisterId": "2ouva-viaaa-aaaaq-aaamq-cai",
+    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+    "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
+        "subaccount": [
+          {
+            "0": 163,
+            "1": 110,
+            "2": 20,
+            "3": 60,
+            "4": 134,
+            "5": 231,
+            "6": 228,
+            "7": 113,
+            "8": 231,
+            "9": 199,
+            "10": 25,
+            "11": 80,
+            "12": 100,
+            "13": 135,
+            "14": 207,
+            "15": 122,
+            "16": 108,
+            "17": 244,
+            "18": 13,
+            "19": 167,
+            "20": 99,
+            "21": 97,
+            "22": 174,
+            "23": 175,
+            "24": 238,
+            "25": 81,
+            "26": 51,
+            "27": 225,
+            "28": 217,
+            "29": 172,
+            "30": 234,
+            "31": 61
+          }
+        ]
+      },
+      "amount": "330000000",
+      "canisterId": { "__principal__": "2ouva-viaaa-aaaaq-aaamq-cai" },
+      "index": 1,
+      "fee": ["30000"],
+      "memo": [
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
+      ],
+      "from_subaccount": [],
+      "created_at_time": ["1675249266635000064"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a663617267587a4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802000001080000000000ab411000010049030855ae3f178085dd95016b63616e69737465725f69644a000000000200001901016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "output": [
+      "0 | Transaction type : Send CHAT",
+      "1 | Canister Id : 2ouva-viaaa-aaaaq aaamq-cai",
+      "2 | From account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
+      "3 | To account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | To account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
+      "4 | Amount (CHAT) : 3.14",
+      "5 | Memo : 11223312"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer2 CHAT - 8 decimals",
+    "canisterId": "2ouva-viaaa-aaaaq-aaamq-cai",
+    "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+    "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
+        "subaccount": []
+      },
+      "amount": "314000000",
+      "canisterId": { "__principal__": "2ouva-viaaa-aaaaq-aaamq-cai" },
+      "index": 2,
+      "fee": [],
+      "memo": [
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
+      ],
+      "from_subaccount": [],
+      "created_at_time": ["1675249266635000064"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a66361726758bf4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401a09c0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c09aeefa046b63616e69737465725f69644a000000000200001901016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "output": [
+      "0 | Transaction type : Send CHAT",
+      "1 | Canister Id : 2ouva-viaaa-aaaaq aaamq-cai",
+      "2 | From account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "2 | From account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "2 | From account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "3 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "3 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
+      "4 | Amount (CHAT) : 13.314",
+      "5 | Max fee (CHAT) : 0.0002",
+      "6 | Memo : 11223312"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer3 CHAT - 8 decimals",
+    "canisterId": "2ouva-viaaa-aaaaq-aaamq-cai",
+    "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+    "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -386,18 +656,11 @@
         ]
       },
       "amount": "1331400000",
+      "canisterId": { "__principal__": "2ouva-viaaa-aaaaq-aaamq-cai" },
+      "index": 3,
       "fee": ["20000"],
       "memo": [
-        {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 171,
-          "6": 65,
-          "7": 16
-        }
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
       ],
       "from_subaccount": [
         {
@@ -439,9 +702,231 @@
     }
   },
   {
-    "index": 7,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758684449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902000000000080c2d72f6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b266bac06b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "blob": "d9d9f7a167636f6e74656e74a663617267589e4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e9020120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01b0ea0101080000000000ab411000010049030855ae3f1780cdad9d016b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
+    "output": [
+      "0 | Transaction type : Send Tokens",
+      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
+      "2 | From account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
+      "3 | To account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "3 | To account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "3 | To account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "4 | Amount (Tokens) : 330000000",
+      "5 | Max fee (Tokens) : 30000",
+      "6 | Memo : 11223312"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer1 Unsupported Token",
+    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
+    "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+    "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
+        "subaccount": [
+          {
+            "0": 163,
+            "1": 110,
+            "2": 20,
+            "3": 60,
+            "4": 134,
+            "5": 231,
+            "6": 228,
+            "7": 113,
+            "8": 231,
+            "9": 199,
+            "10": 25,
+            "11": 80,
+            "12": 100,
+            "13": 135,
+            "14": 207,
+            "15": 122,
+            "16": 108,
+            "17": 244,
+            "18": 13,
+            "19": 167,
+            "20": 99,
+            "21": 97,
+            "22": 174,
+            "23": 175,
+            "24": 238,
+            "25": 81,
+            "26": 51,
+            "27": 225,
+            "28": 217,
+            "29": 172,
+            "30": 234,
+            "31": 61
+          }
+        ]
+      },
+      "amount": "330000000",
+      "canisterId": { "__principal__": "ppmzm-3aaaa-aaaaa-aacpq-cai" },
+      "index": 1,
+      "fee": ["30000"],
+      "memo": [
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
+      ],
+      "from_subaccount": [],
+      "created_at_time": ["1675249266635000064"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a663617267587a4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802000001080000000000ab411000010049030855ae3f178085dd95016b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "output": [
+      "0 | Transaction type : Send Tokens",
+      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
+      "2 | From account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
+      "3 | To account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | To account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
+      "4 | Amount (Tokens) : 314000000",
+      "5 | Memo : 11223312"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer2 Unsupported Token",
+    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
+    "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+    "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
+        "subaccount": []
+      },
+      "amount": "314000000",
+      "canisterId": { "__principal__": "ppmzm-3aaaa-aaaaa-aacpq-cai" },
+      "index": 2,
+      "fee": [],
+      "memo": [
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
+      ],
+      "from_subaccount": [],
+      "created_at_time": ["1675249266635000064"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a66361726758bf4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401a09c0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c09aeefa046b63616e69737465725f69644a000000000000009f01016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "output": [
+      "0 | Transaction type : Send Tokens",
+      "1 | Canister Id : ppmzm-3aaaa-aaaaa aacpq-cai",
+      "2 | From account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "2 | From account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "2 | From account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "3 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "3 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "3 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
+      "4 | Amount (Tokens) : 1331400000",
+      "5 | Max fee (Tokens) : 20000",
+      "6 | Memo : 11223312"
+    ],
+    "isICP": false,
+    "valid": true,
+    "name": "ICRC1 Transfer3 Unsupported Token",
+    "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
+    "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+    "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
+      "to": {
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
+        "subaccount": [
+          {
+            "0": 215,
+            "1": 232,
+            "2": 81,
+            "3": 101,
+            "4": 44,
+            "5": 208,
+            "6": 50,
+            "7": 186,
+            "8": 94,
+            "9": 215,
+            "10": 107,
+            "11": 23,
+            "12": 246,
+            "13": 38,
+            "14": 170,
+            "15": 71,
+            "16": 130,
+            "17": 159,
+            "18": 6,
+            "19": 229,
+            "20": 35,
+            "21": 90,
+            "22": 13,
+            "23": 88,
+            "24": 14,
+            "25": 150,
+            "26": 211,
+            "27": 114,
+            "28": 119,
+            "29": 41,
+            "30": 234,
+            "31": 36
+          }
+        ]
+      },
+      "amount": "1331400000",
+      "canisterId": { "__principal__": "ppmzm-3aaaa-aaaaa-aacpq-cai" },
+      "index": 3,
+      "fee": ["20000"],
+      "memo": [
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
+      ],
+      "from_subaccount": [
+        {
+          "0": 163,
+          "1": 110,
+          "2": 20,
+          "3": 60,
+          "4": 134,
+          "5": 231,
+          "6": 228,
+          "7": 113,
+          "8": 231,
+          "9": 199,
+          "10": 25,
+          "11": 80,
+          "12": 100,
+          "13": 135,
+          "14": 207,
+          "15": 122,
+          "16": 108,
+          "17": 244,
+          "18": 13,
+          "19": 167,
+          "20": 99,
+          "21": 97,
+          "22": 174,
+          "23": 175,
+          "24": 238,
+          "25": 81,
+          "26": 51,
+          "27": 225,
+          "28": 217,
+          "29": 172,
+          "30": 234,
+          "31": 61
+        }
+      ],
+      "created_at_time": ["1675249266635000064"]
+    }
+  },
+  {
+    "blob": "d9d9f7a167636f6e74656e74a66361726758684449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902000000000080c2d72f6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f65802",
     "output": [
       "0 | Transaction type : Send ICP",
       "1 | From account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
@@ -449,19 +934,27 @@
       "2 | To account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "2 | To account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | Amount (ICP) : 1.00",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
-    "valid": false,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer1 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
     "candid_request": {
+      "owner": {
+        "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+      },
       "to": {
-        "owner": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
+        "owner": {
+          "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+        },
         "subaccount": []
       },
       "amount": "100000000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 1,
       "fee": [],
       "memo": [],
       "from_subaccount": [],
@@ -469,28 +962,31 @@
     }
   },
   {
-    "index": 8,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758894449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2400000000c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b275fd006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758894449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2400000000c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
       "0 | Transaction type : Send ICP",
       "1 | From account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "1 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "2 | To account [1/4] : vvrt6-ymecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mafv7-ikfss",
-      "2 | To account [3/4] : zubsx-jpno2-yx6yt kur4c-t4dok-i22bv",
-      "2 | To account [4/4] : ma5fw-toj3s-t2ree b7q",
+      "2 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
-    "valid": false,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer2 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -529,6 +1025,8 @@
         ]
       },
       "amount": "31400000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 2,
       "fee": [],
       "memo": [],
       "from_subaccount": [],
@@ -536,30 +1034,32 @@
     }
   },
   {
-    "index": 9,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758b24449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2400000120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b275fd006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758b24449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2400000120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
       "0 | Transaction type : Send ICP",
-      "1 | From account [1/4] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "1 | From account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
-      "1 | From account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
-      "1 | From account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "2 | To account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
+      "1 | From account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "1 | From account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "1 | From account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "2 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
-    "valid": true,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer3 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -598,6 +1098,8 @@
         ]
       },
       "amount": "31400000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 3,
       "fee": [],
       "memo": [],
       "from_subaccount": [
@@ -640,28 +1142,31 @@
     }
   },
   {
-    "index": 10,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a663617267589a4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea240001080000000000ab411000010049030855ae3f17c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b2853f406b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a663617267589a4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea240001080000000000ab411000010049030855ae3f17c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
       "0 | Transaction type : Send ICP",
       "1 | From account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "1 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "2 | To account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
+      "2 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.0001",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 11223312"
     ],
-    "valid": true,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer4 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -700,46 +1205,42 @@
         ]
       },
       "amount": "31400000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 4,
       "fee": [],
       "memo": [
-        {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 171,
-          "6": 65,
-          "7": 16
-        }
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
       ],
       "from_subaccount": [],
       "created_at_time": ["1675249266635000064"]
     }
   },
   {
-    "index": 11,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758944449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401a08d06000001000011a4c4149c16c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b2853f406b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758944449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401a08d06000001000011a4c4149c16c0c0fc0e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
       "0 | Transaction type : Send ICP",
       "1 | From account [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "1 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "2 | To account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
+      "2 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 0.314",
-      "4 | Maximum fee (ICP) : 0.001",
+      "4 | Max fee (ICP) : 0.001",
       "5 | Memo : 0"
     ],
-    "valid": true,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer5 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -778,6 +1279,8 @@
         ]
       },
       "amount": "31400000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 5,
       "fee": ["100000"],
       "memo": [],
       "from_subaccount": [],
@@ -785,30 +1288,32 @@
     }
   },
   {
-    "index": 12,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758be4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401b0ea0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01000011a4c4149c16c082d43e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b2853f406b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758be4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401b0ea0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d01000011a4c4149c16c082d43e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
       "0 | Transaction type : Send ICP",
-      "1 | From account [1/4] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "1 | From account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
-      "1 | From account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
-      "1 | From account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "2 | To account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
+      "1 | From account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "1 | From account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "1 | From account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "2 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 1.314",
-      "4 | Maximum fee (ICP) : 0.0003",
+      "4 | Max fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
-    "valid": true,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer6 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -847,18 +1352,11 @@
         ]
       },
       "amount": "131400000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 6,
       "fee": ["30000"],
       "memo": [
-        {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 171,
-          "6": 65,
-          "7": 16
-        }
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
       ],
       "from_subaccount": [
         {
@@ -900,30 +1398,32 @@
     }
   },
   {
-    "index": 13,
-    "name": "ICRC1 Transfer",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758be4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401b0ea0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c082d43e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b173faee3b2853f406b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
+    "blob": "d9d9f7a167636f6e74656e74a66361726758be4449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011d841429ba30df507f14f52fbced0b037850b98d89aafaad5b7430f658020120d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea2401b0ea0101080000000000ab41100120a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d010049030855ae3f17c082d43e6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b182541c3bd5d48006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581d29794883d3efb57cc835619ba5961941d7a11ac192735943b2c886e902",
     "output": [
       "0 | Transaction type : Send ICP",
-      "1 | From account [1/4] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
-      "1 | From account [2/4] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
-      "1 | From account [3/4] : a36e143c 86e7e471 e7c71950 6487cf7a",
-      "1 | From account [4/4] : 6cf40da7 6361aeaf ee5133e1 d9acea3d",
-      "2 | To account [1/4] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
-      "2 | To account [2/4] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
-      "2 | To account [3/4] : d7e85165 2cd032ba 5ed76b17 f626aa47",
-      "2 | To account [4/4] : 829f06e5 235a0d58 0e96d372 7729ea24",
+      "1 | From account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
+      "1 | From account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
+      "1 | From account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
+      "2 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
+      "2 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
+      "2 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Amount (ICP) : 1.314",
-      "4 | Maximum fee (ICP) : 0.0003",
+      "4 | Max fee (ICP) : 0.0003",
       "5 | Memo : 11223312"
     ],
-    "valid": true,
     "isICP": true,
+    "valid": true,
+    "name": "ICRC1 Transfer7 ICP - 8 decimals",
     "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
     "caller": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe",
     "candid_request": {
+      "owner": {
+        "__principal__": "2dfd6-abjpf-eihu7-pwv6m-qnlbt-oszmg-kb26q-rvqms-onmuh-mwiq3-uqe"
+      },
       "to": {
-        "owner": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae",
+        "owner": {
+          "__principal__": "krpzt-buecq-u3umg-7kb7r-j5jpx-twqwa-3ykc4-y3cnk-7kwvw-5bq6z-mae"
+        },
         "subaccount": [
           {
             "0": 215,
@@ -962,18 +1462,11 @@
         ]
       },
       "amount": "131400000",
+      "canisterId": { "__principal__": "ryjl3-tyaaa-aaaaa-aaaba-cai" },
+      "index": 7,
       "fee": ["30000"],
       "memo": [
-        {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 171,
-          "6": 65,
-          "7": 16
-        }
+        { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 171, "6": 65, "7": 16 }
       ],
       "from_subaccount": [
         {
@@ -1012,36 +1505,6 @@
         }
       ],
       "created_at_time": ["1675249266635000064"]
-    }
-  },
-  {
-    "index": 14,
-    "name": "ICRC1 Transfer - Short principal",
-    "blob": "d9d9f7a167636f6e74656e74a66361726758714449444c066d7b6e006c02b3b0dac30368ad86ca8305016e7d6e786c06fbca0102c6fcb60203ba89e5c20401a2de94eb060182f3f3910c04d8a38ca80d7d0105011c735f8ada317380cd998707a17e99a0b3d0a396e6540a2bc599f537020001904e000001000011a4c4149c1680c2d72f6b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b1786dd34da2d25006b6d6574686f645f6e616d656e69637263315f7472616e736665726c726571756573745f747970656463616c6c6673656e646572581df1305df1b074e88adb99dc2f56f12d63208165f24dea7e60ae6cf6cf02",
-    "output": [
-      "0 | Transaction type : Send ICP",
-      "1 | From account [1/2] : q2fbu-chrgb-o7dmd u5cfn-xgo4f-5lpcl",
-      "1 | From account [2/2] : ldeca-wl4sn-5j7gb ltm63-hqe",
-      "2 | To account [1/2] : ttwhn-ittl6-fnuml tqdgz-tbyhu-f7jti",
-      "2 | To account [2/2] : ft2cr-znzsu-biv4l gpvg4-ba",
-      "3 | Amount (ICP) : 1.00",
-      "4 | Maximum fee (ICP) : 0.0001",
-      "5 | Memo : 0"
-    ],
-    "valid": true,
-    "isICP": true,
-    "canisterId": "ryjl3-tyaaa-aaaaa-aaaba-cai",
-    "caller": "q2fbu-chrgb-o7dmd-u5cfn-xgo4f-5lpcl-ldeca-wl4sn-5j7gb-ltm63-hqe",
-    "candid_request": {
-      "to": {
-        "owner": "ttwhn-ittl6-fnuml-tqdgz-tbyhu-f7jti-ft2cr-znzsu-biv4l-gpvg4-ba",
-        "subaccount": []
-      },
-      "amount": "100000000",
-      "fee": ["10000"],
-      "memo": [],
-      "from_subaccount": [],
-      "created_at_time": ["1629200000000000000"]
     }
   }
 ]

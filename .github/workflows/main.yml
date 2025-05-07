@@ -51,6 +51,54 @@ jobs:
           make
           echo "size=$(python3 deps/ledger-zxlib/scripts/getSize.py s)" >> $GITHUB_OUTPUT
 
+  clippy:
+    runs-on: ubuntu-latest
+    container:
+      image: zondax/rust-ci:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache/restore Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: ./app/rust/.cargo
+          key: ${{ runner.os }}-${{ hashFiles('./Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ github.sha }}
+      - name: clippy
+        run: |
+          cd ./app/rust
+          cargo clippy --all-targets --features "clippy"
+
+  rust_tests:
+    runs-on: ubuntu-latest
+    container:
+      image: zondax/rust-ci:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache/restore Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: ./app/rust/.cargo
+          key: ${{ runner.os }}-${{ hashFiles('./Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ github.sha }}
+      - name: run rust tests
+        run: cd ./app/rust
+          cargo test
+
+  build_application:
+    name: Build application using the reusable workflow
+    uses: LedgerHQ/ledger-app-workflows/.github/workflows/reusable_build.yml@v1
+    with:
+      upload_app_binaries_artifact: "compiled_app_binaries"
+      builder: ledger-app-builder
+
   size_nano_s:
     needs: build_ledger
     runs-on: ubuntu-latest
@@ -61,9 +109,45 @@ jobs:
           echo "LNS app size: ${{needs.build_ledger.outputs.size}} KiB"
           [ ${{needs.build_ledger.outputs.size}} -le $NANOS_LIMIT_SIZE ]
 
-  test_zemu:
+  tests_zemu_setup:
+    if: ${{ !contains(toJSON(github.event.commits[*].message), '[skip-zemu]') }}
     runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.get-tests.outputs.tests }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install node
+        uses: actions/setup-node@v3
+
+      - name: Install yarn
+        run: npm install -g yarn
+
+      - name: Build/Install build js deps
+        run: |
+          export PATH=~/.cargo/bin:$PATH
+          make zemu_install
+
+      - name: Get test files
+        id: get-tests
+        run: |
+          cd tests_zemu
+          TESTS=`yarn test --listTests --json | head -n 3 | tail -n 1 | jq -cM 'to_entries | map({id: .key, file: .value})'`
+          echo "tests=$TESTS" >> "$GITHUB_OUTPUT"
+
+  test_zemu:
+    needs: [configure, tests_zemu_setup]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.tests_zemu_setup.outputs['tests']) }}
+    steps:
+      - name: Debug needs context
+        run: echo "${{ toJson(needs) }}"
       - name: Test
         run: |
           id
@@ -72,18 +156,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
       - run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
       - name: Install node
         uses: actions/setup-node@v3
       - name: Install yarn
         run: |
           npm install -g yarn
-      - name: Build Ledger app and run tests
-        run: make test_all
+      - name: Build Ledger app
+        run: make PRODUCTION_BUILD=1
+
+      - name: Build/Install build js deps
+        run: make zemu_install
+
+      - name: Run zemu tests
+        run: |
+          cd tests_zemu
+          yarn jest ${{ matrix.test.file }} --maxConcurrency 2 \
+                --reporters='@matteoh2o1999/github-actions-jest-reporter'
+        env:
+          FORCE_COLOR: 1
+
       - name: Upload Snapshots (only failure)
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: snapshots-tmp
           path: tests_zemu/snapshots-tmp/
@@ -125,7 +221,7 @@ jobs:
           prerelease: false
 
   build_package_nanosp:
-    needs: [configure, build, build_ledger, test_zemu]
+    needs: [configure, build, build_ledger, test_zemu, rust_tests]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -161,7 +257,7 @@ jobs:
           prerelease: false
 
   build_package_stax:
-    needs: [configure, build, build_ledger, test_zemu]
+    needs: [configure, build, build_ledger, test_zemu, rust_tests]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
@@ -197,7 +293,7 @@ jobs:
           prerelease: false
 
   build_package_flex:
-    needs: [configure, build, build_ledger, test_zemu]
+    needs: [configure, build, build_ledger, test_zemu, rust_tests]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:

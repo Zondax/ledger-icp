@@ -1,5 +1,5 @@
 /** ******************************************************************************
- *  (c) 2020 Zondax GmbH
+ *  (c) 2020 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import { DEFAULT_OPTIONS, DEVICE_MODELS } from './common'
 jest.setTimeout(180000)
 
 describe('Standard', function () {
-  test.concurrent.each(DEVICE_MODELS)('can start and stop container', async function (m) {
+  test.each(DEVICE_MODELS)('can start and stop container', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
@@ -30,7 +30,7 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('main menu', async function (m) {
+  test.each(DEVICE_MODELS)('main menu', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
@@ -40,7 +40,7 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('get app version', async function (m) {
+  test.each(DEVICE_MODELS)('get app version', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
@@ -60,7 +60,7 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('get address', async function (m) {
+  test.each(DEVICE_MODELS)('get address', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
@@ -88,7 +88,7 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('show address', async function (m) {
+  test.each(DEVICE_MODELS)('show address', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({
@@ -130,7 +130,7 @@ describe('Standard', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('show address - reject', async function (m) {
+  test.each(DEVICE_MODELS)('show address - reject', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({
@@ -155,6 +155,23 @@ describe('Standard', function () {
 
       expect(resp.returnCode).toEqual(0x6986)
       expect(resp.errorMessage).toEqual('Transaction rejected')
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.each(DEVICE_MODELS)('get token_registry', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const resp = await app.tokenRegistry()
+
+      console.log(resp)
+
+      expect(resp.returnCode).toEqual(0x9000)
+      expect(resp.errorMessage).toEqual('No errors')
     } finally {
       await sim.close()
     }

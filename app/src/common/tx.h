@@ -1,22 +1,22 @@
 /*******************************************************************************
-*  (c) 2019 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *  (c) 2019 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #pragma once
 
-#include "os.h"
 #include "coin.h"
+#include "os.h"
 #include "zxerror.h"
 
 void tx_initialize();
@@ -44,14 +44,24 @@ uint8_t *tx_get_buffer();
 /// \return It returns NULL if data is valid or error message otherwise.
 const char *tx_parse();
 
-///Parses combined transaction message in transaction buffer
+/// Parses combined transaction message in transaction buffer
 const char *tx_parse_combined();
 
 /// Return the number of items in the transaction
 zxerr_t tx_getNumItems(uint8_t *num_items);
 
 /// Gets an specific item from the transaction (including paging)
-zxerr_t tx_getItem(int8_t displayIdx,
-                   char *outKey, uint16_t outKeyLen,
-                   char *outValue, uint16_t outValueLen,
+zxerr_t tx_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outValue, uint16_t outValueLen,
                    uint8_t pageIdx, uint8_t *pageCount);
+
+#if defined(BLS_SIGNATURE)
+
+zxerr_t tx_certVerify();
+
+/// Return the number of items in the transaction
+zxerr_t tx_certNumItems(uint8_t *num_items);
+
+/// Gets an specific item from the transaction (including paging)
+zxerr_t tx_certGetItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outValue, uint16_t outValueLen,
+                       uint8_t pageIdx, uint8_t *pageCount);
+#endif

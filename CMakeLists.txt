@@ -1,5 +1,5 @@
 #*******************************************************************************
-#*   (c) 2018 Zondax GmbH
+#*   (c) 2018 Zondax AG
 #*
 #*  Licensed under the Apache License, Version 2.0 (the "License");
 #*  you may not use this file except in compliance with the License.
@@ -124,6 +124,7 @@ file(GLOB_RECURSE LIB_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/base32.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/protobuf/*.c
         ${CMAKE_CURRENT_SOURCE_DIR}/app/src/parser_print_*.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/token_info.c
         )
 
 add_library(app_lib STATIC

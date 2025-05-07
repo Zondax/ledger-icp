@@ -1,5 +1,5 @@
 /** ******************************************************************************
- *  (c) 2020 Zondax GmbH
+ *  (c) 2020 Zondax AG
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ const TEST_CASES_BIP32 = [
 ]
 
 describe('Addresses', function () {
-  test.concurrent.each(DEVICE_MODELS)('get address with seed', async function (m) {
+  test.each(DEVICE_MODELS)('get address with seed', async function (m) {
     const sim = new Zemu(m.path)
 
     for (const TEST of TEST_CASES) {
@@ -99,7 +99,7 @@ describe('Addresses', function () {
     }
   })
 
-  test.concurrent.each(DEVICE_MODELS)('derivation paths', async function (m) {
+  test.each(DEVICE_MODELS)('derivation paths', async function (m) {
     const sim = new Zemu(m.path)
     try {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
