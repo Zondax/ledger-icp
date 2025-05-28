@@ -278,10 +278,6 @@ impl DisplayableItem for ConsentMessage<'_> {
         page: u8,
     ) -> Result<u8, ViewError> {
         check_canary();
-        let title_bytes = b"ConsentMsg";
-        let title_len = title_bytes.len().min(title.len() - 1);
-        title[..title_len].copy_from_slice(&title_bytes[..title_len]);
-        title[title_len] = 0;
 
         match self {
             ConsentMessage::FieldsDisplayMessage { .. } => {
