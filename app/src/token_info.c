@@ -148,9 +148,11 @@ bool compare_canister_ids(const char *id1, const char *id2) {
 
     while ((id1[i] == '-' || id1[i] == ' ') && count < CANISTER_ID_STR_MAX_LEN) {
         i++;
+        count++;
     }
     while ((id2[j] == '-' || id2[j] == ' ') && count < CANISTER_ID_STR_MAX_LEN) {
         j++;
+        count++;
     }
 
     // Both strings should be at their end
@@ -159,8 +161,8 @@ bool compare_canister_ids(const char *id1, const char *id2) {
 }
 
 // Function to get decimals for a canister ID
-const token_info_t *get_token(const uint8_t *canister_id, uint8_t len) {
-    if (canister_id == NULL) {
+const token_info_t *get_token(const uint8_t *canister_id, size_t len) {
+    if (canister_id == NULL || len > CANISTER_MAX_LEN) {
         return NULL;
     }
 
@@ -169,7 +171,7 @@ const token_info_t *get_token(const uint8_t *canister_id, uint8_t len) {
     uint16_t textual_len = sizeof(canister_no_hyphens) - 1;  // Reserve space for null terminator
 
     // Convert binary principal to textual representation
-    if (crypto_principalToTextual(canister_id, len, canister_no_hyphens, &textual_len) != zxerr_ok) {
+    if (crypto_principalToTextual(canister_id, (uint16_t)len, canister_no_hyphens, &textual_len) != zxerr_ok) {
         return NULL;
     }
 

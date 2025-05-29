@@ -262,8 +262,8 @@ static parser_error_t parser_getItemDisburseCandid(uint8_t displayIdx, char *out
     *pageCount = 1;
 
     const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
-    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
-    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const uint8_t *canister_id = (const uint8_t *)parser_tx_obj.tx_fields.call.canister_id.data;
+    const uint8_t canister_id_len = parser_tx_obj.tx_fields.call.canister_id.len;
     const token_info_t *token = get_token(canister_id, canister_id_len);
 
     uint8_t decimals = 0;
@@ -611,8 +611,8 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx, char *outKey, uint
     const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_Split, parser_unexpected_value)
 
-    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
-    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const uint8_t *canister_id = (const uint8_t *)parser_tx_obj.tx_fields.call.canister_id.data;
+    const uint8_t canister_id_len = parser_tx_obj.tx_fields.call.canister_id.len;
     const token_info_t *token = get_token(canister_id, canister_id_len);
 
     uint8_t decimals = 0;
@@ -891,8 +891,9 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx, char *out
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
-    const token_info_t *token =
-        get_token(parser_tx_obj.tx_fields.call.canister_id.data, parser_tx_obj.tx_fields.call.canister_id.len);
+    const uint8_t *canister_id = (const uint8_t *)fields->canister_id.data;
+    const uint8_t canister_id_len = fields->canister_id.len;
+    const token_info_t *token = get_token(canister_id, canister_id_len);
 
     uint8_t decimals = 0;
     if (token != NULL) {
@@ -984,10 +985,8 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
     const bool icp_canisterId = call->data.icrcTransfer.icp_canister;
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
-    // const uint8_t *canisterId = (const uint8_t*) call->canister_id.data;
-    // const uint8_t canisterIdLen = (uint8_t) call->canister_id.len;
-    uint8_t *canister_id = call->canister_id.data;
-    uint8_t canister_id_len = (uint8_t)call->canister_id.len;
+    const uint8_t *canister_id = (const uint8_t *)call->canister_id.data;
+    const uint8_t canister_id_len = call->canister_id.len;
     const token_info_t *token = get_token(canister_id, canister_id_len);
 
     uint8_t decimals = 0;
