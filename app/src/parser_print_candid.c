@@ -891,9 +891,8 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx, char *out
 
     const bool is_stake_tx = parser_tx_obj.special_transfer_type == neuron_stake_transaction;
 
-    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
-    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
-    const token_info_t *token = get_token(canister_id, canister_id_len);
+    const token_info_t *token =
+        get_token(parser_tx_obj.tx_fields.call.canister_id.data, parser_tx_obj.tx_fields.call.canister_id.len);
 
     uint8_t decimals = 0;
     if (token != NULL) {

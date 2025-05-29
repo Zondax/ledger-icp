@@ -20,6 +20,8 @@
 #include "parser_common.h"
 #include "parser_print_helper.h"
 
+#define CANISTER_TEXTUAL_BUFFER_SIZE 100
+
 // Static definition of all tokens
 static const token_info_t TOKEN_REGISTRY[] = {
     {.canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai", .token_symbol = "ICP", .decimals = 8},
@@ -144,8 +146,12 @@ bool compare_canister_ids(const char *id1, const char *id2) {
         count++;
     }
 
-    while ((id1[i] == '-' || id1[i] == ' ') && count < CANISTER_ID_STR_MAX_LEN) i++;
-    while ((id2[j] == '-' || id2[j] == ' ') && count < CANISTER_ID_STR_MAX_LEN) j++;
+    while ((id1[i] == '-' || id1[i] == ' ') && count < CANISTER_ID_STR_MAX_LEN) {
+        i++;
+    }
+    while ((id2[j] == '-' || id2[j] == ' ') && count < CANISTER_ID_STR_MAX_LEN) {
+        j++;
+    }
 
     // Both strings should be at their end
     bool equal = (id1[i] == '\0' && id2[j] == '\0');
@@ -158,9 +164,17 @@ const token_info_t *get_token(const uint8_t *canister_id, uint8_t len) {
         return NULL;
     }
 
-    char canister[100] = {0};
+    char canister[CANISTER_TEXTUAL_BUFFER_SIZE] = {0};
+    char canister_no_hyphens[CANISTER_TEXTUAL_BUFFER_SIZE] = {0};
+    uint16_t textual_len = sizeof(canister_no_hyphens) - 1;  // Reserve space for null terminator
 
-    if (format_principal(canister_id, len, canister, 99) != parser_ok) {
+    // Convert binary principal to textual representation
+    if (crypto_principalToTextual(canister_id, len, canister_no_hyphens, &textual_len) != zxerr_ok) {
+        return NULL;
+    }
+
+    // Format with delimiters - use the actual textual length, not the binary length
+    if (format_principal_with_delimiters(canister_no_hyphens, textual_len, canister, sizeof(canister)) != parser_ok) {
         return NULL;
     }
 
