@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-const token_info_t *get_token(const uint8_t *canister_id, uint8_t len);
+const token_info_t *get_token(const uint8_t *canister_id, size_t len);
 uint8_t token_registry_size(void);
 uint16_t get_token_i(size_t index, uint8_t *out, uint16_t out_len);
 
