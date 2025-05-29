@@ -20,6 +20,8 @@
 #include "parser_common.h"
 #include "parser_print_helper.h"
 
+#define CANISTER_TEXTUAL_BUFFER_SIZE 100
+
 // Static definition of all tokens
 static const token_info_t TOKEN_REGISTRY[] = {
     {.canister_id = "ryjl3-tyaaa-aaaaa-aaaba-cai", .token_symbol = "ICP", .decimals = 8},
@@ -115,52 +117,46 @@ bool compare_canister_ids(const char *id1, const char *id2) {
         return false;
     }
 
-    size_t i = 0;
-    size_t j = 0;
+    char id1_copy[CANISTER_TEXTUAL_BUFFER_SIZE] = {0};
+    char id2_copy[CANISTER_TEXTUAL_BUFFER_SIZE] = {0};
 
-    size_t count = 0;
+    size_t id1_len = strlen(id1);
+    size_t id2_len = strlen(id2);
 
-    while (id1[i] != '\0' && id2[j] != '\0' && count < CANISTER_ID_STR_MAX_LEN) {
-        // Skip hyphens and spaces in first ID
-        while ((id1[i] == '-' || id1[i] == ' ') && count < CANISTER_ID_STR_MAX_LEN) {
-            i++;
-        }
-
-        // Skip hyphens and spaces in second ID
-        while ((id2[j] == '-' || id2[j] == ' ') && count < CANISTER_ID_STR_MAX_LEN) {
-            j++;
-        }
-
-        if (id1[i] == '\0' || id2[j] == '\0') {
-            break;
-        }
-
-        if (id1[i] != id2[j]) {
-            return false;
-        }
-
-        i++;
-        j++;
-        count++;
+    if (id1_len >= CANISTER_TEXTUAL_BUFFER_SIZE || id2_len >= CANISTER_TEXTUAL_BUFFER_SIZE) {
+        return false;
     }
 
-    while ((id1[i] == '-' || id1[i] == ' ') && count < CANISTER_ID_STR_MAX_LEN) i++;
-    while ((id2[j] == '-' || id2[j] == ' ') && count < CANISTER_ID_STR_MAX_LEN) j++;
+    strncpy(id1_copy, id1, CANISTER_TEXTUAL_BUFFER_SIZE - 1);
+    strncpy(id2_copy, id2, CANISTER_TEXTUAL_BUFFER_SIZE - 1);
 
-    // Both strings should be at their end
-    bool equal = (id1[i] == '\0' && id2[j] == '\0');
-    return equal;
+    // Ensure null termination (strncpy doesn't guarantee this)
+    id1_copy[CANISTER_TEXTUAL_BUFFER_SIZE - 1] = '\0';
+    id2_copy[CANISTER_TEXTUAL_BUFFER_SIZE - 1] = '\0';
+
+    remove_hyphens(id1_copy);
+    remove_hyphens(id2_copy);
+
+    return strcmp(id1_copy, id2_copy) == 0;
 }
 
 // Function to get decimals for a canister ID
-const token_info_t *get_token(const uint8_t *canister_id, uint8_t len) {
-    if (canister_id == NULL) {
+const token_info_t *get_token(const uint8_t *canister_id, size_t len) {
+    if (canister_id == NULL || len > CANISTER_MAX_LEN) {
         return NULL;
     }
 
-    char canister[100] = {0};
+    char canister[CANISTER_TEXTUAL_BUFFER_SIZE] = {0};
+    char canister_no_hyphens[CANISTER_TEXTUAL_BUFFER_SIZE] = {0};
+    uint16_t textual_len = sizeof(canister_no_hyphens) - 1;  // Reserve space for null terminator
 
-    if (format_principal(canister_id, len, canister, 99) != parser_ok) {
+    // Convert binary principal to textual representation
+    if (crypto_principalToTextual(canister_id, (uint16_t)len, canister_no_hyphens, &textual_len) != zxerr_ok) {
+        return NULL;
+    }
+
+    // Format with delimiters - use the actual textual length, not the binary length
+    if (format_principal_with_delimiters(canister_no_hyphens, textual_len, canister, sizeof(canister)) != parser_ok) {
         return NULL;
     }
 

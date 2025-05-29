@@ -9,8 +9,8 @@
       "1 | From account [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "2 | To account [1/2] : d3e13d47 77e22367 53205319 0b6c6ccf",
       "2 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
-      "3 | Amount (Tokens) : 1000000000",
-      "4 | Max fee (Tokens) : 10000",
+      "3 | Amount (ICP) : 10.00",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
     "output_expert": [
@@ -22,8 +22,8 @@
       "3 | From account [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | To account [1/2] : d3e13d47 77e22367 53205319 0b6c6ccf",
       "4 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
-      "5 | Amount (Tokens) : 1000000000",
-      "6 | Max fee (Tokens) : 10000",
+      "5 | Amount (ICP) : 10.00",
+      "6 | Max fee (ICP) : 0.0001",
       "7 | Memo : 0"
     ]
   },
@@ -38,8 +38,8 @@
       "1 | From account [3/3] : .0a00000 00000300 04b01010 00000000",
       "2 | To account [1/2] : df4ad421 94201b15 ecbbe66f f68559a1",
       "2 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
-      "3 | Amount (Tokens) : 333000000000",
-      "4 | Max fee (Tokens) : 10000",
+      "3 | Amount (ICP) : 3'330.00",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
     "output_expert": [
@@ -53,8 +53,8 @@
       "3 | From account [3/3] : .0a00000 00000300 04b01010 00000000",
       "4 | To account [1/2] : df4ad421 94201b15 ecbbe66f f68559a1",
       "4 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
-      "5 | Amount (Tokens) : 333000000000",
-      "6 | Max fee (Tokens) : 10000",
+      "5 | Amount (ICP) : 3'330.00",
+      "6 | Max fee (ICP) : 0.0001",
       "7 | Memo : 0"
     ]
   },
@@ -68,8 +68,8 @@
       "1 | From account [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "2 | To account [1/2] : df4ad421 94201b15 ecbbe66f f68559a1",
       "2 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
-      "3 | Amount (Tokens) : 1432222000",
-      "4 | Max fee (Tokens) : 10000",
+      "3 | Amount (ICP) : 14.32222",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 0"
     ],
     "output_expert": [
@@ -81,8 +81,8 @@
       "3 | From account [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | To account [1/2] : df4ad421 94201b15 ecbbe66f f68559a1",
       "4 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
-      "5 | Amount (Tokens) : 1432222000",
-      "6 | Max fee (Tokens) : 10000",
+      "5 | Amount (ICP) : 14.32222",
+      "6 | Max fee (ICP) : 0.0001",
       "7 | Memo : 0"
     ]
   },
@@ -96,8 +96,8 @@
       "1 | From account [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "2 | To account [1/2] : d3e13d47 77e22367 53205319 0b6c6ccf",
       "2 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
-      "3 | Amount (Tokens) : 2000000000",
-      "4 | Max fee (Tokens) : 10000",
+      "3 | Amount (ICP) : 20.00",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 128371233"
     ],
     "output_expert": [
@@ -109,8 +109,8 @@
       "3 | From account [2/2] : obhal-yb5xj-ue32x ktkql-rqe",
       "4 | To account [1/2] : d3e13d47 77e22367 53205319 0b6c6ccf",
       "4 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
-      "5 | Amount (Tokens) : 2000000000",
-      "6 | Max fee (Tokens) : 10000",
+      "5 | Amount (ICP) : 20.00",
+      "6 | Max fee (ICP) : 0.0001",
       "7 | Memo : 128371233"
     ]
   },
@@ -125,8 +125,8 @@
       "1 | From account [3/3] : .1d02dc6 9531d6e8 375cf08e 80e6ecdd",
       "2 | To account [1/2] : df4ad421 94201b15 ecbbe66f f68559a1",
       "2 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
-      "3 | Amount (Tokens) : 100000000000",
-      "4 | Max fee (Tokens) : 10000",
+      "3 | Amount (ICP) : 1'000.00",
+      "4 | Max fee (ICP) : 0.0001",
       "5 | Memo : 1231236788755"
     ],
     "output_expert": [
@@ -140,8 +140,8 @@
       "3 | From account [3/3] : .1d02dc6 9531d6e8 375cf08e 80e6ecdd",
       "4 | To account [1/2] : df4ad421 94201b15 ecbbe66f f68559a1",
       "4 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
-      "5 | Amount (Tokens) : 100000000000",
-      "6 | Max fee (Tokens) : 10000",
+      "5 | Amount (ICP) : 1'000.00",
+      "6 | Max fee (ICP) : 0.0001",
       "7 | Memo : 1231236788755"
     ]
   }
