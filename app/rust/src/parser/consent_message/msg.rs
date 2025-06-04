@@ -202,11 +202,8 @@ impl<'a, const PAGES: usize, const LINES: usize> FromCandidHeader<'a> for Msg<'a
                     // into MAX_CHARS_PER_LINE(otherwise it errors), this means
                     // that number of items is actually the number
                     // of pages in the message
-                    let num_items = m
-                        .pages_iter(MAX_CHARS_PER_LINE)
-                        .ok_or(ParserError::NoData)?
-                        .count() as u8;
-                    addr_of_mut!((*out).num_items).write(num_items);
+                    // Set to 4 custom screens
+                    addr_of_mut!((*out).num_items).write(4);
                 }
             }
         }
@@ -348,12 +345,7 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
         check_canary();
         match self {
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
-            ConsentMessage::LineDisplayMessage { .. } => {
-                // Get an iterator using our standard screen width
-                self.pages_iter(MAX_CHARS_PER_LINE)
-                    .ok_or(ViewError::NoData)
-                    .map(|pages| pages.count() as u8)
-            }
+            ConsentMessage::LineDisplayMessage { .. } => Ok(4), // 4 custom screens
         }
     }
 
@@ -366,45 +358,57 @@ impl<const PAGES: usize, const LINES: usize> DisplayableItem for ConsentMessage<
         page: u8,
     ) -> Result<u8, ViewError> {
         check_canary();
-        let title_bytes = b"ConsentMsg";
-        let title_len = title_bytes.len().min(title.len() - 1);
-        title[..title_len].copy_from_slice(&title_bytes[..title_len]);
-        title[title_len] = 0;
 
         match self {
             ConsentMessage::GenericDisplayMessage(..) => {
                 // No Data as this kind of message is not supported
                 Err(ViewError::Reject)
             }
-            ConsentMessage::LineDisplayMessage {
-                data,
-                offsets,
-                page_count,
-            } => {
-                let offsets = if let Some(cached) = offsets.get() {
-                    cached
-                } else {
-                    let new_offsets = Self::compute_page_offsets(data, *page_count)
-                        .map_err(|_| ViewError::NoData)?;
-                    offsets.set(Some(new_offsets));
-                    new_offsets
-                };
+            ConsentMessage::LineDisplayMessage { .. } => {
+                // This currently work but if do not use this screen page and format_page content to only use fixed content it falis for nanoS
+                // Support multiple screens with custom title-content pairs
+                let custom_screens = [
+                    ("Title", "Zondax"),
+                    ("Company", "Ledger"),
+                    ("Network", "ICP"),
+                    ("Action", "Consent"),
+                ];
 
-                let page_info = *offsets.get(item_n as usize).ok_or(ViewError::NoData)?;
-
-                let screen_page = LineDisplayIterator::new_with_offsets(
-                    data,
-                    MAX_CHARS_PER_LINE,
-                    item_n as usize,
-                    page_info,
-                    *page_count,
-                )
-                .next()
-                .ok_or(ViewError::NoData)?;
+                // Check if requested item exists
+                if item_n as usize >= custom_screens.len() {
+                    return Err(ViewError::NoData);
+                }
 
                 let mut buff = Self::render_buffer();
 
-                self.format_page_content(&screen_page, &mut buff)?;
+                // Create a custom screen page with title and content
+                let (title_text, content_text) = custom_screens[item_n as usize];
+                let mut segments = [""; LINES];
+                let mut num_segments = 0;
+
+                // Add title as first line if there's space
+                if num_segments < LINES {
+                    segments[num_segments] = title_text;
+                    num_segments += 1;
+                }
+
+                // Add content as second line if there's space
+                if num_segments < LINES {
+                    segments[num_segments] = content_text;
+                    num_segments += 1;
+                }
+
+                let custom_page = ScreenPage {
+                    segments,
+                    num_segments,
+                };
+
+                self.format_page_content(&custom_page, &mut buff)?;
+
+                // Set custom title
+                let title_len = title_text.len().min(title.len() - 1);
+                title[..title_len].copy_from_slice(&title_text.as_bytes()[..title_len]);
+                title[title_len] = 0; // Null terminate
 
                 handle_ui_message(&buff, message, page)
             }
