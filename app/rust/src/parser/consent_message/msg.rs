@@ -195,20 +195,27 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                 // Get the vector length (number of records)
                 let (rem, field_count) = decompress_leb128(rem)?;
 
+                // Store the start position of fields data
+                let fields_start = rem;
+
                 // Calculate size of each record and total size
                 let mut current = rem;
-                let mut total_size = 0;
                 for _ in 0..field_count {
                     // Skip key
-                    let (rem, _) = parse_text(current)?;
+                    let (new_rem, _) = parse_text(current)?;
                     // Skip value
-                    let (rem, _) = parse_text(rem)?;
-                    total_size += current.len() - rem.len();
-                    current = rem;
+                    let (new_rem, _) = parse_text(new_rem)?;
+                    current = new_rem;
                 }
 
-                // Take only the fields content
-                let (rem, fields) = take(total_size)(rem)?;
+                // Calculate total size from start to end
+                let total_size = fields_start.len() - current.len();
+
+                // Take only the fields content from the correct position
+                let (rem, fields) = take(total_size)(fields_start)?;
+
+                // Continue parsing from where we left off
+                let rem = current;
 
                 // Parse intent (INTENT_HASH = 2659612252)
                 let _ = record_entry
