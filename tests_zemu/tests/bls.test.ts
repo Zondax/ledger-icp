@@ -14,7 +14,7 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu from '@zondax/zemu'
+import Zemu, { ClickNavigation } from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import { DEFAULT_OPTIONS, DEVICE_MODELS_BLS } from './common'
 
@@ -39,7 +39,15 @@ describe('Bls', function () {
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`)
+      if (m.name === 'nanosp') {
+        // NanoS+ navigates until the "Approve" text, but since the first snapshots in this test contains the "Approve" text,
+        // we need to navigate with another method.
+        const APPROVE_CLICKS = [4, 0]
+        const navSchedule = new ClickNavigation(APPROVE_CLICKS)
+        await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`, navSchedule.schedule)
+      } else {
+        await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`)
+      }
 
       const signatureResponse = await respCert
       console.log(respCert)
