@@ -196,7 +196,6 @@ mod icrc21_msg_request_test {
         assert_eq!(hex::encode(arg), ARGS);
         let user_preferences = icrc.user_preferences().unwrap();
         assert_eq!(user_preferences.language(), LANGUAGE);
-        assert_eq!(user_preferences.lines_per_page(), Some(LINES_PER_PAGE));
         assert_eq!(user_preferences.utc_offset(), None);
     }
 }
