@@ -17,6 +17,5 @@ mod buffer_writer;
 pub mod msg;
 pub mod msg_error;
 pub mod msg_info;
-pub mod msg_iter;
 pub mod msg_metadata;
 pub mod msg_response;

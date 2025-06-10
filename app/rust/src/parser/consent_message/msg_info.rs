@@ -15,7 +15,6 @@
 ********************************************************************************/
 use crate::{
     candid_header::CandidHeader,
-    constants::{MAX_LINES, MAX_PAGES},
     error::{ParserError, ViewError},
     type_table::FieldType,
     DisplayableItem, FromCandidHeader,
@@ -27,7 +26,7 @@ use super::{msg::Msg, msg_metadata::ConsentMessageMetadata};
 #[repr(C)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ConsentInfo<'a> {
-    pub message: Msg<'a, MAX_PAGES, MAX_LINES>,
+    pub message: Msg<'a>,
     pub metadata: ConsentMessageMetadata<'a>,
 }
 
@@ -49,7 +48,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
         // Get the type entry for ConsentInfo (type 1)
         let type_entry = header
             .type_table
-            .find_type_entry(1)
+            .find_type_entry(4)
             .ok_or(ParserError::UnexpectedType)?;
 
         // We know METADATA has lower hash than MESSAGE, so it comes first in memory
@@ -68,8 +67,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
         let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };
         let mut rem = ConsentMessageMetadata::from_candid_header(input, metadata, header)?;
 
-        let message: &mut MaybeUninit<Msg<'_, MAX_PAGES, MAX_LINES>> =
-            unsafe { &mut *addr_of_mut!((*out).message).cast() };
+        let message: &mut MaybeUninit<Msg> = unsafe { &mut *addr_of_mut!((*out).message).cast() };
         rem = Msg::from_candid_header(rem, message, header)?;
 
         Ok(rem)
