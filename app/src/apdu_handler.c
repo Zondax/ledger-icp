@@ -134,6 +134,9 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     check_app_canary();
     zemu_log("HandleAPDU******\n");
 
+    // Reset Blindsign state on every APDU
+    app_mode_skip_blindsign_ui();
+
     BEGIN_TRY {
         TRY {
             if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {

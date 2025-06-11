@@ -83,6 +83,12 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
         THROW(APDU_CODE_OK);
     }
 
+    if (!app_mode_blindsign()) {
+        *flags |= IO_ASYNCH_REPLY;
+        view_blindsign_error_show();
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
     // Parser Certificate and verify
     CHECK_APP_CANARY()
     zxerr_t err = tx_certVerify();

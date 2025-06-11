@@ -14,9 +14,10 @@
  *  limitations under the License.
  ******************************************************************************* */
 
-import Zemu, { ClickNavigation } from '@zondax/zemu'
+import Zemu, { ButtonKind, ClickNavigation, TouchNavigation } from '@zondax/zemu'
 import InternetComputerApp from '@zondax/ledger-icp'
 import { DEFAULT_OPTIONS, DEVICE_MODELS_BLS } from './common'
+import { TEST_DATA } from './bls_test_data'
 
 jest.setTimeout(180000)
 
@@ -27,14 +28,9 @@ describe('Bls', function () {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
-      let consent_request =
-        'd9d9f7a167636f6e74656e74a76361726758cb4449444c076d7b6e766c02aeaeb1cc0501d880c6d007716b028beabfc2067fa9898b8f0a7f6e036c02efcee7800402c4fbf2db05046c03d6fca70200e1edeb4a7184f7fee80a0501066d4449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e0401050000000080c2d72f000100c24c00aacc4118010a00000000000000070101000d69637263325f617070726f76650002656e01016b63616e69737465725f69644a0000000000b003e601016e696e67726573735f657870697279c24818417e48714bc8006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e6365507685da12a7aa34a4b240e5089e8e62366c726571756573745f747970656463616c6c6673656e6465724104'
-      let canister_call =
-        'd9d9f7a167636f6e74656e74a763617267586d4449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e0401050000000080c2d72f000100c24c00aacc4118010a00000000000000070101006b63616e69737465725f69644a0000000000b003e601016e696e67726573735f657870697279c24818417e48714bc8006b6d6574686f645f6e616d656d69637263325f617070726f7665656e6f6e636550393bbfbb9c828604a08e77d4624a01f56c726571756573745f747970656463616c6c6673656e646572582005020000ff0000060000000200000a050000050b000000000b00060600006a0e'
-      let certificate =
-        'd9d9f7a364747265658301830182045820e7819691af7d32b3b7430996762358b90001c194baf168cbf66fa4bc7b02eaa683018204582083adf0dfaa3182c16f61b7e7a93ea61a9500f4f764c40421cf72c61ec6c29ca683024e726571756573745f73746174757383018301830182045820a634cd52a537fe1472c8d715b7df4da47ae9cb1d712aa630b47d2df0dfd0c6d7830183018301830183018204582046d18fc1f1191c8f6836c8ece13c8fd9688a56f0537b95195953cade214d3a5f8302582038ea4db10868be10af596cfb1c1d557fd135d774720ac546d4df842bbefd5d4f83018302457265706c79820358ee4449444c0b6b02bc8a0104c5fed201016b04d1c4987c03a3f2efe602029a8597e60302e3c581900f026c01fc91f4f805716c02fc91f4f80571c498b1b50d7d6c02efcee7800409e29fdcc806056b029ee0b53b06fcdfd79a0f716c02f99cba840807dcec99f409716d086c02007101716c02aeaeb1cc050ad880c6d007716e760100000002656e0003066d6574686f640d69637263325f617070726f76650a746573745f6669656c641054657374206669656c642076616c75650d616e6f746865725f6669656c640d416e6f746865722076616c756517496e74656e7420746f2069637263325f617070726f76658302467374617475738203477265706c6965648204582011dd41ee7dd9b2a15fa3324e05ce4a2b5e03fba4a1d8919901927652854ffc1182045820cee39b9eaefe16c51951d684376e5284b7a79f1e746af4e0cae5a1a926b550a9820458206be70aaeb3bbe7a9308c5ef39d108685edef57c6b4e9705dd32ec00f4371b57482045820de720e89d1d92fe1d07d4bf44b57be7c6225c9056b99e3373a437ffc184faec5820458204a2d65fdde220461793ce98e9302a08ecddb7b07c5ae1116da379dc8840f842f82045820ae6934dda4d3b666b15530ab97127cc31c23ea834f061aa63ade1fde01768e9b830182045820dca3e48639d8b08e2a674f8337f76e2f5bd90b0d2ec7664627ea6a3ecf9cd10683024474696d6582034995aaa9cbd7c2dfa018697369676e6174757265583093c79c491e90989d416553a94fbdd73941e406efe81e65776db00b31a267d3a777fddb9f142b8ba953a48f3d5b67e4f66a64656c65676174696f6ea2697375626e65745f6964581d806b712f189b5651e7349743820c5f45a81592464c25048e79f25cd6026b636572746966696361746559027dd9d9f7a26474726565830182045820b63acd339116f6b01d11462ef4c0dba98d1e124737eea9038fa30c08dbecbe8d83018301820458201252cea180dcebc7baba86ad402e724d24ff040463cc6db912689789824feb078302467375626e6574830183018204582001f6986a6a6e353c4cc6ce59203166d6fcdfaea1f9f20a9dc1939219368e7a8d8301830182045820654f222a0d7785c9406b4cc30970eae4ac4e992191aa2097005a315948ace9db830182045820c809a2f71c483679ea083fca3da5837de2906de073159c766b43963e9eeeea6883018302581d806b712f189b5651e7349743820c5f45a81592464c25048e79f25cd602830183024f63616e69737465725f72616e6765738203581bd9d9f781824a0000000000b0000001014a0000000000bfffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c05030201036100af4f78ab97b3cdc76075f552e83842d5b07c4e35f9f83614b4976e70751f94ea1bc5ebec45892086f4344ea8fb3f7e3a053da28155c0ac501ab6a26ccfc60e729d0bbe91bf0772837cf2911fb4e952d066daf14ea45c08c2104cc69bf221a4f8820458202e465da6f8bd618119e1767791e131ce9696113a8aff5a118c28fdd4992892a082045820853cc4424d45777421ca30310ee0c7cb8c07972a997f696a9de6a242bd8f4af6820458203cf359df3cf0830ea62ec97a8be98a43a4cfde07ec1252c95609d34163bc52a383024474696d65820349bb8682d2c1c1dfa018697369676e61747572655830aff4319e113e1aa58603e08a9ad2c80992fafea6945c79c2901747a797702e5dc5d05dd0de6ae3f4d6a898e80922daf6'
+      await sim.toggleBlindSigning()
 
-      const respCert = app.signBls("m/44'/223'/0'/0/0", consent_request, canister_call, certificate)
+      const respCert = app.signBls("m/44'/223'/0'/0/0", TEST_DATA.CONSENT_REQUEST, TEST_DATA.CANISTER_CALL, TEST_DATA.CERTIFICATE)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -42,11 +38,11 @@ describe('Bls', function () {
       if (m.name === 'nanosp') {
         // NanoS+ navigates until the "Approve" text, but since the first snapshots in this test contains the "Approve" text,
         // we need to navigate with another method.
-        const APPROVE_CLICKS = [4, 0]
+        const APPROVE_CLICKS = [6, 0]
         const navSchedule = new ClickNavigation(APPROVE_CLICKS)
         await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`, navSchedule.schedule)
       } else {
-        await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`)
+        await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`, true, 0, 15000, true)
       }
 
       const signatureResponse = await respCert
@@ -54,6 +50,49 @@ describe('Bls', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.each(DEVICE_MODELS_BLS)('verify_with_default_key_blindsign_disabled', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const respCert = app.signBls("m/44'/223'/0'/0/0", TEST_DATA.CONSENT_REQUEST, TEST_DATA.CANISTER_CALL, TEST_DATA.CERTIFICATE)
+
+      // Wait until we are not in the main menu
+      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+
+      let nav: ClickNavigation | TouchNavigation
+      if (m.name === 'nanosp') {
+        // Confirm BLS error
+        const APPROVE_CLICKS = [0]
+        nav = new ClickNavigation(APPROVE_CLICKS)
+      } else {
+        // Confirm "Go to settings" and toggle Blind Signing
+        nav = new TouchNavigation(m.name, [
+          ButtonKind.ConfirmYesButton,
+          ButtonKind.ToggleSettingButton2,
+          ButtonKind.SettingsNavRightButton,
+          ButtonKind.SettingsNavRightButton,
+          ButtonKind.SettingsQuitButton,
+        ]);
+      }
+
+      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-bls-cert_default_key_blindsign_disabled`, nav.schedule)
+
+      const signatureResponse = await respCert
+
+      // Verify the error, anything other than 0x6984 is not expected
+      // Error expected due to not toggling blind signing
+      console.log(signatureResponse)
+      expect(signatureResponse).toMatchObject({
+        returnCode: 0x6984,
+        errorMessage: expect.stringContaining('Data is invalid')
+      })
     } finally {
       await sim.close()
     }
