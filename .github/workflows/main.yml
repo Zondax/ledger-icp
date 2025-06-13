@@ -29,6 +29,18 @@ jobs:
           make deps
       - run: make cpp_test
 
+  setup_rust:
+    runs-on: ubuntu-latest
+    outputs:
+      cargo_home: ${{ steps.set_paths.outputs.cargo_home }}
+      rustup_home: ${{ steps.set_paths.outputs.rustup_home }}
+    steps:
+      - id: set_paths
+        run: |
+          echo "cargo_home=$GITHUB_WORKSPACE/app/rust/.cargo" >> $GITHUB_OUTPUT
+          echo "rustup_home=$GITHUB_WORKSPACE/app/rust/.rustup" >> $GITHUB_OUTPUT
+
+
   build_ledger:
     needs: [configure, setup_rust]
     runs-on: ubuntu-latest
@@ -39,7 +51,7 @@ jobs:
         BOLOS_SDK: /opt/nanos-secure-sdk
         HOME: /root
         CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}
+        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
         PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
     outputs:
       size: ${{steps.build.outputs.size}}
@@ -47,7 +59,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
       - name: Setup Rust environment
         uses: actions-rs/toolchain@v1
         with:
@@ -63,6 +75,8 @@ jobs:
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-rust-
+      - name: Install rust-src component
+        run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
       - name: Build Standard app
         id: build
         shell: bash -l {0}
@@ -111,16 +125,6 @@ jobs:
         run: cd ./app/rust
           cargo test
 
-  setup_rust:
-    runs-on: ubuntu-latest
-    outputs:
-      cargo_home: ${{ steps.set_paths.outputs.cargo_home }}
-      rustup_home: ${{ steps.set_paths.outputs.rustup_home }}
-    steps:
-      - id: set_paths
-        run: |
-          echo "cargo_home=$GITHUB_WORKSPACE/app/rust/.cargo" >> $GITHUB_OUTPUT
-          echo "rustup_home=$GITHUB_WORKSPACE/app/rust/.rustup" >> $GITHUB_OUTPUT
 
   build_application:
     name: Build application using the reusable workflow
@@ -225,20 +229,21 @@ jobs:
         BOLOS_SDK: /opt/nanos-secure-sdk
         HOME: /root
         CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}
+        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
         PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
+      - name: Install deps
+        run: pip install ledgerblue --break-system-packages
       - name: Setup Rust environment
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
-          profile: minimal
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -248,9 +253,8 @@ jobs:
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-rust-
-      - name: Install deps
-        run: pip install ledgerblue --break-system-packages
-
+      - name: Install rust-src component
+        run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
       - name: Build NanoS
         shell: bash -l {0}
         run: |
@@ -289,20 +293,21 @@ jobs:
         BOLOS_SDK: /opt/nanosplus-secure-sdk
         HOME: /root
         CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}
+        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
         PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
+      - name: Install deps
+        run: pip install ledgerblue --break-system-packages
       - name: Setup Rust environment
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
-          profile: minimal
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -312,9 +317,8 @@ jobs:
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-rust-
-      - name: Install deps
-        run: pip install ledgerblue --break-system-packages
-
+      - name: Install rust-src component
+        run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
       - name: Build NanoSP
         shell: bash -l {0}
         run: |
@@ -353,20 +357,21 @@ jobs:
         BOLOS_SDK: /opt/stax-secure-sdk
         HOME: /root
         CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}
+        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
         PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
+      - name: Install deps
+        run: pip install ledgerblue --break-system-packages
       - name: Setup Rust environment
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
-          profile: minimal
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -376,8 +381,8 @@ jobs:
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-rust-
-      - name: Install deps
-        run: pip install ledgerblue --break-system-packages
+      - name: Install rust-src component
+        run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
 
       - name: Build Stax
         shell: bash -l {0}
@@ -392,8 +397,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          files: |
-            ./app/pkg/installer_stax.sh
+          files: ./app/pkg/installer_stax.sh
           tag_name: ${{ steps.stax.outputs.tag_name }}
           draft: false
           prerelease: false
@@ -417,20 +421,21 @@ jobs:
         BOLOS_SDK: /opt/flex-secure-sdk
         HOME: /root
         CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}
+        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
         PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: true
+      - name: Install deps
+        run: pip install ledgerblue --break-system-packages
       - name: Setup Rust environment
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
-          profile: minimal
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -440,8 +445,8 @@ jobs:
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-rust-
-      - name: Install deps
-        run: pip install ledgerblue --break-system-packages
+      - name: Install rust-src component
+        run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
 
       - name: Build Flex
         shell: bash -l {0}
@@ -456,8 +461,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          files: |
-            ./app/pkg/installer_flex.sh
+          files: ./app/pkg/installer_flex.sh
           tag_name: ${{ steps.flex.outputs.tag_name }}
           draft: false
           prerelease: false
