@@ -212,7 +212,7 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                 let total_size = fields_start.len() - current.len();
 
                 // Take only the fields content from the correct position
-                let (rem, fields) = take(total_size)(fields_start)?;
+                let (_rem, fields) = take(total_size)(fields_start)?;
 
                 // Continue parsing from where we left off
                 let rem = current;

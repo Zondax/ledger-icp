@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - develop
+      - dev
 
 jobs:
   configure:
@@ -220,7 +221,6 @@ jobs:
 
   build_package_nanos:
     needs: [configure, setup_rust, build, build_ledger, test_zemu]
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: zondax/ledger-app-builder:latest
@@ -264,10 +264,11 @@ jobs:
         id: nanos
         run: echo "tag_name=$(./app/pkg/installer_nanos.sh version)" >> $GITHUB_OUTPUT
       - name: Create or Update Release (1)
+        if: ${{ github.ref == 'refs/heads/main' }}
         id: create_release_0
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: ./app/pkg/installer_nanos.sh
           tag_name: ${{ steps.nanos.outputs.tag_name }}
@@ -284,7 +285,6 @@ jobs:
         test_zemu,
         rust_tests,
       ]
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: zondax/ledger-app-builder:latest
@@ -328,10 +328,11 @@ jobs:
         id: nanosp
         run: echo "tag_name=$(./app/pkg/installer_nanos_plus.sh version)" >> $GITHUB_OUTPUT
       - name: Update Release
+        if: ${{ github.ref == 'refs/heads/main' }}
         id: update_release_2
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: ./app/pkg/installer_nanos_plus.sh
           tag_name: ${{ steps.nanosp.outputs.tag_name }}
@@ -348,7 +349,6 @@ jobs:
         test_zemu,
         rust_tests,
       ]
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: zondax/ledger-app-builder:latest
@@ -383,7 +383,6 @@ jobs:
             ${{ runner.os }}-rust-
       - name: Install rust-src component
         run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
-
       - name: Build Stax
         shell: bash -l {0}
         run: |
@@ -392,10 +391,11 @@ jobs:
         id: stax
         run: echo "tag_name=$(./app/pkg/installer_stax.sh version)" >> $GITHUB_OUTPUT
       - name: Update Release
+        if: ${{ github.ref == 'refs/heads/main' }}
         id: update_release_2
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: ./app/pkg/installer_stax.sh
           tag_name: ${{ steps.stax.outputs.tag_name }}
@@ -412,7 +412,6 @@ jobs:
         test_zemu,
         rust_tests,
       ]
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     container:
       image: zondax/ledger-app-builder:latest
@@ -447,7 +446,6 @@ jobs:
             ${{ runner.os }}-rust-
       - name: Install rust-src component
         run: rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
-
       - name: Build Flex
         shell: bash -l {0}
         run: |
@@ -456,10 +454,11 @@ jobs:
         id: flex
         run: echo "tag_name=$(./app/pkg/installer_flex.sh version)" >> $GITHUB_OUTPUT
       - name: Update Release
+        if: ${{ github.ref == 'refs/heads/main' }}
         id: update_release_2
         uses: softprops/action-gh-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: ./app/pkg/installer_flex.sh
           tag_name: ${{ steps.flex.outputs.tag_name }}
