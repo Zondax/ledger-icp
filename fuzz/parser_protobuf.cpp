@@ -5,11 +5,9 @@
 #include "pb_decode.h"
 #include "protobuf/dfinity.pb.h"
 
-
 #ifdef NDEBUG
 #error "This fuzz target won't work correctly with NDEBUG defined, which will cause asserts to be eliminated"
 #endif
-
 
 using std::size_t;
 

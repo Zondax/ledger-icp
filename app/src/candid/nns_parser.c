@@ -1,18 +1,18 @@
 /*******************************************************************************
-*   (c) 2018 - 2023 Zondax AG
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2018 - 2023 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #include "nns_parser.h"
 
 __Z_INLINE parser_error_t readCandidWhichVariant(parser_context_t *ctx, uint64_t *t) {
@@ -20,7 +20,7 @@ __Z_INLINE parser_error_t readCandidWhichVariant(parser_context_t *ctx, uint64_t
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandSplit(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandSplit(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
     // Check sanity Split
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -39,7 +39,7 @@ __Z_INLINE parser_error_t readCommandSplit(parser_context_t *ctx, candid_transac
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandMerge(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandMerge(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
     // Check sanity Merge
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -79,7 +79,7 @@ __Z_INLINE parser_error_t readCommandMerge(parser_context_t *ctx, candid_transac
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandSpawn(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandSpawn(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
     // Check sanity
     const int64_t spawnRoot = txn->element.implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -150,7 +150,8 @@ __Z_INLINE parser_error_t readCommandSpawn(parser_context_t *ctx, candid_transac
             if (val->command.spawn.new_controller.len > DFINITY_PRINCIPAL_LEN) {
                 return parser_unexpected_value;
             }
-            CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.spawn.new_controller.ptr, val->command.spawn.new_controller.len))
+            CHECK_PARSER_ERR(
+                readCandidBytes(ctx, val->command.spawn.new_controller.ptr, val->command.spawn.new_controller.len))
         }
     }
 
@@ -163,7 +164,8 @@ __Z_INLINE parser_error_t readCommandSpawn(parser_context_t *ctx, candid_transac
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandStakeMaturity(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandStakeMaturity(parser_context_t *ctx, candid_transaction_t *txn,
+                                                   candid_ManageNeuron_t *val) {
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
     if (txn->txn_length != 1) {
@@ -194,7 +196,7 @@ __Z_INLINE parser_error_t readCommandStakeMaturity(parser_context_t *ctx, candid
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandDisburse(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandDisburse(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
     const int64_t disburseRoot = txn->element.implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -251,7 +253,8 @@ __Z_INLINE parser_error_t readCommandDisburse(parser_context_t *ctx, candid_tran
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandRegisterVote(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandRegisterVote(parser_context_t *ctx, candid_transaction_t *txn,
+                                                  candid_ManageNeuron_t *val) {
     const int64_t voteRoot = txn->element.implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -300,7 +303,7 @@ __Z_INLINE parser_error_t readCommandRegisterVote(parser_context_t *ctx, candid_
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
     const int64_t followRoot = txn->element.implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -310,8 +313,7 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
 
     txn->element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    if (txn->element.field_hash != hash_field_follow_topic ||
-        txn->element.implementation != Int32) {
+    if (txn->element.field_hash != hash_field_follow_topic || txn->element.implementation != Int32) {
         return parser_unexpected_type;
     }
 
@@ -343,7 +345,80 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+// Note:
+// according to spec this should be an empty record
+// https://github.com/dfinity/ic/blob/master/rs/nns/governance/canister/governance.did#L111
+__Z_INLINE parser_error_t readCommandRefreshVotingPower(__Z_UNUSED parser_context_t *ctx, candid_transaction_t *txn,
+                                                        __Z_UNUSED candid_ManageNeuron_t *val) {
+    if (txn == NULL) {
+        return parser_unexpected_error;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    // Read record length - for empty record this should be 0
+    CHECK_PARSER_ERR(readCandidRecordLength(txn));
+
+    // Verify the record is empty (length should be 0)
+    if (txn->txn_length != 0) {
+        return parser_unexpected_value;
+    }
+
+    return parser_ok;
+}
+
+__Z_INLINE parser_error_t readCommandSetNeuronVisibility(parser_context_t *ctx, candid_transaction_t *txn,
+                                                         candid_Operation_t *operation) {
+    // Check record type
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    // Read record length
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    if (txn->txn_length != 1) {
+        return parser_unexpected_value;
+    }
+
+    // Read the visibility field
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+
+    // Verify it's the visibility field (hash: 3540889042)
+    // 3540889042
+    if (txn->element.field_hash != hash_field_visibility) {
+        return parser_unexpected_type;
+    }
+
+    // Get the optional type
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+
+    // Handle the optional
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+
+    // If has value, read the int32
+    uint8_t has_visibility;
+    CHECK_PARSER_ERR(readCandidByte(ctx, &has_visibility))
+
+    if (has_visibility) {
+        int32_t visibility;
+        CHECK_PARSER_ERR(readCandidInt32(ctx, &visibility))
+
+        // visibility allowed at the time implementing this:
+        // [1, 2]
+        if (visibility < 1 || visibility > 2) {
+            return parser_invalid_visibility;
+        }
+
+        // Store the value in your structure
+        operation->set_visibility.visibility = visibility;
+        operation->set_visibility.has_visibility = 1;
+    } else {
+        // Visibility must be present in this transaction
+        return parser_unexpected_value;
+    }
+
+    return parser_ok;
+}
+
+__Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ctx, candid_transaction_t *txn,
+                                                            candid_Operation_t *operation) {
     // Check sanity SetDissolvedTimestamp
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -367,7 +442,8 @@ __Z_INLINE parser_error_t readOperationSetDissolveTimestamp(parser_context_t *ct
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readOperationChangeAutoStakeMaturity(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+__Z_INLINE parser_error_t readOperationChangeAutoStakeMaturity(parser_context_t *ctx, candid_transaction_t *txn,
+                                                               candid_Operation_t *operation) {
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
     if (txn->txn_length != 1) {
@@ -375,8 +451,7 @@ __Z_INLINE parser_error_t readOperationChangeAutoStakeMaturity(parser_context_t 
     }
     txn->element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    if (txn->element.field_hash != hash_setting_auto_stake_maturity
-        || txn->element.implementation != Bool) {
+    if (txn->element.field_hash != hash_setting_auto_stake_maturity || txn->element.implementation != Bool) {
         return parser_unexpected_type;
     }
     // let's read
@@ -385,7 +460,8 @@ __Z_INLINE parser_error_t readOperationChangeAutoStakeMaturity(parser_context_t 
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readOperationIncreaseDissolveDelay(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+__Z_INLINE parser_error_t readOperationIncreaseDissolveDelay(parser_context_t *ctx, candid_transaction_t *txn,
+                                                             candid_Operation_t *operation) {
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
     if (txn->txn_length != 1) {
@@ -393,8 +469,7 @@ __Z_INLINE parser_error_t readOperationIncreaseDissolveDelay(parser_context_t *c
     }
     txn->element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    if (txn->element.field_hash != hash_setting_increse_dissolve_delay
-        || txn->element.implementation != Nat32) {
+    if (txn->element.field_hash != hash_setting_increse_dissolve_delay || txn->element.implementation != Nat32) {
         return parser_unexpected_type;
     }
     // let's read
@@ -403,7 +478,8 @@ __Z_INLINE parser_error_t readOperationIncreaseDissolveDelay(parser_context_t *c
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readOperationAddRemoveHotkey(parser_context_t *ctx, candid_transaction_t *txn, candid_Operation_t* operation) {
+__Z_INLINE parser_error_t readOperationAddRemoveHotkey(parser_context_t *ctx, candid_transaction_t *txn,
+                                                       candid_Operation_t *operation) {
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
     if (txn->txn_length != 1) {
@@ -411,8 +487,7 @@ __Z_INLINE parser_error_t readOperationAddRemoveHotkey(parser_context_t *ctx, ca
     }
     txn->element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
-    if (txn->element.field_hash != hash_setting_addhotkey &&
-        txn->element.field_hash != hash_setting_remove_hotkey) {
+    if (txn->element.field_hash != hash_setting_addhotkey && txn->element.field_hash != hash_setting_remove_hotkey) {
         return parser_unexpected_type;
     }
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
@@ -440,7 +515,8 @@ __Z_INLINE parser_error_t readOperationAddRemoveHotkey(parser_context_t *ctx, ca
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t* val) {
+__Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_transaction_t *txn,
+                                               candid_ManageNeuron_t *val) {
     // Save this type
     const int64_t txn_element_implementation = txn->element.implementation;
 
@@ -472,8 +548,8 @@ __Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_tra
     candid_Operation_t *operation = &val->command.configure.operation;
     CHECK_PARSER_ERR(readCandidWhichVariant(ctx, &operation->which))
 
-        // Restore saved type
-        txn->element.implementation = txn_element_implementation;
+    // Restore saved type
+    txn->element.implementation = txn_element_implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
     if (txn->txn_length > 1) {
@@ -510,9 +586,13 @@ __Z_INLINE parser_error_t readCommandConfigure(parser_context_t *ctx, candid_tra
                 return parser_unexpected_number_items;
             }
             break;
+        case hash_operation_SetVisibility:
+            CHECK_PARSER_ERR(readCommandSetNeuronVisibility(ctx, txn, operation))
+            break;
 
         default:
-            ZEMU_LOGF(100, "Unimplemented operation | Hash: %llu\n", operation->hash)
+            ZEMU_LOGF(50, "Unknown operation hash: 0x%08X%08X\n", (uint32_t)(operation->hash >> 32),
+                      (uint32_t)(operation->hash & 0xFFFFFFFF));
             return parser_unexpected_value;
     }
     return parser_ok;
@@ -612,9 +692,11 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             case hash_command_Follow:
                 CHECK_PARSER_ERR(readCommandFollow(ctx, txn, val))
                 break;
+            case hash_command_RefreshVotingPower:
+                CHECK_PARSER_ERR(readCommandRefreshVotingPower(ctx, txn, val))
+                break;
 
             default:
-                ZEMU_LOGF(100, "Unimplemented command | Hash: %llu\n", val->command.hash)
                 return parser_unexpected_type;
         }
     }
@@ -672,7 +754,6 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
             default:
                 return parser_value_out_of_range;
         }
-
     }
 
     if (ctx->bufferLen - ctx->offset > 0) {

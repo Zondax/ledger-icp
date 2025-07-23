@@ -5,6 +5,7 @@
 #define PB_DFINITY_PB_H_INCLUDED
 
 #include <pb.h>
+
 #include "base_types.pb.h"
 #include "governance.pb.h"
 
@@ -69,97 +70,123 @@ typedef struct _SendRequest {
     TimeStamp created_at_time; /* optional */
 } SendRequest;
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define TimeStamp_init_default                   {0}
-#define Memo_init_default                        {0}
-#define ICPTs_init_default                       {0}
-#define Payment_init_default                     {false, ICPTs_init_default}
-#define Subaccount_init_default                  {{0}}
-#define AccountIdentifier_init_default           {{0}}
-#define BlockHeight_init_default                 {0}
-#define SendRequest_init_default                 {false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default, false, TimeStamp_init_default}
-#define ManageNeuronPb_init_default              {false, ic_nns_governance_pb_v1_ManageNeuron_init_default}
-#define ListNeurons_init_default                 {{{NULL}, NULL}, 0}
-#define TimeStamp_init_zero                      {0}
-#define Memo_init_zero                           {0}
-#define ICPTs_init_zero                          {0}
-#define Payment_init_zero                        {false, ICPTs_init_zero}
-#define Subaccount_init_zero                     {{0}}
-#define AccountIdentifier_init_zero              {{0}}
-#define BlockHeight_init_zero                    {0}
-#define SendRequest_init_zero                    {false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero, false, TimeStamp_init_zero}
-#define ManageNeuronPb_init_zero                 {false, ic_nns_governance_pb_v1_ManageNeuron_init_zero}
-#define ListNeurons_init_zero                    {{{NULL}, NULL}, 0}
+#define TimeStamp_init_default \
+    { 0 }
+#define Memo_init_default \
+    { 0 }
+#define ICPTs_init_default \
+    { 0 }
+#define Payment_init_default \
+    { false, ICPTs_init_default }
+#define Subaccount_init_default \
+    {                           \
+        { 0 }                   \
+    }
+#define AccountIdentifier_init_default \
+    {                                  \
+        { 0 }                          \
+    }
+#define BlockHeight_init_default \
+    { 0 }
+#define SendRequest_init_default                                                                                          \
+    {                                                                                                                     \
+        false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, \
+            false, AccountIdentifier_init_default, false, BlockHeight_init_default, false, TimeStamp_init_default         \
+    }
+#define ManageNeuronPb_init_default \
+    { false, ic_nns_governance_pb_v1_ManageNeuron_init_default }
+#define ListNeurons_init_default \
+    { {{NULL}, NULL}, 0 }
+#define TimeStamp_init_zero \
+    { 0 }
+#define Memo_init_zero \
+    { 0 }
+#define ICPTs_init_zero \
+    { 0 }
+#define Payment_init_zero \
+    { false, ICPTs_init_zero }
+#define Subaccount_init_zero \
+    {                        \
+        { 0 }                \
+    }
+#define AccountIdentifier_init_zero \
+    {                               \
+        { 0 }                       \
+    }
+#define BlockHeight_init_zero \
+    { 0 }
+#define SendRequest_init_zero                                                                                        \
+    {                                                                                                                \
+        false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, \
+            AccountIdentifier_init_zero, false, BlockHeight_init_zero, false, TimeStamp_init_zero                    \
+    }
+#define ManageNeuronPb_init_zero \
+    { false, ic_nns_governance_pb_v1_ManageNeuron_init_zero }
+#define ListNeurons_init_zero \
+    { {{NULL}, NULL}, 0 }
 
 /* Field tags (for use in manual encoding/decoding) */
-#define AccountIdentifier_hash_tag               1
-#define BlockHeight_height_tag                   1
-#define ICPTs_e8s_tag                            1
-#define ListNeurons_neuron_ids_tag               1
-#define ListNeurons_caller_neuron_ids_tag        2
-#define ManageNeuronPb_manage_neuron_tag         1
-#define Memo_memo_tag                            1
-#define Subaccount_sub_account_tag               1
-#define TimeStamp_timestamp_nanos_tag            1
-#define Payment_receiver_gets_tag                1
-#define SendRequest_memo_tag                     1
-#define SendRequest_payment_tag                  2
-#define SendRequest_max_fee_tag                  3
-#define SendRequest_from_subaccount_tag          4
-#define SendRequest_to_tag                       5
-#define SendRequest_created_at_tag               6
-#define SendRequest_created_at_time_tag          7
+#define AccountIdentifier_hash_tag 1
+#define BlockHeight_height_tag 1
+#define ICPTs_e8s_tag 1
+#define ListNeurons_neuron_ids_tag 1
+#define ListNeurons_caller_neuron_ids_tag 2
+#define ManageNeuronPb_manage_neuron_tag 1
+#define Memo_memo_tag 1
+#define Subaccount_sub_account_tag 1
+#define TimeStamp_timestamp_nanos_tag 1
+#define Payment_receiver_gets_tag 1
+#define SendRequest_memo_tag 1
+#define SendRequest_payment_tag 2
+#define SendRequest_max_fee_tag 3
+#define SendRequest_from_subaccount_tag 4
+#define SendRequest_to_tag 5
+#define SendRequest_created_at_tag 6
+#define SendRequest_created_at_time_tag 7
 
 /* Struct field encoding specification for nanopb */
-#define TimeStamp_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   timestamp_nanos,   1)
+#define TimeStamp_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, timestamp_nanos, 1)
 #define TimeStamp_CALLBACK NULL
 #define TimeStamp_DEFAULT NULL
 
-#define Memo_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   memo,              1)
+#define Memo_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, memo, 1)
 #define Memo_CALLBACK NULL
 #define Memo_DEFAULT NULL
 
-#define ICPTs_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   e8s,               1)
+#define ICPTs_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, e8s, 1)
 #define ICPTs_CALLBACK NULL
 #define ICPTs_DEFAULT NULL
 
-#define Payment_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  receiver_gets,     1)
+#define Payment_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, receiver_gets, 1)
 #define Payment_CALLBACK NULL
 #define Payment_DEFAULT NULL
 #define Payment_receiver_gets_MSGTYPE ICPTs
 
-#define Subaccount_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, sub_account,       1)
+#define Subaccount_FIELDLIST(X, a) X(a, STATIC, SINGULAR, FIXED_LENGTH_BYTES, sub_account, 1)
 #define Subaccount_CALLBACK NULL
 #define Subaccount_DEFAULT NULL
 
-#define AccountIdentifier_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, FIXED_LENGTH_BYTES, hash,              1)
+#define AccountIdentifier_FIELDLIST(X, a) X(a, STATIC, SINGULAR, FIXED_LENGTH_BYTES, hash, 1)
 #define AccountIdentifier_CALLBACK NULL
 #define AccountIdentifier_DEFAULT NULL
 
-#define BlockHeight_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT64,   height,            1)
+#define BlockHeight_FIELDLIST(X, a) X(a, STATIC, SINGULAR, UINT64, height, 1)
 #define BlockHeight_CALLBACK NULL
 #define BlockHeight_DEFAULT NULL
 
-#define SendRequest_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  memo,              1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  payment,           2) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  max_fee,           3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  from_subaccount,   4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  to,                5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_at,        6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   7)
+#define SendRequest_FIELDLIST(X, a)                     \
+    X(a, STATIC, OPTIONAL, MESSAGE, memo, 1)            \
+    X(a, STATIC, OPTIONAL, MESSAGE, payment, 2)         \
+    X(a, STATIC, OPTIONAL, MESSAGE, max_fee, 3)         \
+    X(a, STATIC, OPTIONAL, MESSAGE, from_subaccount, 4) \
+    X(a, STATIC, OPTIONAL, MESSAGE, to, 5)              \
+    X(a, STATIC, OPTIONAL, MESSAGE, created_at, 6)      \
+    X(a, STATIC, OPTIONAL, MESSAGE, created_at_time, 7)
 #define SendRequest_CALLBACK NULL
 #define SendRequest_DEFAULT NULL
 #define SendRequest_memo_MSGTYPE Memo
@@ -170,15 +197,14 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  created_at_time,   7)
 #define SendRequest_created_at_MSGTYPE BlockHeight
 #define SendRequest_created_at_time_MSGTYPE TimeStamp
 
-#define ManageNeuronPb_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  manage_neuron,     1)
+#define ManageNeuronPb_FIELDLIST(X, a) X(a, STATIC, OPTIONAL, MESSAGE, manage_neuron, 1)
 #define ManageNeuronPb_CALLBACK NULL
 #define ManageNeuronPb_DEFAULT NULL
 #define ManageNeuronPb_manage_neuron_MSGTYPE ic_nns_governance_pb_v1_ManageNeuron
 
-#define ListNeurons_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, FIXED64,  neuron_ids,        1) \
-X(a, STATIC,   SINGULAR, BOOL,     caller_neuron_ids,   2)
+#define ListNeurons_FIELDLIST(X, a)                  \
+    X(a, CALLBACK, REPEATED, FIXED64, neuron_ids, 1) \
+    X(a, STATIC, SINGULAR, BOOL, caller_neuron_ids, 2)
 #define ListNeurons_CALLBACK pb_default_field_callback
 #define ListNeurons_DEFAULT NULL
 
@@ -207,15 +233,15 @@ extern const pb_msgdesc_t ListNeurons_msg;
 
 /* Maximum encoded size of messages (where known) */
 /* ListNeurons_size depends on runtime parameters */
-#define AccountIdentifier_size                   34
-#define BlockHeight_size                         11
-#define ICPTs_size                               11
-#define ManageNeuronPb_size                      250
-#define Memo_size                                11
-#define Payment_size                             13
-#define SendRequest_size                         139
-#define Subaccount_size                          34
-#define TimeStamp_size                           11
+#define AccountIdentifier_size 34
+#define BlockHeight_size 11
+#define ICPTs_size 11
+#define ManageNeuronPb_size 250
+#define Memo_size 11
+#define Payment_size 13
+#define SendRequest_size 139
+#define Subaccount_size 34
+#define TimeStamp_size 11
 
 #ifdef __cplusplus
 } /* extern "C" */

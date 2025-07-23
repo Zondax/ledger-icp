@@ -1,21 +1,22 @@
 /*******************************************************************************
-*   (c) 2018 - 2023 Zondax AG
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2018 - 2023 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #include "sns_parser.h"
 
-__Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx, candid_transaction_t *txn, uint64_t hash_permission_to) {
+__Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx, candid_transaction_t *txn,
+                                                          uint64_t hash_permission_to) {
     const int64_t neuronPermissionsRoot = txn->element.implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, neuronPermissionsRoot))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -135,7 +136,7 @@ __Z_INLINE parser_error_t readSNSCommandNeuronConfigure(parser_context_t *ctx, c
         return parser_unexpected_value;
     }
     candid_Operation_t *operation = &val->command.configure.operation;
-    CHECK_PARSER_ERR(readCandidLEB128(ctx, &operation->which)) // read variant
+    CHECK_PARSER_ERR(readCandidLEB128(ctx, &operation->which))  // read variant
 
     // Restore saved type
     txn->element.implementation = txn_element_implementation;
@@ -213,7 +214,7 @@ __Z_INLINE parser_error_t readSNSCommandNeuronDisburse(parser_context_t *ctx, ca
         return parser_unexpected_value;
     }
 
-    const int64_t accountRoot = txn->element.implementation; // save for later
+    const int64_t accountRoot = txn->element.implementation;  // save for later
 
     txn->element.variant_index = 0;
     CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
@@ -339,7 +340,7 @@ __Z_INLINE parser_error_t readSNSCommandStakeMaturity(parser_context_t *ctx, can
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_percentage_to_stake))
     if (val->has_percentage_to_stake) {
         CHECK_PARSER_ERR(readCandidNat32(ctx, &val->percentage_to_stake))
-            // Sanity check
+        // Sanity check
         if (val->percentage_to_stake == 0 || val->percentage_to_stake > 100) {
             return parser_value_out_of_range;
         }

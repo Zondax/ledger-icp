@@ -1,27 +1,27 @@
 /*******************************************************************************
-*   (c) 2022 Zondax AG
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2022 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #include "candid_parser.h"
-#include "leb128.h"
 
 #include "candid_helper.h"
-#include "sns_parser.h"
-#include "nns_parser.h"
 #include "crypto.h"
+#include "leb128.h"
+#include "nns_parser.h"
+#include "sns_parser.h"
 
-// Good reference:  https://github.com/dfinity/agent-js/tree/main/packages/candid
+// Good reference: https://github.com/dfinity/agent-js/tree/main/packages/candid
 // https://github.com/dfinity/candid/blob/master/spec/Candid.md#deserialisation
 
 #define MAX_FIELDS 25
@@ -30,10 +30,10 @@
 #define TYPE_CALLER 2
 
 #define CREATE_CTX(__CTX, __TX, __INPUT, __INPUT_SIZE) \
-    parser_context_t __CTX; \
-    ctx.buffer = __INPUT; \
-    ctx.bufferLen = __INPUT_SIZE; \
-    ctx.offset = 0; \
+    parser_context_t __CTX;                            \
+    ctx.buffer = __INPUT;                              \
+    ctx.bufferLen = __INPUT_SIZE;                      \
+    ctx.offset = 0;                                    \
     ctx.tx_obj = __TX;
 
 parser_error_t getCandidNat64FromVec(const uint8_t *buf, uint64_t *v, uint8_t size, uint8_t idx) {
@@ -44,7 +44,7 @@ parser_error_t getCandidNat64FromVec(const uint8_t *buf, uint64_t *v, uint8_t si
     buf = buf + 8 * idx;
 
     for (uint8_t i = 0; i < 8; i++) {
-        *v += (uint64_t) *(buf + i) << 8 * i;
+        *v += (uint64_t) * (buf + i) << 8 * i;
     }
     return parser_ok;
 }
@@ -57,7 +57,7 @@ parser_error_t getCandidInt32FromVec(const uint8_t *buf, int32_t *v, uint8_t siz
     buf = buf + 4 * idx;
 
     for (uint8_t i = 0; i < 4; i++) {
-        *v += (int32_t) *(buf + i) << 8 * i;
+        *v += (int32_t) * (buf + i) << 8 * i;
     }
     return parser_ok;
 }
@@ -75,33 +75,35 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-    // at least we need to have the 2 non opt fields already defined in the did file
+    // at least we need to have the 2 non opt fields already defined in the did
+    // file
     if (txn.txn_length < 2) {
         return parser_unexpected_value;
     }
     uint64_t n_fields = txn.txn_length;
 
-    //Array to save opt fields positon in the record
+    // Array to save opt fields positon in the record
     uint8_t opt_fields_pos[MAX_FIELDS] = {0};
 
     // Check types before parsing
-    for (uint64_t i = 0; i < n_fields; i++){
-        //reset txn
+    for (uint64_t i = 0; i < n_fields; i++) {
+        // reset txn
         CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
         CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-        //jump to index
+        // jump to index
         txn.element.variant_index = i;
         CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
 
-        //element is not any of the non opt expected fields than its probably an optinal
+        // element is not any of the non opt expected fields than its probably an
+        // optinal
         if (txn.element.field_hash == hash_neuron_ids) {
             opt_fields_pos[i] = TYPE_NEURONS_IDS;
-        } else if (txn.element.field_hash == hash_include_neurons_readable_by_caller &&
-                   txn.element.implementation == Bool) {
+        } else if (txn.element.field_hash == hash_include_neurons_readable_by_caller && txn.element.implementation == Bool) {
             opt_fields_pos[i] = TYPE_CALLER;
         } else {
             CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, txn.element.implementation))
-            // Check that is an opt(inside the function) if not return error, not an expected type
+            // Check that is an opt(inside the function) if not return error, not an
+            // expected type
             CHECK_PARSER_ERR(readCandidOptional(&txn))
             opt_fields_pos[i] = TYPE_OPT;
         }
@@ -111,16 +113,17 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     candid_ListNeurons_t *val = &tx->tx_fields.call.data.candid_listNeurons;
     uint64_t tmp_neuron_id = 0;
     uint8_t tmp_presence = 0;
-    for( uint64_t i = 0; i < n_fields; i++) {
+    for (uint64_t i = 0; i < n_fields; i++) {
         // If opt_fields_pos is 0 we have a opt field in this position
         switch (opt_fields_pos[i]) {
-            case TYPE_OPT: // read the optinal, expect its null or empty if not return error
+            case TYPE_OPT:  // read the optinal, expect its null or empty if not return
+                            // error
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &tmp_presence))
-                if(tmp_presence){ //expect empty optionals
+                if (tmp_presence) {  // expect empty optionals
                     return parser_unexpected_value;
                 }
                 break;
-            case TYPE_NEURONS_IDS: //read number os ids
+            case TYPE_NEURONS_IDS:  // read number os ids
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->neuron_ids_size))
 
                 val->neuron_ids_ptr = ctx.buffer + ctx.offset;
@@ -128,11 +131,11 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
                     CHECK_PARSER_ERR(readCandidNat64(&ctx, &tmp_neuron_id))
                 }
                 break;
-            case TYPE_CALLER: // read bool
+            case TYPE_CALLER:  // read bool
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &val->include_neurons_readable_by_caller))
                 break;
             default:
-            return parser_unexpected_value;
+                return parser_unexpected_value;
         }
     }
 
@@ -140,6 +143,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
 }
 
 parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uint16_t inputSize) {
+    zemu_log("readCandidManageNeuron\n");
     // Create context and auxiliary ctx
     CREATE_CTX(ctx, tx, input, inputSize)
     candid_transaction_t txn;
@@ -151,20 +155,18 @@ parser_error_t readCandidManageNeuron(parser_tx_t *tx, const uint8_t *input, uin
 
     CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
 
-
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
 
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
-    switch (txn.txn_length)
-    {
-        case 2: // SNS
+    switch (txn.txn_length) {
+        case 2:  // SNS
             tx->tx_fields.call.is_sns = 1;
             return readSNSManageNeuron(&ctx, &txn);
-        case 3: // NNS
+        case 3:  // NNS
             return readNNSManageNeuron(&ctx, &txn);
 
         default:
-            ZEMU_LOGF(100, "Error: transaction type not supported\n")
+            zemu_log("Error: transaction type not supported\n");
     }
 
     return parser_unexpected_value;
@@ -178,7 +180,6 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
     txn.ctx.tx_obj = ctx.tx_obj;
 
     CHECK_PARSER_ERR(readCandidHeader(&ctx, &txn))
-
 
     CHECK_PARSER_ERR(readAndCheckRootType(&ctx))
     candid_UpdateNodeProvider_t *val = &tx->tx_fields.call.data.candid_updateNodeProvider;
@@ -421,10 +422,9 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
 
     // Read has_created_at_time
     CHECK_PARSER_ERR(readCandidByte(&ctx, &icrc->has_created_at_time))
-    if (!icrc->has_created_at_time) {
-        return parser_required_method;
+    if (icrc->has_created_at_time) {
+        CHECK_PARSER_ERR(readCandidNat64(&ctx, &icrc->created_at_time))
     }
-    CHECK_PARSER_ERR(readCandidNat64(&ctx, &icrc->created_at_time)) // assume has_created_at_time
 
     // Read amount
     CHECK_PARSER_ERR(readCandidLEB128(&ctx, &icrc->amount))
@@ -442,12 +442,9 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
         return parser_unexpected_value;
     }
 
-    crypto_principalToTextual(canisterId,
-                              (uint8_t) canisterIdSize,
-                              canister_textual,
-                              &outLen);
+    crypto_principalToTextual(canisterId, (uint8_t)canisterIdSize, canister_textual, &outLen);
 
-    icrc->icp_canister = (strncmp((const char*) &canister_textual, "ryjl3tyaaaaaaaaaaabacai", 23) == 0) ? 1 : 0;
+    icrc->icp_canister = (strncmp((const char *)&canister_textual, "ryjl3tyaaaaaaaaaaabacai", 23) == 0) ? 1 : 0;
 
     return parser_ok;
 }

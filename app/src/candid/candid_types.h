@@ -1,26 +1,27 @@
 /*******************************************************************************
-*   (c) 2022 Zondax AG
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *   (c) 2022 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #pragma once
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <zxmacros.h>
 #include <zxerror.h>
+#include <zxmacros.h>
+
 #include "coin.h"
 
 #define YEAR_2100_IN_SECONDS 4102444800
@@ -83,6 +84,7 @@ typedef enum {
     hash_field_proposal = 3000310834,
     hash_field_follow_topic = 338645423,
     hash_field_follow_followees = 3407357762,
+    hash_field_visibility = 3540889042,
 } txn_hash_fields;
 
 typedef enum {
@@ -129,6 +131,7 @@ typedef enum {
     hash_command_RegisterVote = 2455066893,
     hash_command_Merge = 2566132376,
     hash_command_DisburseToNeuron = 2803800337,
+    hash_command_RefreshVotingPower = 971637731,
     hash_command_MakeProposal = 3217030240,
     hash_command_StakeMaturity = 3582720395,
     hash_command_MergeMaturity = 3865893897,
@@ -151,7 +154,7 @@ typedef enum {
 } sns_hash_commands;
 
 typedef enum {
-    //Check these hashes
+    // Check these hashes
     hash_operation_Invalid = 971299358,
     hash_operation_StopDissolving = 1954991536,
     hash_operation_IncreaseDissolveDelay = 2143729936,
@@ -163,6 +166,7 @@ typedef enum {
     hash_operation_StartDissolving = 1977744848,
     hash_operation_LeaveNeuronsFund = 3675510135,
     hash_operation_SetDissolvedTimestamp = 3913126211,
+    hash_operation_SetVisibility = 3161865204,
 } operation_variant_hash_e;
 
 typedef enum {
@@ -230,6 +234,12 @@ typedef struct {
     candid_Principal_t principal;
 } candid_AddRemoveHotkey_t;
 
+// This is a neuron configure operation
+typedef struct {
+    uint8_t has_visibility;
+    int32_t visibility;
+} candid_SetVisibility_t;
+
 typedef struct {
     uint64_t which;
     uint64_t hash;
@@ -238,6 +248,7 @@ typedef struct {
         candid_ChangeAutoStakeMaturity_t autoStakeMaturity;
         candid_IncreaseDissolveDelay_t increaseDissolveDelay;
         candid_AddRemoveHotkey_t hotkey;
+        candid_SetVisibility_t set_visibility;
     };
 } candid_Operation_t;
 
@@ -290,8 +301,13 @@ typedef struct {
     int32_t topic;
 
     uint8_t followees_size;
-    const uint8_t* followees_ptr;
+    const uint8_t *followees_ptr;
 } candid_Follow_t;
+
+typedef struct {
+    // Not used
+    candid_NeuronId neuron_id;
+} candid_RefreshVotingPower_t;
 
 typedef struct {
     uint8_t list_size;
@@ -368,6 +384,8 @@ typedef struct {
         candid_Disburse_t disburse;
         candid_RegisterVote_t vote;
         candid_Follow_t follow;
+        candid_RefreshVotingPower_t refresh_voting_power;
+        // candid_SetVisibility_t set_visibility;
 
         sns_NeuronPermissions_t neuronPermissions;
         sns_Disburse_t sns_disburse;

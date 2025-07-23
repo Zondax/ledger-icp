@@ -1,32 +1,35 @@
 /*******************************************************************************
-*  (c) 2019 Zondax GmbH
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
+ *  (c) 2019 Zondax AG
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ ********************************************************************************/
 #pragma once
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "parser_txdef.h"
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
-#define CHECK_PARSER_ERR(__CALL) { \
-    parser_error_t __err = __CALL;  \
-    CHECK_APP_CANARY()  \
-    if (__err!=parser_ok) return __err;}
+#include "parser_txdef.h"
+
+#define CHECK_PARSER_ERR(__CALL)              \
+    {                                         \
+        parser_error_t __err = __CALL;        \
+        CHECK_APP_CANARY()                    \
+        if (__err != parser_ok) return __err; \
+    }
 
 typedef enum {
     // Generic errors
@@ -62,6 +65,29 @@ typedef enum {
     parser_required_method,
     // Special codes
     parser_type_not_found,
+    parser_invalid_label,
+    parser_invalid_delegation,
+    parser_invalid_certificate,
+    parser_invalid_tree,
+    parser_minicbor_error,
+    parser_recursion_limit_reached,
+    // New errors added from Rust
+    parser_invalid_tag,
+    parser_invalid_msg_metadata,
+    parser_invalid_consent_msg,
+    parser_invalid_utf8,
+    parser_invalid_error_response,
+    parser_invalid_response_type,
+    parser_invalid_call_request,
+    parser_invalid_consent_msg_request,
+    parser_invalid_canister_id,
+    parser_invalid_language,
+    parser_too_many_types,
+    parser_too_many_fields,
+    parser_field_not_found,
+    parser_leb128_overflow,
+    parser_invalid_time,
+    parser_invalid_visibility,
 } parser_error_t;
 
 typedef struct {

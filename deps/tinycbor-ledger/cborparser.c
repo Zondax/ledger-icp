@@ -261,7 +261,8 @@ static CborError preparse_value(CborValue *it)
         case SinglePrecisionFloat:
         case DoublePrecisionFloat:
             it->flags |= CborIteratorFlag_IntegerValueTooLarge;
-            /* fall through */
+            it->type = *it->ptr;
+            break;
         case TrueValue:
         case NullValue:
         case UndefinedValue:
