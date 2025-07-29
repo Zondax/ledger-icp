@@ -13,7 +13,10 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
-use crate::{constants::SHA256_DIGEST_LENGTH, error::{ParserError, ViewError}};
+use crate::{
+    constants::SHA256_DIGEST_LENGTH,
+    error::{ParserError, ViewError},
+};
 
 pub trait ByteSerializable: Sized {
     fn fill_to(&self, output: &mut [u8]) -> Result<(), ParserError>;
@@ -139,6 +142,208 @@ pub fn decompress_sleb128(input: &[u8]) -> Result<(&[u8], i64), ParserError> {
 
     // Exit because of overflowing outputSize
     Err(ParserError::UnexpectedError)
+}
+
+#[inline(never)]
+pub fn read_u64_le(input: &[u8]) -> Result<(&[u8], u64), ParserError> {
+    if input.len() < 8 {
+        return Err(ParserError::UnexpectedBufferEnd);
+    }
+
+    let value = u64::from_le_bytes([
+        input[0], input[1], input[2], input[3], input[4], input[5], input[6], input[7],
+    ]);
+
+    Ok((&input[8..], value))
+}
+
+#[inline(never)]
+pub fn read_u8(input: &[u8]) -> Result<(&[u8], u8), ParserError> {
+    if input.is_empty() {
+        return Err(ParserError::UnexpectedBufferEnd);
+    }
+
+    let value = u8::from_be_bytes([input[0]]);
+
+    Ok((&input[1..], value))
+}
+
+// Format u64 as decimal string
+#[inline(never)]
+pub fn u64_to_str(value: u64, out: &mut [u8]) -> Result<usize, ParserError> {
+    if out.is_empty() {
+        return Err(ParserError::UnexpectedBufferEnd);
+    }
+
+    if value == 0 {
+        if out.is_empty() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+        out[0] = b'0';
+        return Ok(1);
+    }
+
+    // Convert to string by extracting digits
+    let mut temp = [0u8; 20]; // max u64 has 20 digits
+    let mut temp_len = 0;
+    let mut n = value;
+
+    while n > 0 {
+        temp[temp_len] = (n % 10) as u8 + b'0';
+        n /= 10;
+        temp_len += 1;
+    }
+
+    if temp_len > out.len() {
+        return Err(ParserError::UnexpectedBufferEnd);
+    }
+
+    // Write digits in correct order
+    for i in 0..temp_len {
+        out[i] = temp[temp_len - 1 - i];
+    }
+
+    Ok(temp_len)
+}
+
+// Format u64 with a suffix (e.g., "123 s")
+#[inline(never)]
+pub fn format_u64_with_suffix(
+    value: u64,
+    suffix: &[u8],
+    out: &mut [u8],
+) -> Result<usize, ParserError> {
+    // First convert the number to string
+    let num_len = u64_to_str(value, out)?;
+
+    // Check if we have space for the suffix
+    let suffix_len = suffix.len();
+    let total_len = num_len + 1 + suffix_len; // +1 for space
+
+    if total_len > out.len() {
+        return Err(ParserError::UnexpectedBufferEnd);
+    }
+
+    // Add space
+    out[num_len] = b' ';
+
+    // Add suffix
+    out[num_len + 1..num_len + 1 + suffix_len].copy_from_slice(suffix);
+
+    Ok(total_len)
+}
+
+// Format a u64 value with decimal places and optional symbol
+#[inline(never)]
+pub fn format_token_amount(
+    amount: u64,
+    decimals: u8,
+    symbol: &str,
+    out: &mut [u8],
+) -> Result<usize, ParserError> {
+    let mut write_pos = 0;
+
+    // Convert amount to string first
+    let mut temp = [0u8; 20];
+    let amount_len = u64_to_str(amount, &mut temp)?;
+
+    // Handle decimal formatting
+    if decimals == 0 || amount == 0 {
+        // No decimals or zero amount, just copy the amount
+        if amount_len > out.len() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+        out[..amount_len].copy_from_slice(&temp[..amount_len]);
+        write_pos = amount_len;
+    } else {
+        let decimals_usize = decimals as usize;
+
+        if amount_len > decimals_usize {
+            // We have both integer and decimal parts
+            let int_part_len = amount_len - decimals_usize;
+
+            if int_part_len + 1 + decimals_usize > out.len() {
+                return Err(ParserError::UnexpectedBufferEnd);
+            }
+
+            // Copy integer part
+            out[..int_part_len].copy_from_slice(&temp[..int_part_len]);
+            write_pos = int_part_len;
+
+            // Check if we need decimal part (find last non-zero digit)
+            let mut last_non_zero = int_part_len; // Start from the beginning of decimal part
+            for i in (int_part_len..amount_len).rev() {
+                if temp[i] != b'0' {
+                    last_non_zero = i + 1;
+                    break;
+                }
+            }
+
+            // Only add decimal part if there are non-zero digits
+            if last_non_zero > int_part_len {
+                // Add decimal point
+                out[write_pos] = b'.';
+                write_pos += 1;
+
+                // Copy decimal part without trailing zeros
+                let decimal_len = last_non_zero - int_part_len;
+                out[write_pos..write_pos + decimal_len]
+                    .copy_from_slice(&temp[int_part_len..last_non_zero]);
+                write_pos += decimal_len;
+            }
+        } else {
+            // Need to pad with zeros (amount is less than decimal places)
+            let total_needed = 2 + decimals_usize; // "0." + decimals
+            if total_needed > out.len() {
+                return Err(ParserError::UnexpectedBufferEnd);
+            }
+
+            out[write_pos] = b'0';
+            write_pos += 1;
+            out[write_pos] = b'.';
+            write_pos += 1;
+
+            // Add leading zeros if needed
+            let zeros_needed = decimals_usize - amount_len;
+            for _ in 0..zeros_needed {
+                out[write_pos] = b'0';
+                write_pos += 1;
+            }
+
+            // Copy the amount
+            out[write_pos..write_pos + amount_len].copy_from_slice(&temp[..amount_len]);
+            write_pos += amount_len;
+
+            // Remove trailing zeros
+            while write_pos > 2 && out[write_pos - 1] == b'0' {
+                write_pos -= 1;
+            }
+            // If all decimals were zeros, remove the decimal point too
+            if write_pos == 2 && out[1] == b'.' {
+                write_pos = 1;
+            }
+        }
+    }
+
+    // Add symbol if provided
+    if !symbol.is_empty() {
+        let symbol_bytes = symbol.as_bytes();
+        let symbol_len = symbol_bytes.len();
+
+        if write_pos + 1 + symbol_len > out.len() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+
+        // Add space before symbol
+        out[write_pos] = b' ';
+        write_pos += 1;
+
+        // Add symbol
+        out[write_pos..write_pos + symbol_len].copy_from_slice(symbol_bytes);
+        write_pos += symbol_len;
+    }
+
+    Ok(write_pos)
 }
 
 // Helper function to hash data with SHA256

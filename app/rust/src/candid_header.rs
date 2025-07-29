@@ -5,13 +5,13 @@ use crate::{
 };
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct CandidHeader<const MAX_FIELDS: usize, const MAX_ARGS: usize> {
-    pub type_table: TypeTable<MAX_FIELDS>,
+pub struct CandidHeader<const MAX_ARGS: usize> {
+    pub type_table: TypeTable,
     pub arguments: ArgumentTypes<MAX_ARGS>,
 }
 
-impl<const MAX_FIELDS: usize, const MAX_ARGS: usize> CandidHeader<MAX_FIELDS, MAX_ARGS> {
-    pub fn new(type_table: TypeTable<MAX_FIELDS>, arguments: ArgumentTypes<MAX_ARGS>) -> Self {
+impl<const MAX_ARGS: usize> CandidHeader<MAX_ARGS> {
+    pub fn new(type_table: TypeTable, arguments: ArgumentTypes<MAX_ARGS>) -> Self {
         Self {
             type_table,
             arguments,
@@ -19,9 +19,9 @@ impl<const MAX_FIELDS: usize, const MAX_ARGS: usize> CandidHeader<MAX_FIELDS, MA
     }
 }
 
-pub fn parse_candid_header<const MAX_FIELDS: usize, const MAX_ARGS: usize>(
+pub fn parse_candid_header<const MAX_ARGS: usize>(
     input: &[u8],
-) -> Result<(&[u8], CandidHeader<MAX_FIELDS, MAX_ARGS>), ParserError> {
+) -> Result<(&[u8], CandidHeader<MAX_ARGS>), ParserError> {
     // 1. Magic number
     let (rem, _) = nom::bytes::complete::tag("DIDL")(input)
         .map_err(|_: nom::Err<ParserError>| ParserError::UnexpectedError)?;

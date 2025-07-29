@@ -30,10 +30,10 @@ mod snapshots_common;
 pub use certificate::*;
 
 pub trait FromCandidHeader<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError>
     where
         Self: Sized;
@@ -74,10 +74,10 @@ pub trait FromBytes<'b>: Sized {
 }
 
 pub trait FromTable<'a>: Sized {
-    fn from_table<const MAX_FIELDS: usize>(
+    fn from_table(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-        type_table: &crate::type_table::TypeTable<MAX_FIELDS>,
+        type_table: &crate::type_table::TypeTable,
         type_index: usize,
     ) -> Result<&'a [u8], crate::error::ParserError>;
 }

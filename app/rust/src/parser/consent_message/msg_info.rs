@@ -36,10 +36,10 @@ impl ConsentInfo<'_> {
 }
 
 impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentInfo::from_table_into\n");
 
@@ -48,7 +48,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
         // Get the type entry for ConsentInfo (type 1)
         let type_entry = header
             .type_table
-            .find_type_entry(4)
+            .find_type_entry(1)
             .ok_or(ParserError::UnexpectedType)?;
 
         // We know METADATA has lower hash than MESSAGE, so it comes first in memory
