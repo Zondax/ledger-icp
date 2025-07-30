@@ -21,6 +21,7 @@ use crate::{
     candid_header::CandidHeader,
     candid_utils::parse_text,
     check_canary,
+    constants::{CANDID_HEADER_ENTRY_TYPE, DISPLAY_RECORD_TYPE},
     error::{ParserError, ViewError},
     utils::{decompress_leb128, handle_ui_message, read_u64_le, read_u8},
     DisplayableItem, FromCandidHeader,
@@ -145,7 +146,7 @@ fn skip_field_value<'a, const MAX_ARGS: usize>(
             if variant_idx >= type_entry.field_count as u64 {
                 return Err(ParserError::UnexpectedType);
             }
-            
+
             // Additional safety check for our reduced array size
             if variant_idx >= crate::constants::MAX_FIELDS_PER_TYPE as u64 {
                 return Err(ParserError::UnexpectedType);
@@ -201,13 +202,13 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
         // Get type info from table
         let type_entry = header
             .type_table
-            .find_type_entry(4)
+            .find_type_entry(CANDID_HEADER_ENTRY_TYPE)
             .ok_or(ParserError::UnexpectedType)?;
 
         if variant_index >= type_entry.field_count as u64 {
             return Err(ParserError::UnexpectedType);
         }
-        
+
         // Additional safety check for our reduced array size
         if variant_index >= crate::constants::MAX_FIELDS_PER_TYPE as u64 {
             return Err(ParserError::UnexpectedType);
@@ -223,7 +224,7 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                 // Get record type entry for the fields display record
                 let record_entry = header
                     .type_table
-                    .find_type_entry(5)
+                    .find_type_entry(DISPLAY_RECORD_TYPE)
                     .ok_or(ParserError::UnexpectedType)?;
 
                 // Parse fields vector first (FIELDS_HASH = 2156826233)
@@ -381,7 +382,8 @@ impl DisplayableItem for ConsentMessage<'_> {
                     // Skip key
                     let (rem, _) = parse_text(current).map_err(|_| ViewError::NoData)?;
                     // Skip value - need to properly skip the variant
-                    let (rem, variant_idx) = decompress_leb128(rem).map_err(|_| ViewError::NoData)?;
+                    let (rem, variant_idx) =
+                        decompress_leb128(rem).map_err(|_| ViewError::NoData)?;
                     let rem = match variant_idx {
                         0 => {
                             // Text variant
@@ -418,7 +420,7 @@ impl DisplayableItem for ConsentMessage<'_> {
 
                 // Parse and render the value directly into the message buffer
                 let (rem, variant_idx) = decompress_leb128(rem).map_err(|_| ViewError::NoData)?;
-                
+
                 match variant_idx {
                     0 => {
                         // Text variant - record { content: text }
@@ -431,20 +433,21 @@ impl DisplayableItem for ConsentMessage<'_> {
                             return Err(ViewError::NoData);
                         }
                         let (_, amount) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
-                        
+
                         // Format directly into message buffer
                         let m_len = message.len() - 1;
                         if m_len < 1 {
                             return Err(ViewError::NoData);
                         }
-                        
+
                         // Use a portion of the message buffer for formatting
-                        let format_len = crate::utils::format_u64_with_suffix(amount, b"s", message)
-                            .map_err(|_| ViewError::NoData)?;
-                        
+                        let format_len =
+                            crate::utils::format_u64_with_suffix(amount, b"s", message)
+                                .map_err(|_| ViewError::NoData)?;
+
                         // Null terminate
                         message[format_len] = 0;
-                        
+
                         // Return number of pages (always 1 for these values)
                         Ok(1)
                     }
@@ -453,20 +456,21 @@ impl DisplayableItem for ConsentMessage<'_> {
                         let (rem, decimals) = read_u8(rem).map_err(|_| ViewError::NoData)?;
                         let (rem, amount) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
                         let (_, symbol) = parse_text(rem).map_err(|_| ViewError::NoData)?;
-                        
+
                         // Format directly into message buffer
                         let m_len = message.len() - 1;
                         if m_len < 1 {
                             return Err(ViewError::NoData);
                         }
-                        
+
                         // Use the message buffer for formatting
-                        let format_len = crate::utils::format_token_amount(amount, decimals, symbol, message)
-                            .map_err(|_| ViewError::NoData)?;
-                        
+                        let format_len =
+                            crate::utils::format_token_amount(amount, decimals, symbol, message)
+                                .map_err(|_| ViewError::NoData)?;
+
                         // Null terminate
                         message[format_len] = 0;
-                        
+
                         // Return number of pages (always 1 for these values)
                         Ok(1)
                     }

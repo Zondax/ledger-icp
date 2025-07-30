@@ -72,3 +72,9 @@ pub const MAX_ARGS: usize = 5;
 
 // The size of the hash
 pub const SHA256_DIGEST_LENGTH: usize = 32;
+
+// Candid Header Entry Type
+pub const CANDID_HEADER_ENTRY_TYPE: usize = 4;
+
+// Display Record Type
+pub const DISPLAY_RECORD_TYPE: usize = 5;

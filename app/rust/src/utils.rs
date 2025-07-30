@@ -306,11 +306,17 @@ pub fn format_token_amount(
             // Add leading zeros if needed
             let zeros_needed = decimals_usize - amount_len;
             for _ in 0..zeros_needed {
+                if write_pos >= out.len() {
+                    return Err(ParserError::UnexpectedBufferEnd);
+                }
                 out[write_pos] = b'0';
                 write_pos += 1;
             }
 
             // Copy the amount
+            if write_pos + amount_len > out.len() {
+                return Err(ParserError::UnexpectedBufferEnd);
+            }
             out[write_pos..write_pos + amount_len].copy_from_slice(&temp[..amount_len]);
             write_pos += amount_len;
 
