@@ -4,7 +4,7 @@ use crate::{
     candid_header::parse_candid_header,
     candid_types::IDLTypes,
     candid_utils::{parse_bytes, parse_text},
-    constants::{MAX_ARGS, MAX_TABLE_FIELDS},
+    constants::MAX_ARGS,
     error::ParserError,
     type_table::{TypeTable, TypeTableEntry},
     zlog, FromCandidHeader,
@@ -63,9 +63,9 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
             })
     }
 
-    fn find_request_type<const MAX_FIELDS: usize>(
-        table: &TypeTable<MAX_FIELDS>,
-    ) -> Option<&TypeTableEntry<MAX_FIELDS>> {
+    fn find_request_type(
+        table: &TypeTable,
+    ) -> Option<&TypeTableEntry> {
         // In order to not depend on Self::INDEX
         // we can try to look at the table for the entry
         // that contains our 3 fields, method, arg and preferences
@@ -102,7 +102,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
     fn get_field(&self, field: u32) -> Result<Option<Icrc21Field<'a>>, ParserError> {
         zlog("Icrc21ConsentMessageRequest::get_field\x00");
 
-        let (raw_request, header) = parse_candid_header::<MAX_TABLE_FIELDS, MAX_ARGS>(self.0)?;
+        let (raw_request, header) = parse_candid_header::<MAX_ARGS>(self.0)?;
 
         let entry =
             Self::find_request_type(&header.type_table).ok_or(ParserError::FieldNotFound)?;

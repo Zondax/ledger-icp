@@ -21,8 +21,9 @@ use crate::{
     candid_header::CandidHeader,
     candid_utils::parse_text,
     check_canary,
+    constants::{CANDID_HEADER_ENTRY_TYPE, DISPLAY_RECORD_TYPE},
     error::{ParserError, ViewError},
-    utils::{decompress_leb128, handle_ui_message},
+    utils::{decompress_leb128, handle_ui_message, read_u64_le, read_u8},
     DisplayableItem, FromCandidHeader,
 };
 
@@ -31,6 +32,12 @@ const GENERIC_DISPLAY_MESSAGE_HASH: u32 = 4082495484;
 const FIELDS_DISPLAY_HASH: u32 = 124612638;
 const FIELDS_HASH: u32 = 2156826233;
 const INTENT_HASH: u32 = 2659612252;
+
+// Field value type variant hashes
+const TEXT_HASH: u32 = 936573133;
+const TIMESTAMP_SECONDS_HASH: u32 = 4208601451;
+const DURATION_SECONDS_HASH: u32 = 2826488937;
+const TOKEN_AMOUNT_HASH: u32 = 1289986449;
 
 // Struct for fields display with intent
 #[repr(C)]
@@ -69,40 +76,7 @@ pub enum ConsentMessage<'a> {
     GenericDisplayMessage(&'a str),
 }
 
-impl<'a> ConsentMessage<'a> {
-    // Extract the nth field (key-value pair) from fields data
-    fn get_field(&self, field_index: u8) -> Result<(&'a str, &'a str), ParserError> {
-        match self {
-            ConsentMessage::FieldsDisplayMessage {
-                fields,
-                field_count,
-                ..
-            } => {
-                if field_index >= *field_count {
-                    return Err(ParserError::ValueOutOfRange);
-                }
-
-                let mut current = *fields;
-
-                // Skip to the desired field
-                for _ in 0..field_index {
-                    // Skip key
-                    let (rem, _) = parse_text(current)?;
-                    // Skip value
-                    let (rem, _) = parse_text(rem)?;
-                    current = rem;
-                }
-
-                // Parse the target field
-                let (rem, key) = parse_text(current)?;
-                let (_, value) = parse_text(rem)?;
-
-                Ok((key, value))
-            }
-            _ => Err(ParserError::UnexpectedType),
-        }
-    }
-}
+impl<'a> ConsentMessage<'a> {}
 
 impl TryFrom<u64> for MessageType {
     type Error = ParserError;
@@ -118,10 +92,10 @@ impl TryFrom<u64> for MessageType {
 }
 
 impl<'a> FromCandidHeader<'a> for Msg<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("Msg::from_candid_header\x00");
 
@@ -151,11 +125,74 @@ impl<'a> FromCandidHeader<'a> for Msg<'a> {
     }
 }
 
+// Helper function to skip a field value based on its type
+fn skip_field_value<'a, const MAX_ARGS: usize>(
+    input: &'a [u8],
+    field_type_idx: usize,
+    header: &CandidHeader<MAX_ARGS>,
+) -> Result<&'a [u8], ParserError> {
+    // Get the type entry for the field value
+    let type_entry = header
+        .type_table
+        .find_type_entry(field_type_idx)
+        .ok_or(ParserError::UnexpectedType)?;
+
+    match type_entry.type_code {
+        crate::candid_types::IDLTypes::Variant => {
+            // Read variant index
+            let (rem, variant_idx) = decompress_leb128(input)?;
+
+            // Get the variant field info
+            if variant_idx >= type_entry.field_count as u64 {
+                return Err(ParserError::UnexpectedType);
+            }
+
+            // Additional safety check for our reduced array size
+            if variant_idx >= crate::constants::MAX_FIELDS_PER_TYPE as u64 {
+                return Err(ParserError::UnexpectedType);
+            }
+
+            let (variant_hash, _) = type_entry.fields[variant_idx as usize];
+
+            // Skip based on variant type
+            match variant_hash {
+                TEXT_HASH => {
+                    // Skip the Text record which contains a text field
+                    let (rem, _) = parse_text(rem)?;
+                    Ok(rem)
+                }
+                TIMESTAMP_SECONDS_HASH | DURATION_SECONDS_HASH => {
+                    // Skip the record containing a nat64 field (amount)
+                    if rem.len() < 8 {
+                        return Err(ParserError::UnexpectedBufferEnd);
+                    }
+                    let (rem, _) = read_u64_le(rem)?;
+                    Ok(rem)
+                }
+                TOKEN_AMOUNT_HASH => {
+                    // Skip TokenAmount record (amount: u64, decimals: u8, symbol: text)
+                    let (rem, _) = read_u64_le(rem)?; // amount
+                    let (rem, _) = read_u8(rem)?; // decimals
+                    let (rem, _) = parse_text(rem)?; // symbol
+                    Ok(rem)
+                }
+                _ => Err(ParserError::UnexpectedType),
+            }
+        }
+        crate::candid_types::IDLTypes::Text => {
+            // If it's directly a text type (old format)
+            let (rem, _) = parse_text(input)?;
+            Ok(rem)
+        }
+        _ => Err(ParserError::UnexpectedType),
+    }
+}
+
 impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentMessage::from_candid_header\x00");
 
@@ -165,10 +202,15 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
         // Get type info from table
         let type_entry = header
             .type_table
-            .find_type_entry(5)
+            .find_type_entry(CANDID_HEADER_ENTRY_TYPE)
             .ok_or(ParserError::UnexpectedType)?;
 
         if variant_index >= type_entry.field_count as u64 {
+            return Err(ParserError::UnexpectedType);
+        }
+
+        // Additional safety check for our reduced array size
+        if variant_index >= crate::constants::MAX_FIELDS_PER_TYPE as u64 {
             return Err(ParserError::UnexpectedType);
         }
 
@@ -182,7 +224,7 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                 // Get record type entry for the fields display record
                 let record_entry = header
                     .type_table
-                    .find_type_entry(6)
+                    .find_type_entry(DISPLAY_RECORD_TYPE)
                     .ok_or(ParserError::UnexpectedType)?;
 
                 // Parse fields vector first (FIELDS_HASH = 2156826233)
@@ -198,13 +240,50 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                 // Store the start position of fields data
                 let fields_start = rem;
 
+                // Find the fields type in the record (type 5)
+                let fields_field = record_entry
+                    .fields
+                    .iter()
+                    .find(|(hash, _)| *hash == FIELDS_HASH)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Get the vector type index
+                let vec_type_idx = match fields_field.1 {
+                    crate::type_table::FieldType::Compound(idx) => idx,
+                    _ => return Err(ParserError::UnexpectedType),
+                };
+
+                // Get the vector element type
+                let vec_type_entry = header
+                    .type_table
+                    .find_type_entry(vec_type_idx)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Get the record type index from the vector
+                let record_type_idx = match vec_type_entry.fields[0].1 {
+                    crate::type_table::FieldType::Compound(idx) => idx,
+                    _ => return Err(ParserError::UnexpectedType),
+                };
+
+                // Get the record type entry
+                let field_record_entry = header
+                    .type_table
+                    .find_type_entry(record_type_idx)
+                    .ok_or(ParserError::UnexpectedType)?;
+
+                // Get the value type index from the record (field 1)
+                let value_type_idx = match field_record_entry.fields[1].1 {
+                    crate::type_table::FieldType::Compound(idx) => idx,
+                    _ => return Err(ParserError::UnexpectedType),
+                };
+
                 // Calculate size of each record and total size
                 let mut current = rem;
                 for _ in 0..field_count {
-                    // Skip key
+                    // Skip key (field 0 is text)
                     let (new_rem, _) = parse_text(current)?;
-                    // Skip value
-                    let (new_rem, _) = parse_text(new_rem)?;
+                    // Skip value using the type table
+                    let new_rem = skip_field_value(new_rem, value_type_idx, header)?;
                     current = new_rem;
                 }
 
@@ -287,9 +366,51 @@ impl DisplayableItem for ConsentMessage<'_> {
         check_canary();
 
         match self {
-            ConsentMessage::FieldsDisplayMessage { .. } => {
-                // Get the field for this item
-                let (key, value) = self.get_field(item_n).map_err(|_| ViewError::NoData)?;
+            ConsentMessage::FieldsDisplayMessage {
+                fields,
+                field_count,
+                ..
+            } => {
+                if item_n >= *field_count {
+                    return Err(ViewError::NoData);
+                }
+
+                let mut current = *fields;
+
+                // Skip to the desired field
+                for _ in 0..item_n {
+                    // Skip key
+                    let (rem, _) = parse_text(current).map_err(|_| ViewError::NoData)?;
+                    // Skip value - need to properly skip the variant
+                    let (rem, variant_idx) =
+                        decompress_leb128(rem).map_err(|_| ViewError::NoData)?;
+                    let rem = match variant_idx {
+                        0 => {
+                            // Text variant
+                            let (rem, _) = parse_text(rem).map_err(|_| ViewError::NoData)?;
+                            rem
+                        }
+                        1 => {
+                            // TokenAmount - record { decimals: u8, amount: u64, symbol: text }
+                            let (rem, _) = read_u8(rem).map_err(|_| ViewError::NoData)?;
+                            let (rem, _) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+                            let (rem, _) = parse_text(rem).map_err(|_| ViewError::NoData)?;
+                            rem
+                        }
+                        2 | 3 => {
+                            if rem.len() < 8 {
+                                return Err(ViewError::NoData);
+                            }
+                            let (rem, _) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+                            rem
+                        }
+                        _ => return Err(ViewError::NoData),
+                    };
+                    current = rem;
+                }
+
+                // Parse the target field
+                let (rem, key) = parse_text(current).map_err(|_| ViewError::NoData)?;
 
                 // Set the title to the key
                 let key_bytes = key.as_bytes();
@@ -297,8 +418,64 @@ impl DisplayableItem for ConsentMessage<'_> {
                 title[..key_len].copy_from_slice(&key_bytes[..key_len]);
                 title[key_len] = 0;
 
-                // Set the message to the value
-                handle_ui_message(value.as_bytes(), message, page)
+                // Parse and render the value directly into the message buffer
+                let (rem, variant_idx) = decompress_leb128(rem).map_err(|_| ViewError::NoData)?;
+
+                match variant_idx {
+                    0 => {
+                        // Text variant - record { content: text }
+                        let (_, text) = parse_text(rem).map_err(|_| ViewError::NoData)?;
+                        handle_ui_message(text.as_bytes(), message, page)
+                    }
+                    2 | 3 => {
+                        // TimestampSeconds or DurationSeconds
+                        if rem.len() < 8 {
+                            return Err(ViewError::NoData);
+                        }
+                        let (_, amount) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+
+                        // Format directly into message buffer
+                        let m_len = message.len() - 1;
+                        if m_len < 1 {
+                            return Err(ViewError::NoData);
+                        }
+
+                        // Use a portion of the message buffer for formatting
+                        let format_len =
+                            crate::utils::format_u64_with_suffix(amount, b"s", message)
+                                .map_err(|_| ViewError::NoData)?;
+
+                        // Null terminate
+                        message[format_len] = 0;
+
+                        // Return number of pages (always 1 for these values)
+                        Ok(1)
+                    }
+                    1 => {
+                        // TokenAmount - record { decimals: u8, amount: u64, symbol: text }
+                        let (rem, decimals) = read_u8(rem).map_err(|_| ViewError::NoData)?;
+                        let (rem, amount) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+                        let (_, symbol) = parse_text(rem).map_err(|_| ViewError::NoData)?;
+
+                        // Format directly into message buffer
+                        let m_len = message.len() - 1;
+                        if m_len < 1 {
+                            return Err(ViewError::NoData);
+                        }
+
+                        // Use the message buffer for formatting
+                        let format_len =
+                            crate::utils::format_token_amount(amount, decimals, symbol, message)
+                                .map_err(|_| ViewError::NoData)?;
+
+                        // Null terminate
+                        message[format_len] = 0;
+
+                        // Return number of pages (always 1 for these values)
+                        Ok(1)
+                    }
+                    _ => Err(ViewError::NoData),
+                }
             }
             ConsentMessage::GenericDisplayMessage(..) => {
                 // No Data as this kind of message is not supported

@@ -17,7 +17,7 @@ use core::ptr::addr_of_mut;
 
 use crate::{
     candid_header::parse_candid_header,
-    constants::{MAX_ARGS, MAX_TABLE_FIELDS},
+    constants::MAX_ARGS,
     error::{ParserError, ViewError},
     utils::decompress_leb128,
     DisplayableItem, FromBytes, FromCandidHeader,
@@ -84,7 +84,7 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
         crate::zlog("ConsentMessageResponse::from_bytes_into");
 
         // Parse Candid header
-        let (rem, header) = parse_candid_header::<MAX_TABLE_FIELDS, MAX_ARGS>(input)?;
+        let (rem, header) = parse_candid_header::<MAX_ARGS>(input)?;
 
         // Read the variant index
         let (rem, variant_index) = decompress_leb128(rem)?;
@@ -96,6 +96,11 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
             .ok_or(ParserError::UnexpectedType)?;
 
         if variant_index >= root_entry.field_count as u64 {
+            return Err(ParserError::UnexpectedType);
+        }
+        
+        // Additional safety check for our reduced array size
+        if variant_index >= crate::constants::MAX_FIELDS_PER_TYPE as u64 {
             return Err(ParserError::UnexpectedType);
         }
 
@@ -159,7 +164,7 @@ mod msg_response_test {
 
     use super::*;
 
-    const MSG_DATA: &str = "4449444C0B6B02BC8A0104C5FED201016B04D1C4987C03A3F2EFE602029A8597E60302E3C581900F026C01FC91F4F805716C02FC91F4F80571C498B1B50D7D6C02EFCEE7800409E29FDCC806056B029EE0B53B06FCDFD79A0F716C02F99CBA840807DCEC99F409716D086C02007101716C02AEAEB1CC050AD880C6D007716E760100000002656E0003066D6574686F640D69637263325F617070726F76650A746573745F6669656C641054657374206669656C642076616C75650D616E6F746865725F6669656C640D416E6F746865722076616C756517496E74656E7420746F2069637263325F617070726F7665";
+    const MSG_DATA: &str = "4449444c0f6b02bc8a0101c5fed2010c6c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b029ee0b53b05fcdfd79a0f716c02f99cba840806dcec99f409716d076c02007101086b04cdf1cbbe030991c38ee7040ae998e3c30a0bebd2e8d60f0b6c01b99adecb01716c03c295a993017bd8a38ca80d78d8def6f60e716c01d8a38ca80d786b04d1c4987c0da3f2efe6020e9a8597e6030ee3c581900f0e6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e00040455736572000d48656c6c6f2c20776f726c64210a637265617465645f617402f0bc7068000000000a6163746976655f666f7203580200000000000006616d6f756e74010800c2eb0b00000000034943500a47726565742075736572";
 
     #[derive(Serialize, Deserialize, Debug)]
     struct TransactionData {

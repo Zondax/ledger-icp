@@ -28,71 +28,18 @@ describe('Bls', function () {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
-      await sim.toggleBlindSigning()
-
       const respCert = app.signBls("m/44'/223'/0'/0/0", TEST_DATA.CONSENT_REQUEST, TEST_DATA.CANISTER_CALL, TEST_DATA.CERTIFICATE)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
 
-      if (m.name === 'nanosp') {
-        // NanoS+ navigates until the "Approve" text, but since the first snapshots in this test contains the "Approve" text,
-        // we need to navigate with another method.
-        const APPROVE_CLICKS = [6, 0]
-        const navSchedule = new ClickNavigation(APPROVE_CLICKS)
-        await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`, navSchedule.schedule)
-      } else {
-        await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`, true, 0, 15000, true)
-      }
+      await sim.compareSnapshotsAndApprove('.', `${m.prefix.toLowerCase()}-bls-cert_default_key`, true, 0, 15000)
 
       const signatureResponse = await respCert
       console.log(respCert)
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
-    } finally {
-      await sim.close()
-    }
-  })
-
-  test.each(DEVICE_MODELS_BLS)('verify_with_default_key_blindsign_disabled', async function (m) {
-    const sim = new Zemu(m.path)
-    try {
-      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
-      const app = new InternetComputerApp(sim.getTransport())
-
-      const respCert = app.signBls("m/44'/223'/0'/0/0", TEST_DATA.CONSENT_REQUEST, TEST_DATA.CANISTER_CALL, TEST_DATA.CERTIFICATE)
-
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-
-      let nav: ClickNavigation | TouchNavigation
-      if (m.name === 'nanosp') {
-        // Confirm BLS error
-        const APPROVE_CLICKS = [0]
-        nav = new ClickNavigation(APPROVE_CLICKS)
-      } else {
-        // Confirm "Go to settings" and toggle Blind Signing
-        nav = new TouchNavigation(m.name, [
-          ButtonKind.ConfirmYesButton,
-          ButtonKind.ToggleSettingButton2,
-          ButtonKind.SettingsNavRightButton,
-          ButtonKind.SettingsNavRightButton,
-          ButtonKind.SettingsQuitButton,
-        ]);
-      }
-
-      await sim.navigateAndCompareSnapshots('.', `${m.prefix.toLowerCase()}-bls-cert_default_key_blindsign_disabled`, nav.schedule)
-
-      const signatureResponse = await respCert
-
-      // Verify the error, anything other than 0x6984 is not expected
-      // Error expected due to not toggling blind signing
-      console.log(signatureResponse)
-      expect(signatureResponse).toMatchObject({
-        returnCode: 0x6984,
-        errorMessage: expect.stringContaining('Data is invalid')
-      })
     } finally {
       await sim.close()
     }
