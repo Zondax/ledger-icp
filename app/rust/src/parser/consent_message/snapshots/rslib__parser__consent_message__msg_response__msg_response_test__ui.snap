@@ -6,7 +6,8 @@ input_file: src/parser/consent_message/testvectors/ui_data.json
 snapshot_kind: text
 ---
 [
-    "method": "icrc2_approve",
-    "test_field": "Test field value",
-    "another_field": "Another value",
+    "User": "Hello, world!",
+    "created_at": "1752218864 s",
+    "active_for": "600 s",
+    "amount": "2 ICP",
 ]

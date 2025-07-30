@@ -57,10 +57,10 @@ pub enum DeviceSpec<'a> {
 }
 
 impl<'a> crate::FromCandidHeader<'a> for Icrc21ConsentMessageSpec<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("Icrc21ConsentMessageSpec::from_candid_header\x00");
 
@@ -85,9 +85,9 @@ impl<'a> crate::FromCandidHeader<'a> for Icrc21ConsentMessageSpec<'a> {
     }
 }
 
-fn parse_opt_device_spec<'a, const MAX_FIELDS: usize>(
+fn parse_opt_device_spec<'a>(
     input: &'a [u8],
-    _type_table: &TypeTable<MAX_FIELDS>,
+    _type_table: &TypeTable,
 ) -> Result<(&'a [u8], Option<DeviceSpec<'a>>), ParserError> {
     let (rem, has_value) = decompress_leb128(input)?;
 
@@ -100,30 +100,66 @@ fn parse_opt_device_spec<'a, const MAX_FIELDS: usize>(
     match variant_idx {
         0 => {
             // Parse FieldsDisplayMessage variant
+            // Note: The field order in ICRC21 spec is different from consent message
+            // ICRC21 has intent first, then fields
             // First parse intent (text)
             let (rem, intent) = crate::candid_utils::parse_text(rem)?;
 
             // Then parse fields vector
             let (rem, field_count) = crate::utils::decompress_leb128(rem)?;
 
+            // Store the start position of fields data
+            let fields_start = rem;
+
             // Calculate total size of fields data
+            // Each field is a record with key (text) and value (variant)
             let mut current = rem;
-            let mut total_size = 0;
             for _ in 0..field_count {
-                // Skip key
+                // Skip key (text)
                 let (new_rem, _) = crate::candid_utils::parse_text(current)?;
-                // Skip value
-                let (new_rem, _) = crate::candid_utils::parse_text(new_rem)?;
-                total_size += current.len() - new_rem.len();
+                
+                // Skip value - it's a variant, not just text
+                // Read variant index
+                let (new_rem, value_variant_idx) = crate::utils::decompress_leb128(new_rem)?;
+                
+                // Skip based on variant type
+                // The value can be one of: Text, TimestampSeconds, DurationSeconds, TokenAmount
+                let new_rem = match value_variant_idx {
+                    0 => {
+                        // Text variant - skip the text content
+                        let (rem, _) = crate::candid_utils::parse_text(new_rem)?;
+                        rem
+                    }
+                    1 | 2 => {
+                        // TimestampSeconds or DurationSeconds - skip u64
+                        if new_rem.len() < 8 {
+                            return Err(ParserError::UnexpectedBufferEnd);
+                        }
+                        let (rem, _) = crate::utils::read_u64_le(new_rem)?;
+                        rem
+                    }
+                    3 => {
+                        // TokenAmount - skip amount (u64), decimals (u8), symbol (text)
+                        let (rem, _) = crate::utils::read_u64_le(new_rem)?;
+                        let (rem, _) = crate::utils::read_u8(rem)?;
+                        let (rem, _) = crate::candid_utils::parse_text(rem)?;
+                        rem
+                    }
+                    _ => return Err(ParserError::UnexpectedType),
+                };
+                
                 current = new_rem;
             }
 
-            // Take the fields data
-            let (rem, fields) = nom::bytes::complete::take(total_size)(rem)
+            // Calculate total size from start to current position
+            let total_size = fields_start.len() - current.len();
+
+            // Take the fields data from the correct position
+            let (_fields_end, fields) = nom::bytes::complete::take(total_size)(fields_start)
                 .map_err(|_: nom::Err<nom::error::Error<&[u8]>>| ParserError::UnexpectedError)?;
 
             Ok((
-                rem,
+                current,
                 Some(DeviceSpec::FieldsDisplayMessage {
                     intent,
                     fields,

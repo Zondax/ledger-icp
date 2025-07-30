@@ -62,9 +62,19 @@ pub const DEFAULT_SENDER: u8 = 0x04;
 // Defines the minimum number of elements
 // in our candid type table in order
 // to parse the type using it
-pub const MAX_TABLE_FIELDS: usize = 12;
+pub const MAX_TABLE_FIELDS: usize = 15;
+
+// Maximum fields per type entry
+// Analysis of ICRC-21 test vectors shows max 4 fields per type
+pub const MAX_FIELDS_PER_TYPE: usize = 10;
 // the max number of candid arguments in memory
 pub const MAX_ARGS: usize = 5;
 
 // The size of the hash
 pub const SHA256_DIGEST_LENGTH: usize = 32;
+
+// Candid Header Entry Type
+pub const CANDID_HEADER_ENTRY_TYPE: usize = 4;
+
+// Display Record Type
+pub const DISPLAY_RECORD_TYPE: usize = 5;

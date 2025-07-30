@@ -81,6 +81,12 @@ INCLUDES_PATH += $(CURDIR)/../deps/tinycbor/src
 INCLUDES_PATH += $(CURDIR)/../deps/nanopb/
 
 ########################################
+# Application communication interfaces #
+########################################
+ENABLE_BLUETOOTH = 1
+#ENABLE_NFC = 1
+
+########################################
 #         NBGL custom features         #
 ########################################
 ENABLE_NBGL_QRCODE = 1
