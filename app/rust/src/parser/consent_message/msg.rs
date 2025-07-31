@@ -397,7 +397,16 @@ impl DisplayableItem for ConsentMessage<'_> {
                             let (rem, _) = parse_text(rem).map_err(|_| ViewError::NoData)?;
                             rem
                         }
-                        2 | 3 => {
+                        2 => {
+                            // TimestampSeconds
+                            if rem.len() < 8 {
+                                return Err(ViewError::NoData);
+                            }
+                            let (rem, _) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+                            rem
+                        }
+                        3 => {
+                            // DurationSeconds
                             if rem.len() < 8 {
                                 return Err(ViewError::NoData);
                             }
@@ -427,12 +436,12 @@ impl DisplayableItem for ConsentMessage<'_> {
                         let (_, text) = parse_text(rem).map_err(|_| ViewError::NoData)?;
                         handle_ui_message(text.as_bytes(), message, page)
                     }
-                    2 | 3 => {
-                        // TimestampSeconds or DurationSeconds
+                    2 => {
+                        // TimestampSeconds
                         if rem.len() < 8 {
                             return Err(ViewError::NoData);
                         }
-                        let (_, amount) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+                        let (_, timestamp) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
 
                         // Format directly into message buffer
                         let m_len = message.len() - 1;
@@ -442,7 +451,31 @@ impl DisplayableItem for ConsentMessage<'_> {
 
                         // Use a portion of the message buffer for formatting
                         let format_len =
-                            crate::utils::format_u64_with_suffix(amount, b"s", message)
+                            crate::utils::format_timestamp(timestamp, message)
+                                .map_err(|_| ViewError::NoData)?;
+
+                        // Null terminate
+                        message[format_len] = 0;
+
+                        // Return number of pages (always 1 for these values)
+                        Ok(1)
+                    }
+                    3 => {
+                        // DurationSeconds
+                        if rem.len() < 8 {
+                            return Err(ViewError::NoData);
+                        }
+                        let (_, duration) = read_u64_le(rem).map_err(|_| ViewError::NoData)?;
+
+                        // Format directly into message buffer
+                        let m_len = message.len() - 1;
+                        if m_len < 1 {
+                            return Err(ViewError::NoData);
+                        }
+
+                        // Use a portion of the message buffer for formatting
+                        let format_len =
+                            crate::utils::format_duration(duration, message)
                                 .map_err(|_| ViewError::NoData)?;
 
                         // Null terminate

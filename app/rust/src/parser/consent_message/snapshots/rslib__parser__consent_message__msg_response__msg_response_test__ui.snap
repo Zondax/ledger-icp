@@ -1,13 +1,13 @@
 ---
 source: src/parser/consent_message/msg_response.rs
-assertion_line: 224
+assertion_line: 229
 expression: reduced
 input_file: src/parser/consent_message/testvectors/ui_data.json
 snapshot_kind: text
 ---
 [
     "User": "Hello, world!",
-    "created_at": "1752218864 s",
-    "active_for": "600 s",
+    "created_at": "2025-07-11 07:27:44",
+    "active_for": "10 minutes",
     "amount": "2 ICP",
 ]
