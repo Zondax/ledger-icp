@@ -1,0 +1,31 @@
+# Coverage-enabled test targets for SonarCloud integration
+
+.PHONY: coverage_clean
+coverage_clean:
+	rm -rf coverage build-coverage app/rust/target/llvm-cov
+
+.PHONY: cpp_test_coverage
+cpp_test_coverage: coverage_clean
+	mkdir -p build-coverage coverage
+	cd build-coverage && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_C_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" ..
+	cd build-coverage && make -j$(nproc)
+	cd build-coverage && GTEST_COLOR=1 ctest -VV
+	# Generate coverage reports
+	cd build-coverage && lcov --capture --directory . --output-file ../coverage/lcov.info --ignore-errors mismatch
+	cd build-coverage && lcov --remove ../coverage/lcov.info '/usr/*' '*/deps/*' '*/tests/*' --output-file ../coverage/lcov.info
+	cd build-coverage && genhtml ../coverage/lcov.info --output-directory ../coverage/html
+
+.PHONY: rust_test_coverage  
+rust_test_coverage:
+	# Install cargo-llvm-cov if not already installed
+	@which cargo-llvm-cov > /dev/null || cargo install cargo-llvm-cov
+	cd app/rust && cargo llvm-cov --all-features --lcov --output-path target/llvm-cov/lcov.info
+	# Copy to main coverage directory
+	mkdir -p coverage
+	cp app/rust/target/llvm-cov/lcov.info coverage/rust-lcov.info
+
+.PHONY: test_coverage_all
+test_coverage_all: cpp_test_coverage rust_test_coverage
+	@echo "All coverage reports generated"
+	@echo "C++ coverage: coverage/lcov.info"
+	@echo "Rust coverage: coverage/rust-lcov.info"
