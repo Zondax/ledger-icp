@@ -11,33 +11,39 @@ on:
 jobs:
   coverage:
     name: Generate Coverage Report
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/rust-ci:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
           submodules: true
 
       - name: Install dependencies
         run: |
-          apt-get update && apt-get install -y lcov libusb-1.0-0 libudev-dev cmake g++ python3 python3-pip
+          apt-get update && apt-get install -y lcov libusb-1.0-0 libudev-dev g++ python3 python3-pip wget
           pip3 install ledgerblue --break-system-packages
 
+      - name: Install CMake 3.28
+        run: |
+          wget https://github.com/Kitware/CMake/releases/download/v3.28.0/cmake-3.28.0-linux-x86_64.tar.gz
+          tar -xzf cmake-3.28.0-linux-x86_64.tar.gz
+          cp -r cmake-3.28.0-linux-x86_64/bin/* /usr/local/bin/
+          cp -r cmake-3.28.0-linux-x86_64/share/* /usr/local/share/
+          cmake --version
+
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
           components: llvm-tools-preview
 
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo
@@ -47,14 +53,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-rust-coverage-
 
-      - name: Run C++ tests with coverage
+      - name: Build C++ tests with coverage
         run: |
           mkdir -p build-coverage coverage
           cd build-coverage
-          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_C_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" ..
+          cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON ..
           make -j$(nproc)
-          ctest || true
-          # Generate coverage report
+
+      - name: Run C++ tests
+        id: cpp_tests
+        continue-on-error: true
+        run: |
+          cd build-coverage
+          ctest --output-on-failure
+
+      - name: Collect C++ coverage
+        if: always()
+        run: |
+          cd build-coverage
+          # Generate coverage report regardless of test results
           lcov --capture --directory . --output-file ../coverage/lcov.info --ignore-errors mismatch 2>/dev/null || \
           lcov --capture --directory . --output-file ../coverage/lcov.info
           if [ -f ../coverage/lcov.info ]; then
@@ -62,10 +79,12 @@ jobs:
           fi
 
       - name: Run Rust tests with coverage
+        id: rust_tests
+        continue-on-error: true
         run: |
           cd app/rust
           mkdir -p target/llvm-cov
-          cargo llvm-cov --lcov --output-path target/llvm-cov/lcov.info || true
+          cargo llvm-cov --lcov --output-path target/llvm-cov/lcov.info
 
       - name: Merge coverage reports
         run: |
@@ -112,7 +131,7 @@ jobs:
         run: |
           echo "## Code Coverage Report 📊" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Process C++ coverage
           if [ -f "coverage/lcov.info" ]; then
             summary=$(lcov --summary "coverage/lcov.info" 2>&1)
@@ -130,7 +149,7 @@ jobs:
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Process Rust coverage
           if [ -f "coverage/rust-lcov.info" ]; then
             summary=$(lcov --summary "coverage/rust-lcov.info" 2>&1)
@@ -148,7 +167,7 @@ jobs:
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           # Total coverage with special formatting
           if [ -f coverage/merged-lcov.info ]; then
             echo "### 📈 Total Project Coverage" >> $GITHUB_STEP_SUMMARY
@@ -179,7 +198,7 @@ jobs:
               echo "COVERAGE_COLOR=red" >> $GITHUB_ENV
             fi
           fi
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📁 LCOV reports available as artifacts above ⬆️" >> $GITHUB_STEP_SUMMARY
 
@@ -201,10 +220,10 @@ jobs:
           script: |
             const fs = require('fs');
             const { execSync } = require('child_process');
-            
+
             // Build the comment body
             let comment = '## Code Coverage Report 📊\n\n';
-            
+
             // Function to extract coverage details
             const extractCoverage = (file, name) => {
               if (!fs.existsSync(file)) return '';
@@ -229,11 +248,11 @@ jobs:
                 return `### ${name} Coverage\nNo coverage data available\n\n`;
               }
             };
-            
+
             // Add coverage for each language
             comment += extractCoverage('coverage/lcov.info', 'C++');
             comment += extractCoverage('coverage/rust-lcov.info', 'Rust');
-            
+
             // Add total coverage
             if (fs.existsSync('coverage/merged-lcov.info')) {
               try {
@@ -254,19 +273,19 @@ jobs:
                 comment += '### Total Coverage\nFailed to generate total coverage\n';
               }
             }
-            
+
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const botComment = comments.find(comment => 
               comment.user.type === 'Bot' && 
               comment.body.includes('Code Coverage Report 📊')
             );
-            
+
             // Update or create comment
             if (botComment) {
               await github.rest.issues.updateComment({
@@ -283,3 +302,24 @@ jobs:
                 body: comment
               });
             }
+
+      - name: Check test results
+        if: always()
+        run: |
+          if [ "${{ steps.cpp_tests.outcome }}" = "failure" ] || [ "${{ steps.rust_tests.outcome }}" = "failure" ]; then
+            echo "❌ Tests failed but coverage was still collected"
+            echo ""
+            if [ "${{ steps.cpp_tests.outcome }}" = "failure" ]; then
+              echo "C++ tests: FAILED ❌"
+            else
+              echo "C++ tests: PASSED ✅"
+            fi
+            if [ "${{ steps.rust_tests.outcome }}" = "failure" ]; then
+              echo "Rust tests: FAILED ❌"
+            else
+              echo "Rust tests: PASSED ✅"
+            fi
+            exit 1
+          else
+            echo "✅ All tests passed"
+          fi
