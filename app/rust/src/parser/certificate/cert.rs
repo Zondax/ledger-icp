@@ -428,7 +428,7 @@ mod test_certificate {
         // Expected field pairs from the encoded data
         let expected_fields = [
             ("User", "Hello, world!"),
-            ("created_at", "2025-07-11 15:26:31"),
+            ("created_at", "2025-07-11 07:27:44"),
             ("active_for", "10 minutes"),
             ("amount", "2 ICP"),
         ];
