@@ -29,7 +29,7 @@
     "@ledgerhq/hw-transport-node-hid": "^6.29.7",
     "@ledgerhq/logs": "^6.13.0",
     "@zondax/ledger-icp": "^3.2.8",
-    "@zondax/zemu": "^0.55.3"
+    "@zondax/zemu": "^0.61.1"
   },
   "devDependencies": {
     "@matteoh2o1999/github-actions-jest-reporter": "^3.0.0",

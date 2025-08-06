@@ -106,14 +106,42 @@ describe('Addresses', function () {
       const app = new InternetComputerApp(sim.getTransport())
 
       for (const TEST of TEST_CASES_BIP32) {
-        const resp = await app.getAddressAndPubKey(TEST.path)
-        console.log(resp)
-        const expected_returncode = TEST.valid ? 0x9000 : 0x6984
-        expect(resp.returnCode).toEqual(expected_returncode)
+        try {
+          const resp = await app.getAddressAndPubKey(TEST.path)
+          console.log(resp)
+          if (TEST.valid) {
+            expect(resp.returnCode).toEqual(0x9000)
+          } else {
+            expect(resp.returnCode).toEqual(0x6984)
+          }
+        } catch (error: any) {
+          if (!TEST.valid && error.statusCode === 0x6984) {
+            // Expected error for invalid paths
+            console.log(`Expected error for invalid path ${TEST.path}: ${error.message}`)
+          } else {
+            throw error
+          }
+        }
       }
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.each(DEVICE_MODELS)('derivation paths expert mode', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: isTouchDevice(m.name) ? '' : 'Computer' })
+      const app = new InternetComputerApp(sim.getTransport())
+
       // Enable expert mode
       console.log('Set expert mode')
+
+      // Wait a bit to ensure the device is ready after error responses
+      await sim.waitUntilScreenIs(sim.getMainMenuSnapshot())
+
       await sim.toggleExpertMode()
+      console.log('Expert mode toggled')
 
       for (const TEST of TEST_CASES_BIP32) {
         const resp = await app.getAddressAndPubKey(TEST.path)
