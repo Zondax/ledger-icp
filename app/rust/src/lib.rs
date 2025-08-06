@@ -2,7 +2,6 @@
 #![no_builtins]
 #![macro_use]
 #![allow(dead_code)]
-#![deny(unused_crate_dependencies)]
 // We used different config flags names
 // in order to not possibly colide with other
 // defined in dependencies

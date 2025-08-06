@@ -36,10 +36,10 @@ impl ConsentMessageMetadata<'_> {
 }
 
 impl<'a> FromCandidHeader<'a> for ConsentMessageMetadata<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        _header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        _header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentMessageMetadata::from_table_info\n");
 

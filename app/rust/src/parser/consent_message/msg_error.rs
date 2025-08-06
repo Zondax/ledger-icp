@@ -55,10 +55,10 @@ impl ErrorInfo<'_> {
 }
 
 impl<'a> FromCandidHeader<'a> for ErrorInfo<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         // Get the type entry for ErrorInfo (type 11 based on your table)
         let type_entry = header
@@ -162,10 +162,10 @@ impl Error<'_> {
 }
 
 impl<'a> FromCandidHeader<'a> for Error<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         // Get the variant index
         let (rem, variant_index) =
