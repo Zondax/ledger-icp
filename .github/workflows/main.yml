@@ -156,7 +156,9 @@ jobs:
           submodules: true
 
       - name: Install node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Install yarn
         run: npm install -g yarn
@@ -194,7 +196,9 @@ jobs:
           submodules: recursive
       - run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
       - name: Install node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install yarn
         run: |
           npm install -g yarn
