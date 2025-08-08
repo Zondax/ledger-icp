@@ -65,6 +65,15 @@ pub struct Msg<'a> {
     msg: ConsentMessage<'a>,
 }
 
+impl<'a> Msg<'a> {
+    pub fn get_intent(&self) -> Option<&'a str> {
+        match &self.msg {
+            ConsentMessage::FieldsDisplayMessage { intent, .. } => Some(intent),
+            _ => None,
+        }
+    }
+}
+
 #[repr(u8)] // Important: same representation as MessageType
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ConsentMessage<'a> {
@@ -111,8 +120,8 @@ impl<'a> FromCandidHeader<'a> for Msg<'a> {
             let m = consent_msg.assume_init_ref();
             match m {
                 ConsentMessage::FieldsDisplayMessage { field_count, .. } => {
-                    // Add 1 to field_count to include intent as item 0
-                    addr_of_mut!((*out).num_items).write(*field_count + 1);
+                    // Don't include intent in the count
+                    addr_of_mut!((*out).num_items).write(*field_count);
                 }
                 ConsentMessage::GenericDisplayMessage(_) => {
                     // Do not accept generic messages
@@ -351,7 +360,7 @@ impl DisplayableItem for ConsentMessage<'_> {
     fn num_items(&self) -> Result<u8, ViewError> {
         check_canary();
         match self {
-            ConsentMessage::FieldsDisplayMessage { field_count, .. } => Ok(*field_count + 1), // +1 for intent
+            ConsentMessage::FieldsDisplayMessage { field_count, .. } => Ok(*field_count), // intent not included in count
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
         }
     }
@@ -370,30 +379,17 @@ impl DisplayableItem for ConsentMessage<'_> {
             ConsentMessage::FieldsDisplayMessage {
                 fields,
                 field_count,
-                intent,
+                intent: _,
             } => {
-                // Item 0 is the intent
-                if item_n == 0 {
-                    let title_text = b"Transaction Type";
-                    let title_len = title_text.len().min(title.len() - 1);
-                    title[..title_len].copy_from_slice(&title_text[..title_len]);
-                    title[title_len] = 0;
-
-                    // Set message to the intent text
-                    return handle_ui_message(intent.as_bytes(), message, page);
-                }
-
-                // Adjust item_n for field access (subtract 1 since intent is item 0)
-                let field_index = item_n - 1;
-
-                if field_index >= *field_count {
+                // Intent is no longer displayed as an item
+                if item_n >= *field_count {
                     return Err(ViewError::NoData);
                 }
 
                 let mut current = *fields;
 
                 // Skip to the desired field
-                for _ in 0..field_index {
+                for _ in 0..item_n {
                     // Skip key
                     let (rem, _) = parse_text(current).map_err(|_| ViewError::NoData)?;
                     // Skip value - need to properly skip the variant
