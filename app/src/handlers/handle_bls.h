@@ -107,7 +107,6 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
     // Clear the global buffer first
     MEMZERO(G_intent_buffer, sizeof(G_intent_buffer));
     parser_error_t intent_err = parser_getIntent(G_intent_buffer, sizeof(G_intent_buffer));
-    zemu_log_stack(G_intent_buffer);
 
     if (intent_err == parser_ok && strlen(G_intent_buffer) > 0) {
         // Use the intent from the parsed message (from global buffer)
