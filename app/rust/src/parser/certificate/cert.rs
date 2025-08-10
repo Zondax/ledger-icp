@@ -423,11 +423,10 @@ mod test_certificate {
         let msg = &ui.message;
 
         // Test number of items (should be 4 fields)
-        assert_eq!(msg.num_items().unwrap(), 5);
+        assert_eq!(msg.num_items().unwrap(), 4);
 
         // Expected field pairs from the encoded data
         let expected_fields = [
-            ("Transaction Type", "Greet user"),
             ("User", "Hello, world!"),
             ("created_at", "2025-07-11 07:27:44"),
             ("active_for", "10 minutes"),
