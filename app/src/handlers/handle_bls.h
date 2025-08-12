@@ -87,6 +87,8 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
         THROW(APDU_CODE_OK);
     }
 
+    view_spinner_show("Loading transaction");
+
     // Parser Certificate and verify
     CHECK_APP_CANARY()
     zxerr_t err = tx_certVerify();
