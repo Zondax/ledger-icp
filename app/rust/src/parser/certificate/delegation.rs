@@ -27,9 +27,6 @@ use super::{
 
 const DELEGATION_MAP_ENTRIES: u64 = 2;
 
-const SUBNET_ID: &str = "subnet_id";
-const CERTIFICATE: &str = "certificate";
-
 #[derive(Clone, Copy, PartialEq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct Delegation<'a> {
@@ -104,7 +101,7 @@ impl<'a> Delegation<'a> {
         tree
     }
 
-    fn subnet(&self) -> &'a [u8] {
+    pub fn subnet(&self) -> &'a [u8] {
         self.subnet_id.id()
     }
 

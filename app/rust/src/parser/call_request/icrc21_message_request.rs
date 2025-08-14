@@ -63,9 +63,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
             })
     }
 
-    fn find_request_type(
-        table: &TypeTable,
-    ) -> Option<&TypeTableEntry> {
+    fn find_request_type(table: &TypeTable) -> Option<&TypeTableEntry> {
         // In order to not depend on Self::INDEX
         // we can try to look at the table for the entry
         // that contains our 3 fields, method, arg and preferences
@@ -183,7 +181,6 @@ mod icrc21_msg_request_test {
     const METHOD: &str = "icrc2_approve";
     const ARGS: &str = "4449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a0000000000000007010100";
     const LANGUAGE: &str = "en";
-    const LINES_PER_PAGE: u16 = 3;
 
     #[test]
     fn test_icrc21_msg_request() {

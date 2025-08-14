@@ -8,7 +8,6 @@ use crate::{
 #[cfg(test)]
 use std::{format, print, println, string::String, string::ToString};
 
-
 #[derive(Clone, Copy)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum FieldType {
@@ -68,9 +67,7 @@ impl TypeTable {
     }
 }
 
-pub fn parse_type_table(
-    input: &[u8],
-) -> Result<(&[u8], TypeTable), ParserError> {
+pub fn parse_type_table(input: &[u8]) -> Result<(&[u8], TypeTable), ParserError> {
     let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
     if type_count > crate::constants::MAX_TABLE_FIELDS as u64 {
         return Err(ParserError::TooManyTypes);
@@ -79,7 +76,8 @@ pub fn parse_type_table(
     let mut type_table = TypeTable {
         entries: [TypeTableEntry {
             type_code: IDLTypes::Null,
-            fields: [(0, FieldType::Primitive(IDLTypes::Null)); crate::constants::MAX_FIELDS_PER_TYPE],
+            fields: [(0, FieldType::Primitive(IDLTypes::Null));
+                crate::constants::MAX_FIELDS_PER_TYPE],
             field_count: 0,
         }; crate::constants::MAX_TABLE_FIELDS],
         entry_count: type_count as u8,
@@ -94,7 +92,8 @@ pub fn parse_type_table(
 
         let mut entry = TypeTableEntry {
             type_code,
-            fields: [(0, FieldType::Primitive(IDLTypes::Null)); crate::constants::MAX_FIELDS_PER_TYPE],
+            fields: [(0, FieldType::Primitive(IDLTypes::Null));
+                crate::constants::MAX_FIELDS_PER_TYPE],
             field_count: 0,
         };
 

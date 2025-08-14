@@ -1,4 +1,6 @@
-use nom::bytes::complete::{take, take_until};
+use nom::bytes::complete::take;
+#[cfg(test)]
+use nom::bytes::complete::take_until;
 
 use crate::error::ParserError;
 
@@ -20,6 +22,7 @@ pub fn parse_bytes(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>
 }
 
 /// Parses the input to extract the DIDL-prefixed argument data
+#[cfg(test)]
 fn parse_candid_arg_slice(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>> {
     // Find the DIDL magic number
     let (_, didl_start) = take_until("DIDL")(input)?;

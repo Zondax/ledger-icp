@@ -31,7 +31,10 @@ use super::{
     c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST, UI},
+    resources::{
+        certificate_is_some, get_call_request_memory, get_consent_request_memory, set_certificate,
+        set_ui,
+    },
 };
 
 // This is use to check important fields in consent_msg_request and canister_call_request
@@ -68,11 +71,11 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     // Check values are set
-    let Ok(call_request) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
+    let Ok(call_request) = CanisterCallT::from_bytes(get_call_request_memory()) else {
         return ParserError::NoData as u32;
     };
 
-    let Ok(consent_request) = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST) else {
+    let Ok(consent_request) = ConsentRequestT::from_bytes(get_consent_request_memory()) else {
         return ParserError::NoData as u32;
     };
 
@@ -86,7 +89,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     let data = core::slice::from_raw_parts(certificate, certificate_len as usize);
     let root_key = core::slice::from_raw_parts(root_key, BLS_PUBLIC_KEY_SIZE);
 
-    if CERTIFICATE.is_some() {
+    if certificate_is_some() {
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -140,10 +143,10 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     };
 
-    UI.replace(ui);
+    set_ui(ui);
 
     // Indicates certificate was valid
-    CERTIFICATE.replace(cert);
+    set_certificate(cert);
 
     ParserError::Ok as u32
 }

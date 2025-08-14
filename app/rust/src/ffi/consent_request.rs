@@ -25,7 +25,7 @@ use crate::{
 
 use core::mem::{size_of, MaybeUninit};
 
-use super::resources::MEMORY_CONSENT_REQUEST;
+use super::resources::get_consent_request_memory;
 
 #[repr(C)]
 #[derive(PartialEq, Default)]
@@ -195,12 +195,11 @@ fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
             // Update our consent request
             consent_request.fill_from(request)?;
 
-            MEMORY_CONSENT_REQUEST
-                .write(0, &serialized)
+            super::resources::write_consent_request(&serialized)
                 .map_err(|_| ParserError::UnexpectedError)?;
         }
 
-        let consent2 = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST)?;
+        let consent2 = ConsentRequestT::from_bytes(get_consent_request_memory())?;
         consent2.validate()?;
     }
 

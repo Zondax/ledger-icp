@@ -67,4 +67,3 @@ impl<'b, C> Decode<'b, C> for RawValue<'b> {
     }
 }
 
-pub struct RawValueError;

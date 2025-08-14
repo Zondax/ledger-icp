@@ -22,7 +22,7 @@ use crate::{
 use core::mem::{size_of, MaybeUninit};
 use sha2::{Digest, Sha256};
 
-use super::resources::MEMORY_CALL_REQUEST;
+use super::resources::get_call_request_memory;
 
 #[repr(C)]
 #[derive(PartialEq, Default)]
@@ -166,11 +166,10 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
         // Update our consent request
         call_request.fill_from(request)?;
 
-        MEMORY_CALL_REQUEST
-            .write(0, &serialized)
+        super::resources::write_call_request(&serialized)
             .map_err(|_| ParserError::UnexpectedError)?;
 
-        let consent2 = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST)?;
+        let consent2 = CanisterCallT::from_bytes(super::resources::get_call_request_memory())?;
         consent2.validate()?;
     }
 
@@ -181,7 +180,7 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
 pub unsafe extern "C" fn rs_get_signing_hash(data: *mut [u8; 32]) {
     let hash = unsafe { &mut *data };
 
-    let Ok(call) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
+    let Ok(call) = CanisterCallT::from_bytes(get_call_request_memory()) else {
         return;
     };
 
