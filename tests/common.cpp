@@ -18,7 +18,7 @@
 #include <app_mode.h>
 #include <fmt/core.h>
 #include <hexutils.h>
-#include <json/json.h>
+#include <nlohmann/json.hpp>
 #include <parser.h>
 
 #include <fstream>
@@ -88,8 +88,7 @@ std::string CleanTestname(std::string s) {
 std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
     auto answer = std::vector<testcase_t>();
 
-    Json::CharReaderBuilder builder;
-    Json::Value obj;
+    nlohmann::json obj;
 
     std::string fullPathJsonFile = std::string(TESTVECTORS_DIR) + jsonFile;
 
@@ -99,29 +98,35 @@ std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
     }
 
     // Retrieve all test cases
-    JSONCPP_STRING errs;
-    Json::parseFromStream(builder, inFile, &obj, &errs);
+    inFile >> obj;
     std::cout << "Number of testcases: " << obj.size() << std::endl;
 
     for (auto &i : obj) {
         auto outputs = std::vector<std::string>();
         for (const auto &s : i["output"]) {
-            outputs.push_back(s.asString());
+            outputs.push_back(s.get<std::string>());
         }
 
         auto outputs_expert = std::vector<std::string>();
-        for (const auto &s : i["output_expert"]) {
-            outputs_expert.push_back(s.asString());
+        if (i.contains("output_expert") && !i["output_expert"].is_null()) {
+            for (const auto &s : i["output_expert"]) {
+                outputs_expert.push_back(s.get<std::string>());
+            }
         }
 
         bool valid = true;
-        if (i.isMember("valid")) {
-            valid = i["valid"].asBool();
+        if (i.contains("valid")) {
+            valid = i["valid"].get<bool>();
         }
 
-        auto name = CleanTestname(i["name"].asString());
+        auto name = CleanTestname(i["name"].get<std::string>());
 
-        answer.push_back(testcase_t{i["index"].asUInt64(), name, i["blob"].asString(), valid, outputs, outputs_expert});
+        uint64_t index = 0;
+        if (i.contains("index") && !i["index"].is_null()) {
+            index = i["index"].get<uint64_t>();
+        }
+        
+        answer.push_back(testcase_t{index, name, i["blob"].get<std::string>(), valid, outputs, outputs_expert});
     }
 
     return answer;

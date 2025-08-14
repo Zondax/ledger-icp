@@ -15,13 +15,13 @@
  ********************************************************************************/
 
 #include <hexutils.h>
-#include <json/json.h>
 #include <zxmacros.h>
 
 #include <cstring>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <nlohmann/json.hpp>
 
 #include "crypto.h"
 #include "gtest/gtest.h"
@@ -166,23 +166,21 @@ TEST(AddressToStringTests, StakeAccount0) {
 TEST(AddressToStringTests, StakeAccounts) {
     const std::string &jsonFile = "stake_accounts.json";
 
-    Json::CharReaderBuilder builder;
-    Json::Value obj;
+    nlohmann::json obj;
 
     std::string fullPathJsonFile = std::string(TESTVECTORS_DIR) + jsonFile;
 
     std::ifstream inFile(fullPathJsonFile);
 
     // Retrieve all test cases
-    JSONCPP_STRING errs;
-    Json::parseFromStream(builder, inFile, &obj, &errs);
+    inFile >> obj;
     std::cout << "Number of testcases: " << obj.size() << std::endl;
 
     for (auto &i : obj) {
         auto outputs = std::vector<std::string>();
-        const auto &principal_str = i["principal"].asString();
-        const auto &account_str = i["account_identifier"].asString();
-        const auto &memo = i["nonce"].asUInt64();
+        const auto &principal_str = i["principal"].get<std::string>();
+        const auto &account_str = i["account_identifier"].get<std::string>();
+        const auto &memo = i["nonce"].get<uint64_t>();
 
         uint8_t principal[29];
         parseHexString(principal, sizeof(principal), principal_str.data());
