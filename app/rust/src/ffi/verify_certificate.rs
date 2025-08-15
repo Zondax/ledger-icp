@@ -107,7 +107,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data referes to
+    // from the consent_msg_request, this ensures that the passed data refers to
     // the provided certificate
     let Ok(LookupResult::Found(_)) =
         HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
@@ -115,7 +115,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     };
 
-    // Verify ingress_expiry aginst certificate timestamp
+    // Verify ingress_expiry against certificate timestamp
     if !cert.verify_time(call_request.ingress_expiry) {
         return ParserError::InvalidCertificate as u32;
     }

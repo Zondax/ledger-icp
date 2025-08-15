@@ -7,7 +7,7 @@ use crate::{consent_message::msg_info::ConsentInfo, Certificate};
 
 use super::{call_request::CanisterCallT, consent_request::ConsentRequestT};
 
-// NOTE: The call_request anc consent_request were initially defined as Optionals, identical to the
+// NOTE: The call_request and consent_request were initially defined as Optionals, identical to the
 // certificate. But this approach consumes stacks, so we move it to flash, saving us 244 bytes of
 // stack, unfortunately, this did not help.
 // it is better to keep them as optionals, but we can change it back overtime.

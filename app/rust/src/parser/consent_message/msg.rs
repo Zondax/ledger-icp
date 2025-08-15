@@ -125,7 +125,7 @@ impl<'a> FromCandidHeader<'a> for Msg<'a> {
                 }
                 ConsentMessage::GenericDisplayMessage(_) => {
                     // Do not accept generic messages
-                    // due to the possiblility of it containing
+                    // due to the possibility of it containing
                     // unsupported characters
                     return Err(ParserError::UnexpectedType);
                 }

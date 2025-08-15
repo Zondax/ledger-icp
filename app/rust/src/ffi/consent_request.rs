@@ -188,7 +188,7 @@ fn fill_request(request: &ConsentMsgRequest<'_>) -> Result<(), ParserError> {
     let mut serialized = [0; core::mem::size_of::<ConsentRequestT>()];
     unsafe {
         {
-            // Lets transmute the array in order to re-use serialized memory
+            // Lets transmute the array in order to reuse serialized memory
             // saving a bunch of stack
             let consent_request = &mut *(serialized.as_mut_ptr() as *mut ConsentRequestT);
 
