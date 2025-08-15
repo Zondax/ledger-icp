@@ -165,8 +165,8 @@ fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
         let Ok(call_sender_principal) = Principal::new(call_sender) else {
             return false;
         };
-        // them check that at least the call_sender_principal matches the device_principal
-        return call_sender_principal != device_principal;
+        // then check that the call_sender_principal matches the device_principal
+        return call_sender_principal == device_principal;
     }
     true
 }
