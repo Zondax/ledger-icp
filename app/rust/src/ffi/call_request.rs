@@ -169,8 +169,20 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
         super::resources::write_call_request(&serialized)
             .map_err(|_| ParserError::UnexpectedError)?;
 
-        let consent2 = CanisterCallT::from_bytes(super::resources::get_call_request_memory())?;
-        consent2.validate()?;
+        // Verify the write succeeded by reading back and validating
+        // Use a safe copy to avoid potential alignment issues
+        let stored_memory = super::resources::get_call_request_memory();
+        if stored_memory.len() != core::mem::size_of::<CanisterCallT>() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+        
+        let mut stored_call = CanisterCallT::default();
+        core::ptr::copy_nonoverlapping(
+            stored_memory.as_ptr(),
+            &mut stored_call as *mut CanisterCallT as *mut u8,
+            core::mem::size_of::<CanisterCallT>(),
+        );
+        stored_call.validate()?;
     }
 
     Ok(())

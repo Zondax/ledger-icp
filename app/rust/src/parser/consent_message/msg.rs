@@ -85,7 +85,7 @@ pub enum ConsentMessage<'a> {
     GenericDisplayMessage(&'a str),
 }
 
-impl<'a> ConsentMessage<'a> {}
+impl ConsentMessage<'_> {}
 
 impl TryFrom<u64> for MessageType {
     type Error = ParserError;

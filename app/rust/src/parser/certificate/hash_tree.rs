@@ -293,7 +293,7 @@ impl<'a> TryFrom<&RawValue<'a>> for HashTree<'a> {
         // to the Decoder::new function pointer, this due to pic issues
         // at runtime
         cfg_if::cfg_if! {
-            if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+            if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))] {
                 let f = unsafe {
                     let raw_fn_ptr = Decoder::new as *const () as usize; // Use usize instead of u32
                     let adjusted_ptr = crate::pic_addr(raw_fn_ptr as u32) as usize; // Cast back to usize after PIC adjustment

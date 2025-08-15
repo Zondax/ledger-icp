@@ -383,10 +383,10 @@ pub fn format_timestamp(timestamp: u64, out: &mut [u8]) -> Result<usize, ParserE
 
     // Calculate month and day
     let mut month = 1u8;
-    let mut day = days as u8 + 1; // days are 1-indexed
+    let mut day = days as u16 + 1; // days are 1-indexed
 
-    for i in 0..12 {
-        let mut days_in_month = DAYS_PER_MONTH[i];
+    for (i, &days_in_month_base) in DAYS_PER_MONTH.iter().enumerate() {
+        let mut days_in_month = days_in_month_base as u16;
         if i == 1 && is_leap_year(year) {
             days_in_month = 29;
         }

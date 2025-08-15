@@ -21,9 +21,6 @@ pub mod test_ui;
 
 pub use parser::*;
 
-#[cfg(test)]
-fn debug(_msg: &str) {}
-
 #[cfg(all(
     not(test),
     not(feature = "clippy"),
@@ -45,7 +42,7 @@ fn panic(_info: &PanicInfo) -> ! {
 
 pub fn zlog(_msg: &str) {
     cfg_if::cfg_if! {
-        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))] {
             unsafe {
                 zemu_log_stack(_msg.as_bytes().as_ptr());
             }
@@ -56,31 +53,26 @@ pub fn zlog(_msg: &str) {
 }
 
 pub fn check_canary() {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
     unsafe {
         _check_canary()
     }
 }
 
+#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
 extern "C" {
     fn zemu_log_stack(s: *const u8);
     fn _check_canary();
 }
 
-#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))]
+#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
 extern "C" {
     fn pic(link_address: u32) -> u32;
 }
 
-// Lets the device breath between computations
-#[cfg(test)]
-pub(crate) fn log_num(s: &str, number: u32) {
-    std::println!("{s}: {number}");
-}
-
 pub fn pic_addr(addr: u32) -> u32 {
     cfg_if::cfg_if! {
-        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing")))] {
+        if #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))] {
         unsafe {
             pic(addr)
         }

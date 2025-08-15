@@ -157,8 +157,11 @@ fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
     // call.sender == consent.sender || consent.sender == 0x04 or
     // call.sender == device.principal
     // to pass validation
-    if !(call_sender == consent_sender || consent_sender == [DEFAULT_SENDER]) {
-        let device_principal = device_principal();
+    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
+    if !(call_sender == consent_sender || is_default_sender) {
+        let Ok(device_principal) = device_principal() else {
+            return false;
+        };
         let Ok(call_sender_principal) = Principal::new(call_sender) else {
             return false;
         };

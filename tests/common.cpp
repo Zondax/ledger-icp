@@ -18,11 +18,11 @@
 #include <app_mode.h>
 #include <fmt/core.h>
 #include <hexutils.h>
-#include <nlohmann/json.hpp>
 #include <parser.h>
 
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 
@@ -125,7 +125,7 @@ std::vector<testcase_t> GetJsonTestCases(const std::string &jsonFile) {
         if (i.contains("index") && !i["index"].is_null()) {
             index = i["index"].get<uint64_t>();
         }
-        
+
         answer.push_back(testcase_t{index, name, i["blob"].get<std::string>(), valid, outputs, outputs_expert});
     }
 

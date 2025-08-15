@@ -20,8 +20,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <nlohmann/json.hpp>
+#include <string>
 
 #include "crypto.h"
 #include "gtest/gtest.h"
@@ -172,8 +172,26 @@ TEST(AddressToStringTests, StakeAccounts) {
 
     std::ifstream inFile(fullPathJsonFile);
 
-    // Retrieve all test cases
-    inFile >> obj;
+    // Check if file opened successfully
+    if (!inFile.is_open()) {
+        FAIL() << "Failed to open test vector file: " << fullPathJsonFile << ". Make sure the file exists and is readable.";
+    }
+
+    // Retrieve all test cases with error handling
+    try {
+        inFile >> obj;
+        if (inFile.fail() && !inFile.eof()) {
+            FAIL() << "Failed to parse JSON from file: " << fullPathJsonFile << ". The file may be malformed or corrupted.";
+        }
+    } catch (const nlohmann::json::parse_error &e) {
+        FAIL() << "JSON parse error in file " << fullPathJsonFile << ": " << e.what() << " at byte " << e.byte;
+    } catch (const std::exception &e) {
+        FAIL() << "Error reading file " << fullPathJsonFile << ": " << e.what();
+    }
+
+    // Sanity check: root must be an array of testcases
+    ASSERT_TRUE(obj.is_array()) << "Root of " << fullPathJsonFile << " must be a JSON array";
+
     std::cout << "Number of testcases: " << obj.size() << std::endl;
 
     for (auto &i : obj) {
