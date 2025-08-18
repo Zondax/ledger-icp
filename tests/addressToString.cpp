@@ -15,12 +15,12 @@
  ********************************************************************************/
 
 #include <hexutils.h>
-#include <json/json.h>
 #include <zxmacros.h>
 
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <string>
 
 #include "crypto.h"
@@ -166,23 +166,39 @@ TEST(AddressToStringTests, StakeAccount0) {
 TEST(AddressToStringTests, StakeAccounts) {
     const std::string &jsonFile = "stake_accounts.json";
 
-    Json::CharReaderBuilder builder;
-    Json::Value obj;
+    nlohmann::json obj;
 
     std::string fullPathJsonFile = std::string(TESTVECTORS_DIR) + jsonFile;
 
     std::ifstream inFile(fullPathJsonFile);
 
-    // Retrieve all test cases
-    JSONCPP_STRING errs;
-    Json::parseFromStream(builder, inFile, &obj, &errs);
+    // Check if file opened successfully
+    if (!inFile.is_open()) {
+        FAIL() << "Failed to open test vector file: " << fullPathJsonFile << ". Make sure the file exists and is readable.";
+    }
+
+    // Retrieve all test cases with error handling
+    try {
+        inFile >> obj;
+        if (inFile.fail() && !inFile.eof()) {
+            FAIL() << "Failed to parse JSON from file: " << fullPathJsonFile << ". The file may be malformed or corrupted.";
+        }
+    } catch (const nlohmann::json::parse_error &e) {
+        FAIL() << "JSON parse error in file " << fullPathJsonFile << ": " << e.what() << " at byte " << e.byte;
+    } catch (const std::exception &e) {
+        FAIL() << "Error reading file " << fullPathJsonFile << ": " << e.what();
+    }
+
+    // Sanity check: root must be an array of testcases
+    ASSERT_TRUE(obj.is_array()) << "Root of " << fullPathJsonFile << " must be a JSON array";
+
     std::cout << "Number of testcases: " << obj.size() << std::endl;
 
     for (auto &i : obj) {
         auto outputs = std::vector<std::string>();
-        const auto &principal_str = i["principal"].asString();
-        const auto &account_str = i["account_identifier"].asString();
-        const auto &memo = i["nonce"].asUInt64();
+        const auto &principal_str = i["principal"].get<std::string>();
+        const auto &account_str = i["account_identifier"].get<std::string>();
+        const auto &memo = i["nonce"].get<uint64_t>();
 
         uint8_t principal[29];
         parseHexString(principal, sizeof(principal), principal_str.data());

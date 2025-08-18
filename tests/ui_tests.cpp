@@ -65,7 +65,7 @@ TEST_P(JsonTests_Candid_Send, Expert) { check_testcase(GetParam(), true); }
 ////////////////////
 ////////////////////
 
-INSTANTIATE_TEST_SUITE_P(AddPermision, JsonTests_SNS_AddPermission,
+INSTANTIATE_TEST_SUITE_P(AddPermission, JsonTests_SNS_AddPermission,
                          ::testing::ValuesIn(GetJsonTestCases("sns_add_neuron_permission.json")),
                          JsonTests_SNS_AddPermission::PrintToStringParamName());
 
@@ -78,7 +78,7 @@ TEST_P(JsonTests_SNS_AddPermission, Expert) { check_testcase(GetParam(), true); 
 ////////////////////
 ////////////////////
 
-INSTANTIATE_TEST_SUITE_P(RemovePermision, JsonTests_SNS_RemovePermission,
+INSTANTIATE_TEST_SUITE_P(RemovePermission, JsonTests_SNS_RemovePermission,
                          ::testing::ValuesIn(GetJsonTestCases("sns_remove_neuron_permission.json")),
                          JsonTests_SNS_RemovePermission::PrintToStringParamName());
 

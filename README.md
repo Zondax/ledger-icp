@@ -156,7 +156,7 @@ cd zemu
 yarn test -t 'test name'
 ```
 
-This will run just the test maching the name provided
+This will run just the test matching the name provided
 
 ## How to debug a ledger app?
 
@@ -199,7 +199,7 @@ There are a few things to take into account when enabling Ledger App debugging:
 
 3. Launch the emulator in debug mode
 
-    > If you didnt install Zemu yet (previous section), then run `make zemu_install`
+    > If you did not install Zemu yet (previous section), then run `make zemu_install`
 
     ```sh
     make zemu_debug

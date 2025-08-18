@@ -85,7 +85,7 @@ pub enum ConsentMessage<'a> {
     GenericDisplayMessage(&'a str),
 }
 
-impl<'a> ConsentMessage<'a> {}
+impl ConsentMessage<'_> {}
 
 impl TryFrom<u64> for MessageType {
     type Error = ParserError;
@@ -125,7 +125,7 @@ impl<'a> FromCandidHeader<'a> for Msg<'a> {
                 }
                 ConsentMessage::GenericDisplayMessage(_) => {
                     // Do not accept generic messages
-                    // due to the possiblility of it containing
+                    // due to the possibility of it containing
                     // unsupported characters
                     return Err(ParserError::UnexpectedType);
                 }
