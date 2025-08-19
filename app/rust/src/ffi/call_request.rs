@@ -175,7 +175,7 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
         if stored_memory.len() != core::mem::size_of::<CanisterCallT>() {
             return Err(ParserError::UnexpectedBufferEnd);
         }
-        
+
         let mut stored_call = CanisterCallT::default();
         core::ptr::copy_nonoverlapping(
             stored_memory.as_ptr(),

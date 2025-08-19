@@ -37,19 +37,18 @@ pub fn device_principal() -> Result<Principal, ParserError> {
         return Err(ParserError::UnexpectedError);
     }
     let rc = unsafe { c_fill_principal(data.as_mut_ptr(), buffer_len as u16, &mut response_len) };
-    
+
     // Check return code for success
     if rc != 0 {
         return Err(ParserError::UnexpectedError);
     }
-    
+
     // Validate response_len is within valid range (1..=PRINCIPAL_MAX_LEN)
     let response_len_usize = response_len as usize;
     if response_len_usize == 0 || response_len_usize > PRINCIPAL_MAX_LEN {
         return Err(ParserError::UnexpectedBufferEnd);
     }
-    
+
     // Use Principal::new and propagate any error
-    Principal::new(&data[..response_len_usize])
-        .map_err(|_| ParserError::UnexpectedValue)
+    Principal::new(&data[..response_len_usize]).map_err(|_| ParserError::UnexpectedValue)
 }

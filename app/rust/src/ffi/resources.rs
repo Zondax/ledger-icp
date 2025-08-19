@@ -1,7 +1,7 @@
 #![allow(static_mut_refs)]
 
-use core::ptr::{addr_of_mut, addr_of};
 use bolos::{lazy_static, pic::PIC};
+use core::ptr::{addr_of, addr_of_mut};
 
 use crate::{consent_message::msg_info::ConsentInfo, Certificate};
 

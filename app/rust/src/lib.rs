@@ -53,19 +53,34 @@ pub fn zlog(_msg: &str) {
 }
 
 pub fn check_canary() {
-    #[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
+    #[cfg(all(
+        not(test),
+        not(feature = "clippy"),
+        not(feature = "fuzzing"),
+        target_os = "none"
+    ))]
     unsafe {
         _check_canary()
     }
 }
 
-#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
+#[cfg(all(
+    not(test),
+    not(feature = "clippy"),
+    not(feature = "fuzzing"),
+    target_os = "none"
+))]
 extern "C" {
     fn zemu_log_stack(s: *const u8);
     fn _check_canary();
 }
 
-#[cfg(all(not(test), not(feature = "clippy"), not(feature = "fuzzing"), target_os = "none"))]
+#[cfg(all(
+    not(test),
+    not(feature = "clippy"),
+    not(feature = "fuzzing"),
+    target_os = "none"
+))]
 extern "C" {
     fn pic(link_address: u32) -> u32;
 }
