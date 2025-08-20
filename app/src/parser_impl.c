@@ -420,7 +420,7 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                             *mn_type = Configure_SetVisibility;
                             break;
                         default:
-                            ZEMU_LOGF(50, "Unknow operation hash: 0x%08X%08X\n",
+                            ZEMU_LOGF(50, "Unknown operation hash: 0x%08X%08X\n",
                                       (uint32_t)(command->configure.operation.hash >> 32),
                                       (uint32_t)(command->configure.operation.hash & 0xFFFFFFFF));
                             return parser_unexpected_value;

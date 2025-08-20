@@ -25,9 +25,6 @@ pub struct Icrc21ConsentMessageSpec<'a> {
 }
 
 impl Icrc21ConsentMessageSpec<'_> {
-    const METADATA_HASH: u32 = 1075439471;
-    const DEVSPEC_HASH: u32 = 1534901700;
-
     pub fn language(&self) -> &str {
         self.metadata.language
     }
@@ -37,15 +34,6 @@ impl Icrc21ConsentMessageSpec<'_> {
     }
 }
 
-// device_spec: opt variant {
-//         GenericDisplay;
-//         FieldsDisplayMessage: record {
-//          // Context and type of canister call, accurate and concise e.g. Send ICP
-//          intent: text;
-//          // Canister call fields for review e.g. Amount 234.73 ICP
-//          fields: vec record { text; text };
-//          };
-//     };
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum DeviceSpec<'a> {
     FieldsDisplayMessage {
@@ -117,11 +105,11 @@ fn parse_opt_device_spec<'a>(
             for _ in 0..field_count {
                 // Skip key (text)
                 let (new_rem, _) = crate::candid_utils::parse_text(current)?;
-                
+
                 // Skip value - it's a variant, not just text
                 // Read variant index
                 let (new_rem, value_variant_idx) = crate::utils::decompress_leb128(new_rem)?;
-                
+
                 // Skip based on variant type
                 // The value can be one of: Text, TimestampSeconds, DurationSeconds, TokenAmount
                 let new_rem = match value_variant_idx {
@@ -147,7 +135,7 @@ fn parse_opt_device_spec<'a>(
                     }
                     _ => return Err(ParserError::UnexpectedType),
                 };
-                
+
                 current = new_rem;
             }
 

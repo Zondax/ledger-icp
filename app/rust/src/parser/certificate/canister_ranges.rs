@@ -17,7 +17,6 @@ pub struct CanisterRanges<'a> {
 #[derive(Clone, Copy)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 struct CanisterRangeIterator<'a> {
-    len: usize,
     current: usize,
     data: &'a [u8],
 }
@@ -29,7 +28,6 @@ impl<'a> CanisterRanges<'a> {
 
     pub fn iter(&self) -> impl Iterator<Item = (&'a [u8], &'a [u8])> {
         CanisterRangeIterator {
-            len: self.len,
             current: 0,
             data: self.data,
         }

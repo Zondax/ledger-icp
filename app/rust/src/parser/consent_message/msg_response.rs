@@ -98,7 +98,7 @@ impl<'a> FromBytes<'a> for ConsentMessageResponse<'a> {
         if variant_index >= root_entry.field_count as u64 {
             return Err(ParserError::UnexpectedType);
         }
-        
+
         // Additional safety check for our reduced array size
         if variant_index >= crate::constants::MAX_FIELDS_PER_TYPE as u64 {
             return Err(ParserError::UnexpectedType);

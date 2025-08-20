@@ -65,6 +65,15 @@ pub struct Msg<'a> {
     msg: ConsentMessage<'a>,
 }
 
+impl<'a> Msg<'a> {
+    pub fn get_intent(&self) -> Option<&'a str> {
+        match &self.msg {
+            ConsentMessage::FieldsDisplayMessage { intent, .. } => Some(intent),
+            _ => None,
+        }
+    }
+}
+
 #[repr(u8)] // Important: same representation as MessageType
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum ConsentMessage<'a> {
@@ -76,7 +85,7 @@ pub enum ConsentMessage<'a> {
     GenericDisplayMessage(&'a str),
 }
 
-impl<'a> ConsentMessage<'a> {}
+impl ConsentMessage<'_> {}
 
 impl TryFrom<u64> for MessageType {
     type Error = ParserError;
@@ -111,11 +120,12 @@ impl<'a> FromCandidHeader<'a> for Msg<'a> {
             let m = consent_msg.assume_init_ref();
             match m {
                 ConsentMessage::FieldsDisplayMessage { field_count, .. } => {
+                    // Don't include intent in the count
                     addr_of_mut!((*out).num_items).write(*field_count);
                 }
                 ConsentMessage::GenericDisplayMessage(_) => {
                     // Do not accept generic messages
-                    // due to the possiblility of it containing
+                    // due to the possibility of it containing
                     // unsupported characters
                     return Err(ParserError::UnexpectedType);
                 }
@@ -350,7 +360,7 @@ impl DisplayableItem for ConsentMessage<'_> {
     fn num_items(&self) -> Result<u8, ViewError> {
         check_canary();
         match self {
-            ConsentMessage::FieldsDisplayMessage { field_count, .. } => Ok(*field_count),
+            ConsentMessage::FieldsDisplayMessage { field_count, .. } => Ok(*field_count), // intent not included in count
             ConsentMessage::GenericDisplayMessage(_) => Ok(1),
         }
     }
@@ -369,8 +379,9 @@ impl DisplayableItem for ConsentMessage<'_> {
             ConsentMessage::FieldsDisplayMessage {
                 fields,
                 field_count,
-                ..
+                intent: _,
             } => {
+                // Intent is no longer displayed as an item
                 if item_n >= *field_count {
                     return Err(ViewError::NoData);
                 }
@@ -450,9 +461,8 @@ impl DisplayableItem for ConsentMessage<'_> {
                         }
 
                         // Use a portion of the message buffer for formatting
-                        let format_len =
-                            crate::utils::format_timestamp(timestamp, message)
-                                .map_err(|_| ViewError::NoData)?;
+                        let format_len = crate::utils::format_timestamp(timestamp, message)
+                            .map_err(|_| ViewError::NoData)?;
 
                         // Null terminate
                         message[format_len] = 0;
@@ -474,9 +484,8 @@ impl DisplayableItem for ConsentMessage<'_> {
                         }
 
                         // Use a portion of the message buffer for formatting
-                        let format_len =
-                            crate::utils::format_duration(duration, message)
-                                .map_err(|_| ViewError::NoData)?;
+                        let format_len = crate::utils::format_duration(duration, message)
+                            .map_err(|_| ViewError::NoData)?;
 
                         // Null terminate
                         message[format_len] = 0;

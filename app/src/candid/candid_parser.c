@@ -82,7 +82,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     }
     uint64_t n_fields = txn.txn_length;
 
-    // Array to save opt fields positon in the record
+    // Array to save opt fields position in the record
     uint8_t opt_fields_pos[MAX_FIELDS] = {0};
 
     // Check types before parsing
@@ -95,7 +95,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
         CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
 
         // element is not any of the non opt expected fields than its probably an
-        // optinal
+        // optional
         if (txn.element.field_hash == hash_neuron_ids) {
             opt_fields_pos[i] = TYPE_NEURONS_IDS;
         } else if (txn.element.field_hash == hash_include_neurons_readable_by_caller && txn.element.implementation == Bool) {
@@ -116,7 +116,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     for (uint64_t i = 0; i < n_fields; i++) {
         // If opt_fields_pos is 0 we have a opt field in this position
         switch (opt_fields_pos[i]) {
-            case TYPE_OPT:  // read the optinal, expect its null or empty if not return
+            case TYPE_OPT:  // read the optional, expect its null or empty if not return
                             // error
                 CHECK_PARSER_ERR(readCandidByte(&ctx, &tmp_presence))
                 if (tmp_presence) {  // expect empty optionals

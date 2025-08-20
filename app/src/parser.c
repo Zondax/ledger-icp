@@ -249,4 +249,11 @@ parser_error_t parser_certGetItem(uint8_t displayIdx, char *outKey, uint16_t out
     *pageCount = 1;
     return rs_getItem(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 }
+
+parser_error_t parser_getIntent(char *outIntent, uint16_t intentLen) {
+    if (outIntent == NULL || intentLen == 0) {
+        return parser_no_data;
+    }
+    return rs_get_intent(outIntent, intentLen);
+}
 #endif

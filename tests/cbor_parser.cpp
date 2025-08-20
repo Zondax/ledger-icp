@@ -235,7 +235,7 @@ TEST(NANOPBTEST, RemoveHotkey) {
     EXPECT_EQ(request.command.configure.which_operation, 5);
 }
 
-TEST(NANOPBTEST, StartDisolve) {
+TEST(NANOPBTEST, StartDissolve) {
     uint8_t inBuffer[1000];
     const char *tmp = "0A02107B12021200";
     size_t len = parseHexString(inBuffer, sizeof(inBuffer), tmp);

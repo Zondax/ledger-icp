@@ -22,7 +22,7 @@ use crate::{
 use core::mem::{size_of, MaybeUninit};
 use sha2::{Digest, Sha256};
 
-use super::resources::MEMORY_CALL_REQUEST;
+use super::resources::get_call_request_memory;
 
 #[repr(C)]
 #[derive(PartialEq, Default)]
@@ -158,20 +158,34 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
 
 #[inline(never)]
 fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
+    // Create a properly aligned CanisterCallT on the stack
+    let mut call_request = CanisterCallT::default();
+
+    // Fill it with data from the request
+    call_request.fill_from(request)?;
+
+    // Now serialize it to bytes for storage
     let mut serialized = [0; core::mem::size_of::<CanisterCallT>()];
+    call_request.fill_to(&mut serialized)?;
 
     unsafe {
-        let call_request = &mut *(serialized.as_mut_ptr() as *mut CanisterCallT);
-
-        // Update our consent request
-        call_request.fill_from(request)?;
-
-        MEMORY_CALL_REQUEST
-            .write(0, &serialized)
+        super::resources::write_call_request(&serialized)
             .map_err(|_| ParserError::UnexpectedError)?;
 
-        let consent2 = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST)?;
-        consent2.validate()?;
+        // Verify the write succeeded by reading back and validating
+        // Use a safe copy to avoid potential alignment issues
+        let stored_memory = super::resources::get_call_request_memory();
+        if stored_memory.len() != core::mem::size_of::<CanisterCallT>() {
+            return Err(ParserError::UnexpectedBufferEnd);
+        }
+
+        let mut stored_call = CanisterCallT::default();
+        core::ptr::copy_nonoverlapping(
+            stored_memory.as_ptr(),
+            &mut stored_call as *mut CanisterCallT as *mut u8,
+            core::mem::size_of::<CanisterCallT>(),
+        );
+        stored_call.validate()?;
     }
 
     Ok(())
@@ -181,7 +195,7 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
 pub unsafe extern "C" fn rs_get_signing_hash(data: *mut [u8; 32]) {
     let hash = unsafe { &mut *data };
 
-    let Ok(call) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
+    let Ok(call) = CanisterCallT::from_bytes(get_call_request_memory()) else {
         return;
     };
 

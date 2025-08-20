@@ -27,4 +27,7 @@ parser_error_t rs_getItem(int8_t displayIdx, char *outKey, uint16_t outKeyLen, c
 // use to clear resources after certificate verification and signing
 void rs_clear_resources(void);
 void rs_get_signing_hash(uint8_t *hash);
+
+// Get the intent string from the parsed consent message
+parser_error_t rs_get_intent(char *out_intent, uint16_t intent_len);
 #endif

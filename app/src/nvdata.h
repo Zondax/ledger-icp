@@ -33,7 +33,7 @@
 #define CERT_STATE_PROCESSED_CONSENT_REQUEST 1
 #define CERT_STATE_PROCESSED_CANISTER_CALL_REQUEST 2
 #define CERT_STATE_PROCESSED_ROOT_KEY 3
-// Once certificate is verified, and all the checks with call-request anc
+// Once certificate is verified, and all the checks with call-request and
 // consent response passes, then, we are ready to sign the call request payload
 #define CERT_STATE_SIGN 4
 

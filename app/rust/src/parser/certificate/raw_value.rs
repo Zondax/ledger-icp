@@ -66,5 +66,3 @@ impl<'b, C> Decode<'b, C> for RawValue<'b> {
         Ok(RawValue(&d.input()[start..end]))
     }
 }
-
-pub struct RawValueError;

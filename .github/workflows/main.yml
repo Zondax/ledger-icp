@@ -9,51 +9,67 @@ on:
       - dev
 
 jobs:
-  configure:
-    runs-on: ubuntu-latest
+  setup:
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     outputs:
       uid_gid: ${{ steps.get-user.outputs.uid_gid }}
-    steps:
-      - id: get-user
-        run: echo "uid_gid=$(id -u):$(id -g)" >> $GITHUB_OUTPUT
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-      - name: Install deps
-        run: |
-          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-          make deps
-      - run: make cpp_test
-
-  setup_rust:
-    runs-on: ubuntu-latest
-    outputs:
       cargo_home: ${{ steps.set_paths.outputs.cargo_home }}
       rustup_home: ${{ steps.set_paths.outputs.rustup_home }}
     steps:
+      - id: get-user
+        run: echo "uid_gid=$(id -u):$(id -g)" >> $GITHUB_OUTPUT
       - id: set_paths
         run: |
           echo "cargo_home=$GITHUB_WORKSPACE/app/rust/.cargo" >> $GITHUB_OUTPUT
           echo "rustup_home=$GITHUB_WORKSPACE/app/rust/.rustup" >> $GITHUB_OUTPUT
 
+  cpp_test:
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/main.yml') }}
+          restore-keys: ${{ runner.os }}-apt-
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl protobuf-compiler build-essential git wget unzip python3 python3-pip \
+            libssl-dev libffi-dev libreadline-dev zlib1g-dev libbz2-dev libsqlite3-dev libncurses5-dev \
+            libgdbm-dev libnss3-dev liblzma-dev libxml2-dev libxmlsec1-dev libffi-dev libyaml-dev
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.28.0'
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install deps
+        run: |
+          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+          make deps
+      - name: Run CMake
+        run: mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make
+      - run: make cpp_test
 
   build_ledger:
-    needs: [configure, setup_rust]
-    runs-on: ubuntu-latest
+    needs: setup
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/ledger-app-builder:latest
       options: --user root
       env:
         BOLOS_SDK: /opt/nanos-secure-sdk
         HOME: /root
-        CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
-        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
+        CARGO_HOME: ${{ needs.setup.outputs.cargo_home }}
+        RUSTUP_HOME: ${{ needs.setup.outputs.rustup_home }}  
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup.outputs.cargo_home }}/bin
     outputs:
       size: ${{steps.build.outputs.size}}
     steps:
@@ -68,10 +84,10 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
-            ${{ needs.setup_rust.outputs.cargo_home }}
+            ${{ needs.setup.outputs.cargo_home }}
             target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -86,7 +102,7 @@ jobs:
           echo "size=$(python3 deps/ledger-zxlib/scripts/getSize.py s)" >> $GITHUB_OUTPUT
 
   clippy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/rust-ci:latest
     steps:
@@ -95,7 +111,7 @@ jobs:
         with:
           submodules: true
       - name: Cache/restore Cargo dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./app/rust/.cargo
           key: ${{ runner.os }}-${{ hashFiles('./Cargo.lock') }}
@@ -107,7 +123,7 @@ jobs:
           cargo clippy --all-targets --features "clippy"
 
   rust_tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/rust-ci:latest
     steps:
@@ -116,14 +132,15 @@ jobs:
         with:
           submodules: true
       - name: Cache/restore Cargo dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ./app/rust/.cargo
           key: ${{ runner.os }}-${{ hashFiles('./Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ github.sha }}
       - name: run rust tests
-        run: cd ./app/rust
+        run: |
+          cd ./app/rust
           cargo test
 
 
@@ -136,7 +153,7 @@ jobs:
 
   size_nano_s:
     needs: build_ledger
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     env:
       NANOS_LIMIT_SIZE: 136
     steps:
@@ -144,93 +161,58 @@ jobs:
           echo "LNS app size: ${{needs.build_ledger.outputs.size}} KiB"
           [ ${{needs.build_ledger.outputs.size}} -le $NANOS_LIMIT_SIZE ]
 
-  tests_zemu_setup:
-    if: ${{ !contains(toJSON(github.event.commits[*].message), '[skip-zemu]') }}
-    runs-on: ubuntu-latest
-    outputs:
-      tests: ${{ steps.get-tests.outputs.tests }}
+  test_zemu:
+    needs: setup
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: true
-
-      - name: Install node
-        uses: actions/setup-node@v3
-
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/main.yml') }}
+          restore-keys: ${{ runner.os }}-apt-
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl protobuf-compiler build-essential git wget unzip python3 python3-pip \
+            libssl-dev libffi-dev libreadline-dev zlib1g-dev libbz2-dev libsqlite3-dev libncurses5-dev \
+            libgdbm-dev libnss3-dev liblzma-dev libxml2-dev libxmlsec1-dev libffi-dev libyaml-dev \
+            libusb-1.0.0 libudev-dev
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install yarn
         run: npm install -g yarn
-
-      - name: Build/Install build js deps
-        run: |
-          export PATH=~/.cargo/bin:$PATH
-          make zemu_install
-
-      - name: Get test files
-        id: get-tests
-        run: |
-          cd tests_zemu
-          TESTS=`yarn test --listTests --json | head -n 3 | tail -n 1 | jq -cM 'to_entries | map({id: .key, file: .value})'`
-          echo "tests=$TESTS" >> "$GITHUB_OUTPUT"
-
-  test_zemu:
-    needs: [configure, tests_zemu_setup]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        test: ${{ fromJson(needs.tests_zemu_setup.outputs['tests']) }}
-    steps:
-      - name: Debug needs context
-        run: echo "${{ toJson(needs) }}"
-      - name: Test
-        run: |
-          id
-          echo $HOME
-          echo $DISPLAY
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - run: sudo apt-get update -y && sudo apt-get install -y libusb-1.0.0 libudev-dev
-      - name: Install node
-        uses: actions/setup-node@v3
-      - name: Install yarn
-        run: |
-          npm install -g yarn
-      - name: Build Ledger app
-        run: make PRODUCTION_BUILD=1
-
-      - name: Build/Install build js deps
-        run: make zemu_install
-
-      - name: Run zemu tests
-        run: |
-          cd tests_zemu
-          yarn jest ${{ matrix.test.file }} --maxConcurrency 2 \
-                --reporters='@matteoh2o1999/github-actions-jest-reporter'
-        env:
-          FORCE_COLOR: 1
-
+      - name: Build and run zemu tests
+        run: make test_all
       - name: Upload Snapshots (only failure)
-        if: ${{ failure() }}
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: snapshots-tmp
           path: tests_zemu/snapshots-tmp/
 
   build_package_nanos:
-    needs: [configure, setup_rust, build, build_ledger, test_zemu]
-    runs-on: ubuntu-latest
+    needs: [setup, cpp_test, build_ledger, test_zemu]
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/ledger-app-builder:latest
       options: --user root
       env:
         BOLOS_SDK: /opt/nanos-secure-sdk
         HOME: /root
-        CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
-        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
+        CARGO_HOME: ${{ needs.setup.outputs.cargo_home }}
+        RUSTUP_HOME: ${{ needs.setup.outputs.rustup_home }}  
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -245,10 +227,10 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
-            ${{ needs.setup_rust.outputs.cargo_home }}
+            ${{ needs.setup.outputs.cargo_home }}
             target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -276,25 +258,17 @@ jobs:
           prerelease: false
 
   build_package_nanosp:
-    needs:
-      [
-        configure,
-        setup_rust,
-        build_ledger,
-        tests_zemu_setup,
-        test_zemu,
-        rust_tests,
-      ]
-    runs-on: ubuntu-latest
+    needs: [setup, build_ledger, test_zemu, rust_tests]
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/ledger-app-builder:latest
       options: --user root
       env:
         BOLOS_SDK: /opt/nanosplus-secure-sdk
         HOME: /root
-        CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
-        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
+        CARGO_HOME: ${{ needs.setup.outputs.cargo_home }}
+        RUSTUP_HOME: ${{ needs.setup.outputs.rustup_home }}  
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -309,10 +283,10 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
-            ${{ needs.setup_rust.outputs.cargo_home }}
+            ${{ needs.setup.outputs.cargo_home }}
             target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -329,7 +303,7 @@ jobs:
         run: echo "tag_name=$(./app/pkg/installer_nanos_plus.sh version)" >> $GITHUB_OUTPUT
       - name: Update Release
         if: ${{ github.ref == 'refs/heads/main' }}
-        id: update_release_2
+        id: update_release_nanosp
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -340,25 +314,17 @@ jobs:
           prerelease: false
 
   build_package_stax:
-    needs:
-      [
-        configure,
-        setup_rust,
-        build_ledger,
-        tests_zemu_setup,
-        test_zemu,
-        rust_tests,
-      ]
-    runs-on: ubuntu-latest
+    needs: [setup, build_ledger, test_zemu, rust_tests]
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/ledger-app-builder:latest
       options: --user root
       env:
         BOLOS_SDK: /opt/stax-secure-sdk
         HOME: /root
-        CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
-        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
+        CARGO_HOME: ${{ needs.setup.outputs.cargo_home }}
+        RUSTUP_HOME: ${{ needs.setup.outputs.rustup_home }}  
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -373,10 +339,10 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
-            ${{ needs.setup_rust.outputs.cargo_home }}
+            ${{ needs.setup.outputs.cargo_home }}
             target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -392,7 +358,7 @@ jobs:
         run: echo "tag_name=$(./app/pkg/installer_stax.sh version)" >> $GITHUB_OUTPUT
       - name: Update Release
         if: ${{ github.ref == 'refs/heads/main' }}
-        id: update_release_2
+        id: update_release_stax
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -403,25 +369,17 @@ jobs:
           prerelease: false
 
   build_package_flex:
-    needs:
-      [
-        configure,
-        setup_rust,
-        build_ledger,
-        tests_zemu_setup,
-        test_zemu,
-        rust_tests,
-      ]
-    runs-on: ubuntu-latest
+    needs: [setup, build_ledger, test_zemu, rust_tests]
+    runs-on: ${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}
     container:
       image: zondax/ledger-app-builder:latest
       options: --user root
       env:
         BOLOS_SDK: /opt/flex-secure-sdk
         HOME: /root
-        CARGO_HOME: ${{ needs.setup_rust.outputs.cargo_home }}
-        RUSTUP_HOME: ${{ needs.setup_rust.outputs.rustup_home }}  
-        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup_rust.outputs.cargo_home }}/bin
+        CARGO_HOME: ${{ needs.setup.outputs.cargo_home }}
+        RUSTUP_HOME: ${{ needs.setup.outputs.rustup_home }}  
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${{ needs.setup.outputs.cargo_home }}/bin
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -436,10 +394,10 @@ jobs:
           target: thumbv6m-none-eabi
           override: true
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
-            ${{ needs.setup_rust.outputs.cargo_home }}
+            ${{ needs.setup.outputs.cargo_home }}
             target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -455,7 +413,7 @@ jobs:
         run: echo "tag_name=$(./app/pkg/installer_flex.sh version)" >> $GITHUB_OUTPUT
       - name: Update Release
         if: ${{ github.ref == 'refs/heads/main' }}
-        id: update_release_2
+        id: update_release_flex
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
