@@ -30,7 +30,7 @@ impl CanisterCall<'_> {
     //
     const MAP_ENTRIES: u64 = 7;
 
-    pub fn arg(&self) -> &RawArg {
+    pub fn arg(&self) -> &RawArg<'_> {
         &self.arg
     }
     pub fn sender(&self) -> &[u8] {

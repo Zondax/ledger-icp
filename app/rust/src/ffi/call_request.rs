@@ -158,14 +158,17 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
 
 #[inline(never)]
 fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
+    // Create a properly aligned CanisterCallT on the stack
+    let mut call_request = CanisterCallT::default();
+
+    // Fill it with data from the request
+    call_request.fill_from(request)?;
+
+    // Now serialize it to bytes for storage
     let mut serialized = [0; core::mem::size_of::<CanisterCallT>()];
+    call_request.fill_to(&mut serialized)?;
 
     unsafe {
-        let call_request = &mut *(serialized.as_mut_ptr() as *mut CanisterCallT);
-
-        // Update our consent request
-        call_request.fill_from(request)?;
-
         super::resources::write_call_request(&serialized)
             .map_err(|_| ParserError::UnexpectedError)?;
 
@@ -175,7 +178,7 @@ fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
         if stored_memory.len() != core::mem::size_of::<CanisterCallT>() {
             return Err(ParserError::UnexpectedBufferEnd);
         }
-        
+
         let mut stored_call = CanisterCallT::default();
         core::ptr::copy_nonoverlapping(
             stored_memory.as_ptr(),

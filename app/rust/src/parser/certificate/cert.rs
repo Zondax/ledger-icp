@@ -301,6 +301,7 @@ mod test_certificate {
     use super::*;
     use crate::DisplayableItem;
     use ic_certification::Certificate as IcpCertificate;
+    use std::{format, string::String, vec::Vec};
 
     const REAL_CERT: &str = "d9d9f7a3647472656583018301820458209b2d6a38f0e5c7ac52a8f7bf6d7751b79b0100857c870eae71666c75d4a1f7f5830182045820380a9672b9af551df307e91c777b4fa8f37960e0a107cf489c759b1ef0dfe33383024e726571756573745f7374617475738301830183018301830183018204582010d2494eb22918a6c994dc6fefb58f7d7fb1b2d17a52ee9edf28e241a6d7a783830182045820f5d09b5a356a77d4820aeb17fcbcb93a0fd55ddee4ee3f8dde4bf7cbfd397b9d83018204582046a6c3582218264ea6d3c34dc225b09b642605b1753eca2961c06eabfa7cb309830258200db17a4999e6d1bb9dadb9042489dfe1eee589e3f036aa1c7bfe12964c1ec75a83018302457265706c7982035901234449444c0f6b02bc8a0101c5fed2010c6c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b029ee0b53b05fcdfd79a0f716c02f99cba840806dcec99f409716d076c02007101086b04cdf1cbbe030991c38ee7040ae998e3c30a0bebd2e8d60f0b6c01b99adecb01716c03c295a993017bd8a38ca80d78d8def6f60e716c01d8a38ca80d786b04d1c4987c0da3f2efe6020e9a8597e6030ee3c581900f0e6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e00040455736572000d48656c6c6f2c20776f726c64210a637265617465645f617402f0bc7068000000000a6163746976655f666f7203580200000000000006616d6f756e74010800c2eb0b00000000034943500a477265657420757365728302467374617475738203477265706c696564820458208264bfd38120767311a6858cd1ee4ce2a697f4e17026e824dd5e2f06a1e90181820458200a8c7afcbde567117cf1f3dae404fc6bd2d7d094774f740b5fb1abf522015d268204582029633b2785b61f32e8764ac65a977d7e609f1e05e9e5949a0b2d419a08b67e9882045820669b89933ea8636d1ba28e1ab072e2b980df498d0d0ea24c58c46848b48e9e38820458200423cae37e0670c3426f6f04b3a010c1f6010524d31486b769951324e800118283018204582079f11424b2c5e29ca256d504261cacdf7626a1a28f7863dd2b6bf93ffa3836e783024474696d65820349c699bbc6aefdb7aa18697369676e61747572655830b49a681d69c6e1f7089165cd0473f5e78fa09917e825c07041cdc0664f8977d9b1804e2c651ef7cf304bd99299997f4b6a64656c65676174696f6ea2697375626e65745f6964581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd026b6365727469666963617465590294d9d9f7a264747265658301820458209b9acf5ebb96de4fd39f4928d5fe9ab3873620c4d5a71947c4580ac3a9c169ec8301830182045820d8470247bcd58a7a80aa89c80b203ca1b4b03de290996402f9df8f39f98043748302467375626e65748301830183018204582071387af6dac4d6350824bf1c24c8dd0af43a910b2dad8ce86390c816e63816158301830183018302581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd02830183024f63616e69737465725f72616e67657382035832d9d9f782824a000000000060000001014a00000000006000ae0101824a00000000006000b001014a00000000006fffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c0503020103610090075120778eb21a530a02bcc763e7f4a192933506966af7b54c10a4d2b24de6a86b200e3440bae6267bf4c488d9a11d0472c38c1b6221198f98e4e6882ba38a5a4e3aa5afce899b7f825ed95adfa12629688073556f2747527213e8d73e40ce8204582036f3cd257d90fb38e42597f193a5e031dbd585b6292793bb04db4794803ce06e820458205b9edd6408228a3956c4b4164ed3d9ec38afabe63310f84da7b97005e1fae375820458202729572815f63e48d2248738a83546bf521d479351ff52f172de77602ff682d382045820afaa8832101bcee23eb871f6a3b372b927eb3ad5bacbbbf67aa4df296bf8c49382045820962337bb2648bcf41e6d4f3cd80d6f6b3876dd18e62a8fb0cc5dc45f6e9d283e83024474696d65820349c8b9a8faedf8b7aa18697369676e617475726558308b0fc21a67a745f0716ba21ae4ec570cadbdb873c07b3584600d7815bae0e9c45c974ef4af028af5b165017b78ec9fc4";
     const CANISTER_ID: &str = "0000000000600B730101";
@@ -318,6 +319,80 @@ mod test_certificate {
         assert!(cert.msg_response().is_ok());
     }
 
+    // Helper function to parse HashTree from CBOR using minicbor
+    fn parse_hash_tree(d: &mut minicbor::Decoder) -> Result<ic_certification::HashTree, String> {
+        use ic_certification::{empty, fork, labeled, leaf, pruned};
+
+        // HashTree is encoded as an array
+        let len = d
+            .array()
+            .map_err(|e| format!("Expected array: {:?}", e))?
+            .ok_or("Expected definite array")?;
+
+        if len < 1 {
+            return Err(String::from("Empty tree array"));
+        }
+
+        // First element is the tree type (as u64)
+        let tree_type = d
+            .u64()
+            .map_err(|e| format!("Expected tree type: {:?}", e))?;
+
+        match tree_type {
+            0 => {
+                // Empty tree
+                if len != 1 {
+                    return Err(format!("Empty tree expects 1 element, got {}", len));
+                }
+                Ok(empty())
+            }
+            1 => {
+                // Fork - has two subtrees
+                if len != 3 {
+                    return Err(format!("Fork expects 3 elements, got {}", len));
+                }
+                let left = parse_hash_tree(d)?;
+                let right = parse_hash_tree(d)?;
+                Ok(fork(left, right))
+            }
+            2 => {
+                // Labeled - has label and subtree
+                if len != 3 {
+                    return Err(format!("Labeled expects 3 elements, got {}", len));
+                }
+                let label = d
+                    .bytes()
+                    .map_err(|e| format!("Expected label bytes: {:?}", e))?;
+                let subtree = parse_hash_tree(d)?;
+                Ok(labeled(label.to_vec(), subtree))
+            }
+            3 => {
+                // Leaf - has data
+                if len != 2 {
+                    return Err(format!("Leaf expects 2 elements, got {}", len));
+                }
+                let data = d
+                    .bytes()
+                    .map_err(|e| format!("Expected leaf data: {:?}", e))?;
+                Ok(leaf(data.to_vec()))
+            }
+            4 => {
+                // Pruned - has hash
+                if len != 2 {
+                    return Err(format!("Pruned expects 2 elements, got {}", len));
+                }
+                let hash_bytes = d.bytes().map_err(|e| format!("Expected hash: {:?}", e))?;
+                if hash_bytes.len() != 32 {
+                    return Err(format!("Hash must be 32 bytes, got {}", hash_bytes.len()));
+                }
+                let mut hash = [0u8; 32];
+                hash.copy_from_slice(hash_bytes);
+                Ok(pruned(hash))
+            }
+            _ => Err(format!("Unknown tree type: {}", tree_type)),
+        }
+    }
+
     #[test]
     fn verify_certificate() {
         let data = hex::decode(REAL_CERT).unwrap();
@@ -328,7 +403,52 @@ mod test_certificate {
         assert!(cert.delegation.is_some());
 
         // compare our root hash with the hash icp library computes
-        let icp_cert: IcpCertificate = serde_cbor::from_slice(&data).unwrap();
+        // Parse the certificate using minicbor to extract tree and signature
+        let mut d = minicbor::Decoder::new(&data);
+
+        // Check for the CBOR tag
+        if let Ok(tag) = d.tag() {
+            if tag.as_u64() != CBOR_CERTIFICATE_TAG {
+                panic!("Unexpected CBOR tag");
+            }
+        }
+
+        // Expect a map with 2/3 entries
+        let len = d.map().unwrap().unwrap();
+        let mut tree_data: Option<ic_certification::HashTree> = None;
+        let mut signature_data: Option<Vec<u8>> = None;
+        let mut delegation_data: Option<ic_certification::Delegation> = None;
+
+        for _ in 0..len {
+            let key = d.str().unwrap();
+            match key {
+                "tree" => {
+                    // Parse the tree structure using our helper function
+                    tree_data = Some(parse_hash_tree(&mut d).expect("Failed to parse tree"));
+                }
+                "signature" => {
+                    signature_data = Some(d.bytes().unwrap().to_vec());
+                }
+                "delegation" => {
+                    // For now, skip delegation parsing
+                    d.skip().unwrap();
+                    delegation_data = None;
+                }
+                _ => {
+                    d.skip().unwrap();
+                }
+            }
+        }
+
+        // Create the ic_certification::Certificate with the parsed tree
+        let tree = tree_data.expect("Tree not found in certificate");
+        let signature_bytes = signature_data.unwrap();
+
+        let icp_cert = IcpCertificate {
+            tree,
+            signature: signature_bytes,
+            delegation: delegation_data,
+        };
         let icp_tree = icp_cert.tree;
         let icp_hash = icp_tree.digest();
         let icp_hash = hex::encode(icp_hash);
