@@ -13,7 +13,7 @@ use super::{CanisterCall, RawArg};
 pub struct CallRequest<'a>(CanisterCall<'a>);
 
 impl CallRequest<'_> {
-    pub fn arg(&self) -> &RawArg {
+    pub fn arg(&self) -> &RawArg<'_> {
         self.0.arg()
     }
     pub fn sender(&self) -> &[u8] {

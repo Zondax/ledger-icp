@@ -52,7 +52,7 @@ impl ConsentMsgRequest<'_> {
     }
 
     #[inline(never)]
-    pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest, ParserError> {
+    pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest<'_>, ParserError> {
         // lazy parsing on demand in order to reduce stack usage
         Ok(Icrc21ConsentMessageRequest::new_unchecked(
             self.arg().raw_data(),

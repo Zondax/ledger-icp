@@ -1,3 +1,8 @@
+// SAFETY: The `static_mut_refs` warning is suppressed here because:
+// 1. The `#[lazy_static]` macro from bolos requires mutable statics for Ledger
+// hardware
+// 2. All manual access uses safe `addr_of!` and `addr_of_mut!` macros
+// 3. Single-threaded execution on Ledger devices prevents data races
 #![allow(static_mut_refs)]
 
 use bolos::{lazy_static, pic::PIC};
