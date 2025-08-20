@@ -341,6 +341,9 @@ mod test_certificate {
         match tree_type {
             0 => {
                 // Empty tree
+                if len != 1 {
+                    return Err(format!("Empty tree expects 1 element, got {}", len));
+                }
                 Ok(empty())
             }
             1 => {
