@@ -12,4 +12,3 @@ module.exports = async () => {
   await Zemu.default.checkAndPullImage()
   await Zemu.default.stopAllEmuContainers()
 }
-
