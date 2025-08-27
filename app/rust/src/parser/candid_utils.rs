@@ -1,6 +1,5 @@
-use nom::bytes::complete::{take, take_until};
-
 use crate::error::ParserError;
+use nom::bytes::complete::take;
 
 /// Parse a text from the candid encoded input
 pub fn parse_text(input: &[u8]) -> Result<(&[u8], &str), nom::Err<ParserError>> {
@@ -19,16 +18,6 @@ pub fn parse_bytes(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>
     Ok((rem, bytes))
 }
 
-/// Parses the input to extract the DIDL-prefixed argument data
-fn parse_candid_arg_slice(input: &[u8]) -> Result<(&[u8], &[u8]), nom::Err<ParserError>> {
-    // Find the DIDL magic number
-    let (_, didl_start) = take_until("DIDL")(input)?;
-
-    // Extract the slice from DIDL to the end
-    let arg_slice = &input[didl_start.as_ptr() as usize - input.as_ptr() as usize..];
-
-    Ok((&[], arg_slice))
-}
 /// Generates parser functions for any Option<Number> from the candid encoded input
 /// Number could be either a u8, ..., u64 or i8, ..., i64
 /// This version follows Candid spec exactly: i8(0) for None, i8(1) for Some

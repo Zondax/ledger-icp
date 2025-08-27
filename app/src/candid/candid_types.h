@@ -385,7 +385,6 @@ typedef struct {
         candid_RegisterVote_t vote;
         candid_Follow_t follow;
         candid_RefreshVotingPower_t refresh_voting_power;
-        // candid_SetVisibility_t set_visibility;
 
         sns_NeuronPermissions_t neuronPermissions;
         sns_Disburse_t sns_disburse;

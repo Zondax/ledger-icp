@@ -8,8 +8,6 @@ use crate::{
 #[cfg(test)]
 use std::{format, print, println, string::String, string::ToString};
 
-const MAX_NUM_FIELDS: usize = 16;
-
 #[derive(Clone, Copy)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum FieldType {
@@ -28,13 +26,13 @@ impl FieldType {
 
 #[derive(Clone, Copy)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
-pub struct TypeTableEntry<const MAX_FIELDS: usize> {
+pub struct TypeTableEntry {
     pub type_code: IDLTypes,
-    pub fields: [(u32, FieldType); MAX_FIELDS],
+    pub fields: [(u32, FieldType); crate::constants::MAX_FIELDS_PER_TYPE],
     pub field_count: u8,
 }
 
-impl<const MAX_FIELDS: usize> TypeTableEntry<MAX_FIELDS> {
+impl TypeTableEntry {
     pub fn find_field_type(&self, field_hash: u32) -> Result<FieldType, ParserError> {
         self.fields
             .iter()
@@ -47,13 +45,15 @@ impl<const MAX_FIELDS: usize> TypeTableEntry<MAX_FIELDS> {
 
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 #[derive(Clone, Copy)]
-pub struct TypeTable<const MAX_FIELDS: usize> {
-    pub entries: [TypeTableEntry<MAX_FIELDS>; MAX_FIELDS], // Assuming max 16 types in the table
+pub struct TypeTable {
+    // We have up to MAX_TABLE_FIELDS entries in the type table
+    // Each entry has up to MAX_FIELDS_PER_TYPE fields
+    pub entries: [TypeTableEntry; crate::constants::MAX_TABLE_FIELDS],
     pub entry_count: u8,
 }
 
-impl<const MAX_FIELDS: usize> TypeTable<MAX_FIELDS> {
-    pub fn find_type_entry(&self, type_index: usize) -> Option<&TypeTableEntry<MAX_FIELDS>> {
+impl TypeTable {
+    pub fn find_type_entry(&self, type_index: usize) -> Option<&TypeTableEntry> {
         self.entries.get(type_index)
     }
     pub fn find_variant(&self, field_hash: u32) -> Result<u64, ParserError> {
@@ -67,20 +67,19 @@ impl<const MAX_FIELDS: usize> TypeTable<MAX_FIELDS> {
     }
 }
 
-pub fn parse_type_table<const MAX_FIELDS: usize>(
-    input: &[u8],
-) -> Result<(&[u8], TypeTable<MAX_FIELDS>), ParserError> {
+pub fn parse_type_table(input: &[u8]) -> Result<(&[u8], TypeTable), ParserError> {
     let (rem, type_count) = decompress_leb128(input).map_err(|_| ParserError::UnexpectedError)?;
-    if type_count > MAX_FIELDS as u64 {
+    if type_count > crate::constants::MAX_TABLE_FIELDS as u64 {
         return Err(ParserError::TooManyTypes);
     }
 
     let mut type_table = TypeTable {
         entries: [TypeTableEntry {
             type_code: IDLTypes::Null,
-            fields: [(0, FieldType::Primitive(IDLTypes::Null)); MAX_FIELDS],
+            fields: [(0, FieldType::Primitive(IDLTypes::Null));
+                crate::constants::MAX_FIELDS_PER_TYPE],
             field_count: 0,
-        }; MAX_FIELDS],
+        }; crate::constants::MAX_TABLE_FIELDS],
         entry_count: type_count as u8,
     };
 
@@ -93,7 +92,8 @@ pub fn parse_type_table<const MAX_FIELDS: usize>(
 
         let mut entry = TypeTableEntry {
             type_code,
-            fields: [(0, FieldType::Primitive(IDLTypes::Null)); MAX_FIELDS],
+            fields: [(0, FieldType::Primitive(IDLTypes::Null));
+                crate::constants::MAX_FIELDS_PER_TYPE],
             field_count: 0,
         };
 
@@ -113,7 +113,7 @@ pub fn parse_type_table<const MAX_FIELDS: usize>(
             IDLTypes::Record | IDLTypes::Variant => {
                 let (new_rem, field_count) =
                     decompress_leb128(current).map_err(|_| ParserError::UnexpectedError)?;
-                if field_count > MAX_FIELDS as u64 {
+                if field_count > crate::constants::MAX_FIELDS_PER_TYPE as u64 {
                     return Err(ParserError::TooManyFields);
                 }
                 current = new_rem;
@@ -137,7 +137,7 @@ pub fn parse_type_table<const MAX_FIELDS: usize>(
 }
 
 #[cfg(test)]
-pub fn print_type_table<const N: usize>(type_table: &TypeTable<N>) {
+pub fn print_type_table(type_table: &TypeTable) {
     println!("Type table:");
     for (i, entry) in type_table
         .entries

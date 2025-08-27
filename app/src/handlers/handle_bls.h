@@ -31,6 +31,7 @@
 #include "coin.h"
 #include "crypto.h"
 #include "nvdata.h"
+#include "parser.h"
 #include "parser_impl.h"
 #include "path.h"
 #include "process_chunks.h"
@@ -38,6 +39,9 @@
 #include "view.h"
 #include "view_internal.h"
 #include "zxmacros.h"
+
+// Static buffer to hold intent string for async UX flow
+static char G_intent_buffer[64];
 
 __Z_INLINE void handleConsentRequest(__unused volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     zemu_log_stack("handleConsentRequest");
@@ -83,6 +87,8 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
         THROW(APDU_CODE_OK);
     }
 
+    view_spinner_show("Loading transaction");
+
     // Parser Certificate and verify
     CHECK_APP_CANARY()
     zxerr_t err = tx_certVerify();
@@ -98,7 +104,20 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
 
     CHECK_APP_CANARY()
     view_review_init(tx_certGetItem, tx_certNumItems, app_sign_bls);
-    view_review_show(REVIEW_TXN);
+
+    // Try to get the intent from the parsed consent message
+    // Clear the global buffer first
+    MEMZERO(G_intent_buffer, sizeof(G_intent_buffer));
+    parser_error_t intent_err = parser_getIntent(G_intent_buffer, sizeof(G_intent_buffer));
+
+    if (intent_err == parser_ok && strlen(G_intent_buffer) > 0) {
+        // Use the intent from the parsed message (from global buffer)
+        view_review_show_with_intent(REVIEW_TXN, G_intent_buffer);
+    } else {
+        // Fallback to generic message if no intent available
+        view_review_show(REVIEW_TXN);
+    }
+
     *flags |= IO_ASYNCH_REPLY;
 }
 #endif

@@ -89,10 +89,15 @@ parser_error_t page_textual_with_delimiters(const char *input, const uint16_t in
         return parser_display_idx_out_of_range;
     }
 
+    char *output_start = output;
     input += pageIdx * CHARS_PER_PAGE;
     for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++) {
         if (idx % 3 == 0 && idx != 0) {
-            snprintf(output, 2, "%c", SEPARATOR);
+            size_t remaining_output = outputLen - (output - output_start);
+            if (remaining_output < 2) {
+                return parser_unexpected_buffer_end;
+            }
+            snprintf(output, remaining_output, "%c", SEPARATOR);
             output += 1;
         }
 
@@ -100,10 +105,17 @@ parser_error_t page_textual_with_delimiters(const char *input, const uint16_t in
         const bool endOfInput = remainingChars <= 5;  // strnlen does not count null terminator
         const bool skipDash = (idx % 3 == 2);
 
+        size_t remaining_output = outputLen - (output - output_start);
         if (skipDash || endOfInput) {
-            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, input);
+            if (remaining_output < CHARS_PER_CHUNK + 1) {
+                return parser_unexpected_buffer_end;
+            }
+            snprintf(output, remaining_output, "%.*s", CHARS_PER_CHUNK, input);
         } else {
-            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s-", CHARS_PER_CHUNK, input);
+            if (remaining_output < CHARS_PER_CHUNK + 2) {
+                return parser_unexpected_buffer_end;
+            }
+            snprintf(output, remaining_output, "%.*s-", CHARS_PER_CHUNK, input);
         }
 
         if (endOfInput) {
@@ -143,10 +155,15 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
         return parser_display_idx_out_of_range;
     }
 
+    char *output_start = output;
     uint16_t bufferIdx = pageIdx * CHARS_PER_PAGE;
     for (uint8_t idx = 0; idx < CHUNKS_PER_PAGE; idx++, bufferIdx += CHARS_PER_CHUNK) {
         if (idx % 2 == 0 && idx != 0) {
-            snprintf(output, 2, "%c", SEPARATOR);
+            size_t remaining_output = outputLen - (output - output_start);
+            if (remaining_output < 2) {
+                return parser_unexpected_buffer_end;
+            }
+            snprintf(output, remaining_output, "%c", SEPARATOR);
             output += 1;
         }
 
@@ -154,10 +171,17 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
         const bool endOfInput = remainingChars <= 8;  // without null terminator
         const bool skipSpace = (idx % 2 == 1);
 
+        size_t remaining_output = outputLen - (output - output_start);
         if (skipSpace || endOfInput) {
-            snprintf(output, CHARS_PER_CHUNK + 1, "%.*s", CHARS_PER_CHUNK, &buffer[bufferIdx]);
+            if (remaining_output < CHARS_PER_CHUNK + 1) {
+                return parser_unexpected_buffer_end;
+            }
+            snprintf(output, remaining_output, "%.*s", CHARS_PER_CHUNK, &buffer[bufferIdx]);
         } else {
-            snprintf(output, CHARS_PER_CHUNK + 2, "%.*s ", CHARS_PER_CHUNK, &buffer[bufferIdx]);
+            if (remaining_output < CHARS_PER_CHUNK + 2) {
+                return parser_unexpected_buffer_end;
+            }
+            snprintf(output, remaining_output, "%.*s ", CHARS_PER_CHUNK, &buffer[bufferIdx]);
         }
 
         if (endOfInput) {

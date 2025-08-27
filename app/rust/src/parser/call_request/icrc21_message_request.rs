@@ -4,7 +4,7 @@ use crate::{
     candid_header::parse_candid_header,
     candid_types::IDLTypes,
     candid_utils::{parse_bytes, parse_text},
-    constants::{MAX_ARGS, MAX_TABLE_FIELDS},
+    constants::MAX_ARGS,
     error::ParserError,
     type_table::{TypeTable, TypeTableEntry},
     zlog, FromCandidHeader,
@@ -63,9 +63,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
             })
     }
 
-    fn find_request_type<const MAX_FIELDS: usize>(
-        table: &TypeTable<MAX_FIELDS>,
-    ) -> Option<&TypeTableEntry<MAX_FIELDS>> {
+    fn find_request_type(table: &TypeTable) -> Option<&TypeTableEntry> {
         // In order to not depend on Self::INDEX
         // we can try to look at the table for the entry
         // that contains our 3 fields, method, arg and preferences
@@ -102,7 +100,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
     fn get_field(&self, field: u32) -> Result<Option<Icrc21Field<'a>>, ParserError> {
         zlog("Icrc21ConsentMessageRequest::get_field\x00");
 
-        let (raw_request, header) = parse_candid_header::<MAX_TABLE_FIELDS, MAX_ARGS>(self.0)?;
+        let (raw_request, header) = parse_candid_header::<MAX_ARGS>(self.0)?;
 
         let entry =
             Self::find_request_type(&header.type_table).ok_or(ParserError::FieldNotFound)?;
@@ -183,7 +181,6 @@ mod icrc21_msg_request_test {
     const METHOD: &str = "icrc2_approve";
     const ARGS: &str = "4449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a0000000000000007010100";
     const LANGUAGE: &str = "en";
-    const LINES_PER_PAGE: u16 = 3;
 
     #[test]
     fn test_icrc21_msg_request() {
@@ -196,7 +193,6 @@ mod icrc21_msg_request_test {
         assert_eq!(hex::encode(arg), ARGS);
         let user_preferences = icrc.user_preferences().unwrap();
         assert_eq!(user_preferences.language(), LANGUAGE);
-        assert_eq!(user_preferences.lines_per_page(), Some(LINES_PER_PAGE));
         assert_eq!(user_preferences.utc_offset(), None);
     }
 }

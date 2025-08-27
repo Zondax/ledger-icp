@@ -31,7 +31,10 @@ use super::{
     c_api::device_principal,
     call_request::CanisterCallT,
     consent_request::ConsentRequestT,
-    resources::{CERTIFICATE, MEMORY_CALL_REQUEST, MEMORY_CONSENT_REQUEST, UI},
+    resources::{
+        certificate_is_some, get_call_request_memory, get_consent_request_memory, set_certificate,
+        set_ui,
+    },
 };
 
 // This is use to check important fields in consent_msg_request and canister_call_request
@@ -68,11 +71,11 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     // Check values are set
-    let Ok(call_request) = CanisterCallT::from_bytes(&**MEMORY_CALL_REQUEST) else {
+    let Ok(call_request) = CanisterCallT::from_bytes(get_call_request_memory()) else {
         return ParserError::NoData as u32;
     };
 
-    let Ok(consent_request) = ConsentRequestT::from_bytes(&**MEMORY_CONSENT_REQUEST) else {
+    let Ok(consent_request) = ConsentRequestT::from_bytes(get_consent_request_memory()) else {
         return ParserError::NoData as u32;
     };
 
@@ -86,7 +89,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     let data = core::slice::from_raw_parts(certificate, certificate_len as usize);
     let root_key = core::slice::from_raw_parts(root_key, BLS_PUBLIC_KEY_SIZE);
 
-    if CERTIFICATE.is_some() {
+    if certificate_is_some() {
         return ParserError::InvalidCertificate as u32;
     }
 
@@ -104,7 +107,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data referes to
+    // from the consent_msg_request, this ensures that the passed data refers to
     // the provided certificate
     let Ok(LookupResult::Found(_)) =
         HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
@@ -112,7 +115,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     };
 
-    // Verify ingress_expiry aginst certificate timestamp
+    // Verify ingress_expiry against certificate timestamp
     if !cert.verify_time(call_request.ingress_expiry) {
         return ParserError::InvalidCertificate as u32;
     }
@@ -140,10 +143,10 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     };
 
-    UI.replace(ui);
+    set_ui(ui);
 
     // Indicates certificate was valid
-    CERTIFICATE.replace(cert);
+    set_certificate(cert);
 
     ParserError::Ok as u32
 }
@@ -154,13 +157,16 @@ fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
     // call.sender == consent.sender || consent.sender == 0x04 or
     // call.sender == device.principal
     // to pass validation
-    if !(call_sender == consent_sender || consent_sender == [DEFAULT_SENDER]) {
-        let device_principal = device_principal();
+    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
+    if !(call_sender == consent_sender || is_default_sender) {
+        let Ok(device_principal) = device_principal() else {
+            return false;
+        };
         let Ok(call_sender_principal) = Principal::new(call_sender) else {
             return false;
         };
-        // them check that at least the call_sender_principal matches the device_principal
-        return call_sender_principal != device_principal;
+        // then check that the call_sender_principal matches the device_principal
+        return call_sender_principal == device_principal;
     }
     true
 }

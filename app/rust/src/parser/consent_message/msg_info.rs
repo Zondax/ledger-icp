@@ -15,7 +15,6 @@
 ********************************************************************************/
 use crate::{
     candid_header::CandidHeader,
-    constants::{MAX_LINES, MAX_PAGES},
     error::{ParserError, ViewError},
     type_table::FieldType,
     DisplayableItem, FromCandidHeader,
@@ -27,7 +26,7 @@ use super::{msg::Msg, msg_metadata::ConsentMessageMetadata};
 #[repr(C)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct ConsentInfo<'a> {
-    pub message: Msg<'a, MAX_PAGES, MAX_LINES>,
+    pub message: Msg<'a>,
     pub metadata: ConsentMessageMetadata<'a>,
 }
 
@@ -37,10 +36,10 @@ impl ConsentInfo<'_> {
 }
 
 impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError> {
         crate::zlog("ConsentInfo::from_table_into\n");
 
@@ -68,8 +67,7 @@ impl<'a> FromCandidHeader<'a> for ConsentInfo<'a> {
         let metadata = unsafe { &mut *addr_of_mut!((*out).metadata).cast() };
         let mut rem = ConsentMessageMetadata::from_candid_header(input, metadata, header)?;
 
-        let message: &mut MaybeUninit<Msg<'_, MAX_PAGES, MAX_LINES>> =
-            unsafe { &mut *addr_of_mut!((*out).message).cast() };
+        let message: &mut MaybeUninit<Msg> = unsafe { &mut *addr_of_mut!((*out).message).cast() };
         rem = Msg::from_candid_header(rem, message, header)?;
 
         Ok(rem)

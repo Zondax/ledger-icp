@@ -24,10 +24,6 @@ const METHOD_NAME: &[u8] = b"icrc21_canister_call_consent_message";
 pub struct ConsentMsgRequest<'a>(CanisterCall<'a>);
 
 impl ConsentMsgRequest<'_> {
-    // this sums up the nonce although
-    // it could be missing
-    const MAP_ENTRIES: u64 = 7;
-
     // Getter methods (unchanged)
     pub fn arg(&self) -> &RawArg<'_> {
         self.0.arg()
@@ -56,7 +52,7 @@ impl ConsentMsgRequest<'_> {
     }
 
     #[inline(never)]
-    pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest, ParserError> {
+    pub fn icrc21_msg_request(&self) -> Result<Icrc21ConsentMessageRequest<'_>, ParserError> {
         // lazy parsing on demand in order to reduce stack usage
         Ok(Icrc21ConsentMessageRequest::new_unchecked(
             self.arg().raw_data(),
@@ -167,7 +163,6 @@ mod call_request_test {
 
     const REQUEST: &str = "d9d9f7a167636f6e74656e74a76361726758d84449444c086d7b6e766c02aeaeb1cc0501d880c6d007716c02cbaeb581017ab183e7f1077a6b028beabfc2067f8ef1c1ee0d036e046c02efcee7800402c4fbf2db05056c03d6fca70200e1edeb4a7184f7fee80a060107684449444c066e7d6d7b6e016e786c02b3b0dac30368ad86ca8305026c08c6fcb60200ba89e5c20402a2de94eb060282f3f3910c03d8a38ca80d7d919c9cbf0d00dea7f7da0d03cb96dcb40e04010501904e0000008094ebdc030000010a00000000000000070101000d69637263325f617070726f76650002656e0101230003006b63616e69737465725f69644a000000000000000201016e696e67726573735f6578706972791b18072a6f7894d0006b6d6574686f645f6e616d6578246963726332315f63616e69737465725f63616c6c5f636f6e73656e745f6d657373616765656e6f6e636550369f1914fd64438f5e6329fcb66b1d4d6c726571756573745f747970656463616c6c6673656e6465724104";
 
-    const ARG: &str = "4449444c00017104746f6269";
     const NONCE: &str = "369f1914fd64438f5e6329fcb66b1d4d";
     const REQUEST_ID: &str = "ea37fdc5229d7273d500dc8ae3c009f0421049c1f02cc5ad85ea838ae7dfc045";
     const CANISTER_ID: &str = "00000000000000020101";

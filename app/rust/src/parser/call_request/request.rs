@@ -1,6 +1,8 @@
 use core::{mem::MaybeUninit, ptr::addr_of_mut};
 
-use crate::{constants::SHA256_DIGEST_LENGTH, error::ParserError, utils::compress_leb128, zlog, FromBytes};
+use crate::{
+    constants::SHA256_DIGEST_LENGTH, error::ParserError, utils::compress_leb128, zlog, FromBytes,
+};
 
 use super::{CanisterCall, RawArg};
 
@@ -11,7 +13,7 @@ use super::{CanisterCall, RawArg};
 pub struct CallRequest<'a>(CanisterCall<'a>);
 
 impl CallRequest<'_> {
-    pub fn arg(&self) -> &RawArg {
+    pub fn arg(&self) -> &RawArg<'_> {
         self.0.arg()
     }
     pub fn sender(&self) -> &[u8] {

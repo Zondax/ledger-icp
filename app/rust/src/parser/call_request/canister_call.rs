@@ -30,7 +30,7 @@ impl CanisterCall<'_> {
     //
     const MAP_ENTRIES: u64 = 7;
 
-    pub fn arg(&self) -> &RawArg {
+    pub fn arg(&self) -> &RawArg<'_> {
         &self.arg
     }
     pub fn sender(&self) -> &[u8] {
@@ -113,6 +113,7 @@ impl<'a> FromBytes<'a> for CanisterCall<'a> {
                             // Direct uint64 case (what we have in the data)
                             n
                         } else {
+                            d.set_position(d.position() - 1);
                             let tag = d.tag()?;
                             // Your existing tagged bignum case
                             if tag.as_u64() != BIG_NUM_TAG {

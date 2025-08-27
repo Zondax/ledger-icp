@@ -668,7 +668,7 @@ zxerr_t crypto_fillAddress(uint8_t *buffer, uint16_t buffer_len, uint16_t *addrL
 
     CHECK_ZXERR(crypto_computePrincipal(answer->publicKey, answer->principalBytes));
 
-    // For now only defeault subaccount, maybe later grab 32 bytes from the apdu
+    // For now only default subaccount, maybe later grab 32 bytes from the apdu
     // buffer.
     uint8_t zero_subaccount[DFINITY_SUBACCOUNT_LEN] = {0};
     CHECK_ZXERR(crypto_principalToSubaccount(answer->principalBytes, sizeof_field(answer_t, principalBytes), zero_subaccount,

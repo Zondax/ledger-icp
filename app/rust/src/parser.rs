@@ -30,10 +30,10 @@ mod snapshots_common;
 pub use certificate::*;
 
 pub trait FromCandidHeader<'a> {
-    fn from_candid_header<const TABLE_SIZE: usize, const MAX_ARGS: usize>(
+    fn from_candid_header<const MAX_ARGS: usize>(
         input: &'a [u8],
         out: &mut core::mem::MaybeUninit<Self>,
-        header: &CandidHeader<TABLE_SIZE, MAX_ARGS>,
+        header: &CandidHeader<MAX_ARGS>,
     ) -> Result<&'a [u8], ParserError>
     where
         Self: Sized;
@@ -42,10 +42,10 @@ pub trait FromCandidHeader<'a> {
 ///This trait defines an useful interface to parse
 ///objects from bytes.
 ///this gives different objects in a transaction
-///a way to define their own deserilization implementation, allowing higher level objects to generalize the
+///a way to define their own deserialization implementation, allowing higher level objects to generalize the
 ///parsing of their inner types
 pub trait FromBytes<'b>: Sized {
-    /// this method is avaliable for testing only, as the preferable
+    /// this method is available for testing only, as the preferable
     /// option is to save stack by passing the memory where the object should
     /// store itself
     #[cfg(test)]
@@ -61,8 +61,8 @@ pub trait FromBytes<'b>: Sized {
     ///
     /// returns the remaining bytes on success
     ///
-    /// `Safety` Dealing with uninitialize memory is undefine behavior
-    /// even in rust, so implementors should follow the rust documentation
+    /// `Safety` Dealing with uninitialized memory is undefined behavior
+    /// even in rust, so implementers should follow the rust documentation
     /// for MaybeUninit and unsafe guidelines.
     ///
     /// It's a good idea to always put `#[inline(never)]` on top of this
@@ -74,10 +74,10 @@ pub trait FromBytes<'b>: Sized {
 }
 
 pub trait FromTable<'a>: Sized {
-    fn from_table<const MAX_FIELDS: usize>(
+    fn from_table(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
-        type_table: &crate::type_table::TypeTable<MAX_FIELDS>,
+        type_table: &crate::type_table::TypeTable,
         type_index: usize,
     ) -> Result<&'a [u8], crate::error::ParserError>;
 }

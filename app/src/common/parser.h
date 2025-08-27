@@ -49,6 +49,8 @@ parser_error_t parser_certNumItems(uint8_t *num_items);
 
 parser_error_t parser_certGetItem(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
                                   uint8_t pageIdx, uint8_t *pageCount);
+
+parser_error_t parser_getIntent(char *outIntent, uint16_t intentLen);
 #endif
 
 #ifdef __cplusplus
