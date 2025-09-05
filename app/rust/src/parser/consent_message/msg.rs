@@ -39,18 +39,6 @@ const TIMESTAMP_SECONDS_HASH: u32 = 4208601451;
 const DURATION_SECONDS_HASH: u32 = 2826488937;
 const TOKEN_AMOUNT_HASH: u32 = 1289986449;
 
-// Struct for fields display with intent
-#[repr(C)]
-struct FieldsDisplayMessageVariant<'a> {
-    ty: MessageType,
-    fields: &'a [u8],
-    field_count: u8,
-    intent: &'a str, // Add intent field
-}
-
-#[repr(C)]
-struct GenericDisplayMessageVariant<'a>(MessageType, &'a str);
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum MessageType {
@@ -229,8 +217,6 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
 
         match field_hash {
             hash if hash == FIELDS_DISPLAY_HASH => {
-                let out = out.as_mut_ptr() as *mut FieldsDisplayMessageVariant;
-
                 // Get record type entry for the fields display record
                 let record_entry = header
                     .type_table
@@ -314,21 +300,20 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                     .ok_or(ParserError::UnexpectedType)?;
                 let (rem, intent) = parse_text(rem)?;
 
-                unsafe {
-                    addr_of_mut!((*out).ty).write(MessageType::FieldsDisplayMessage);
-                    addr_of_mut!((*out).fields).write(fields);
-                    addr_of_mut!((*out).field_count).write(field_count as u8);
-                    addr_of_mut!((*out).intent).write(intent);
-                }
+                // Construct the enum variant and write it directly
+                let msg = ConsentMessage::FieldsDisplayMessage {
+                    fields,
+                    field_count: field_count as u8,
+                    intent,
+                };
+                out.write(msg);
                 Ok(rem)
             }
             hash if hash == GENERIC_DISPLAY_MESSAGE_HASH => {
-                let out = out.as_mut_ptr() as *mut GenericDisplayMessageVariant;
                 let (rem, text) = parse_text(rem)?;
-                unsafe {
-                    addr_of_mut!((*out).0).write(MessageType::GenericDisplayMessage);
-                    addr_of_mut!((*out).1).write(text);
-                }
+                // Construct the enum variant and write it directly
+                let msg = ConsentMessage::GenericDisplayMessage(text);
+                out.write(msg);
                 Ok(rem)
             }
             _ => Err(ParserError::UnexpectedType),
