@@ -367,13 +367,6 @@ typedef struct {
     uint64_t amount;
 
 } icrc_transfer_t;
-// typedef struct {
-//   uint8_t has_owner;
-//   candid_Principal_t owner;
-//
-//   uint8_t has_subaccount;
-//   sizedBuffer_t subaccount;
-// } Account_t;
 
 typedef struct {
     uint8_t icp_canister;

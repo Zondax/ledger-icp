@@ -574,7 +574,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
-    txn.element.variant_index = 6;  // Should be index 6, not 8
+    txn.element.variant_index = 6;
     CHECK_PARSER_ERR(readCandidInnerElement(&txn, &txn.element))
 
     if (txn.element.field_hash != icrc_hash_expires_at) {
