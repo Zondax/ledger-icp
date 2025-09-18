@@ -547,7 +547,6 @@ static bool isCandidTransaction(parser_tx_t *v) {
         return true;
     }
 
-
     return false;
 }
 
@@ -760,12 +759,10 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         }
     }
 
-
 #if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
     // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
-    bool skip_validation = (v->txtype == call &&
-                          (v->tx_fields.call.method_type == candid_icrc_transfer ||
-                           v->tx_fields.call.method_type == candid_icrc2_approve));
+    bool skip_validation = (v->txtype == call && (v->tx_fields.call.method_type == candid_icrc_transfer ||
+                                                  v->tx_fields.call.method_type == candid_icrc2_approve));
 
     if (!skip_validation) {
         zemu_log("Performing sender validation\n");
@@ -972,10 +969,11 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                     // 3. From account
                     // 4. Allowed Spender
                     // 5. Amount
-                    // 6. Memo (if present)
-                    // 7. Fee (if present)
-                    return 4 + (icp_canisterId ? 0 : 1) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0) + (call->data.icrc2_approve.has_memo ? 0 : 1);
-
+                    // 6. Allowance (if present)
+                    // 7. Memo
+                    // 8. Fee (if present)
+                    return 5 + (!icp_canisterId ? 1 : 0) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0) +
+                           (call->data.icrc2_approve.has_expected_allowance ? 1 : 0);
                 }
 
                 default:

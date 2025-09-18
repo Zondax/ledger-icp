@@ -112,18 +112,18 @@ typedef enum {
 } transfer_hash_fields;
 
 typedef enum {
-  icrc_hash_to = 25979,
-  icrc_hash_owner = 947296307,
-  icrc_hash_subaccount = 1349681965,
-  icrc_hash_fee = 5094982,
-  icrc_hash_memo = 1213809850,
-  icrc_hash_from_subaccount = 1835347746,
-  icrc_hash_created_at_time = 3258775938,
-  icrc_hash_amount = 3573748184,
-  // next 3 constants for icrc2_approve
-  icrc_hash_spender = 3868658507,
-  icrc_hash_expected_allowance = 3622243857,
-  icrc_hash_expires_at = 3680359390,
+    icrc_hash_to = 25979,
+    icrc_hash_owner = 947296307,
+    icrc_hash_subaccount = 1349681965,
+    icrc_hash_fee = 5094982,
+    icrc_hash_memo = 1213809850,
+    icrc_hash_from_subaccount = 1835347746,
+    icrc_hash_created_at_time = 3258775938,
+    icrc_hash_amount = 3573748184,
+    // next 3 constants for icrc2_approve
+    icrc_hash_spender = 3868658507,
+    icrc_hash_expected_allowance = 3622243857,
+    icrc_hash_expires_at = 3680359390,
 } icrc_hash_fields;
 
 typedef enum {
@@ -376,28 +376,28 @@ typedef struct {
 // } Account_t;
 
 typedef struct {
-  uint8_t icp_canister;
-  Account_t spender;
+    uint8_t icp_canister;
+    Account_t spender;
 
-  uint8_t has_fee;
-  uint64_t fee;
+    uint8_t has_fee;
+    uint64_t fee;
 
-  uint8_t has_memo;
-  sizedBuffer_t memo;
+    uint8_t has_memo;
+    sizedBuffer_t memo;
 
-  uint8_t has_from_subaccount;
-  sizedBuffer_t from_subaccount;
+    uint8_t has_from_subaccount;
+    sizedBuffer_t from_subaccount;
 
-  uint8_t has_created_at_time;
-  uint64_t created_at_time;
+    uint8_t has_created_at_time;
+    uint64_t created_at_time;
 
-  uint64_t amount;  // The approved amount
+    uint64_t amount;  // The approved amount
 
-  uint8_t has_expected_allowance;
-  uint64_t expected_allowance;
+    uint8_t has_expected_allowance;
+    uint64_t expected_allowance;
 
-  uint8_t has_expires_at;
-  uint64_t expires_at;
+    uint8_t has_expires_at;
+    uint64_t expires_at;
 
 } icrc2_approve_t;
 

@@ -217,11 +217,8 @@ parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, c
                 case candid_updatenodeprovider:
                 case candid_transfer:
                 case candid_icrc_transfer:
-                case candid_icrc2_approve:{
-                    return parser_getItemCandid(ctx, displayIdx,
-                                                outKey, outKeyLen,
-                                                outVal, outValLen,
-                                                pageIdx, pageCount);
+                case candid_icrc2_approve: {
+                    return parser_getItemCandid(ctx, displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
                 }
 
                 default:

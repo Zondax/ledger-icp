@@ -685,12 +685,9 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
         return parser_unexpected_value;
     }
 
-    crypto_principalToTextual(canisterId,
-                             (uint8_t) canisterIdSize,
-                             canister_textual,
-                             &outLen);
+    crypto_principalToTextual(canisterId, (uint8_t)canisterIdSize, canister_textual, &outLen);
 
-    icrc2->icp_canister = (strncmp((const char*) &canister_textual, "ryjl3tyaaaaaaaaaaabacai", 23) == 0) ? 1 : 0;
+    icrc2->icp_canister = (strncmp((const char *)&canister_textual, "ryjl3tyaaaaaaaaaaabacai", 23) == 0) ? 1 : 0;
 
     zemu_log("readCandidICRC2Approve OK\n");
     return parser_ok;
