@@ -157,7 +157,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender, const candid_trans
     }
 
     return page_principal_with_subaccount(sender.data, (uint16_t)sender.len, subaccount, sizeof(subaccount), outVal,
-                                          outValLen, pageIdx, pageCount);
+                                          outValLen, pageIdx, pageCount, false);
 }
 
 static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
@@ -1038,7 +1038,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
         const uint16_t fromSubaccountLen = (uint16_t)call->data.icrcTransfer.from_subaccount.len;
 
         return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen, outVal, outValLen,
-                                              pageIdx, pageCount);
+                                              pageIdx, pageCount, false);
     }
 
     if (is_stake_tx) {
@@ -1058,7 +1058,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
         const uint16_t subaccountLen = (uint16_t)call->data.icrcTransfer.account.subaccount.len;
 
         return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                              pageCount);
+                                              pageCount, false);
     }
 
     if (displayIdx == 4) {
@@ -1097,6 +1097,155 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
             for (uint8_t i = 0; i < (uint8_t)call->data.icrcTransfer.memo.len; i++) {
                 memo <<= 8u;
                 memo += call->data.icrcTransfer.memo.p[i];
+            }
+            return print_u64(memo, outVal, outValLen, pageIdx, pageCount);
+        }
+        snprintf(outVal, outValLen, "0");
+        return parser_ok;
+    }
+
+    return parser_no_data;
+}
+
+static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
+                                                 uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
+    zemu_log("parser_getItemICRC2Approve\n");
+    *pageCount = 1;
+    call_t *call = &parser_tx_obj.tx_fields.call;
+    const bool icp_canisterId = call->data.icrc2_approve.icp_canister;
+
+    uint8_t *canister_id = call->canister_id.data;
+    uint8_t canister_id_len = (uint8_t)call->canister_id.len;
+    const token_info_t *token = get_token(canister_id, canister_id_len);
+
+    uint8_t decimals = 0;
+
+    if (token != NULL) {
+        decimals = token->decimals;
+    }
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type ");
+#if defined(TARGET_NANOS)
+        snprintf(outVal, outValLen, "Allow account to withdraw tokens");
+#else
+        char title[50] = {0};
+        if (token != NULL) {
+            snprintf(title, sizeof(title), "Allow another account to withdraw %s", token->token_symbol);
+        } else {
+            snprintf(title, sizeof(title), "Allow another account to withdraw tokens");
+        }
+
+        pageString(outVal, outValLen, title, pageIdx, pageCount);
+#endif
+        return parser_ok;
+    }
+
+    // Don't display Canister Id if ICP canister
+    if (icp_canisterId) displayIdx++;
+
+    if (displayIdx == 1) {
+        const uint8_t *canisterId = (const uint8_t *)call->canister_id.data;
+        const uint8_t canisterIdLen = (uint8_t)call->canister_id.len;
+        snprintf(outKey, outKeyLen, "Canister Id");
+
+        return print_principal(canisterId, canisterIdLen, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+#if defined(TARGET_NANOS)
+        snprintf(outKey, outKeyLen, "From ");
+#else
+        snprintf(outKey, outKeyLen, "From account ");
+#endif
+        const uint8_t *sender = (uint8_t *)call->sender.data;
+        const uint16_t senderLen = (uint16_t)call->sender.len;
+        const uint8_t *fromSubaccount = call->data.icrc2_approve.from_subaccount.p;
+        const uint16_t fromSubaccountLen = (uint16_t)call->data.icrc2_approve.from_subaccount.len;
+
+        return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen, outVal, outValLen,
+                                              pageIdx, pageCount, true);
+    }
+
+    if (displayIdx == 3) {
+#if defined(TARGET_NANOS)
+        // Removed the allowed part of the tittle
+        // nanos screen is too small
+        snprintf(outKey, outKeyLen, "Spender ");
+#else
+        snprintf(outKey, outKeyLen, "Allowed Spender ");
+#endif
+        const candid_Principal_t *owner = &call->data.icrc2_approve.spender.owner;
+        const uint8_t *subaccount = call->data.icrc2_approve.spender.subaccount.p;
+        const uint16_t subaccountLen = (uint16_t)call->data.icrc2_approve.spender.subaccount.len;
+
+        return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen, outVal, outValLen, pageIdx,
+                                              pageCount, true);
+    }
+
+    if (displayIdx == 4) {
+        if (token != NULL) {
+            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
+        } else {
+            snprintf(outKey, outKeyLen, "Amount (Tokens)");
+        }
+
+        if (call->data.icrc2_approve.amount == 0) {
+            snprintf(outVal, outValLen, "0");
+            return parser_ok;
+        }
+        return print_Amount(call->data.icrc2_approve.amount, outVal, outValLen, pageIdx, pageCount, decimals);
+    }
+
+    // Skip allowance if not present and not icp canister id
+    if (!(call->data.icrc2_approve.has_expected_allowance)) displayIdx++;
+
+    if (displayIdx == 5) {
+        char title[50] = {0};
+        if (token != NULL) {
+            snprintf(title, sizeof(title), "Allowance (%s)", token->token_symbol);
+        } else {
+            snprintf(title, sizeof(title), "Allowance (Tokens)");
+        }
+
+        snprintf(outKey, outKeyLen, "%s", title);
+        uint64_t allowance = call->data.icrc2_approve.has_expected_allowance ? call->data.icrc2_approve.expected_allowance
+                                                                             : DEFAULT_MAXIMUM_FEES;
+        if (allowance == 0) {
+            snprintf(outVal, outValLen, "0");
+            return parser_ok;
+        }
+        return print_Amount(allowance, outVal, outValLen, pageIdx, pageCount, decimals);
+    }
+
+    // Skip fee if not present and not icp canister id
+    if (!(call->data.icrc2_approve.has_fee || icp_canisterId)) displayIdx++;
+
+    if (displayIdx == 6) {
+        char title[50] = {0};
+        if (token != NULL) {
+            snprintf(title, sizeof(title), "Max fee (%s)", token->token_symbol);
+        } else {
+            snprintf(title, sizeof(title), "Max fee (Tokens)");
+        }
+
+        snprintf(outKey, outKeyLen, "%s", title);
+        uint64_t fees = call->data.icrc2_approve.has_fee ? call->data.icrc2_approve.fee : DEFAULT_MAXIMUM_FEES;
+        if (fees == 0) {
+            snprintf(outVal, outValLen, "0");
+            return parser_ok;
+        }
+        return print_Amount(fees, outVal, outValLen, pageIdx, pageCount, decimals);
+    }
+
+    if (displayIdx == 7) {
+        snprintf(outKey, outKeyLen, "Memo");
+        if (call->data.icrc2_approve.has_memo && call->data.icrc2_approve.memo.len != 0) {
+            uint64_t memo = 0;
+            // we already checked that len is, at max, 8
+            for (uint8_t i = 0; i < (uint8_t)call->data.icrc2_approve.memo.len; i++) {
+                memo <<= 8u;
+                memo += call->data.icrc2_approve.memo.p[i];
             }
             return print_u64(memo, outVal, outValLen, pageIdx, pageCount);
         }
@@ -1156,7 +1305,7 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey
         if (fields->account.has_subaccount) {
             return page_principal_with_subaccount(principal, principalLen, fields->account.subaccount.p,
                                                   (uint16_t)fields->account.subaccount.len, outVal, outValLen, pageIdx,
-                                                  pageCount);
+                                                  pageCount, false);
         } else {
             return print_principal(principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
         }
@@ -1433,6 +1582,8 @@ parser_error_t parser_getItemCandid(const parser_context_t *ctx, uint8_t display
         case candid_icrc_transfer:
             return parser_getItemICRCTransfer(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
 
+        case candid_icrc2_approve:
+            return parser_getItemICRC2Approve(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         default:
             zemu_log("Candid type not supported\n");
             break;
