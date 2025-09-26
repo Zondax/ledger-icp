@@ -1209,8 +1209,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         }
 
         snprintf(outKey, outKeyLen, "%s", title);
-        uint64_t allowance = call->data.icrc2_approve.has_expected_allowance ? call->data.icrc2_approve.expected_allowance
-                                                                             : DEFAULT_MAXIMUM_FEES;
+        uint64_t allowance = call->data.icrc2_approve.expected_allowance;
         if (allowance == 0) {
             snprintf(outVal, outValLen, "0");
             return parser_ok;

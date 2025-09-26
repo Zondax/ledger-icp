@@ -28,6 +28,7 @@
 #define TYPE_OPT 0
 #define TYPE_NEURONS_IDS 1
 #define TYPE_CALLER 2
+#define ICP_CANISTER_ID_TEXTUAL "ryjl3tyaaaaaaaaaaabacai"
 
 #define CREATE_CTX(__CTX, __TX, __INPUT, __INPUT_SIZE) \
     parser_context_t __CTX;                            \
@@ -436,7 +437,7 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     // Check if the transaction has ICP canister
     const uint8_t *canisterId = ctx.tx_obj->tx_fields.call.canister_id.data;
     const size_t canisterIdSize = ctx.tx_obj->tx_fields.call.canister_id.len;
-    char canister_textual[50] = {0};
+    char canister_textual[64] = {0};
     uint16_t outLen = sizeof(canister_textual);
     if (canisterIdSize > 255) {
         return parser_unexpected_value;
@@ -444,7 +445,7 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
 
     crypto_principalToTextual(canisterId, (uint8_t)canisterIdSize, canister_textual, &outLen);
 
-    icrc->icp_canister = (strncmp((const char *)&canister_textual, "ryjl3tyaaaaaaaaaaabacai", 23) == 0) ? 1 : 0;
+    icrc->icp_canister = (strncmp(canister_textual, ICP_CANISTER_ID_TEXTUAL, sizeof(ICP_CANISTER_ID_TEXTUAL) - 1) == 0);
 
     return parser_ok;
 }
@@ -483,7 +484,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
     }
     // Fee -> OK
 
-    // 1. Check memo field (second in the transaction)
+    // 2. Check memo field (second in the transaction)
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
@@ -523,7 +524,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
     }
     // from_subaccount -> OK
 
-    // 3. Check created_at_time field
+    // 4. Check created_at_time field
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
@@ -542,7 +543,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
     }
     // Created at time -> OK
 
-    // 4. Check amount field
+    // 5. Check amount field
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
@@ -553,7 +554,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
         return parser_unexpected_type;
     }
 
-    // 5. Check expected_allowance field
+    // 6. Check expected_allowance field
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
@@ -570,7 +571,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
         return parser_unexpected_type;
     }
 
-    // 6. Check expires_at field
+    // 7. Check expires_at field
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
@@ -587,7 +588,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
         return parser_unexpected_type;
     }
 
-    // 4. Check spender field
+    // 8. Check spender field
     CHECK_PARSER_ERR(getCandidTypeFromTable(&txn, tx->candid_rootType))
     CHECK_PARSER_ERR(readCandidRecordLength(&txn))
 
@@ -679,7 +680,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
     // Check if the transaction has ICP canister
     const uint8_t *canisterId = ctx.tx_obj->tx_fields.call.canister_id.data;
     const size_t canisterIdSize = ctx.tx_obj->tx_fields.call.canister_id.len;
-    char canister_textual[50] = {0};
+    char canister_textual[64] = {0};
     uint16_t outLen = sizeof(canister_textual);
     if (canisterIdSize > 255) {
         return parser_unexpected_value;
@@ -687,8 +688,8 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
 
     crypto_principalToTextual(canisterId, (uint8_t)canisterIdSize, canister_textual, &outLen);
 
-    icrc2->icp_canister = (strncmp((const char *)&canister_textual, "ryjl3tyaaaaaaaaaaabacai", 23) == 0) ? 1 : 0;
-
+    icrc2->icp_canister = (strncmp(canister_textual, ICP_CANISTER_ID_TEXTUAL, sizeof(ICP_CANISTER_ID_TEXTUAL) - 1) == 0);
+    
     zemu_log("readCandidICRC2Approve OK\n");
     return parser_ok;
 }
