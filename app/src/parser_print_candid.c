@@ -712,7 +712,7 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
     }
 
     if (displayIdx == 2) {
-        snprintf(outKey, outKeyLen, "Percentage to Disburse");
+        snprintf(outKey, outKeyLen, "Pct to Disburse");
         snprintf(outVal, outValLen, "%d%s", fields->command.disburseMaturity.percentage_to_disburse, "%");
         return parser_ok;
     }
