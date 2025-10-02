@@ -366,6 +366,115 @@ __Z_INLINE parser_error_t readCommandRefreshVotingPower(__Z_UNUSED parser_contex
     return parser_ok;
 }
 
+__Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
+    const int64_t disburseRoot = txn->element.implementation;
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+
+    // Expected record length is 3
+    // Fields are sorted by hash, so the order is:
+    // Field 0: to_account_identifier (hash: 1634436479)
+    // Field 1: to_account (hash: 1937583785)
+    // Field 2: percentage_to_disburse (hash: 2860156962)
+
+    if (txn->txn_length != 3) {
+        return parser_unexpected_value;
+    }
+
+    // Field 0: to_account_identifier
+    txn->element.variant_index = 0;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_to_account_identifier) {
+        return parser_unexpected_field;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    if (txn->element.implementation != Null) {
+        CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+        if (txn->txn_type != Record) {
+            return parser_unexpected_type;
+        }
+    }
+
+    // Field 1: to_account (opt Account)
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, disburseRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 1;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_field_disburse_account) {
+        return parser_unexpected_field;
+    }
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+    CHECK_PARSER_ERR(readCandidOptional(txn))
+    if (txn->element.implementation != Null) {
+        CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
+        if (txn->txn_type != Record) {
+            return parser_unexpected_type;
+        }
+    }
+
+    // Field 2: percentage_to_disburse (Nat32)
+    CHECK_PARSER_ERR(getCandidTypeFromTable(txn, disburseRoot))
+    CHECK_PARSER_ERR(readCandidRecordLength(txn))
+    txn->element.variant_index = 2;
+    CHECK_PARSER_ERR(readCandidInnerElement(txn, &txn->element))
+    if (txn->element.field_hash != hash_percentage_to_disburse) {
+        return parser_unexpected_field;
+    }
+    if (txn->element.implementation != Nat32) {
+        return parser_unexpected_type;
+    }
+
+    // Now let's read
+    // Field 0 data: to_account_identifier (opt AccountIdentifier)
+    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburseMaturity.has_to_account_identifier))
+    if (val->command.disburseMaturity.has_to_account_identifier) {
+        CHECK_PARSER_ERR(readCandidText(ctx, &val->command.disburseMaturity.to_account_identifier))
+    }
+
+    // Field 1 data: to_account (opt Account)
+    uint8_t has_to_account_optional = 0;
+    CHECK_PARSER_ERR(readCandidByte(ctx, &has_to_account_optional))
+    if (has_to_account_optional) {
+        // Read Account.owner (optional Principal)
+        CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburseMaturity.to_account.has_owner))
+        if (val->command.disburseMaturity.to_account.has_owner) {
+            uint8_t has_principal = 0;
+            CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
+            if (has_principal) {
+                CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburseMaturity.to_account.owner.len))
+                if (val->command.disburseMaturity.to_account.owner.len > DFINITY_PRINCIPAL_LEN) {
+                    return parser_unexpected_value;
+                }
+                CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.disburseMaturity.to_account.owner.ptr,
+                                                val->command.disburseMaturity.to_account.owner.len))
+            }
+        }
+
+        // Read Account.subaccount (optional)
+        CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburseMaturity.to_account.has_subaccount))
+        if (val->command.disburseMaturity.to_account.has_subaccount) {
+            CHECK_PARSER_ERR(readCandidText(ctx, &val->command.disburseMaturity.to_account.subaccount))
+        }
+        val->command.disburseMaturity.has_to_account = 1;
+    } else {
+        val->command.disburseMaturity.has_to_account = 0;
+        val->command.disburseMaturity.to_account.has_owner = 0;
+        val->command.disburseMaturity.to_account.has_subaccount = 0;
+    }
+
+    // Field 2 data: percentage_to_disburse (Nat32)
+    CHECK_PARSER_ERR(readCandidNat32(ctx, &val->command.disburseMaturity.percentage_to_disburse))
+
+    // Sanity check percentage
+    if (val->command.disburseMaturity.percentage_to_disburse == 0 ||
+        val->command.disburseMaturity.percentage_to_disburse > 100) {
+        return parser_value_out_of_range;
+    }
+
+    return parser_ok;
+}
+
 __Z_INLINE parser_error_t readCommandSetNeuronVisibility(parser_context_t *ctx, candid_transaction_t *txn,
                                                          candid_Operation_t *operation) {
     // Check record type
@@ -694,6 +803,9 @@ parser_error_t readNNSManageNeuron(parser_context_t *ctx, candid_transaction_t *
                 break;
             case hash_command_RefreshVotingPower:
                 CHECK_PARSER_ERR(readCommandRefreshVotingPower(ctx, txn, val))
+                break;
+            case hash_command_DisburseMaturity:
+                CHECK_PARSER_ERR(readCommandDisburseMaturity(ctx, txn, val))
                 break;
 
             default:
