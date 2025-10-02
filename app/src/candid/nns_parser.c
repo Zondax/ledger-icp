@@ -366,7 +366,8 @@ __Z_INLINE parser_error_t readCommandRefreshVotingPower(__Z_UNUSED parser_contex
     return parser_ok;
 }
 
-__Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, candid_transaction_t *txn, candid_ManageNeuron_t *val) {
+__Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, candid_transaction_t *txn,
+                                                      candid_ManageNeuron_t *val) {
     const int64_t disburseRoot = txn->element.implementation;
     CHECK_PARSER_ERR(getCandidTypeFromTable(txn, txn->element.implementation))
     CHECK_PARSER_ERR(readCandidRecordLength(txn))
@@ -447,7 +448,7 @@ __Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, can
                     return parser_unexpected_value;
                 }
                 CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.disburseMaturity.to_account.owner.ptr,
-                                                val->command.disburseMaturity.to_account.owner.len))
+                                                 val->command.disburseMaturity.to_account.owner.len))
             }
         }
 

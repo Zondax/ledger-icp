@@ -166,7 +166,8 @@ TEST_P(JsonTests_ICRC2, Normal) { check_testcase(GetParam(), false); }
 ////////////////////
 ////////////////////
 
-INSTANTIATE_TEST_SUITE_P(disburse_nns_neuron_maturity, JsonTests_disburse_nns_neuron_maturity, ::testing::ValuesIn(GetJsonTestCases("disburse-nns-neuron-maturity.json")),
+INSTANTIATE_TEST_SUITE_P(disburse_nns_neuron_maturity, JsonTests_disburse_nns_neuron_maturity,
+                         ::testing::ValuesIn(GetJsonTestCases("disburse-nns-neuron-maturity.json")),
                          JsonTests_disburse_nns_neuron_maturity::PrintToStringParamName());
 
 //// Parametric test using current runtime:

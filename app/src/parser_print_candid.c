@@ -695,7 +695,7 @@ static parser_error_t parser_getItemMerge(uint8_t displayIdx, char *outKey, uint
 }
 
 static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
-                                                      uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
+                                                     uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
     const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
     PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_DisburseMaturity, parser_unexpected_value)
@@ -730,15 +730,16 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
             const uint8_t *to_account_identifier = (uint8_t *)fields->command.disburseMaturity.to_account_identifier.p;
             const uint16_t to_account_identifierLen = (uint16_t)fields->command.disburseMaturity.to_account_identifier.len;
 
-            return page_hexstring_with_delimiters(to_account_identifier, to_account_identifierLen, outVal, outValLen, pageIdx, pageCount);
+            return page_hexstring_with_delimiters(to_account_identifier, to_account_identifierLen, outVal, outValLen,
+                                                  pageIdx, pageCount);
         } else {
             const uint8_t *owner = (uint8_t *)fields->command.disburseMaturity.to_account.owner.ptr;
             const uint16_t ownerLen = (uint16_t)fields->command.disburseMaturity.to_account.owner.len;
             const uint8_t *subaccount = fields->command.disburseMaturity.to_account.subaccount.p;
             const uint16_t subaccountLen = (uint16_t)fields->command.disburseMaturity.to_account.subaccount.len;
-    
-            return page_principal_with_subaccount(owner, ownerLen, subaccount, subaccountLen, outVal, outValLen,
-                                                    pageIdx, pageCount, true);
+
+            return page_principal_with_subaccount(owner, ownerLen, subaccount, subaccountLen, outVal, outValLen, pageIdx,
+                                                  pageCount, true);
         }
     }
 
