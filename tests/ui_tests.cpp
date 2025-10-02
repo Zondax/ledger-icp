@@ -29,6 +29,7 @@ class JsonTests_SNS_SetDissolveDelay : public JsonTests_Base {};
 class JsonTests_ICRC : public JsonTests_Base {};
 class JsonTests_ICRC2 : public JsonTests_Base {};
 class JsonTests_Deprecated : public JsonTests_Base {};
+class JsonTests_disburse_nns_neuron_maturity : public JsonTests_Base {};
 
 INSTANTIATE_TEST_SUITE_P(Phase1, JsonTests_Phase1, ::testing::ValuesIn(GetJsonTestCases("manual.json")),
                          JsonTests_Phase1::PrintToStringParamName());
@@ -160,3 +161,13 @@ INSTANTIATE_TEST_SUITE_P(ICRC2, JsonTests_ICRC2, ::testing::ValuesIn(GetJsonTest
 
 //// Parametric test using current runtime:
 TEST_P(JsonTests_ICRC2, Normal) { check_testcase(GetParam(), false); }
+
+////////////////////
+////////////////////
+////////////////////
+
+INSTANTIATE_TEST_SUITE_P(disburse_nns_neuron_maturity, JsonTests_disburse_nns_neuron_maturity, ::testing::ValuesIn(GetJsonTestCases("disburse-nns-neuron-maturity.json")),
+                         JsonTests_disburse_nns_neuron_maturity::PrintToStringParamName());
+
+//// Parametric test using current runtime:
+TEST_P(JsonTests_disburse_nns_neuron_maturity, Normal) { check_testcase(GetParam(), false); }
