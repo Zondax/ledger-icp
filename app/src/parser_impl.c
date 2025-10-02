@@ -869,8 +869,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         }
         case DisburseMaturity: {
             return 3 +
-                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
-                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
+                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ||
+                            v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account
+                        ? 1
+                        : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +

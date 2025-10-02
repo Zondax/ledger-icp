@@ -443,10 +443,12 @@ __Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, can
             uint8_t has_principal = 0;
             CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
             if (has_principal) {
-                CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.disburseMaturity.to_account.owner.len))
-                if (val->command.disburseMaturity.to_account.owner.len > DFINITY_PRINCIPAL_LEN) {
+                uint64_t principal_len = 0;
+                CHECK_PARSER_ERR(readCandidLEB128(ctx, &principal_len))
+                if (principal_len > DFINITY_PRINCIPAL_LEN) {
                     return parser_unexpected_value;
                 }
+                val->command.disburseMaturity.to_account.owner.len = (uint8_t)principal_len;
                 CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.disburseMaturity.to_account.owner.ptr,
                                                  val->command.disburseMaturity.to_account.owner.len))
             }
@@ -462,6 +464,11 @@ __Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, can
         val->command.disburseMaturity.has_to_account = 0;
         val->command.disburseMaturity.to_account.has_owner = 0;
         val->command.disburseMaturity.to_account.has_subaccount = 0;
+    }
+
+    // Check that both account fields are not present simultaneously
+    if (val->command.disburseMaturity.has_to_account_identifier && val->command.disburseMaturity.has_to_account) {
+        return parser_unexpected_value;
     }
 
     // Field 2 data: percentage_to_disburse (Nat32)

@@ -713,7 +713,10 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
 
     if (displayIdx == 2) {
         snprintf(outKey, outKeyLen, "Pct to Disburse");
-        snprintf(outVal, outValLen, "%d%s", fields->command.disburseMaturity.percentage_to_disburse, "%");
+        uint32_to_str(outVal, outValLen, fields->command.disburseMaturity.percentage_to_disburse);
+        uint16_t written_value = strlen(outVal);
+        snprintf(outVal + written_value, outValLen - written_value, "%s", "%");
+
         return parser_ok;
     }
 
@@ -727,13 +730,13 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
         snprintf(outKey, outKeyLen, "To Account ");
 #endif
         if (fields->command.disburseMaturity.has_to_account_identifier) {
-            const uint8_t *to_account_identifier = (uint8_t *)fields->command.disburseMaturity.to_account_identifier.p;
+            const uint8_t *to_account_identifier = fields->command.disburseMaturity.to_account_identifier.p;
             const uint16_t to_account_identifierLen = (uint16_t)fields->command.disburseMaturity.to_account_identifier.len;
 
             return page_hexstring_with_delimiters(to_account_identifier, to_account_identifierLen, outVal, outValLen,
                                                   pageIdx, pageCount);
         } else {
-            const uint8_t *owner = (uint8_t *)fields->command.disburseMaturity.to_account.owner.ptr;
+            const uint8_t *owner = fields->command.disburseMaturity.to_account.owner.ptr;
             const uint16_t ownerLen = (uint16_t)fields->command.disburseMaturity.to_account.owner.len;
             const uint8_t *subaccount = fields->command.disburseMaturity.to_account.subaccount.p;
             const uint16_t subaccountLen = (uint16_t)fields->command.disburseMaturity.to_account.subaccount.len;
