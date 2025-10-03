@@ -442,16 +442,17 @@ __Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, can
         if (val->command.disburseMaturity.to_account.has_owner) {
             uint8_t has_principal = 0;
             CHECK_PARSER_ERR(readCandidByte(ctx, &has_principal))
-            if (has_principal) {
-                uint64_t principal_len = 0;
-                CHECK_PARSER_ERR(readCandidLEB128(ctx, &principal_len))
-                if (principal_len > DFINITY_PRINCIPAL_LEN) {
-                    return parser_unexpected_value;
-                }
-                val->command.disburseMaturity.to_account.owner.len = (uint8_t)principal_len;
-                CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.disburseMaturity.to_account.owner.ptr,
-                                                 val->command.disburseMaturity.to_account.owner.len))
+            if (!has_principal) {
+                return parser_unexpected_value;
             }
+            uint64_t principal_len = 0;
+            CHECK_PARSER_ERR(readCandidLEB128(ctx, &principal_len))
+            if (principal_len > DFINITY_PRINCIPAL_LEN) {
+                return parser_unexpected_value;
+            }
+            val->command.disburseMaturity.to_account.owner.len = (uint8_t)principal_len;
+            CHECK_PARSER_ERR(readCandidBytes(ctx, val->command.disburseMaturity.to_account.owner.ptr,
+                                             val->command.disburseMaturity.to_account.owner.len))
         }
 
         // Read Account.subaccount (optional)
