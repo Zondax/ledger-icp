@@ -762,7 +762,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         }
     }
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
     // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
     bool skip_validation = (v->txtype == call && (v->tx_fields.call.method_type == candid_icrc_transfer ||
                                                   v->tx_fields.call.method_type == candid_icrc2_approve));
@@ -868,11 +868,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return 4;
         }
         case DisburseMaturity: {
-            return 3 +
-                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ||
-                            v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account
-                        ? 1
-                        : 0);
+            return 3 + (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ||
+                                v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account
+                            ? 1
+                            : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +

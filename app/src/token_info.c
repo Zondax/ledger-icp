@@ -81,6 +81,13 @@ static const token_info_t TOKEN_REGISTRY[] = {
     {.canister_id = "ly36x-wiaaa-aaaai-aqj7q-cai", .token_symbol = "VCHF", .decimals = 8},
     {.canister_id = "wu6g4-6qaaa-aaaan-qmrza-cai", .token_symbol = "VEUR", .decimals = 8},
     {.canister_id = "6c7su-kiaaa-aaaar-qaira-cai", .token_symbol = "GLDT", .decimals = 8},
+    {.canister_id = "n6tkf-tqaaa-aaaal-qsneq-cai", .token_symbol = "cICP", .decimals = 8},
+    {.canister_id = "i2s4q-syaaa-aaaan-qz4sq-cai", .token_symbol = "sGLDT", .decimals = 8},
+    {.canister_id = "rh2pm-ryaaa-aaaan-qeniq-cai", .token_symbol = "EXE", .decimals = 8},
+    {.canister_id = "7xkvf-zyaaa-aaaal-ajvra-cai", .token_symbol = "PARTY", .decimals = 8},
+    {.canister_id = "pcj6u-uaaaa-aaaak-aewnq-cai", .token_symbol = "CLOUD", .decimals = 8},
+    {.canister_id = "7pail-xaaaa-aaaas-aabmq-cai", .token_symbol = "BOB", .decimals = 8},
+    {.canister_id = "ysy5f-2qaaa-aaaap-qkmmq-cai", .token_symbol = "ALEX", .decimals = 8},
     {.token_symbol = "nICP", .decimals = 8, .canister_id = "buwm7-7yaaa-aaaar-qagva-cai"},
 };
 

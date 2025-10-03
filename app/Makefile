@@ -39,7 +39,6 @@ APP_SOURCE_PATH += $(CURDIR)/../deps/nanopb_tiny/
 
 # Application icons following guidelines:
 # https://developers.ledger.com/docs/embedded-app/design-requirements/#device-icon
-ICON_NANOS = nanos_icon.gif
 ICON_NANOX = nanox_icon.gif
 ICON_NANOSP = nanox_icon.gif
 ICON_STAX = stax_icon.gif
@@ -133,12 +132,10 @@ include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.app_testing
 # Call standard app flags
 include $(CURDIR)/../deps/ledger-zxlib/makefiles/Makefile.platform
 
-# Enable bls signature verification for all targets except TARGET_NANOS and TARGET_NANOX
-ifneq ($(TARGET_NAME),TARGET_NANOS)
+# Enable bls signature verification for all targets except TARGET_NANOX
 ifneq ($(TARGET_NAME),TARGET_NANOX)
 BLS_SIGNATURE = 1
 DEFINES += BLS_SIGNATURE=$(BLS_SIGNATURE)
-endif
 endif
 
 # Include Rust-specific build rules
