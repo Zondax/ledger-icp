@@ -724,11 +724,8 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
         displayIdx++;
     }
     if (displayIdx == 3) {
-#if defined(TARGET_NANOS)
-        snprintf(outKey, outKeyLen, "To ");
-#else
         snprintf(outKey, outKeyLen, "To Account ");
-#endif
+
         if (fields->command.disburseMaturity.has_to_account_identifier) {
             const uint8_t *to_account_identifier = fields->command.disburseMaturity.to_account_identifier.p;
             const uint16_t to_account_identifierLen = (uint16_t)fields->command.disburseMaturity.to_account_identifier.len;
@@ -981,13 +978,8 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx, char *out
     }
 
     if (displayIdx == 1) {
-// The "From account" title might be truncated on Nano devices
-// due to the device's limited screen space.
-#if defined(TARGET_NANOS)
-        snprintf(outKey, outKeyLen, "From ");
-#else
         snprintf(outKey, outKeyLen, "From account ");
-#endif
+
         return print_accountBytes(fields->sender, &fields->data.candid_transfer, outVal, outValLen, pageIdx, pageCount);
     }
 
@@ -996,13 +988,8 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx, char *out
     }
 
     if (displayIdx == 2) {
-// The "To account" title might be truncated on Nano devices
-// due to the device's limited screen space.
-#if defined(TARGET_NANOS)
-        snprintf(outKey, outKeyLen, "To ");
-#else
         snprintf(outKey, outKeyLen, "To account ");
-#endif
+
         return page_hexstring_with_delimiters(fields->data.candid_transfer.to, DFINITY_ADDR_LEN, outVal, outValLen, pageIdx,
                                               pageCount);
     }
@@ -1080,13 +1067,8 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
     }
 
     if (displayIdx == 2) {
-// The "From account" title might be truncated on Nano devices
-// due to the device's limited screen space.
-#if defined(TARGET_NANOS)
-        snprintf(outKey, outKeyLen, "From ");
-#else
         snprintf(outKey, outKeyLen, "From account ");
-#endif
+
         const uint8_t *sender = (uint8_t *)call->sender.data;
         const uint16_t senderLen = (uint16_t)call->sender.len;
         const uint8_t *fromSubaccount = call->data.icrcTransfer.from_subaccount.p;
@@ -1101,13 +1083,8 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
     }
 
     if (displayIdx == 3) {
-// The "To account" title might be truncated on Nano devices
-// due to the device's limited screen space.
-#if defined(TARGET_NANOS)
-        snprintf(outKey, outKeyLen, "To ");
-#else
         snprintf(outKey, outKeyLen, "To account ");
-#endif
+
         const candid_Principal_t *owner = &call->data.icrcTransfer.account.owner;
         const uint8_t *subaccount = call->data.icrcTransfer.account.subaccount.p;
         const uint16_t subaccountLen = (uint16_t)call->data.icrcTransfer.account.subaccount.len;
@@ -1181,9 +1158,6 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
 
     if (displayIdx == 0) {
         snprintf(outKey, outKeyLen, "Transaction type ");
-#if defined(TARGET_NANOS)
-        snprintf(outVal, outValLen, "Allow account to withdraw tokens");
-#else
         char title[50] = {0};
         if (token != NULL) {
             snprintf(title, sizeof(title), "Allow another account to withdraw %s", token->token_symbol);
@@ -1192,7 +1166,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         }
 
         pageString(outVal, outValLen, title, pageIdx, pageCount);
-#endif
+
         return parser_ok;
     }
 
@@ -1208,11 +1182,8 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
     }
 
     if (displayIdx == 2) {
-#if defined(TARGET_NANOS)
-        snprintf(outKey, outKeyLen, "From ");
-#else
         snprintf(outKey, outKeyLen, "From account ");
-#endif
+
         const uint8_t *sender = (uint8_t *)call->sender.data;
         const uint16_t senderLen = (uint16_t)call->sender.len;
         const uint8_t *fromSubaccount = call->data.icrc2_approve.from_subaccount.p;
@@ -1223,13 +1194,8 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
     }
 
     if (displayIdx == 3) {
-#if defined(TARGET_NANOS)
-        // Removed the allowed part of the tittle
-        // nanos screen is too small
-        snprintf(outKey, outKeyLen, "Spender ");
-#else
         snprintf(outKey, outKeyLen, "Allowed Spender ");
-#endif
+
         const candid_Principal_t *owner = &call->data.icrc2_approve.spender.owner;
         const uint8_t *subaccount = call->data.icrc2_approve.spender.subaccount.p;
         const uint16_t subaccountLen = (uint16_t)call->data.icrc2_approve.spender.subaccount.len;

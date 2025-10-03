@@ -110,7 +110,7 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     MEMZERO(request_hash, sizeof(request_hash));
     PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(request_hash, call), parser_unexpected_error)
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
+#if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     PARSER_ASSERT_OR_ERROR(memcmp(request_hash, request_id_stateread, 32) == 0, parser_context_invalid_chars)
     MEMCPY(G_io_apdu_buffer, request_hash, 32);
