@@ -694,6 +694,61 @@ static parser_error_t parser_getItemMerge(uint8_t displayIdx, char *outKey, uint
     return parser_no_data;
 }
 
+static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
+                                                     uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
+    *pageCount = 1;
+    const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+    PARSER_ASSERT_OR_ERROR(fields->command.hash == hash_command_DisburseMaturity, parser_unexpected_value)
+
+    if (displayIdx == 0) {
+        snprintf(outKey, outKeyLen, "Transaction type");
+        snprintf(outVal, outValLen, "Disburse Maturity");
+        return parser_ok;
+    }
+
+    if (displayIdx == 1) {
+        snprintf(outKey, outKeyLen, "Neuron ID");
+        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+    }
+
+    if (displayIdx == 2) {
+        snprintf(outKey, outKeyLen, "Pct to Disburse");
+        uint32_to_str(outVal, outValLen, fields->command.disburseMaturity.percentage_to_disburse);
+        uint16_t written_value = strlen(outVal);
+        snprintf(outVal + written_value, outValLen - written_value, "%s", "%");
+
+        return parser_ok;
+    }
+
+    if (!fields->command.disburseMaturity.has_to_account && !fields->command.disburseMaturity.has_to_account_identifier) {
+        displayIdx++;
+    }
+    if (displayIdx == 3) {
+#if defined(TARGET_NANOS)
+        snprintf(outKey, outKeyLen, "To ");
+#else
+        snprintf(outKey, outKeyLen, "To Account ");
+#endif
+        if (fields->command.disburseMaturity.has_to_account_identifier) {
+            const uint8_t *to_account_identifier = fields->command.disburseMaturity.to_account_identifier.p;
+            const uint16_t to_account_identifierLen = (uint16_t)fields->command.disburseMaturity.to_account_identifier.len;
+
+            return page_hexstring_with_delimiters(to_account_identifier, to_account_identifierLen, outVal, outValLen,
+                                                  pageIdx, pageCount);
+        } else {
+            const uint8_t *owner = fields->command.disburseMaturity.to_account.owner.ptr;
+            const uint16_t ownerLen = (uint16_t)fields->command.disburseMaturity.to_account.owner.len;
+            const uint8_t *subaccount = fields->command.disburseMaturity.to_account.subaccount.p;
+            const uint16_t subaccountLen = (uint16_t)fields->command.disburseMaturity.to_account.subaccount.len;
+
+            return page_principal_with_subaccount(owner, ownerLen, subaccount, subaccountLen, outVal, outValLen, pageIdx,
+                                                  pageCount, true);
+        }
+    }
+
+    return parser_no_data;
+}
+
 static parser_error_t parser_getItemListNeuronsCandid(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
                                                       uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
@@ -1507,6 +1562,10 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
         case Merge: {
             return parser_getItemMerge(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
+        case DisburseMaturity: {
+            return parser_getItemDisburseMaturity(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+
         case StakeMaturityCandid: {
             return parser_getItemStakeMaturityCandid(displayIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }

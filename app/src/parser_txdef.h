@@ -83,6 +83,7 @@ typedef enum {
     Disburse = 3,
     Spawn = 4,
     Follow = 5,
+    DisburseMaturity = 6,
     RegisterVote = 7,
     Split = 11,
 

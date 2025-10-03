@@ -384,6 +384,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case hash_command_RefreshVotingPower:
                     *mn_type = NNS_RefreshVotingPower;
                     return parser_ok;
+                case hash_command_DisburseMaturity:
+                    *mn_type = DisburseMaturity;
+                    return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
                         return parser_unexpected_value;
@@ -863,6 +866,13 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case DisburseCandid:
         case Disburse: {
             return 4;
+        }
+        case DisburseMaturity: {
+            return 3 +
+                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ||
+                            v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account
+                        ? 1
+                        : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +

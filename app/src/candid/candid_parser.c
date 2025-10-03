@@ -689,7 +689,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
     crypto_principalToTextual(canisterId, (uint8_t)canisterIdSize, canister_textual, &outLen);
 
     icrc2->icp_canister = (strncmp(canister_textual, ICP_CANISTER_ID_TEXTUAL, sizeof(ICP_CANISTER_ID_TEXTUAL) - 1) == 0);
-    
+
     zemu_log("readCandidICRC2Approve OK\n");
     return parser_ok;
 }
