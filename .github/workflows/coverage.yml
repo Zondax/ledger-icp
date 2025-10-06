@@ -11,7 +11,7 @@ on:
 
 jobs:
   ledger-code-coverage:
-    uses: Zondax/_workflows/.github/workflows/_ledger_code_coverage.yml@v3
+    uses: Zondax/_workflows/.github/workflows/_ledger_code_coverage.yml@ci-coverage
     with:
       runs-on: "${{ github.repository_owner == 'zondax' && 'zondax-runners' || 'ubuntu-latest' }}"
       has-rust: true
