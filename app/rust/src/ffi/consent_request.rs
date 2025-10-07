@@ -70,6 +70,11 @@ impl ByteSerializable for ConsentRequestT {
             return Err(ParserError::UnexpectedBufferEnd);
         }
 
+        // Check alignment before casting
+        if input.as_ptr() as usize % core::mem::align_of::<Self>() != 0 {
+            return Err(ParserError::UnexpectedError);
+        }
+
         let result = unsafe { &*(input.as_ptr() as *const Self) };
         result.validate()?;
         Ok(result)
