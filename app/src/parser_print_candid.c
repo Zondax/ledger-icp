@@ -1238,10 +1238,39 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         return print_Amount(allowance, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
+    // Skip Expired At if not present
+    if (!(call->data.icrc2_approve.has_expires_at)) displayIdx++;
+
+    if (displayIdx == 6) {
+        snprintf(outKey, outKeyLen, "Expires At");
+        uint64_t expires_at_ns = call->data.icrc2_approve.expires_at;
+
+        if (expires_at_ns == 0) {
+            pageString(outVal, outValLen, "Never", pageIdx, pageCount);
+            return parser_ok;
+        }
+
+        // Convert nanoseconds to seconds
+        uint64_t expires_at_seconds = expires_at_ns / 1000000000;
+
+        timedata_t td;
+        zxerr_t zxerr = decodeTime(&td, expires_at_seconds);
+        if (zxerr != zxerr_ok) {
+            return parser_unexpected_value;
+        }
+
+        char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC",
+                 td.tm_year, td.tm_mon, td.tm_day, td.tm_hour, td.tm_min, td.tm_sec);
+
+        pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+        return parser_ok;
+    }
+
     // Skip fee if not present and not icp canister id
     if (!(call->data.icrc2_approve.has_fee || icp_canisterId)) displayIdx++;
 
-    if (displayIdx == 6) {
+    if (displayIdx == 7) {
         char title[50] = {0};
         if (token != NULL) {
             snprintf(title, sizeof(title), "Max fee (%s)", token->token_symbol);
@@ -1258,7 +1287,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         return print_Amount(fees, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
-    if (displayIdx == 7) {
+    if (displayIdx == 8) {
         snprintf(outKey, outKeyLen, "Memo");
         if (call->data.icrc2_approve.has_memo && call->data.icrc2_approve.memo.len != 0) {
             uint64_t memo = 0;
