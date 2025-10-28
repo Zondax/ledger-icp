@@ -720,24 +720,25 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
         return parser_ok;
     }
 
-    if (!fields->command.disburseMaturity.has_to_account && !fields->command.disburseMaturity.has_to_account_identifier) {
-        displayIdx++;
-    }
-    if (displayIdx == 3) {
-        snprintf(outKey, outKeyLen, "To Account ");
-
-        if (fields->command.disburseMaturity.has_to_account_identifier) {
+    uint8_t item_idx = 3;
+    if (fields->command.disburseMaturity.has_to_account_identifier) {
+        if (displayIdx == item_idx) {
+            snprintf(outKey, outKeyLen, "To Account ID ");
             const uint8_t *to_account_identifier = fields->command.disburseMaturity.to_account_identifier.p;
             const uint16_t to_account_identifierLen = (uint16_t)fields->command.disburseMaturity.to_account_identifier.len;
-
             return page_hexstring_with_delimiters(to_account_identifier, to_account_identifierLen, outVal, outValLen,
                                                   pageIdx, pageCount);
-        } else {
+        }
+        item_idx++;
+    }
+
+    if (fields->command.disburseMaturity.has_to_account) {
+        if (displayIdx == item_idx) {
+            snprintf(outKey, outKeyLen, "To Account ");
             const uint8_t *owner = fields->command.disburseMaturity.to_account.owner.ptr;
             const uint16_t ownerLen = (uint16_t)fields->command.disburseMaturity.to_account.owner.len;
             const uint8_t *subaccount = fields->command.disburseMaturity.to_account.subaccount.p;
             const uint16_t subaccountLen = (uint16_t)fields->command.disburseMaturity.to_account.subaccount.len;
-
             return page_principal_with_subaccount(owner, ownerLen, subaccount, subaccountLen, outVal, outValLen, pageIdx,
                                                   pageCount, true);
         }
@@ -1260,8 +1261,8 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         }
 
         char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
-        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC",
-                 td.tm_year, td.tm_mon, td.tm_day, td.tm_hour, td.tm_min, td.tm_sec);
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
+                 td.tm_min, td.tm_sec);
 
         pageString(outVal, outValLen, buffer, pageIdx, pageCount);
         return parser_ok;

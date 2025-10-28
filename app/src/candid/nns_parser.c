@@ -467,11 +467,6 @@ __Z_INLINE parser_error_t readCommandDisburseMaturity(parser_context_t *ctx, can
         val->command.disburseMaturity.to_account.has_subaccount = 0;
     }
 
-    // Check that both account fields are not present simultaneously
-    if (val->command.disburseMaturity.has_to_account_identifier && val->command.disburseMaturity.has_to_account) {
-        return parser_unexpected_value;
-    }
-
     // Field 2 data: percentage_to_disburse (Nat32)
     CHECK_PARSER_ERR(readCandidNat32(ctx, &val->command.disburseMaturity.percentage_to_disburse))
 
