@@ -868,10 +868,8 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return 4;
         }
         case DisburseMaturity: {
-            return 3 + (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ||
-                                v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account
-                            ? 1
-                            : 0);
+            return 3 + (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
+                       (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +
@@ -979,10 +977,12 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                     // 4. Allowed Spender
                     // 5. Amount
                     // 6. Allowance (if present)
-                    // 7. Memo
-                    // 8. Fee (if present)
+                    // 7. Expires At (if present)
+                    // 8. Memo
+                    // 9. Fee (if present)
                     return 5 + (!icp_canisterId ? 1 : 0) + ((call->data.icrc2_approve.has_fee || icp_canisterId) ? 1 : 0) +
-                           (call->data.icrc2_approve.has_expected_allowance ? 1 : 0);
+                           (call->data.icrc2_approve.has_expected_allowance ? 1 : 0) +
+                           (call->data.icrc2_approve.has_expires_at ? 1 : 0);
                 }
 
                 default:
