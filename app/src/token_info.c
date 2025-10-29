@@ -88,6 +88,7 @@ static const token_info_t TOKEN_REGISTRY[] = {
     {.canister_id = "pcj6u-uaaaa-aaaak-aewnq-cai", .token_symbol = "CLOUD", .decimals = 8},
     {.canister_id = "7pail-xaaaa-aaaas-aabmq-cai", .token_symbol = "BOB", .decimals = 8},
     {.canister_id = "ysy5f-2qaaa-aaaap-qkmmq-cai", .token_symbol = "ALEX", .decimals = 8},
+    {.canister_id = "um5iw-rqaaa-aaaaq-qaaba-cai", .token_symbol = "TCYCLES", .decimals = 12},
     {.token_symbol = "nICP", .decimals = 8, .canister_id = "buwm7-7yaaa-aaaar-qagva-cai"},
 };
 
