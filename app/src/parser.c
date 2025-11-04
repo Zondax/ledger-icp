@@ -35,7 +35,7 @@
 #include "rslib.h"
 #endif
 
-#if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
+#if defined(LEDGER_SPECIFIC)
 // For some reason NanoX requires this function
 void __assert_fail(__Z_UNUSED const char *assertion, __Z_UNUSED const char *file, __Z_UNUSED unsigned int line,
                    __Z_UNUSED const char *function) {
@@ -110,7 +110,7 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     MEMZERO(request_hash, sizeof(request_hash));
     PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(request_hash, call), parser_unexpected_error)
 
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
+#if defined(LEDGER_SPECIFIC)
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     PARSER_ASSERT_OR_ERROR(memcmp(request_hash, request_id_stateread, 32) == 0, parser_context_invalid_chars)
     MEMCPY(G_io_apdu_buffer, request_hash, 32);
