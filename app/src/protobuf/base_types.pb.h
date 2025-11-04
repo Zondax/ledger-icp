@@ -71,10 +71,8 @@ extern "C" {
     {                                               \
         { {NULL}, NULL }                            \
     }
-#define ic_base_types_pb_v1_NeuronId_init_default \
-    { 0 }
-#define ic_base_types_pb_v1_ProposalId_init_default \
-    { 0 }
+#define ic_base_types_pb_v1_NeuronId_init_default {0}
+#define ic_base_types_pb_v1_ProposalId_init_default {0}
 #define ic_base_types_pb_v1_MethodAuthzInfo_init_default \
     {                                                    \
         {{NULL}, NULL}, { {NULL}, NULL }                 \
@@ -93,10 +91,8 @@ extern "C" {
     {                                            \
         { {NULL}, NULL }                         \
     }
-#define ic_base_types_pb_v1_NeuronId_init_zero \
-    { 0 }
-#define ic_base_types_pb_v1_ProposalId_init_zero \
-    { 0 }
+#define ic_base_types_pb_v1_NeuronId_init_zero {0}
+#define ic_base_types_pb_v1_ProposalId_init_zero {0}
 #define ic_base_types_pb_v1_MethodAuthzInfo_init_zero \
     {                                                 \
         {{NULL}, NULL}, { {NULL}, NULL }              \

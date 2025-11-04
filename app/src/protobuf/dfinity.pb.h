@@ -75,14 +75,10 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define TimeStamp_init_default \
-    { 0 }
-#define Memo_init_default \
-    { 0 }
-#define ICPTs_init_default \
-    { 0 }
-#define Payment_init_default \
-    { false, ICPTs_init_default }
+#define TimeStamp_init_default {0}
+#define Memo_init_default {0}
+#define ICPTs_init_default {0}
+#define Payment_init_default {false, ICPTs_init_default}
 #define Subaccount_init_default \
     {                           \
         { 0 }                   \
@@ -91,25 +87,17 @@ extern "C" {
     {                                  \
         { 0 }                          \
     }
-#define BlockHeight_init_default \
-    { 0 }
-#define SendRequest_init_default                                                                                          \
-    {                                                                                                                     \
-        false, Memo_init_default, false, Payment_init_default, false, ICPTs_init_default, false, Subaccount_init_default, \
-            false, AccountIdentifier_init_default, false, BlockHeight_init_default, false, TimeStamp_init_default         \
-    }
-#define ManageNeuronPb_init_default \
-    { false, ic_nns_governance_pb_v1_ManageNeuron_init_default }
-#define ListNeurons_init_default \
-    { {{NULL}, NULL}, 0 }
-#define TimeStamp_init_zero \
-    { 0 }
-#define Memo_init_zero \
-    { 0 }
-#define ICPTs_init_zero \
-    { 0 }
-#define Payment_init_zero \
-    { false, ICPTs_init_zero }
+#define BlockHeight_init_default {0}
+#define SendRequest_init_default                                                                             \
+    {false, Memo_init_default,       false, Payment_init_default,           false, ICPTs_init_default,       \
+     false, Subaccount_init_default, false, AccountIdentifier_init_default, false, BlockHeight_init_default, \
+     false, TimeStamp_init_default}
+#define ManageNeuronPb_init_default {false, ic_nns_governance_pb_v1_ManageNeuron_init_default}
+#define ListNeurons_init_default {{{NULL}, NULL}, 0}
+#define TimeStamp_init_zero {0}
+#define Memo_init_zero {0}
+#define ICPTs_init_zero {0}
+#define Payment_init_zero {false, ICPTs_init_zero}
 #define Subaccount_init_zero \
     {                        \
         { 0 }                \
@@ -118,17 +106,13 @@ extern "C" {
     {                               \
         { 0 }                       \
     }
-#define BlockHeight_init_zero \
-    { 0 }
-#define SendRequest_init_zero                                                                                        \
-    {                                                                                                                \
-        false, Memo_init_zero, false, Payment_init_zero, false, ICPTs_init_zero, false, Subaccount_init_zero, false, \
-            AccountIdentifier_init_zero, false, BlockHeight_init_zero, false, TimeStamp_init_zero                    \
-    }
-#define ManageNeuronPb_init_zero \
-    { false, ic_nns_governance_pb_v1_ManageNeuron_init_zero }
-#define ListNeurons_init_zero \
-    { {{NULL}, NULL}, 0 }
+#define BlockHeight_init_zero {0}
+#define SendRequest_init_zero                                                                       \
+    {false, Memo_init_zero,       false, Payment_init_zero,           false, ICPTs_init_zero,       \
+     false, Subaccount_init_zero, false, AccountIdentifier_init_zero, false, BlockHeight_init_zero, \
+     false, TimeStamp_init_zero}
+#define ManageNeuronPb_init_zero {false, ic_nns_governance_pb_v1_ManageNeuron_init_zero}
+#define ListNeurons_init_zero {{{NULL}, NULL}, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define AccountIdentifier_hash_tag 1

@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#if defined(TARGET_STAX) || defined(TARGET_FLEX)
+#if defined(TARGET_STAX) || defined(TARGET_FLEX) || defined(TARGET_APEX_P)
 #define INCREASE_DISSOLVE_DELAY "Increase Dissolve\nDelay"
 #else
 #define INCREASE_DISSOLVE_DELAY "Increase Dissolve  Delay"

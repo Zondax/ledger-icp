@@ -17,12 +17,10 @@
 #if defined(BLS_SIGNATURE)
 #include "bls.h"
 
+#include "cx.h"
 #include "nvdata.h"
 #include "rslib.h"
 #include "tx.h"
-#if defined(TARGET_NANOS) || defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX)
-#include "cx.h"
-#endif
 
 uint8_t *bls_root_key() {
     static uint8_t root_key[ROOT_KEY_LEN];
