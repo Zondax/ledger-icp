@@ -42,7 +42,7 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
                                               const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount);
 parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen, const uint8_t *fromSubaccount,
                                               uint16_t fromSubaccountLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                                              uint8_t *pageCount);
+                                              uint8_t *pageCount, bool showCompleteSubaccount);
 
 parser_error_t page_textual_with_delimiters(const char *input, const uint16_t inputLen, char *output,
                                             const uint16_t outputLen, const uint8_t pageIdx, uint8_t *pageCount);
