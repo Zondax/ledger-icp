@@ -77,6 +77,8 @@ typedef enum {
     hash_setting_auto_stake_maturity = 3470422224,
     hash_setting_increse_dissolve_delay = 913088909,
     hash_field_disburse_account = 1937583785,
+    hash_to_account_identifier = 1634436479,
+    hash_percentage_to_disburse = 2860156962,
     hash_opt_amount = 3573748184,
     hash_setting_addhotkey = 3570462350,
     hash_setting_remove_hotkey = 2202409078,
@@ -120,12 +122,17 @@ typedef enum {
     icrc_hash_from_subaccount = 1835347746,
     icrc_hash_created_at_time = 3258775938,
     icrc_hash_amount = 3573748184,
+    // next 3 constants for icrc2_approve
+    icrc_hash_spender = 3868658507,
+    icrc_hash_expected_allowance = 3622243857,
+    icrc_hash_expires_at = 3680359390,
 } icrc_hash_fields;
 
 typedef enum {
     hash_command_Spawn = 345247259,
     hash_command_Split = 345791162,
     hash_command_Follow = 774571409,
+    hash_command_DisburseMaturity = 914851348,
     hash_command_ClaimOrRefresh = 1349619708,
     hash_command_Configure = 1647237574,
     hash_command_RegisterVote = 2455066893,
@@ -141,7 +148,6 @@ typedef enum {
 typedef enum {
     sns_hash_command_Split = 345791162,
     sns_hash_command_Follow = 774571409,
-    sns_hash_command_DisburseMaturity = 914851348,
     sns_hash_command_Configure = 1647237574,
     // sns_hash_command_RegisterVote = 1647237574,
     sns_hash_command_SyncCommand = 2455066893,
@@ -230,6 +236,14 @@ typedef struct {
 } candid_Principal_t;
 
 typedef struct {
+    uint8_t has_owner;
+    candid_Principal_t owner;
+
+    uint8_t has_subaccount;
+    sizedBuffer_t subaccount;
+} Account_t;
+
+typedef struct {
     uint8_t has_principal;
     candid_Principal_t principal;
 } candid_AddRemoveHotkey_t;
@@ -291,6 +305,16 @@ typedef struct {
 } candid_Disburse_t;
 
 typedef struct {
+    uint8_t has_to_account_identifier;
+    sizedBuffer_t to_account_identifier;
+
+    uint8_t has_to_account;
+    Account_t to_account;
+
+    uint32_t percentage_to_disburse;
+} candid_DisburseMaturity_t;
+
+typedef struct {
     int32_t vote;
 
     uint8_t has_proposal;
@@ -321,14 +345,6 @@ typedef struct {
     uint8_t has_principal;
     candid_Principal_t principal;
 } sns_NeuronPermissions_t;
-
-typedef struct {
-    uint8_t has_owner;
-    candid_Principal_t owner;
-
-    uint8_t has_subaccount;
-    sizedBuffer_t subaccount;
-} Account_t;
 
 typedef struct {
     uint64_t memo;
@@ -365,6 +381,32 @@ typedef struct {
 } icrc_transfer_t;
 
 typedef struct {
+    uint8_t icp_canister;
+    Account_t spender;
+
+    uint8_t has_fee;
+    uint64_t fee;
+
+    uint8_t has_memo;
+    sizedBuffer_t memo;
+
+    uint8_t has_from_subaccount;
+    sizedBuffer_t from_subaccount;
+
+    uint8_t has_created_at_time;
+    uint64_t created_at_time;
+
+    uint64_t amount;  // The approved amount
+
+    uint8_t has_expected_allowance;
+    uint64_t expected_allowance;
+
+    uint8_t has_expires_at;
+    uint64_t expires_at;
+
+} icrc2_approve_t;
+
+typedef struct {
     uint8_t has_account;
     Account_t account;
 
@@ -385,6 +427,7 @@ typedef struct {
         candid_RegisterVote_t vote;
         candid_Follow_t follow;
         candid_RefreshVotingPower_t refresh_voting_power;
+        candid_DisburseMaturity_t disburseMaturity;
 
         sns_NeuronPermissions_t neuronPermissions;
         sns_Disburse_t sns_disburse;

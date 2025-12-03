@@ -196,7 +196,7 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
 
 parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen, const uint8_t *fromSubaccount,
                                               uint16_t fromSubaccountLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                                              uint8_t *pageCount) {
+                                              uint8_t *pageCount, bool showCompleteSubaccount) {
     if (sender == NULL || senderLen > DFINITY_PRINCIPAL_LEN ||
         (fromSubaccount != NULL && fromSubaccountLen != DFINITY_SUBACCOUNT_LEN)) {
         return parser_unexpected_error;
@@ -299,19 +299,20 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     text_ptr++;
 
     uint16_t bytesToShow = subaccTrimLen;
-    if (subaccTrimLen > DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL) {
+    if ((subaccTrimLen > DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL) && !showCompleteSubaccount) {
         bytesToShow = DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL;
     }
 
     array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen, subaccTrim, bytesToShow);
 
-    const uint8_t subaccountTextLen = 2 * bytesToShow + bytesToShow / 4 - 1 + (bytesToShow % 4 ? 1 : 0);
-
     const uint8_t FIRST_BLOCK = 7;
     const uint8_t OTHER_BLOCKS = 8;
 
+    const uint8_t subaccountTextLen = 2 * bytesToShow + (2 * bytesToShow / OTHER_BLOCKS);
+    const uint8_t blocks_count = subaccountTextLen / OTHER_BLOCKS;
+
     if (subaccountTextLen >= FIRST_BLOCK) {
-        for (uint8_t i = 0, pos = FIRST_BLOCK; i < 3 && pos < subaccountTextLen; i++) {
+        for (uint8_t i = 0, pos = FIRST_BLOCK; i < blocks_count - 1 && pos < subaccountTextLen; i++) {
             err = inplace_insert_char(text_ptr, sizeof(text), pos, ' ');
             if (err != zxerr_ok) {
                 return parser_unexpected_error;
@@ -323,8 +324,8 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
 
     uint8_t finalStrLen = (uint8_t)strnlen(text, sizeof(text));
     // [principal (<=64 chars) | crc32 (8 chars) | subaccount (<=71 chars) + 1
-    // ('.')]
-    if (finalStrLen > 144) {
+    // ('.') + 1 (' ')]
+    if (finalStrLen > 145) {
         return parser_unexpected_error;
     }
 

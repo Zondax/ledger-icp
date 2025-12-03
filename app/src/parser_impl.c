@@ -384,6 +384,9 @@ parser_error_t getManageNeuronType(const parser_tx_t *v, manageNeuron_e *mn_type
                 case hash_command_RefreshVotingPower:
                     *mn_type = NNS_RefreshVotingPower;
                     return parser_ok;
+                case hash_command_DisburseMaturity:
+                    *mn_type = DisburseMaturity;
+                    return parser_ok;
                 case hash_command_Configure: {
                     if (!command->configure.has_operation) {
                         return parser_unexpected_value;
@@ -505,6 +508,12 @@ parser_error_t readPayload(parser_tx_t *v, uint8_t *buffer, size_t bufferLen) {
         return parser_ok;
     }
 
+    if (strcmp(method, "icrc2_approve") == 0) {
+        v->tx_fields.call.method_type = candid_icrc2_approve;
+        CHECK_PARSER_ERR(readCandidICRC2Approve(v, buffer, bufferLen))
+        return parser_ok;
+    }
+
     if (strcmp(method, "transfer") == 0) {
         v->tx_fields.call.method_type = candid_transfer;
         CHECK_PARSER_ERR(readCandidTransfer(v, buffer, bufferLen))
@@ -533,6 +542,11 @@ static bool isCandidTransaction(parser_tx_t *v) {
     }
 
     if (strcmp(method, "transfer") == 0) {
+        return true;
+    }
+
+    // https://github.com/dfinity/ICRC-1/blob/main/standards/ICRC-2/README.md#icrc2_approve
+    if (strcmp(method, "icrc2_approve") == 0) {
         return true;
     }
 
@@ -607,7 +621,6 @@ parser_error_t readContent(CborValue *content_map, parser_tx_t *v) {
 }
 
 parser_error_t readEnvelope(const parser_context_t *c, parser_tx_t *v) {
-    zemu_log_stack("read envelope");
     CborValue it;
     CHECK_APP_CANARY()
     INIT_CBOR_PARSER(c, it)
@@ -688,9 +701,9 @@ parser_error_t checkPossibleCanisters(const parser_tx_t *v, char *canister_textu
             CHECK_METHOD_WITH_CANISTER("renrkeyaaaaaaaaaaadacai")
         }
 
-        case candid_icrc_transfer: {
+        case candid_icrc_transfer:
+        case candid_icrc2_approve:
             return parser_ok;
-        }
 
         default: {
             return parser_unexpected_type;
@@ -705,12 +718,12 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         case call: {
             zemu_log_stack("Call type");
             if (strcmp(v->request_type.data, "call") != 0) {
-                zemu_log_stack("call not found");
+                zemu_log("call not found\n");
                 return parser_unexpected_value;
             }
 
             if (v->special_transfer_type == invalid) {
-                zemu_log_stack("invalid transfer type");
+                zemu_log("invalid transfer type\n");
                 return parser_unexpected_value;
             }
 
@@ -744,13 +757,17 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
             break;
         }
         default: {
-            zemu_log_stack("unsupported tx");
+            zemu_log("unsupported tx\n");
             return parser_unexpected_method;
         }
     }
 
-#if defined(TARGET_NANOX) || defined(TARGET_NANOS2) || defined(TARGET_STAX) || defined(TARGET_FLEX)
-    if (v->txtype != call || v->tx_fields.call.method_type != candid_icrc_transfer) {
+#if defined(LEDGER_SPECIFIC)
+    // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
+    bool skip_validation = (v->txtype == call && (v->tx_fields.call.method_type == candid_icrc_transfer ||
+                                                  v->tx_fields.call.method_type == candid_icrc2_approve));
+
+    if (!skip_validation) {
         zemu_log("Performing sender validation\n");
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
@@ -763,8 +780,11 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
         PARSER_ASSERT_OR_ERROR(crypto_computePrincipal(publicKey, principalBytes) == zxerr_ok, parser_unexpected_error)
 
         if (memcmp(sender, principalBytes, DFINITY_PRINCIPAL_LEN) != 0) {
+            zemu_log("Sender mismatch\n");
             return parser_unexpected_value;
         }
+    } else {
+        zemu_log("Skipping sender validation\n");
     }
 #endif
 
@@ -846,6 +866,10 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
         case DisburseCandid:
         case Disburse: {
             return 4;
+        }
+        case DisburseMaturity: {
+            return 3 + (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
+                       (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +
@@ -941,6 +965,24 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                     // To account is only shown if tx is not stake
                     return 4 + (icp_canisterId ? 0 : 1) + ((call->data.icrcTransfer.has_fee || icp_canisterId) ? 1 : 0) +
                            (is_stake_tx ? 0 : 1);
+                }
+                case candid_icrc2_approve: {
+                    const call_t *call = &v->tx_fields.call;
+                    const bool icp_canisterId = call->data.icrc2_approve.icp_canister;
+
+                    // Base count for approve UI:
+                    // 1. Transaction type
+                    // 2. Canister ID (if not ICP)
+                    // 3. From account
+                    // 4. Allowed Spender
+                    // 5. Amount
+                    // 6. Allowance (if present)
+                    // 7. Expires At (if present)
+                    // 8. Memo
+                    // 9. Fee (if present)
+                    return 5 + (!icp_canisterId ? 1 : 0) + ((call->data.icrc2_approve.has_fee || icp_canisterId) ? 1 : 0) +
+                           (call->data.icrc2_approve.has_expected_allowance ? 1 : 0) +
+                           (call->data.icrc2_approve.has_expires_at ? 1 : 0);
                 }
 
                 default:
