@@ -23,7 +23,7 @@
 #include "parser.h"
 #include "zxmacros.h"
 
-#define RAM_BUFFER_SIZE 8192
+#define RAM_BUFFER_SIZE 4096
 #define FLASH_BUFFER_SIZE 16384
 
 // Ram
