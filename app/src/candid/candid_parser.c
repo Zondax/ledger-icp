@@ -821,6 +821,9 @@ parser_error_t readCandidTransfer(parser_tx_t *tx, const uint8_t *input, uint16_
     CHECK_PARSER_ERR(readCandidByte(&ctx, &transfer->has_from_subaccount))
     if (transfer->has_from_subaccount) {
         CHECK_PARSER_ERR(readCandidText(&ctx, &transfer->from_subaccount))
+        if (transfer->from_subaccount.len != DFINITY_SUBACCOUNT_LEN) {
+            return parser_unexpected_value;
+        }
     }
 
     // Read timestamp (opt u64)

@@ -150,10 +150,12 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender, const candid_trans
         return print_principal(sender.data, (uint16_t)sender.len, outVal, outValLen, pageIdx, pageCount);
     }
 
-    // For non-default subaccount, we need to handle the full format
-    uint8_t subaccount[32] = {0};
+    uint8_t subaccount[DFINITY_SUBACCOUNT_LEN] = {0};
     if (has_subaccount) {
-        MEMCPY(subaccount, sendrequest->from_subaccount.p, (size_t)sendrequest->from_subaccount.len);
+        if (sendrequest->from_subaccount.len != sizeof(subaccount)) {
+            return parser_unexpected_value;
+        }
+        MEMCPY(subaccount, sendrequest->from_subaccount.p, sizeof(subaccount));
     }
 
     return page_principal_with_subaccount(sender.data, (uint16_t)sender.len, subaccount, sizeof(subaccount), outVal,
