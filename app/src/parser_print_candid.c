@@ -1347,19 +1347,22 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey
     if (displayIdx == 3) {
         snprintf(outKey, outKeyLen, "Disburse to ");
         if (!fields->has_account) {
-            return print_principal(parser_tx_obj.tx_fields.call.sender.data, DFINITY_PRINCIPAL_LEN, outVal, outValLen,
-                                   pageIdx, pageCount);
+            return print_principal(parser_tx_obj.tx_fields.call.sender.data,
+                                   (uint16_t)parser_tx_obj.tx_fields.call.sender.len, outVal, outValLen, pageIdx,
+                                   pageCount);
         }
         // assume has_account
         const uint8_t *principal =
             fields->account.has_owner ? fields->account.owner.ptr : parser_tx_obj.tx_fields.call.sender.data;
-        const uint8_t principalLen = fields->account.has_owner ? fields->account.owner.len : DFINITY_PRINCIPAL_LEN;
+        const uint16_t principalLen = fields->account.has_owner
+                                          ? (uint16_t)fields->account.owner.len
+                                          : (uint16_t)parser_tx_obj.tx_fields.call.sender.len;
         if (fields->account.has_subaccount) {
             return page_principal_with_subaccount(principal, principalLen, fields->account.subaccount.p,
                                                   (uint16_t)fields->account.subaccount.len, outVal, outValLen, pageIdx,
                                                   pageCount, false);
         } else {
-            return print_principal(principal, DFINITY_PRINCIPAL_LEN, outVal, outValLen, pageIdx, pageCount);
+            return print_principal(principal, principalLen, outVal, outValLen, pageIdx, pageCount);
         }
     }
     if (displayIdx == 4) {
