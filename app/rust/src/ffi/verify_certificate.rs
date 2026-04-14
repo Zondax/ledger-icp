@@ -37,10 +37,19 @@ use super::{
     },
 };
 
-// This is use to check important fields in consent_msg_request and canister_call_request
+// Bind the call envelope to the reviewed consent envelope. Equality of
+// `arg_hash`, `canister_id`, and `method_name` ensures the canister behaviour
+// signed matches the consent the user reviewed; equality of `ingress_expiry`
+// additionally ties the two envelopes to the same freshness window so a valid
+// consent cannot be replayed against a call with an attacker-chosen expiry.
+//
+// `sender` is validated by `validate_sender` with the device-principal /
+// DEFAULT_SENDER allow-list; `request_type` and `nonce` may legitimately
+// differ between the two envelopes and are intentionally not compared here.
 impl PartialEq<ConsentRequestT> for CanisterCallT {
     fn eq(&self, other: &ConsentRequestT) -> bool {
         self.arg_hash == other.arg_hash
+            && self.ingress_expiry == other.ingress_expiry
             && self.canister_id[..self.canister_id_len as usize]
                 == other.canister_id[..other.canister_id_len as usize]
             && self.method_name[..self.method_name_len as usize]

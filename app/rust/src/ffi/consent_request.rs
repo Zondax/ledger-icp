@@ -140,6 +140,10 @@ impl ConsentRequestT {
         self.sender[..sender.len()].copy_from_slice(sender);
         self.sender_len = sender.len() as u16;
 
+        // Capture the consent envelope's ingress_expiry so it can be bound
+        // against the call envelope below in verify_certificate.
+        self.ingress_expiry = request.ingress_expiry();
+
         Ok(())
     }
 }
