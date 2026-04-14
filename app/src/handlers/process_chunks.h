@@ -93,6 +93,7 @@ __Z_INLINE bool process_chunk(volatile uint32_t *tx, uint32_t rx) {
                 tx_initialized = false;
                 THROW(APDU_CODE_OUTPUT_BUFFER_TOO_SMALL);
             }
+            tx_initialized = false;
             return true;
 
         default:
