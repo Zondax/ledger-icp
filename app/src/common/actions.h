@@ -25,6 +25,10 @@
 #include "tx.h"
 #include "zxerror.h"
 
+#if defined(BLS_SIGNATURE)
+#include "bls.h"
+#endif
+
 extern uint16_t action_addrResponseLen;
 
 // APDU-level review lock. While set, handleApdu rejects every incoming APDU
@@ -87,6 +91,12 @@ __Z_INLINE zxerr_t app_fill_address() {
 
 __Z_INLINE void app_reject() {
     review_clear_pending();
+#if defined(BLS_SIGNATURE)
+    // Clear any BLS state, certificate, and UI context left behind by a
+    // pending BLS review so a subsequent request can start cleanly. Idempotent
+    // when no BLS flow is active.
+    reset_bls_state();
+#endif
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
@@ -100,6 +110,9 @@ __Z_INLINE void app_reply_address() {
 
 __Z_INLINE void app_reply_error() {
     review_clear_pending();
+#if defined(BLS_SIGNATURE)
+    reset_bls_state();
+#endif
     set_code(G_io_apdu_buffer, 0, APDU_CODE_DATA_INVALID);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
