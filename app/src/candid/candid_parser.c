@@ -143,6 +143,10 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
         }
     }
 
+    if (ctx.bufferLen - ctx.offset > 0) {
+        return parser_unexpected_characters;
+    }
+
     return parser_ok;
 }
 
