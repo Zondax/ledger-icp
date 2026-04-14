@@ -242,7 +242,7 @@ zxerr_t crypto_sign_bls(uint8_t *signatureBuffer, uint16_t signatureMaxlen, uint
     }
 catch_cx_error:
     MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-    MEMZERO(privateKeyData, 32);
+    MEMZERO(privateKeyData, sizeof(privateKeyData));
     if (err != zxerr_ok) {
         MEMZERO(signatureBuffer, signatureMaxlen);
     }
@@ -292,7 +292,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer, uint16_t signatureMaxlen, uint16_t
 
 catch_cx_error:
     MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-    MEMZERO(privateKeyData, 32);
+    MEMZERO(privateKeyData, sizeof(privateKeyData));
     if (err != zxerr_ok) {
         MEMZERO(signatureBuffer, signatureMaxlen);
     }
@@ -381,7 +381,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer, uint16_t signatureMaxlen,
 
 catch_cx_error:
     MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-    MEMZERO(privateKeyData, 32);
+    MEMZERO(privateKeyData, sizeof(privateKeyData));
     if (err != zxerr_ok) {
         MEMZERO(signatureBuffer, signatureMaxlen);
     }
