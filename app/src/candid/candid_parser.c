@@ -81,6 +81,9 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     if (txn.txn_length < 2) {
         return parser_unexpected_value;
     }
+    if (txn.txn_length > MAX_FIELDS) {
+        return parser_too_many_fields;
+    }
     uint64_t n_fields = txn.txn_length;
 
     // Array to save opt fields position in the record
