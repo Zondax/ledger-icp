@@ -77,7 +77,11 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     CHECK_PARSER_ERR(parser_init(ctx, start_state_read_data, dataLen))
     uint32_t dataLen_state_read = 0;
     CHECK_PARSER_ERR(_readUInt32(ctx, &dataLen_state_read))
-    PARSER_ASSERT_OR_ERROR(4 + dataLen_state_read < dataLen, parser_value_out_of_range)
+    // Overflow-safe form of `4 + dataLen_state_read < dataLen`. Also reserves 4
+    // bytes for the trailing request length prefix and 4+ bytes of request
+    // body so the second parse below has something to read.
+    PARSER_ASSERT_OR_ERROR(dataLen >= 8, parser_value_out_of_range)
+    PARSER_ASSERT_OR_ERROR(dataLen_state_read < (size_t)(dataLen - 8), parser_value_out_of_range)
     ctx->bufferLen = 4 + dataLen_state_read;
 
     CHECK_PARSER_ERR(readEnvelope(ctx, &parser_tx_obj))
@@ -99,7 +103,10 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     uint32_t dataLen_request = 0;
     CHECK_PARSER_ERR(_readUInt32(ctx, &dataLen_request))
 
-    PARSER_ASSERT_OR_ERROR(dataLen == dataLen_request + dataLen_state_read + 8, parser_value_out_of_range)
+    // Overflow-safe form of `dataLen == dataLen_request + dataLen_state_read + 8`.
+    // `dataLen_state_read + 8 <= dataLen` is already established above, so
+    // `dataLen - 8 - dataLen_state_read` cannot underflow.
+    PARSER_ASSERT_OR_ERROR(dataLen_request == (size_t)(dataLen - 8 - dataLen_state_read), parser_value_out_of_range)
     ctx->bufferLen = 4 + dataLen_request;
 
     CHECK_PARSER_ERR(readEnvelope(ctx, &parser_tx_obj))
