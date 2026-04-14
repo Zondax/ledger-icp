@@ -598,7 +598,9 @@ void crc32_small(const void *data, uint16_t n_bytes, uint32_t *crc) {
 
 zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint16_t addressLen, char *textual, uint16_t *outLen) {
     uint8_t input[33] = {0};
-    if (addressLen >= sizeof(input) + 4) {
+    // The body writes the 4-byte CRC then `addressLen` bytes into `input`,
+    // so the usable payload is sizeof(input) - 4.
+    if (addressLen > sizeof(input) - 4) {
         return zxerr_buffer_too_small;
     }
     uint32_t crc = 0;
