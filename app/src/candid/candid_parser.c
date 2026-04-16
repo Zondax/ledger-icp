@@ -143,7 +143,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
         }
     }
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -237,7 +237,7 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
         return parser_unexpected_number_items;
     }
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -437,7 +437,7 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     // Read amount
     CHECK_PARSER_ERR(readCandidLEB128(&ctx, &icrc->amount))
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -680,7 +680,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
         CHECK_PARSER_ERR(readCandidText(&ctx, &icrc2->spender.subaccount))
     }
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -842,7 +842,7 @@ parser_error_t readCandidTransfer(parser_tx_t *tx, const uint8_t *input, uint16_
     // Read amount
     CHECK_PARSER_ERR(readCandidNat64(&ctx, &transfer->amount))
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 

@@ -169,7 +169,8 @@ impl<'a> FromBytes<'a> for CanisterCall<'a> {
                                 return Err(ParserError::InvalidTime);
                             }
                             let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
-                            num_bytes[..bytes.len()].copy_from_slice(bytes);
+                            num_bytes[core::mem::size_of::<u64>() - bytes.len()..]
+                                .copy_from_slice(bytes);
                             u64::from_be_bytes(num_bytes)
                         };
 
