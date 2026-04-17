@@ -333,6 +333,9 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     // we have blocks of 18 chars per line
     const uint8_t CHARS_PER_PAGE = 18 * LINES_PER_PAGE;
     *pageCount = finalStrLen / CHARS_PER_PAGE + (finalStrLen % CHARS_PER_PAGE ? 1 : 0);
+    if (pageIdx >= *pageCount) {
+        return parser_display_idx_out_of_range;
+    }
     const char *textToPrint = text + pageIdx * CHARS_PER_PAGE;
 
     // we don't want to print last separator for each page

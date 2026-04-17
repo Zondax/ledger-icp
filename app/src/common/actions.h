@@ -16,6 +16,7 @@
 #pragma once
 
 #include <os_io_seproxyhal.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "apdu_codes.h"
@@ -24,9 +25,24 @@
 #include "tx.h"
 #include "zxerror.h"
 
+#if defined(BLS_SIGNATURE)
+#include "bls.h"
+#endif
+
 extern uint16_t action_addrResponseLen;
 
+// APDU-level review lock. While set, handleApdu rejects every incoming APDU
+// so the host cannot mutate the tx buffer between review rendering and
+// approval. Set by handlers right before IO_ASYNCH_REPLY; cleared on approval
+// and reject paths below.
+extern volatile bool g_review_pending;
+
+static inline bool review_is_pending(void) { return g_review_pending; }
+static inline void review_mark_pending(void) { g_review_pending = true; }
+static inline void review_clear_pending(void) { g_review_pending = false; }
+
 __Z_INLINE void app_sign() {
+    review_clear_pending();
     uint16_t replyLen = 0;
 
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
@@ -42,6 +58,7 @@ __Z_INLINE void app_sign() {
 }
 
 __Z_INLINE void app_sign_combined() {
+    review_clear_pending();
     uint16_t replyLen = 0;
 
     zxerr_t err = crypto_sign_combined(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &G_io_apdu_buffer[0],
@@ -73,17 +90,29 @@ __Z_INLINE zxerr_t app_fill_address() {
 }
 
 __Z_INLINE void app_reject() {
+    review_clear_pending();
+#if defined(BLS_SIGNATURE)
+    // Clear any BLS state, certificate, and UI context left behind by a
+    // pending BLS review so a subsequent request can start cleanly. Idempotent
+    // when no BLS flow is active.
+    reset_bls_state();
+#endif
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
     set_code(G_io_apdu_buffer, 0, APDU_CODE_COMMAND_NOT_ALLOWED);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
 __Z_INLINE void app_reply_address() {
+    review_clear_pending();
     set_code(G_io_apdu_buffer, action_addrResponseLen, APDU_CODE_OK);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, action_addrResponseLen + 2);
 }
 
 __Z_INLINE void app_reply_error() {
+    review_clear_pending();
+#if defined(BLS_SIGNATURE)
+    reset_bls_state();
+#endif
     set_code(G_io_apdu_buffer, 0, APDU_CODE_DATA_INVALID);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
@@ -92,6 +121,7 @@ __Z_INLINE void app_reply_error() {
 #include "bls.h"
 
 __Z_INLINE void app_sign_bls() {
+    review_clear_pending();
     uint16_t replyLen = 0;
 
     MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);

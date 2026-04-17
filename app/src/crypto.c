@@ -242,7 +242,7 @@ zxerr_t crypto_sign_bls(uint8_t *signatureBuffer, uint16_t signatureMaxlen, uint
     }
 catch_cx_error:
     MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-    MEMZERO(privateKeyData, 32);
+    MEMZERO(privateKeyData, sizeof(privateKeyData));
     if (err != zxerr_ok) {
         MEMZERO(signatureBuffer, signatureMaxlen);
     }
@@ -292,7 +292,7 @@ zxerr_t crypto_sign(uint8_t *signatureBuffer, uint16_t signatureMaxlen, uint16_t
 
 catch_cx_error:
     MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-    MEMZERO(privateKeyData, 32);
+    MEMZERO(privateKeyData, sizeof(privateKeyData));
     if (err != zxerr_ok) {
         MEMZERO(signatureBuffer, signatureMaxlen);
     }
@@ -381,7 +381,7 @@ zxerr_t crypto_sign_combined(uint8_t *signatureBuffer, uint16_t signatureMaxlen,
 
 catch_cx_error:
     MEMZERO(&cx_privateKey, sizeof(cx_privateKey));
-    MEMZERO(privateKeyData, 32);
+    MEMZERO(privateKeyData, sizeof(privateKeyData));
     if (err != zxerr_ok) {
         MEMZERO(signatureBuffer, signatureMaxlen);
     }
@@ -598,7 +598,9 @@ void crc32_small(const void *data, uint16_t n_bytes, uint32_t *crc) {
 
 zxerr_t crypto_principalToTextual(const uint8_t *address_in, uint16_t addressLen, char *textual, uint16_t *outLen) {
     uint8_t input[33] = {0};
-    if (addressLen >= sizeof(input) + 4) {
+    // The body writes the 4-byte CRC then `addressLen` bytes into `input`,
+    // so the usable payload is sizeof(input) - 4.
+    if (addressLen > sizeof(input) - 4) {
         return zxerr_buffer_too_small;
     }
     uint32_t crc = 0;

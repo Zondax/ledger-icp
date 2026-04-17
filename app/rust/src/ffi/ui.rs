@@ -46,6 +46,10 @@ pub unsafe extern "C" fn rs_getItem(
     page_idx: u8,
     page_count: *mut u8,
 ) -> u32 {
+    if page_count.is_null() || out_key.is_null() || out_value.is_null() || key_len == 0 || out_len == 0 {
+        return ParserError::NoData as u32;
+    }
+
     *page_count = 0u8;
 
     let key = core::slice::from_raw_parts_mut(out_key as *mut u8, key_len as usize);

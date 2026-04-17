@@ -6,7 +6,7 @@ use crate::{
     candid_utils::{parse_bytes, parse_text},
     constants::MAX_ARGS,
     error::ParserError,
-    type_table::{TypeTable, TypeTableEntry},
+    type_table::TypeTableEntry,
     zlog, FromCandidHeader,
 };
 
@@ -63,38 +63,49 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
             })
     }
 
-    fn find_request_type(table: &TypeTable) -> Option<&TypeTableEntry> {
-        // In order to not depend on Self::INDEX
-        // we can try to look at the table for the entry
-        // that contains our 3 fields, method, arg and preferences
-        // using their hashes.
-        for i in 0..table.entry_count {
-            let entry = &table.entries[i as usize];
-            if entry.type_code != IDLTypes::Record {
-                continue;
-            }
+    fn resolve_root_record<const MAX_ARGS: usize>(
+        header: &crate::candid_header::CandidHeader<MAX_ARGS>,
+    ) -> Result<&TypeTableEntry, ParserError> {
+        // Bind to the root argument type declared in the Candid header instead
+        // of searching the type table. Searching lets a crafted payload place a
+        // decoy record with the same field hashes earlier in the table and
+        // thereby decouple the signed arg from the certified consent.
+        if header.arguments.count != 1 {
+            return Err(ParserError::UnexpectedType);
+        }
+        let root = header
+            .arguments
+            .find_type(0)
+            .ok_or(ParserError::UnexpectedType)?;
+        if root < 0 {
+            return Err(ParserError::UnexpectedType);
+        }
+        let entry = header
+            .type_table
+            .find_type_entry(root as usize)
+            .ok_or(ParserError::UnexpectedType)?;
+        if entry.type_code != IDLTypes::Record {
+            return Err(ParserError::UnexpectedType);
+        }
 
-            let mut found_arg = false;
-            let mut found_method = false;
-            let mut found_preferences = false;
-
-            // Check each field in this record
-            for j in 0..entry.field_count as usize {
-                let (hash, _) = entry.fields[j];
-                match hash {
-                    h if h == Self::ARG_FIELD => found_arg = true,
-                    h if h == Self::METHOD_FIELD => found_method = true,
-                    h if h == Self::USER_PREFERENCES_FIELD => found_preferences = true,
-                    _ => continue,
-                }
-            }
-
-            // If we found all three fields, this is our record type
-            if found_arg && found_method && found_preferences {
-                return Some(entry);
+        // Require the three ICRC-21 fields to be present; anything else in the
+        // record is rejected in the decode loop below.
+        let mut found_arg = false;
+        let mut found_method = false;
+        let mut found_preferences = false;
+        for j in 0..entry.field_count as usize {
+            let (hash, _) = entry.fields[j];
+            match hash {
+                h if h == Self::ARG_FIELD => found_arg = true,
+                h if h == Self::METHOD_FIELD => found_method = true,
+                h if h == Self::USER_PREFERENCES_FIELD => found_preferences = true,
+                _ => return Err(ParserError::UnexpectedField),
             }
         }
-        None
+        if !(found_arg && found_method && found_preferences) {
+            return Err(ParserError::FieldNotFound);
+        }
+        Ok(entry)
     }
 
     fn get_field(&self, field: u32) -> Result<Option<Icrc21Field<'a>>, ParserError> {
@@ -102,8 +113,7 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
 
         let (raw_request, header) = parse_candid_header::<MAX_ARGS>(self.0)?;
 
-        let entry =
-            Self::find_request_type(&header.type_table).ok_or(ParserError::FieldNotFound)?;
+        let entry = Self::resolve_root_record(&header)?;
 
         #[cfg(test)]
         {
@@ -160,9 +170,10 @@ impl<'a> Icrc21ConsentMessageRequest<'a> {
                     }
                 }
                 _ => {
-                    #[cfg(test)]
-                    std::println!("Unknown field hash: {}", hash);
-                    continue;
+                    // Unknown fields cannot be skipped without consuming their
+                    // bytes — doing so would desynchronize the positional
+                    // decoder. Reject instead.
+                    return Err(ParserError::UnexpectedField);
                 }
             };
         }

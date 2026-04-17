@@ -140,6 +140,10 @@ impl ConsentRequestT {
         self.sender[..sender.len()].copy_from_slice(sender);
         self.sender_len = sender.len() as u16;
 
+        // Capture the consent envelope's ingress_expiry so it can be bound
+        // against the call envelope below in verify_certificate.
+        self.ingress_expiry = request.ingress_expiry();
+
         Ok(())
     }
 }
@@ -159,7 +163,10 @@ pub unsafe extern "C" fn rs_parse_consent_request(data: *const u8, data_len: u16
 
     // Call from_bytes_into and handle the result
     match ConsentMsgRequest::from_bytes_into(msg, &mut request) {
-        Ok(_) => {
+        Ok(rem) => {
+            if !rem.is_empty() {
+                return ParserError::InvalidConsentMsg as u32;
+            }
             // Get the initialized CallRequest
             let request = request.assume_init_ref();
 
