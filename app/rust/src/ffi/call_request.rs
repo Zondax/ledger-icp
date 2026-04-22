@@ -143,7 +143,10 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
 
     // Call from_bytes_into and handle the result
     match CallRequest::from_bytes_into(msg, &mut call_request) {
-        Ok(_) => {
+        Ok(rem) => {
+            if !rem.is_empty() {
+                return ParserError::InvalidCallRequest as u32;
+            }
             let request = call_request.assume_init();
 
             if let Err(e) = fill_request(&request) {

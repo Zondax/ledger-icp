@@ -39,6 +39,9 @@
 #include "handlers/handle_bls.h"
 #endif
 
+// Storage for the review-pending lock declared in actions.h.
+volatile bool g_review_pending = false;
+
 __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
     extractHDPath(rx, OFFSET_DATA);
 
@@ -53,6 +56,7 @@ __Z_INLINE void handleGetAddr(volatile uint32_t *flags, volatile uint32_t *tx, u
     if (requireConfirmation) {
         view_review_init(addr_getItem, addr_getNumItems, app_reply_address);
         view_review_show(REVIEW_ADDRESS);
+        review_mark_pending();
         *flags |= IO_ASYNCH_REPLY;
         return;
     }
@@ -81,6 +85,7 @@ __Z_INLINE void handleSign(volatile uint32_t *flags, volatile uint32_t *tx, uint
     CHECK_APP_CANARY()
     view_review_init(tx_getItem, tx_getNumItems, app_sign);
     view_review_show(REVIEW_TXN);
+    review_mark_pending();
     *flags |= IO_ASYNCH_REPLY;
 }
 
@@ -104,6 +109,7 @@ __Z_INLINE void handleSignCombined(volatile uint32_t *flags, volatile uint32_t *
     CHECK_APP_CANARY()
     view_review_init(tx_getItem, tx_getNumItems, app_sign_combined);
     view_review_show(REVIEW_TXN);
+    review_mark_pending();
     *flags |= IO_ASYNCH_REPLY;
 }
 
@@ -139,6 +145,13 @@ void handleApdu(volatile uint32_t *flags, volatile uint32_t *tx, uint32_t rx) {
 
     BEGIN_TRY {
         TRY {
+            // Reject any new APDU while an async user review is pending so the
+            // host cannot swap the tx buffer between review rendering and the
+            // approval callback.
+            if (review_is_pending()) {
+                THROW(APDU_CODE_COMMAND_NOT_ALLOWED);
+            }
+
             if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
                 THROW(APDU_CODE_CLA_NOT_SUPPORTED);
             }

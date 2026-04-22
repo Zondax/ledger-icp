@@ -81,6 +81,9 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
     if (txn.txn_length < 2) {
         return parser_unexpected_value;
     }
+    if (txn.txn_length > MAX_FIELDS) {
+        return parser_too_many_fields;
+    }
     uint64_t n_fields = txn.txn_length;
 
     // Array to save opt fields position in the record
@@ -138,6 +141,10 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
             default:
                 return parser_unexpected_value;
         }
+    }
+
+    if (ctx.offset != ctx.bufferLen) {
+        return parser_unexpected_characters;
     }
 
     return parser_ok;
@@ -230,7 +237,7 @@ parser_error_t readCandidUpdateNodeProvider(parser_tx_t *tx, const uint8_t *inpu
         return parser_unexpected_number_items;
     }
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -430,7 +437,7 @@ parser_error_t readCandidICRCTransfer(parser_tx_t *tx, const uint8_t *input, uin
     // Read amount
     CHECK_PARSER_ERR(readCandidLEB128(&ctx, &icrc->amount))
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -673,7 +680,7 @@ parser_error_t readCandidICRC2Approve(parser_tx_t *tx, const uint8_t *input, uin
         CHECK_PARSER_ERR(readCandidText(&ctx, &icrc2->spender.subaccount))
     }
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 
@@ -821,6 +828,9 @@ parser_error_t readCandidTransfer(parser_tx_t *tx, const uint8_t *input, uint16_
     CHECK_PARSER_ERR(readCandidByte(&ctx, &transfer->has_from_subaccount))
     if (transfer->has_from_subaccount) {
         CHECK_PARSER_ERR(readCandidText(&ctx, &transfer->from_subaccount))
+        if (transfer->from_subaccount.len != DFINITY_SUBACCOUNT_LEN) {
+            return parser_unexpected_value;
+        }
     }
 
     // Read timestamp (opt u64)
@@ -832,7 +842,7 @@ parser_error_t readCandidTransfer(parser_tx_t *tx, const uint8_t *input, uint16_
     // Read amount
     CHECK_PARSER_ERR(readCandidNat64(&ctx, &transfer->amount))
 
-    if (ctx.bufferLen - ctx.offset > 0) {
+    if (ctx.offset != ctx.bufferLen) {
         return parser_unexpected_characters;
     }
 

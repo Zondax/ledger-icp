@@ -359,8 +359,9 @@ static parser_error_t parser_getItemSpawn(uint8_t displayIdx, char *outKey, uint
 
         PARSER_ASSERT_OR_ERROR(fields->command.spawn.new_controller.serialized_id.size <= 29, parser_value_out_of_range)
 
-        return print_principal(fields->command.spawn.new_controller.serialized_id.bytes, DFINITY_PRINCIPAL_LEN, outVal,
-                               outValLen, pageIdx, pageCount);
+        return print_principal(fields->command.spawn.new_controller.serialized_id.bytes,
+                               (uint16_t)fields->command.spawn.new_controller.serialized_id.size, outVal, outValLen,
+                               pageIdx, pageCount);
     }
 
     return parser_no_data;
@@ -415,8 +416,10 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx, char *ou
                                    parser_unexpected_number_items)
             PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size <= 29,
                                    parser_value_out_of_range)
-            return print_principal(fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes, 29,
-                                   outVal, outValLen, pageIdx, pageCount);
+            return print_principal(
+                fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.bytes,
+                (uint16_t)fields->command.configure.operation.add_hot_key.new_hot_key.serialized_id.size, outVal,
+                outValLen, pageIdx, pageCount);
         }
 
         PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.has_hot_key_to_remove,
@@ -424,8 +427,10 @@ static parser_error_t parser_getItemAddRemoveHotkey(uint8_t displayIdx, char *ou
         PARSER_ASSERT_OR_ERROR(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size <= 29,
                                parser_value_out_of_range)
 
-        return print_principal(fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.bytes, 29,
-                               outVal, outValLen, pageIdx, pageCount);
+        return print_principal(
+            fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.bytes,
+            (uint16_t)fields->command.configure.operation.remove_hot_key.hot_key_to_remove.serialized_id.size, outVal,
+            outValLen, pageIdx, pageCount);
     }
 
     return parser_no_data;
