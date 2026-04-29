@@ -247,6 +247,11 @@ impl<'a> FromCandidHeader<'a> for ConsentMessage<'a> {
                 // Get the vector length (number of records)
                 let (rem, field_count) = decompress_leb128(rem)?;
 
+                // Reject before the `as u8` cast below would silently truncate.
+                if field_count > u8::MAX as u64 {
+                    return Err(ParserError::TooManyFields);
+                }
+
                 // Store the start position of fields data
                 let fields_start = rem;
 

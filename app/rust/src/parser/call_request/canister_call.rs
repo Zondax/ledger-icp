@@ -93,22 +93,67 @@ impl<'a> FromBytes<'a> for CanisterCall<'a> {
 
         let mut nonce = None;
 
+        // Bitmask of required fields (nonce excluded — optional).
+        const FIELD_ARG: u8 = 1 << 0;
+        const FIELD_SENDER: u8 = 1 << 1;
+        const FIELD_CANISTER_ID: u8 = 1 << 2;
+        const FIELD_METHOD_NAME: u8 = 1 << 3;
+        const FIELD_REQUEST_TYPE: u8 = 1 << 4;
+        const FIELD_INGRESS_EXPIRY: u8 = 1 << 5;
+        const REQUIRED_FIELDS: u8 = FIELD_ARG
+            | FIELD_SENDER
+            | FIELD_CANISTER_ID
+            | FIELD_METHOD_NAME
+            | FIELD_REQUEST_TYPE
+            | FIELD_INGRESS_EXPIRY;
+        let mut seen: u8 = 0;
+        let mut seen_nonce = false;
+
+        // Reject duplicate keys; required-field presence is checked after the loop.
+        let mark = |bit: u8, seen: &mut u8| -> Result<(), ParserError> {
+            if *seen & bit != 0 {
+                return Err(ParserError::UnexpectedField);
+            }
+            *seen |= bit;
+            Ok(())
+        };
+
         for _ in 0..content_len {
             let key = d.str()?;
             unsafe {
                 match key {
                     "arg" => {
+                        mark(FIELD_ARG, &mut seen)?;
                         let arg: &mut MaybeUninit<RawArg<'a>> =
                             &mut *addr_of_mut!((*out).arg).cast();
                         let arg_bytes = d.bytes()?;
                         _ = RawArg::from_bytes_into(arg_bytes, arg)?;
                     }
-                    "nonce" => nonce = Some(d.bytes()?),
-                    "sender" => addr_of_mut!((*out).sender).write(d.bytes()?),
-                    "canister_id" => addr_of_mut!((*out).canister_id).write(d.bytes()?),
-                    "method_name" => addr_of_mut!((*out).method_name).write(d.str()?),
-                    "request_type" => addr_of_mut!((*out).request_type).write(d.str()?),
+                    "nonce" => {
+                        if seen_nonce {
+                            return Err(ParserError::UnexpectedField);
+                        }
+                        seen_nonce = true;
+                        nonce = Some(d.bytes()?);
+                    }
+                    "sender" => {
+                        mark(FIELD_SENDER, &mut seen)?;
+                        addr_of_mut!((*out).sender).write(d.bytes()?);
+                    }
+                    "canister_id" => {
+                        mark(FIELD_CANISTER_ID, &mut seen)?;
+                        addr_of_mut!((*out).canister_id).write(d.bytes()?);
+                    }
+                    "method_name" => {
+                        mark(FIELD_METHOD_NAME, &mut seen)?;
+                        addr_of_mut!((*out).method_name).write(d.str()?);
+                    }
+                    "request_type" => {
+                        mark(FIELD_REQUEST_TYPE, &mut seen)?;
+                        addr_of_mut!((*out).request_type).write(d.str()?);
+                    }
                     "ingress_expiry" => {
+                        mark(FIELD_INGRESS_EXPIRY, &mut seen)?;
                         let timestamp = if let Ok(n) = d.u64() {
                             // Direct uint64 case (what we have in the data)
                             n
@@ -124,7 +169,8 @@ impl<'a> FromBytes<'a> for CanisterCall<'a> {
                                 return Err(ParserError::InvalidTime);
                             }
                             let mut num_bytes = [0u8; core::mem::size_of::<u64>()];
-                            num_bytes[..bytes.len()].copy_from_slice(bytes);
+                            num_bytes[core::mem::size_of::<u64>() - bytes.len()..]
+                                .copy_from_slice(bytes);
                             u64::from_be_bytes(num_bytes)
                         };
 
@@ -133,6 +179,10 @@ impl<'a> FromBytes<'a> for CanisterCall<'a> {
                     _ => return Err(ParserError::UnexpectedField),
                 }
             }
+        }
+
+        if seen != REQUIRED_FIELDS {
+            return Err(ParserError::UnexpectedField);
         }
 
         unsafe {

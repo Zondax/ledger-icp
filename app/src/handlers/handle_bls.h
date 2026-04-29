@@ -118,6 +118,7 @@ __Z_INLINE void handleSignBls(volatile uint32_t *flags, volatile uint32_t *tx, u
         view_review_show(REVIEW_TXN);
     }
 
+    review_mark_pending();
     *flags |= IO_ASYNCH_REPLY;
 }
 #endif
