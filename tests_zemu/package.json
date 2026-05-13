@@ -31,7 +31,7 @@
     "@ledgerhq/hw-transport-node-hid": "^6.29.15",
     "@ledgerhq/logs": "^6.14.0",
     "@zondax/ledger-icp": "^3.2.8",
-    "@zondax/zemu": "^0.65.0"
+    "@zondax/zemu": "^0.67.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
