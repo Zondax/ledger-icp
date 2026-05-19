@@ -89,7 +89,6 @@ app/build
 node_modules/.yarn-integrity
 \.vscode
 scan-build/
-tests_zemu/yarn.lock
 
 js/yarn.lock
 app/rust/.cargo/registry/
