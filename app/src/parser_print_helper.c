@@ -331,18 +331,27 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
 
     // now let's print
     // we have blocks of 18 chars per line
-    const uint8_t CHARS_PER_PAGE = 18 * LINES_PER_PAGE;
-    *pageCount = finalStrLen / CHARS_PER_PAGE + (finalStrLen % CHARS_PER_PAGE ? 1 : 0);
+    // mutable: may shrink to the per-device value buffer below
+    uint16_t charsPerPage = (uint16_t)18 * LINES_PER_PAGE;
+    // we don't want to print last separator for each page
+    uint16_t charsToPrint = charsPerPage - 1;
+    // The view's value buffer (outValLen) is sized per device by the SDK and
+    // since v46 can be smaller than 18 * LINES_PER_PAGE (e.g. Stax 160, Apex
+    // 144). When it is, the page no longer fits the buffer: the old code
+    // returned an error here and the whole field rendered blank. Instead, shrink
+    // the page to the buffer (reserving the NUL) and print every byte of it, so
+    // a long account simply paginates across an extra page rather than vanishing.
+    if (charsPerPage > outValLen) {
+        charsPerPage = outValLen - 1;
+        charsToPrint = charsPerPage;
+    }
+    *pageCount = finalStrLen / charsPerPage + (finalStrLen % charsPerPage ? 1 : 0);
     if (pageIdx >= *pageCount) {
         return parser_display_idx_out_of_range;
     }
-    const char *textToPrint = text + pageIdx * CHARS_PER_PAGE;
+    const char *textToPrint = text + pageIdx * charsPerPage;
 
-    // we don't want to print last separator for each page
-    if (CHARS_PER_PAGE > outValLen) {
-        return parser_unexpected_error;
-    }
-    snprintf(outVal, CHARS_PER_PAGE, "%.*s", CHARS_PER_PAGE - 1, textToPrint);
+    snprintf(outVal, outValLen, "%.*s", charsToPrint, textToPrint);
 
     return parser_ok;
 }
