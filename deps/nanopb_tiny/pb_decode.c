@@ -1110,7 +1110,13 @@ pb_decode_inner(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_str
 
             /* Check the remaining bits (if any) */
             if ((req_field_count & 31) != 0) {
-                if (fields_seen.bitfield[req_field_count >> 5] !=
+                /* req_field_count is clamped to PB_MAX_REQUIRED_FIELDS above and
+                 * this branch only runs when it is not a multiple of 32, so the
+                 * word index is always < the bitfield length. The explicit bound
+                 * keeps the static analyzer from reporting a false out-of-bounds. */
+                size_t word_index = (size_t) (req_field_count >> 5);
+                if (word_index < (sizeof(fields_seen.bitfield) / sizeof(fields_seen.bitfield[0])) &&
+                    fields_seen.bitfield[word_index] !=
                     (allbits >> (uint_least8_t) (32 - (req_field_count & 31)))) {
                     PB_RETURN_ERROR(stream, "missing required field");
                 }
