@@ -35,7 +35,7 @@ APP_CUSTOM_LINK_DEPENDENCIES = rust
 
 .PHONY: rust
 rust:
-	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(RUST_TARGET_NAME) cargo build --target $(RUST_TARGET) --release
+	cd rust && RUSTC_BOOTSTRAP=1 CARGO_HOME="$(CURDIR)/rust/.cargo" TARGET_NAME=$(RUST_TARGET_NAME) cargo build -Z build-std=core --target $(RUST_TARGET) --release
 
 .PHONY: rust_clean
 rust_clean:
