@@ -1,9 +1,11 @@
 
+# `panic_immediate_abort` is no longer a build-std feature: as of
+# nightly-2025-12-05 it became the `immediate-abort` panic strategy. It is now
+# selected via `panic = "immediate-abort"` in `[profile.release]` of Cargo.toml
+# (gated by `cargo-features = ["panic-immediate-abort"]`), and `core` is rebuilt
+# with that strategy through `-Z build-std=core` passed in app/Makefile.rust.
+
 [unstable]
-# build-std is passed on the device build command (app/Makefile.rust) so it is
-# never applied to host `core` when clippy/tests run on the nightly toolchain.
-# The immediate-abort panic strategy comes from Cargo.toml's [profile.release]
-# (gated by cargo-features = ["panic-immediate-abort"]).
 target-applies-to-host = true
 host-config = true
 
