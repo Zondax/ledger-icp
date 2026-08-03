@@ -42,6 +42,26 @@ void __assert_fail(__Z_UNUSED const char *assertion, __Z_UNUSED const char *file
     while (1) {
     };
 }
+
+// Digests for the combined sign flow, captured while parsing and consumed when
+// the user approves. Kept out of G_io_apdu_buffer on purpose: the SDK copies
+// every incoming APDU into that buffer before handleApdu gets to reject it, so
+// nothing stored there survives an async review intact.
+static uint8_t combined_request_hash[32];
+static uint8_t combined_state_hash[32];
+static bool combined_digests_ready = false;
+
+bool parser_combinedDigestsReady() { return combined_digests_ready; }
+
+const uint8_t *parser_getCombinedRequestHash() { return combined_request_hash; }
+
+const uint8_t *parser_getCombinedStateHash() { return combined_state_hash; }
+
+void parser_clearCombinedDigests() {
+    combined_digests_ready = false;
+    MEMZERO(combined_request_hash, sizeof(combined_request_hash));
+    MEMZERO(combined_state_hash, sizeof(combined_state_hash));
+}
 #endif
 
 #define GEN_DEC_READFIX_UNSIGNED(BITS)                                              \
@@ -118,10 +138,11 @@ parser_error_t parser_parse_combined(parser_context_t *ctx, const uint8_t *data,
     PARSER_ASSERT_OR_ERROR(zxerr_ok == crypto_getDigest(request_hash, call), parser_unexpected_error)
 
 #if defined(LEDGER_SPECIFIC)
-    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+    parser_clearCombinedDigests();
     PARSER_ASSERT_OR_ERROR(memcmp(request_hash, request_id_stateread, 32) == 0, parser_context_invalid_chars)
-    MEMCPY(G_io_apdu_buffer, request_hash, 32);
-    MEMCPY(G_io_apdu_buffer + 32, state_hash, 32);
+    MEMCPY(combined_request_hash, request_hash, 32);
+    MEMCPY(combined_state_hash, state_hash, 32);
+    combined_digests_ready = true;
 #endif
 
     return parser_ok;

@@ -22,6 +22,7 @@
 #include "apdu_codes.h"
 #include "coin.h"
 #include "crypto.h"
+#include "parser.h"
 #include "tx.h"
 #include "zxerror.h"
 
@@ -61,8 +62,28 @@ __Z_INLINE void app_sign_combined() {
     review_clear_pending();
     uint16_t replyLen = 0;
 
-    zxerr_t err = crypto_sign_combined(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, &G_io_apdu_buffer[0],
-                                       &G_io_apdu_buffer[32], &replyLen);
+    // Take a private copy of the digests before touching the APDU buffer: it is
+    // both the output buffer here and the landing area for anything the host
+    // sent while the review was on screen.
+    uint8_t request_hash[32] = {0};
+    uint8_t state_hash[32] = {0};
+    const bool digests_ready = parser_combinedDigestsReady();
+
+    if (digests_ready) {
+        MEMCPY(request_hash, parser_getCombinedRequestHash(), sizeof(request_hash));
+        MEMCPY(state_hash, parser_getCombinedStateHash(), sizeof(state_hash));
+    }
+    parser_clearCombinedDigests();
+
+    MEMZERO(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE);
+
+    zxerr_t err = zxerr_no_data;
+    if (digests_ready) {
+        err = crypto_sign_combined(G_io_apdu_buffer, IO_APDU_BUFFER_SIZE - 3, request_hash, state_hash, &replyLen);
+    }
+
+    MEMZERO(request_hash, sizeof(request_hash));
+    MEMZERO(state_hash, sizeof(state_hash));
 
     if (err != zxerr_ok || replyLen == 0) {
         set_code(G_io_apdu_buffer, 0, APDU_CODE_SIGN_VERIFY_ERROR);
