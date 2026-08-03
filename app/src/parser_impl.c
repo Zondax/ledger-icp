@@ -734,6 +734,16 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
                                        parser_unexpected_error);
             }
 
+            if (v->tx_fields.call.method_type == candid_manageneuron) {
+                const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+                // A neuron is addressed by exactly one selector. The protobuf
+                // path above already refuses ambiguous arguments; without the
+                // same rule here the printers pick `id` while the argument also
+                // carries a second, unreviewed target.
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ fields->has_neuron_id_or_subaccount,
+                                       parser_unexpected_error);
+            }
+
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
             char canister_textual[50];
             uint16_t outLen = sizeof(canister_textual);
