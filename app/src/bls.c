@@ -17,10 +17,33 @@
 #if defined(BLS_SIGNATURE)
 #include "bls.h"
 
+#include "crypto.h"
 #include "cx.h"
 #include "nvdata.h"
 #include "rslib.h"
 #include "tx.h"
+
+// The BLS flow spans three APDUs (consent request, canister call, certificate)
+// and every one of them re-runs extractHDPath, so the host can hand a different
+// derivation path to each step. Pin the path taken at the consent request and
+// require the later steps to match, otherwise the reviewed request and the key
+// that signs it can come from different accounts.
+static uint32_t bls_hdPath[HDPATH_LEN_DEFAULT];
+static bool bls_hdPath_set = false;
+
+static void bls_pinPath(void) {
+    MEMCPY(bls_hdPath, hdPath, sizeof(bls_hdPath));
+    bls_hdPath_set = true;
+}
+
+static bool bls_pathMatchesPin(void) {
+    return bls_hdPath_set && MEMCMP(bls_hdPath, hdPath, sizeof(bls_hdPath)) == 0;
+}
+
+static void bls_clearPath(void) {
+    MEMZERO(bls_hdPath, sizeof(bls_hdPath));
+    bls_hdPath_set = false;
+}
 
 uint8_t *bls_root_key() {
     static uint8_t root_key[ROOT_KEY_LEN];
@@ -57,6 +80,9 @@ zxerr_t bls_saveConsentRequest(void) {
         return zxerr_unknown;
     }
 
+    // Pin the derivation path this flow will sign with
+    bls_pinPath();
+
     // Save App State
     zemu_log_stack("bls_saveConsentRequest completed");
     set_state(CERT_STATE_PROCESSED_CONSENT_REQUEST);
@@ -68,6 +94,11 @@ zxerr_t bls_saveCanisterCall(void) {
     // Test App State
     if (get_state() != CERT_STATE_PROCESSED_CONSENT_REQUEST) {
         return zxerr_unknown;
+    }
+
+    // Must stay on the path the consent request was received with
+    if (!bls_pathMatchesPin()) {
+        return zxerr_invalid_crypto_settings;
     }
 
     // Get Buffer with canister call request
@@ -95,6 +126,12 @@ zxerr_t bls_verify() {
         return zxerr_unknown;
     }
 
+    // Must stay on the path the consent request was received with: this is the
+    // last step before the review, and app_sign_bls derives from hdPath.
+    if (!bls_pathMatchesPin()) {
+        return zxerr_invalid_crypto_settings;
+    }
+
     // Use official canister root_key by default
     uint8_t *pubkey = bls_root_key();
 
@@ -117,5 +154,6 @@ zxerr_t bls_verify() {
 void reset_bls_state() {
     rs_clear_resources();
     state_reset();
+    bls_clearPath();
 }
 #endif
