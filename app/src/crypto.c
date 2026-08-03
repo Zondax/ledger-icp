@@ -117,8 +117,8 @@ typedef struct {
         uint8_t ingressbuf[10];                                                                 \
         uint16_t enc_size = 0;                                                                  \
         CHECK_ZXERR(compressLEB128(FIELDVALUE, sizeof(ingressbuf), ingressbuf, &enc_size));     \
-        cx_hash_sha256((uint8_t *)ingressbuf, enc_size, tmpdigest, CX_SHA256_SIZE);             \
-        CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, tmpdigest, CX_SHA256_SIZE, NULL, 0));      \
+        cx_hash_sha256((uint8_t *)ingressbuf, enc_size, TMPDIGEST, CX_SHA256_SIZE);             \
+        CHECK_CX_OK(cx_hash_no_throw(&ctx.header, 0, TMPDIGEST, CX_SHA256_SIZE, NULL, 0));      \
     }
 
 #define HASH_BYTES_INTERMEDIATE(FIELDNAME, FIELDVALUE, TMPDIGEST)                                  \
