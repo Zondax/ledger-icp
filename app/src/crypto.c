@@ -642,7 +642,10 @@ zxerr_t addr_to_textual(char *s_out, uint16_t s_max, const char *text_in, uint16
 zxerr_t compressLEB128(const uint64_t input, uint16_t maxSize, uint8_t *output, uint16_t *outLen) {
     uint64_t num = input;
     size_t bytes = 0;
-    while (num) {
+    // Emit at least one byte: LEB128 encodes zero as a single 0x00, and the IC
+    // hashes it that way. A while-loop would leave the encoding empty and make
+    // the request_id disagree with the Rust path for ingress_expiry == 0.
+    do {
         if (bytes >= maxSize) {
             return zxerr_buffer_too_small;
         }
@@ -651,7 +654,7 @@ zxerr_t compressLEB128(const uint64_t input, uint16_t maxSize, uint8_t *output, 
             output[bytes] |= 0x80U;
         }
         ++bytes;
-    }
+    } while (num);
     *outLen = bytes;
     return zxerr_ok;
 }
