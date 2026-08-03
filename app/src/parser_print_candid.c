@@ -710,7 +710,17 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        // Only accept neuron_id
+        return parser_unexpected_type;
     }
 
     if (displayIdx == 2) {
