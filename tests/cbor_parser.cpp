@@ -730,4 +730,34 @@ TEST(CBORParserTest, CombinedTXFail) {
     EXPECT_EQ(err, parser_value_out_of_range);
 }
 
+TEST(CBORParserTest, ReadStateRequestStatusPath) {
+    uint8_t inBuffer[500];
+
+    // paths[0] is the 14-byte byte string "request_status"
+    const char *good =
+        "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16bc685267142b80657061746873"
+        "81824e726571756573745f73746174757358208d304d294d3f611f992b3f2b184d32b9b3c058d918d7a7ab"
+        "1946614b13ba0a496c726571756573745f747970656a726561645f73746174656673656e646572581d19aa"
+        "3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+
+    parser_context_t ctx;
+    MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
+    parser_tx_obj.special_transfer_type = normal_transaction;
+    auto len = parseHexString(inBuffer, sizeof(inBuffer), good);
+    EXPECT_EQ(parser_parse(&ctx, inBuffer, len), parser_ok);
+
+    // Same path label with a NUL and one extra byte appended: 15 bytes, so it is
+    // a different label, but strcmp stops at the NUL and would accept it.
+    const char *embedded_nul =
+        "d9d9f7a167636f6e74656e74a46e696e67726573735f6578706972791b16bc685267142b80657061746873"
+        "81824f726571756573745f7374617475730058208d304d294d3f611f992b3f2b184d32b9b3c058d918d7a7"
+        "ab1946614b13ba0a496c726571756573745f747970656a726561645f73746174656673656e646572581d19"
+        "aa3d42c048dd7d14f0cfa0df69a1c1381780f6e9a137abaa6a82e302";
+
+    MEMZERO(&parser_tx_obj, sizeof(parser_tx_t));
+    parser_tx_obj.special_transfer_type = normal_transaction;
+    len = parseHexString(inBuffer, sizeof(inBuffer), embedded_nul);
+    EXPECT_EQ(parser_parse(&ctx, inBuffer, len), parser_context_mismatch);
+}
+
 }  // namespace
