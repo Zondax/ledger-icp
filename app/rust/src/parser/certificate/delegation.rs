@@ -54,11 +54,19 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
             return Err(ParserError::InvalidDelegation);
         }
 
+        let mut has_subnet_id = false;
+        let mut has_certificate = false;
+
         for _ in 0..2 {
             let key = d.str()?;
 
             match key {
                 "subnet_id" => {
+                    if has_subnet_id {
+                        return Err(ParserError::InvalidDelegation);
+                    }
+                    has_subnet_id = true;
+
                     let subnet_id: &mut MaybeUninit<SubnetId<'a>> =
                         unsafe { &mut *addr_of_mut!((*out).subnet_id).cast() };
 
@@ -68,6 +76,11 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
                     d.set_position(d.position() + (data.len() - rem.len()));
                 }
                 "certificate" => {
+                    if has_certificate {
+                        return Err(ParserError::InvalidDelegation);
+                    }
+                    has_certificate = true;
+
                     let bytes = d.bytes()?;
 
                     let raw_value: &mut MaybeUninit<RawValue<'a>> =
@@ -76,6 +89,12 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
                 }
                 _ => return Err(ParserError::UnexpectedField),
             }
+        }
+
+        // Both are mandatory: a map repeating one key would otherwise leave the
+        // other field uninitialized for the caller's assume_init().
+        if !has_subnet_id || !has_certificate {
+            return Err(ParserError::InvalidDelegation);
         }
 
         Ok(&input[d.position()..])
