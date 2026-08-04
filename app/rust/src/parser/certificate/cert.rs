@@ -70,12 +70,18 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         }
 
         let out = out.as_mut_ptr();
+        let mut has_tree = false;
+        let mut has_signature = false;
         let mut has_delegation = false;
 
         for _ in 0..len {
             let key = d.str()?;
             match key {
                 "tree" => {
+                    if has_tree {
+                        return Err(ParserError::InvalidCertificate);
+                    }
+                    has_tree = true;
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
                     // Just to check that tree is fully parsed
                     let _tree = HashTree::try_from(&raw_value)?;
@@ -85,6 +91,10 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                     unsafe { addr_of_mut!((*out).tree).write(raw_value) };
                 }
                 "signature" => {
+                    if has_signature {
+                        return Err(ParserError::InvalidCertificate);
+                    }
+                    has_signature = true;
                     let signature: &mut MaybeUninit<Signature<'a>> =
                         unsafe { &mut *addr_of_mut!((*out).signature).cast() };
                     let data = &input[d.position()..];
@@ -94,6 +104,9 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                     d.set_position(d.position() + (data.len() - rem.len()));
                 }
                 "delegation" => {
+                    if has_delegation {
+                        return Err(ParserError::InvalidCertificate);
+                    }
                     // create a new delegation here because it is define as an option
                     let mut delegation = MaybeUninit::uninit();
                     let data = &input[d.position()..];
@@ -108,6 +121,13 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                 }
                 _ => return Err(ParserError::InvalidCertificate),
             }
+        }
+
+        // Both are mandatory. Without this the caller's assume_init() would read
+        // an uninitialized field for a map like {"tree", "delegation"}, or one
+        // whose two entries are the same key.
+        if !has_tree || !has_signature {
+            return Err(ParserError::InvalidCertificate);
         }
 
         if !has_delegation {
@@ -317,6 +337,35 @@ mod test_certificate {
 
         // Check we parse the message(reply field)
         assert!(cert.msg_response().is_ok());
+    }
+
+    // tag(55799) + map(2) holding "tree" and REAL_CERT's "delegation", so the
+    // entry count is legal but "signature" never appears. Without the
+    // required-key check the caller's assume_init() reads an uninitialized
+    // Signature.
+    const CERT_TREE_AND_DELEGATION_ONLY: &str = "d9d9f7a2647472656581006a64656c65676174696f6ea2697375626e65745f6964581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd026b6365727469666963617465590294d9d9f7a264747265658301820458209b9acf5ebb96de4fd39f4928d5fe9ab3873620c4d5a71947c4580ac3a9c169ec8301830182045820d8470247bcd58a7a80aa89c80b203ca1b4b03de290996402f9df8f39f98043748302467375626e65748301830183018204582071387af6dac4d6350824bf1c24c8dd0af43a910b2dad8ce86390c816e63816158301830183018302581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd02830183024f63616e69737465725f72616e67657382035832d9d9f782824a000000000060000001014a00000000006000ae0101824a00000000006000b001014a00000000006fffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c0503020103610090075120778eb21a530a02bcc763e7f4a192933506966af7b54c10a4d2b24de6a86b200e3440bae6267bf4c488d9a11d0472c38c1b6221198f98e4e6882ba38a5a4e3aa5afce899b7f825ed95adfa12629688073556f2747527213e8d73e40ce8204582036f3cd257d90fb38e42597f193a5e031dbd585b6292793bb04db4794803ce06e820458205b9edd6408228a3956c4b4164ed3d9ec38afabe63310f84da7b97005e1fae375820458202729572815f63e48d2248738a83546bf521d479351ff52f172de77602ff682d382045820afaa8832101bcee23eb871f6a3b372b927eb3ad5bacbbbf67aa4df296bf8c49382045820962337bb2648bcf41e6d4f3cd80d6f6b3876dd18e62a8fb0cc5dc45f6e9d283e83024474696d65820349c8b9a8faedf8b7aa18697369676e617475726558308b0fc21a67a745f0716ba21ae4ec570cadbdb873c07b3584600d7815bae0e9c45c974ef4af028af5b165017b78ec9fc4";
+
+    // tag(55799) + map(2) repeating "tree", each an empty hash tree.
+    const CERT_DUPLICATE_TREE: &str = "d9d9f7a26474726565810064747265658100";
+
+    #[test]
+    fn rejects_certificate_missing_signature() {
+        let data = hex::decode(CERT_TREE_AND_DELEGATION_ONLY).unwrap();
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    #[test]
+    fn rejects_certificate_with_duplicate_key() {
+        let data = hex::decode(CERT_DUPLICATE_TREE).unwrap();
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    #[test]
+    fn accepts_two_entry_certificate_without_delegation() {
+        // Positive control: the required-key check must not reject a legitimate
+        // delegation-free certificate, which is also a 2-entry map.
+        let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
+        assert!(Certificate::from_bytes(&data).is_ok());
     }
 
     // Helper function to parse HashTree from CBOR using minicbor
