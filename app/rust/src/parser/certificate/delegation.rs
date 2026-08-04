@@ -85,7 +85,13 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
 
                     let raw_value: &mut MaybeUninit<RawValue<'a>> =
                         unsafe { &mut *addr_of_mut!((*out).certificate).cast() };
-                    _ = RawValue::from_bytes_into(bytes, raw_value)?;
+                    // The byte string must hold the embedded certificate and
+                    // nothing else; RawValue captures only the first CBOR item,
+                    // so anything after it would be silently dropped.
+                    let rem = RawValue::from_bytes_into(bytes, raw_value)?;
+                    if !rem.is_empty() {
+                        return Err(ParserError::InvalidDelegation);
+                    }
                 }
                 _ => return Err(ParserError::UnexpectedField),
             }
