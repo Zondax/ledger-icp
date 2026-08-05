@@ -22,9 +22,17 @@
 #include "apdu_codes.h"
 #include "coin.h"
 #include "crypto.h"
-#include "parser.h"
 #include "tx.h"
 #include "zxerror.h"
+
+// Defined in parser.c. Declared here rather than by including "parser.h": the
+// Ledger SDK ships a header of that name as well (the build reports base58.h,
+// parser.h and tokens.h as duplicated between SDK and app), so pulling it into
+// a header this widely included changes which one other units resolve.
+bool parser_combinedDigestsReady(void);
+const uint8_t *parser_getCombinedRequestHash(void);
+const uint8_t *parser_getCombinedStateHash(void);
+void parser_clearCombinedDigests(void);
 
 #if defined(BLS_SIGNATURE)
 #include "bls.h"
