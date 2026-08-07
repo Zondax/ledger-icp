@@ -103,9 +103,16 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     let mut cert = MaybeUninit::uninit();
-    let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+    let Ok(rem) = Certificate::from_bytes_into(data, &mut cert) else {
         return ParserError::InvalidCertificate as u32;
     };
+
+    // The call and consent parsers already require their buffers to be fully
+    // consumed; hold the certificate to the same rule so trailing bytes cannot
+    // ride along inside a blob that otherwise verifies.
+    if !rem.is_empty() {
+        return ParserError::InvalidCertificate as u32;
+    }
 
     let cert = unsafe { cert.assume_init() };
 

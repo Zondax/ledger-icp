@@ -293,7 +293,14 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
-    if (strcmp((char *)stateRead->paths.paths[0].data, "request_status") != 0) {
+    // paths[0] is a CBOR byte string and may contain embedded NULs, so compare
+    // the whole label rather than stopping at the first one: strcmp would accept
+    // "request_status\0<anything>" as a match.
+    static const char REQUEST_STATUS_PATH[] = "request_status";
+    const size_t request_status_len = sizeof(REQUEST_STATUS_PATH) - 1;
+
+    if (stateRead->paths.paths[0].len != request_status_len ||
+        memcmp(stateRead->paths.paths[0].data, REQUEST_STATUS_PATH, request_status_len) != 0) {
         return parser_context_mismatch;
     }
 
@@ -731,6 +738,16 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
                 const ic_nns_governance_pb_v1_ManageNeuron *fields =
                     &parser_tx_obj.tx_fields.call.data.ic_nns_governance_pb_v1_ManageNeuron;
                 PARSER_ASSERT_OR_ERROR(fields->has_id ^ (fields->neuron_id_or_subaccount.neuron_id.id != 0),
+                                       parser_unexpected_error);
+            }
+
+            if (v->tx_fields.call.method_type == candid_manageneuron) {
+                const candid_ManageNeuron_t *fields = &parser_tx_obj.tx_fields.call.data.candid_manageNeuron;
+                // A neuron is addressed by exactly one selector. The protobuf
+                // path above already refuses ambiguous arguments; without the
+                // same rule here the printers pick `id` while the argument also
+                // carries a second, unreviewed target.
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ fields->has_neuron_id_or_subaccount,
                                        parser_unexpected_error);
             }
 
