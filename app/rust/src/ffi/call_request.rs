@@ -164,8 +164,12 @@ pub unsafe extern "C" fn rs_parse_canister_call_request(data: *const u8, data_le
 
 #[inline(never)]
 fn fill_request(request: &CallRequest<'_>) -> Result<(), ParserError> {
-    // Create a properly aligned CanisterCallT on the stack
-    let mut call_request = CanisterCallT::default();
+    // Create a properly aligned CanisterCallT on the stack. Zero the whole
+    // allocation rather than using Default: repr(C) leaves 4 bytes of padding
+    // before ingress_expiry, and fill_to() copies the struct byte-wise into
+    // NVM, so field-only initialization would persist uninitialized stack
+    // bytes to flash.
+    let mut call_request: CanisterCallT = unsafe { MaybeUninit::zeroed().assume_init() };
 
     // Fill it with data from the request
     call_request.fill_from(request)?;
