@@ -17,10 +17,15 @@ use core::{mem::MaybeUninit, ptr::addr_of_mut};
 ********************************************************************************/
 use minicbor::{decode::Error, Decoder};
 
-use crate::{error::ParserError, zlog, FromBytes};
+use crate::{
+    constants::{PUBLIC_KEY_PATH, SUBNET_PATH},
+    error::ParserError,
+    zlog, FromBytes,
+};
 
 use super::{
     hash_tree::{HashTree, LookupResult},
+    label::Label,
     pubkey::PublicKey,
     Certificate, RawValue, SubnetId,
 };
@@ -152,27 +157,18 @@ impl<'a> Delegation<'a> {
     #[inline(never)]
     fn subnet_public_key(&self) -> Result<LookupResult<'a>, ParserError> {
         crate::zlog("Delegation::subnet_public_key\x00");
-        // Step 1: Look up "subnet" in the root of the tree
+        // /subnet/<subnet_id>/public_key, as one path. Walking it a label at a
+        // time with a whole-subtree search per step let each step match a label
+        // anywhere below, so the key did not have to belong to this subnet.
         let cert = self.cert()?;
 
-        let subnet_result = HashTree::lookup_path(&"subnet".into(), cert.tree())?;
+        let path = [
+            Label::from(SUBNET_PATH),
+            Label::from(self.subnet_id.id()),
+            Label::from(PUBLIC_KEY_PATH),
+        ];
 
-        match subnet_result {
-            LookupResult::Found(subnet_value) => {
-                // Step 2: Look up the specific subnet_id in the subnet subtree
-                let subnet_id_result =
-                    HashTree::lookup_path(&self.subnet_id.id().into(), subnet_value)?;
-
-                match subnet_id_result {
-                    LookupResult::Found(subnet_id_tree) => {
-                        // Step 3: Look up "public_key" in the subnet_id subtree
-                        HashTree::lookup_path(&"public_key".into(), subnet_id_tree)
-                    }
-                    _ => Ok(LookupResult::Absent),
-                }
-            }
-            _ => Ok(LookupResult::Absent),
-        }
+        HashTree::lookup_path(&path, cert.tree())
     }
 }
 

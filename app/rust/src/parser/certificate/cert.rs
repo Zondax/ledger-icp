@@ -22,14 +22,15 @@ use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{
         CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET, REPLY_PATH,
-        SHA256_DIGEST_LENGTH,
+        REQUEST_STATUS_PATH, SHA256_DIGEST_LENGTH, STATUS_PATH, STATUS_REPLIED, SUBNET_PATH,
+        TIME_PATH,
     },
     error::ParserError,
     zlog, FromBytes, Signature,
 };
 
 use super::{
-    canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree,
+    canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree, label::Label,
     raw_value::RawValue,
 };
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
@@ -249,7 +250,8 @@ impl<'a> Certificate<'a> {
 
     pub fn timestamp(&self) -> Result<Option<u64>, ParserError> {
         let tree = self.tree();
-        let path = "time".into();
+        // /time at the root of the certified tree.
+        let path = [Label::from(TIME_PATH)];
 
         // Perform the lookup
         let Some(time) = HashTree::lookup_path(&path, tree)?.value() else {
@@ -265,12 +267,17 @@ impl<'a> Certificate<'a> {
     }
 
     pub fn canister_ranges(&self) -> Option<CanisterRanges<'a>> {
-        let tree = match self.delegation() {
-            None => self.tree(),
-            Some(delegation) => delegation.cert().ok()?.tree(),
-        };
+        // Ranges live at /subnet/<subnet_id>/canister_ranges inside the
+        // delegation's certificate. A certificate with no delegation carries no
+        // subnet delegation, and therefore no ranges to enforce.
+        let delegation = self.delegation()?;
+        let tree = delegation.cert().ok()?.tree();
 
-        let path = CANISTER_RANGES_PATH.into();
+        let path = [
+            Label::from(SUBNET_PATH),
+            Label::from(delegation.subnet()),
+            Label::from(CANISTER_RANGES_PATH),
+        ];
         let found = HashTree::lookup_path(&path, tree).ok()?;
         let data = found.value()?;
         let mut ranges = MaybeUninit::uninit();
@@ -279,15 +286,50 @@ impl<'a> Certificate<'a> {
         Some(ranges)
     }
 
-    // Safe to unwrap because this reply was parsed already
-    pub fn msg_response(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
+    /// Fetch the reply certified for `request_id`.
+    ///
+    /// The request id is part of the path, so the reply that is returned is the
+    /// one belonging to the request the caller verified. Reading a bare `reply`
+    /// label instead would return whichever reply appears first in the tree,
+    /// which need not be the same request.
+    pub fn msg_response(
+        &self,
+        request_id: &[u8],
+    ) -> Result<ConsentMessageResponse<'a>, ParserError> {
+        // The status must say the call actually replied; `rejected` or a
+        // still-pending status carries no reply worth showing.
+        if !self.is_status_replied(request_id)? {
+            return Err(ParserError::InvalidCertificate);
+        }
+
         let tree = self.tree();
-        let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
+        let path = [
+            Label::from(REQUEST_STATUS_PATH),
+            Label::from(request_id),
+            Label::from(REPLY_PATH),
+        ];
+        let found = HashTree::lookup_path(&path, tree)?;
         let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
 
         let mut msg = MaybeUninit::uninit();
         ConsentMessageResponse::from_bytes_into(bytes, &mut msg)?;
         Ok(unsafe { msg.assume_init() })
+    }
+
+    /// True when /request_status/<request_id>/status is certified as "replied".
+    pub fn is_status_replied(&self, request_id: &[u8]) -> Result<bool, ParserError> {
+        let tree = self.tree();
+        let path = [
+            Label::from(REQUEST_STATUS_PATH),
+            Label::from(request_id),
+            Label::from(STATUS_PATH),
+        ];
+
+        let Some(status) = HashTree::lookup_path(&path, tree)?.value() else {
+            return Ok(false);
+        };
+
+        Ok(status == STATUS_REPLIED)
     }
 
     pub fn verify_time(&self, ingress_expiry: u64) -> bool {
@@ -302,6 +344,36 @@ impl<'a> Certificate<'a> {
         let time_difference = ingress_expiry.saturating_sub(cert_time);
 
         time_difference <= MAX_CERT_INGRESS_OFFSET
+    }
+}
+
+#[cfg(test)]
+impl<'a> Certificate<'a> {
+    /// Test helper: the request id of the certificate's single
+    /// `request_status` entry, so tests can address the real path rather than
+    /// hard-coding an id per fixture.
+    pub(crate) fn sole_request_id(&self) -> Option<&'a [u8]> {
+        use super::hash_tree::LookupResult;
+        let found = HashTree::lookup_path(&[Label::from(REQUEST_STATUS_PATH)], self.tree()).ok()?;
+        let LookupResult::Found(sub) = found else {
+            return None;
+        };
+
+        // The entry may sit under one or more forks at that level.
+        fn first_label<'a>(value: &RawValue<'a>, depth: usize) -> Option<&'a [u8]> {
+            if depth > 8 {
+                return None;
+            }
+            match HashTree::try_from(value).ok()? {
+                HashTree::Labeled(label, _) => Some(label.as_bytes()),
+                HashTree::Fork(left, right) => {
+                    first_label(&left, depth + 1).or_else(|| first_label(&right, depth + 1))
+                }
+                _ => None,
+            }
+        }
+
+        first_label(&sub, 0)
     }
 }
 
@@ -339,7 +411,8 @@ mod test_certificate {
         let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
-        assert!(cert.msg_response().is_ok());
+        let request_id = cert.sole_request_id().expect("request_status entry");
+        assert!(cert.msg_response(request_id).is_ok());
     }
 
     // tag(55799) + map(2) holding "tree" and REAL_CERT's "delegation", so the
@@ -579,7 +652,8 @@ mod test_certificate {
         let cert = Certificate::from_bytes(&data).unwrap();
 
         // Check we parse the message(reply field)
-        let msg = cert.msg_response();
+        let request_id = cert.sole_request_id().expect("request_status entry");
+        let msg = cert.msg_response(request_id);
         assert!(msg.is_err());
     }
 
@@ -594,7 +668,8 @@ mod test_certificate {
         assert!(result.is_ok());
 
         let cert = unsafe { cert.assume_init() };
-        let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+        let request_id = cert.sole_request_id().expect("request_status entry");
+        let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(request_id) else {
             panic!("Invalid certificate");
         };
 

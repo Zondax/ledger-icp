@@ -18,6 +18,22 @@ pub const BLS_SIGNATURE_SIZE: usize = 48;
 pub const REPLY_PATH: &str = "reply";
 pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
 
+// Components of the certified state-tree paths this app reads. Per the IC
+// interface specification a call's outcome lives at
+//   /request_status/<request_id>/{status, reply, ...}
+// and subnet data at
+//   /subnet/<subnet_id>/{public_key, canister_ranges}
+// Looking these up as whole paths, rather than as bare labels found anywhere in
+// the tree, is what binds a value to the request it belongs to.
+pub const REQUEST_STATUS_PATH: &str = "request_status";
+pub const STATUS_PATH: &str = "status";
+pub const SUBNET_PATH: &str = "subnet";
+pub const PUBLIC_KEY_PATH: &str = "public_key";
+pub const TIME_PATH: &str = "time";
+
+/// The only certified request status this app will render a reply for.
+pub const STATUS_REPLIED: &[u8] = b"replied";
+
 pub const CBOR_TAG: u64 = 55799;
 pub const BIG_NUM_TAG: u64 = 2;
 pub const CBOR_CERTIFICATE_TAG: u64 = CBOR_TAG;

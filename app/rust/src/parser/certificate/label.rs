@@ -15,7 +15,7 @@
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum Label<'a> {
     Blob(&'a [u8]),
@@ -33,6 +33,20 @@ impl<'a> Label<'a> {
     }
 }
 
+/// Labels compare by their bytes, not by which variant holds them.
+///
+/// `decode` picks `String` or `Blob` according to whether the CBOR bytes happen
+/// to be valid UTF-8, so the same label can arrive as either variant depending
+/// on its content. A derived comparison would call those unequal and a path
+/// component could silently fail to match.
+impl PartialEq for Label<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
+}
+
+impl Eq for Label<'_> {}
+
 impl<'a> From<&'a str> for Label<'a> {
     fn from(s: &'a str) -> Self {
         Label::String(s)
@@ -49,10 +63,10 @@ impl<'b, C> Decode<'b, C> for Label<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
         // MAX_LEN is enforced here rather than at use. HashTree::reconstruct
         // copies a label into a fixed [0; Label::MAX_LEN + 32] buffer, so a
-        // longer label panicked there -- and with panic=abort and a `loop {}`
-        // handler that hangs the device until it is reconnected. No legitimate
-        // state-tree label exceeds 32 bytes: the longest are a 32-byte request
-        // id and a 29-byte principal.
+        // longer label used to panic there -- and with panic=abort and a
+        // `loop {}` handler that hangs the device until it is reconnected.
+        // No legitimate state-tree label exceeds 32 bytes: the longest are a
+        // 32-byte request id and a 29-byte principal.
         match d.datatype()? {
             minicbor::data::Type::Bytes => {
                 let bytes = d.bytes()?;

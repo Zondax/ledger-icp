@@ -128,48 +128,75 @@ impl<'a> HashTree<'a> {
         Ok(())
     }
 
+    /// Look a whole path up in the tree, following the `lookup_path` /
+    /// `find_label` rules in the IC interface specification.
+    ///
+    /// The important property is that a label is only matched against the
+    /// *current* level -- the flattened list of forks at this node -- and the
+    /// search descends only after an exact match. A previous version searched
+    /// for a single label anywhere in the tree, descending through labels that
+    /// did not match. That made every lookup unbound from its position, so a
+    /// certificate carrying several `request_status` entries (each at its own
+    /// legitimate path, all committed to by the same signed root hash) could
+    /// have one request verified while a different one's reply was returned.
+    ///
+    /// A pruned node yields `Unknown` rather than `Absent`: the label may be
+    /// inside the part of the tree that was pruned away, so we cannot say it is
+    /// absent. Callers must treat `Unknown` as a failure, not as "not found".
     #[inline(never)]
-    pub fn lookup_path(
-        label: &Label<'a>,
+    pub fn lookup_path<'p>(
+        path: &[Label<'p>],
         tree: RawValue<'a>,
     ) -> Result<LookupResult<'a>, ParserError> {
+        /// Search one level for `label`.
+        ///
+        /// Recursion here walks *sideways* across the forks that make up the
+        /// current level (`flatten_forks` in the specification); it never
+        /// descends into a labeled subtree.
         #[inline(never)]
-        fn inner_lookup<'a>(
-            label: &Label<'a>,
+        fn find_label<'a, 'p>(
+            label: &Label<'p>,
             tree: RawValue<'a>,
             depth: usize,
         ) -> Result<LookupResult<'a>, ParserError> {
             if depth >= MAX_TREE_DEPTH {
                 return Err(ParserError::RecursionLimitReached);
             }
-            let current_tree = HashTree::try_from(&tree)?;
 
-            match current_tree {
-                HashTree::Fork(left, right) => match inner_lookup(label, left, depth + 1)? {
+            match HashTree::try_from(&tree)? {
+                HashTree::Fork(left, right) => match find_label(label, left, depth + 1)? {
                     LookupResult::Found(value) => Ok(LookupResult::Found(value)),
-                    LookupResult::Absent | LookupResult::Unknown => {
-                        // check right leaft of this tree
-                        inner_lookup(label, right, depth + 1)
-                    }
+                    LookupResult::Absent => find_label(label, right, depth + 1),
+                    // The left branch was pruned and might have held the label,
+                    // so a miss on the right still leaves us unable to tell.
+                    LookupResult::Unknown => match find_label(label, right, depth + 1)? {
+                        LookupResult::Found(value) => Ok(LookupResult::Found(value)),
+                        _ => Ok(LookupResult::Unknown),
+                    },
                 },
                 HashTree::Labeled(node_label, subtree) => {
                     if &node_label == label {
                         Ok(LookupResult::Found(subtree))
                     } else {
-                        // Continue searching in the subtree, maybe it contains another label
-                        // node that could be the one we are looking for
-                        inner_lookup(label, subtree, depth + 1)
+                        // A different label at this level tells us nothing
+                        // about ours, and its subtree belongs to it, not to us.
+                        Ok(LookupResult::Absent)
                     }
                 }
-                // Below we should return Found just if Label is empty &[]
-                // but currently we are taking a label not an slice of them
-                HashTree::Leaf(_) => Ok(LookupResult::Absent),
                 HashTree::Pruned(_) => Ok(LookupResult::Unknown),
-                HashTree::Empty => Ok(LookupResult::Absent),
+                HashTree::Leaf(_) | HashTree::Empty => Ok(LookupResult::Absent),
             }
         }
 
-        inner_lookup(label, tree, 1)
+        let mut current = tree;
+        for label in path {
+            match find_label(label, current, 1)? {
+                LookupResult::Found(subtree) => current = subtree,
+                other => return Ok(other),
+            }
+        }
+
+        Ok(LookupResult::Found(current))
     }
 
     /// Reconstruct the root hash of this tree, following the rules in:
@@ -394,7 +421,11 @@ pub fn hash_with_domain_sep(domain: &str, data: &[u8]) -> [u8; 32] {
 
 #[cfg(test)]
 mod hash_tree_tests {
-    use crate::{parser::certificate::Certificate, FromBytes};
+    use crate::{
+        constants::{REPLY_PATH, REQUEST_STATUS_PATH},
+        parser::certificate::Certificate,
+        FromBytes,
+    };
 
     use super::*;
 
@@ -425,16 +456,89 @@ mod hash_tree_tests {
         );
     }
 
+    /// The request id certified by DATA, read from its request_status label.
+    const DATA_REQUEST_ID: &str =
+        "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
+
     #[test]
     fn test_lookup_reply() {
         // Parse the certificate
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(DATA_REQUEST_ID).unwrap();
 
-        let path = "reply".into();
+        // A real certificate resolves the full canonical path. This is the
+        // backward-compatibility guard: whatever the lookup rules are, this
+        // must keep working.
+        let path = [
+            Label::from(REQUEST_STATUS_PATH),
+            Label::from(&request_id[..]),
+            Label::from(REPLY_PATH),
+        ];
 
         let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
         assert!(found.value().is_some());
+    }
+
+    #[test]
+    fn reply_is_not_reachable_as_a_bare_label() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+
+        // "reply" sits at /request_status/<id>/reply, so asking for it at the
+        // root must not resolve to a value. Returning it here is what let a
+        // certificate with two request_status entries show the wrong message.
+        //
+        // The result is Unknown rather than Absent because this certificate has
+        // pruned branches at the root: with part of the level withheld we
+        // cannot claim the label is absent, only that we did not find it. What
+        // matters for safety is that it is not Found.
+        let found = HashTree::lookup_path(&[Label::from(REPLY_PATH)], cert.tree()).unwrap();
+        assert!(
+            !matches!(found, LookupResult::Found(_)),
+            "a bare reply label must not resolve at the root"
+        );
+        assert!(found.value().is_none());
+    }
+
+    #[test]
+    fn reply_is_bound_to_its_request_id() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+
+        let mut wrong_id = hex::decode(DATA_REQUEST_ID).unwrap();
+        wrong_id[0] ^= 0xFF;
+
+        // A request id the certificate does not carry must not resolve to some
+        // other request's reply.
+        let path = [
+            Label::from(REQUEST_STATUS_PATH),
+            Label::from(&wrong_id[..]),
+            Label::from(REPLY_PATH),
+        ];
+        let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
+        assert!(found.value().is_none());
+
+        assert!(!cert.is_status_replied(&wrong_id).unwrap());
+        assert!(cert.msg_response(&wrong_id).is_err());
+    }
+
+    #[test]
+    fn status_must_be_replied() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(DATA_REQUEST_ID).unwrap();
+
+        // /request_status/<id>/status is certified as "replied" here.
+        assert!(cert.is_status_replied(&request_id).unwrap());
+
+        // A request id the certificate does not carry has no certified status,
+        // so the reply gate refuses it. (msg_response succeeding on a
+        // well-formed reply is covered by cert.rs against REAL_CERT; this
+        // fixture's reply predates the current consent-message format.)
+        let mut other = request_id.clone();
+        other[31] ^= 0x01;
+        assert!(!cert.is_status_replied(&other).unwrap());
     }
 
     #[test]
@@ -450,8 +554,7 @@ mod hash_tree_tests {
         let tree = RawValue::from_bytes(&tree).unwrap();
 
         // Checking "a" branch
-        let label_a = "a".into();
-        let a_value = HashTree::lookup_path(&label_a, tree).unwrap();
+        let a_value = HashTree::lookup_path(&[Label::from("a")], tree).unwrap();
         let LookupResult::Found(value) = a_value else {
             panic!("Node not found");
         };
@@ -463,30 +566,50 @@ mod hash_tree_tests {
         let a_empty = HashTree::try_from(a_empty.fork_right().unwrap()).unwrap();
         assert!(a_empty.is_empty());
 
-        //   lookup x
-        let x_value = HashTree::lookup_path(&"x".into(), tree).unwrap();
+        //   lookup a/x
+        let x_value = HashTree::lookup_path(&[Label::from("a"), Label::from("x")], tree).unwrap();
         let value = x_value.value().unwrap();
         assert_eq!(&b"hello", &value);
 
-        //   lookup y
-        let y_value = HashTree::lookup_path(&"y".into(), tree).unwrap();
+        //   lookup a/y
+        let y_value = HashTree::lookup_path(&[Label::from("a"), Label::from("y")], tree).unwrap();
         let value = y_value.value().unwrap();
         assert_eq!(&b"world", &value);
 
         //   lookup b
-        let b_value = HashTree::lookup_path(&"b".into(), tree).unwrap();
+        let b_value = HashTree::lookup_path(&[Label::from("b")], tree).unwrap();
         let value = b_value.value().unwrap();
         assert_eq!(&b"good", &value);
 
         //   lookup c
-        let c_value = HashTree::lookup_path(&"c".into(), tree).unwrap();
+        let c_value = HashTree::lookup_path(&[Label::from("c")], tree).unwrap();
         let value = c_value.value();
         assert!(value.is_none());
 
         //   lookup d
-        let d_value = HashTree::lookup_path(&"d".into(), tree).unwrap();
+        let d_value = HashTree::lookup_path(&[Label::from("d")], tree).unwrap();
         let value = d_value.value().unwrap();
         assert_eq!(&b"morning", &value);
+    }
+
+    #[test]
+    fn nested_labels_are_not_reachable_from_the_root() {
+        // "x" and "y" live under "a". Asking for them at the root used to find
+        // them, because the search descended through labels that did not match.
+        let tree = hex::decode(TREE).unwrap();
+        let tree = RawValue::from_bytes(&tree).unwrap();
+
+        for nested in ["x", "y"] {
+            let found = HashTree::lookup_path(&[Label::from(nested)], tree).unwrap();
+            assert!(
+                matches!(found, LookupResult::Absent),
+                "{nested} must not resolve at the root"
+            );
+        }
+
+        // And a path that does not exist at all stays absent.
+        let missing = HashTree::lookup_path(&[Label::from("a"), Label::from("zz")], tree).unwrap();
+        assert!(matches!(missing, LookupResult::Absent));
     }
 
     // Minimal CBOR builders for hand-made trees:
@@ -524,8 +647,8 @@ mod hash_tree_tests {
     #[test]
     fn label_longer_than_max_is_rejected() {
         // reconstruct copies a label into a fixed [0; MAX_LEN + 32] buffer, so a
-        // 33-byte label panicked there. A 39-byte tree was enough to hang the
-        // device; rejecting at decode keeps it an error.
+        // 33-byte label used to panic there. A 39-byte tree was enough to hang
+        // the device; rejecting at decode keeps it an error.
         let oversized = [0x61u8; Label::MAX_LEN + 1];
         let tree = cbor_labeled(&oversized, cbor_empty());
         let raw = RawValue::from_bytes(&tree).unwrap();

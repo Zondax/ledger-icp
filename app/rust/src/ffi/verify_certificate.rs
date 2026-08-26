@@ -19,7 +19,7 @@ use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
     error::ParserError,
-    Certificate, FromBytes, HashTree, LookupResult, Principal,
+    Certificate, FromBytes, Principal,
 };
 
 use core::mem::MaybeUninit;
@@ -122,14 +122,14 @@ pub unsafe extern "C" fn rs_verify_certificate(
         _ => {}
     }
 
-    // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data refers to
-    // the provided certificate
-    let Ok(LookupResult::Found(_)) =
-        HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
-    else {
-        return ParserError::InvalidCertificate as u32;
-    };
+    // The reply rendered below is fetched at
+    // /request_status/<request_id>/reply using this same request id, so the
+    // message the user reads is the one certified for the request that was
+    // verified. Checking only that the id appears somewhere in the tree, and
+    // then reading a bare `reply` label, allowed a certificate holding two
+    // request_status entries to have one request checked and the other's reply
+    // displayed.
+    let request_id = &consent_request.request_id[..];
 
     // Verify ingress_expiry against certificate timestamp
     if !cert.verify_time(call_request.ingress_expiry) {
@@ -155,7 +155,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     // Check for the response type embedded in the certificate
     // an error response means we can not go further
-    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(request_id) else {
         return ParserError::InvalidCertificate as u32;
     };
 
