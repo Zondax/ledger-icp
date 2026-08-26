@@ -17,7 +17,7 @@
 use crate::{
     check_canary,
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
+    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER, REQUEST_STATUS_PATH},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
 };
@@ -122,12 +122,15 @@ pub unsafe extern "C" fn rs_verify_certificate(
         _ => {}
     }
 
-    // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data refers to
-    // the provided certificate
-    let Ok(LookupResult::Found(_)) =
-        HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
-    else {
+    // The certificate has to be about this request: the status entry must sit
+    // at ["request_status", <request id>], the path the IC actually certifies
+    // it under, rather than the request id appearing as a label somewhere in
+    // the tree.
+    let request_id = &consent_request.request_id[..];
+    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(
+        &[REQUEST_STATUS_PATH.into(), request_id.into()],
+        cert.tree(),
+    ) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -155,7 +158,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     // Check for the response type embedded in the certificate
     // an error response means we can not go further
-    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(request_id) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -168,21 +171,27 @@ pub unsafe extern "C" fn rs_verify_certificate(
 }
 
 fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
-    // Check sender identity
-    // This check should be:
-    // call.sender == consent.sender || consent.sender == 0x04 or
-    // call.sender == device.principal
-    // to pass validation
-    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
-    if !(call_sender == consent_sender || is_default_sender) {
-        let Ok(device_principal) = device_principal() else {
-            return false;
-        };
-        let Ok(call_sender_principal) = Principal::new(call_sender) else {
-            return false;
-        };
-        // then check that the call_sender_principal matches the device_principal
-        return call_sender_principal == device_principal;
+    // The consent message was generated for whoever asked for it, so the call
+    // it is bound to has to come from that same principal.
+    if call_sender == consent_sender {
+        return true;
     }
-    true
+
+    // Consent messages are routinely fetched anonymously, which is why an
+    // anonymous consent sender does not have to match. It used to authorise
+    // *any* call sender, though; requiring the call to come from this device
+    // keeps that flow working while removing the part that let the consent be
+    // bound to an arbitrary third party.
+    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
+    if !is_default_sender && !consent_sender.is_empty() {
+        return false;
+    }
+
+    let Ok(device_principal) = device_principal() else {
+        return false;
+    };
+    let Ok(call_sender_principal) = Principal::new(call_sender) else {
+        return false;
+    };
+    call_sender_principal == device_principal
 }

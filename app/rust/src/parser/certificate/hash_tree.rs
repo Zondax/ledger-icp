@@ -128,48 +128,66 @@ impl<'a> HashTree<'a> {
         Ok(())
     }
 
+    /// Find `label` among the edges at this level of the tree, following the
+    /// rules in:
+    /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#lookup
+    ///
+    /// Forks are flattened, because a fork joins edges that sit at the same
+    /// level. A labelled edge that is not the one being looked for is *not*
+    /// descended into: its subtree lives one level down, and treating a match
+    /// there as a match here is what let a value be picked up from anywhere in
+    /// the tree regardless of the path it actually sits under.
     #[inline(never)]
-    pub fn lookup_path(
+    fn lookup_label(
         label: &Label<'a>,
         tree: RawValue<'a>,
+        depth: usize,
     ) -> Result<LookupResult<'a>, ParserError> {
-        #[inline(never)]
-        fn inner_lookup<'a>(
-            label: &Label<'a>,
-            tree: RawValue<'a>,
-            depth: usize,
-        ) -> Result<LookupResult<'a>, ParserError> {
-            if depth >= MAX_TREE_DEPTH {
-                return Err(ParserError::RecursionLimitReached);
-            }
-            let current_tree = HashTree::try_from(&tree)?;
+        if depth >= MAX_TREE_DEPTH {
+            return Err(ParserError::RecursionLimitReached);
+        }
 
-            match current_tree {
-                HashTree::Fork(left, right) => match inner_lookup(label, left, depth + 1)? {
+        match HashTree::try_from(&tree)? {
+            HashTree::Fork(left, right) => match Self::lookup_label(label, left, depth + 1)? {
+                LookupResult::Found(value) => Ok(LookupResult::Found(value)),
+                // A pruned branch may have held the label, so "not here" on the
+                // left of a pruned subtree cannot be reported as Absent.
+                LookupResult::Absent => Self::lookup_label(label, right, depth + 1),
+                LookupResult::Unknown => match Self::lookup_label(label, right, depth + 1)? {
                     LookupResult::Found(value) => Ok(LookupResult::Found(value)),
-                    LookupResult::Absent | LookupResult::Unknown => {
-                        // check right leaft of this tree
-                        inner_lookup(label, right, depth + 1)
-                    }
+                    _ => Ok(LookupResult::Unknown),
                 },
-                HashTree::Labeled(node_label, subtree) => {
-                    if &node_label == label {
-                        Ok(LookupResult::Found(subtree))
-                    } else {
-                        // Continue searching in the subtree, maybe it contains another label
-                        // node that could be the one we are looking for
-                        inner_lookup(label, subtree, depth + 1)
-                    }
+            },
+            HashTree::Labeled(node_label, subtree) => {
+                if &node_label == label {
+                    Ok(LookupResult::Found(subtree))
+                } else {
+                    Ok(LookupResult::Absent)
                 }
-                // Below we should return Found just if Label is empty &[]
-                // but currently we are taking a label not an slice of them
-                HashTree::Leaf(_) => Ok(LookupResult::Absent),
-                HashTree::Pruned(_) => Ok(LookupResult::Unknown),
-                HashTree::Empty => Ok(LookupResult::Absent),
+            }
+            HashTree::Leaf(_) => Ok(LookupResult::Absent),
+            HashTree::Pruned(_) => Ok(LookupResult::Unknown),
+            HashTree::Empty => Ok(LookupResult::Absent),
+        }
+    }
+
+    /// Walk `path` from the root of `tree`, one label per level.
+    #[inline(never)]
+    pub fn lookup_path(
+        path: &[Label<'a>],
+        tree: RawValue<'a>,
+    ) -> Result<LookupResult<'a>, ParserError> {
+        let mut current = tree;
+
+        for label in path {
+            match Self::lookup_label(label, current, 1)? {
+                LookupResult::Found(subtree) => current = subtree,
+                LookupResult::Absent => return Ok(LookupResult::Absent),
+                LookupResult::Unknown => return Ok(LookupResult::Unknown),
             }
         }
 
-        inner_lookup(label, tree, 1)
+        Ok(LookupResult::Found(current))
     }
 
     /// Reconstruct the root hash of this tree, following the rules in:
@@ -499,16 +517,54 @@ mod hash_tree_tests {
         );
     }
 
+    // The request id this certificate's DATA is about.
+    const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
+
     #[test]
     fn test_lookup_reply() {
         // Parse the certificate
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(REQUEST_ID).unwrap();
 
-        let path = "reply".into();
+        let path = [
+            crate::constants::REQUEST_STATUS_PATH.into(),
+            request_id.as_slice().into(),
+            crate::constants::REPLY_PATH.into(),
+        ];
 
         let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
         assert!(found.value().is_some());
+    }
+
+    #[test]
+    fn bare_label_does_not_reach_a_nested_value() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+
+        // "reply" sits under ["request_status", <request id>]. Looking it up at
+        // the root has to come back Absent: a value is only committed to at the
+        // path it actually hangs from.
+        let found =
+            HashTree::lookup_path(&[crate::constants::REPLY_PATH.into()], cert.tree()).unwrap();
+        assert!(found.value().is_none());
+    }
+
+    #[test]
+    fn reply_under_the_wrong_request_id_is_absent() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+        let mut request_id = hex::decode(REQUEST_ID).unwrap();
+        request_id[0] ^= 0xFF;
+
+        let path = [
+            crate::constants::REQUEST_STATUS_PATH.into(),
+            request_id.as_slice().into(),
+            crate::constants::REPLY_PATH.into(),
+        ];
+
+        let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
+        assert!(found.value().is_none());
     }
 
     #[test]
@@ -524,8 +580,7 @@ mod hash_tree_tests {
         let tree = RawValue::from_bytes(&tree).unwrap();
 
         // Checking "a" branch
-        let label_a = "a".into();
-        let a_value = HashTree::lookup_path(&label_a, tree).unwrap();
+        let a_value = HashTree::lookup_path(&["a".into()], tree).unwrap();
         let LookupResult::Found(value) = a_value else {
             panic!("Node not found");
         };
@@ -537,30 +592,43 @@ mod hash_tree_tests {
         let a_empty = HashTree::try_from(a_empty.fork_right().unwrap()).unwrap();
         assert!(a_empty.is_empty());
 
-        //   lookup x
-        let x_value = HashTree::lookup_path(&"x".into(), tree).unwrap();
-        let value = x_value.value().unwrap();
-        assert_eq!(&b"hello", &value);
+        //   lookup ["a", "x"]
+        let x_value = HashTree::lookup_path(&["a".into(), "x".into()], tree).unwrap();
+        assert_eq!(&b"hello", &x_value.value().unwrap());
 
-        //   lookup y
-        let y_value = HashTree::lookup_path(&"y".into(), tree).unwrap();
-        let value = y_value.value().unwrap();
-        assert_eq!(&b"world", &value);
+        //   lookup ["a", "y"]
+        let y_value = HashTree::lookup_path(&["a".into(), "y".into()], tree).unwrap();
+        assert_eq!(&b"world", &y_value.value().unwrap());
 
-        //   lookup b
-        let b_value = HashTree::lookup_path(&"b".into(), tree).unwrap();
-        let value = b_value.value().unwrap();
-        assert_eq!(&b"good", &value);
+        //   lookup ["b"]
+        let b_value = HashTree::lookup_path(&["b".into()], tree).unwrap();
+        assert_eq!(&b"good", &b_value.value().unwrap());
 
-        //   lookup c
-        let c_value = HashTree::lookup_path(&"c".into(), tree).unwrap();
-        let value = c_value.value();
-        assert!(value.is_none());
+        //   lookup ["c"] - present as an edge, but its subtree is Empty
+        let c_value = HashTree::lookup_path(&["c".into()], tree).unwrap();
+        assert!(c_value.value().is_none());
 
-        //   lookup d
-        let d_value = HashTree::lookup_path(&"d".into(), tree).unwrap();
-        let value = d_value.value().unwrap();
-        assert_eq!(&b"morning", &value);
+        //   lookup ["d"]
+        let d_value = HashTree::lookup_path(&["d".into()], tree).unwrap();
+        assert_eq!(&b"morning", &d_value.value().unwrap());
+
+        // "x" and "y" hang off "a", so they are not reachable from the root:
+        // a lookup that descended into non-matching subtrees used to find them
+        // here, which made a value's path meaningless.
+        assert!(HashTree::lookup_path(&["x".into()], tree)
+            .unwrap()
+            .value()
+            .is_none());
+        assert!(HashTree::lookup_path(&["y".into()], tree)
+            .unwrap()
+            .value()
+            .is_none());
+
+        // And a path that does not exist at all stays absent.
+        assert!(HashTree::lookup_path(&["b".into(), "x".into()], tree)
+            .unwrap()
+            .value()
+            .is_none());
     }
 
     #[test]

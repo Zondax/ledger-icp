@@ -22,7 +22,8 @@ use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{
         CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET, REPLY_PATH,
-        SHA256_DIGEST_LENGTH,
+        REQUEST_STATUS_PATH, SHA256_DIGEST_LENGTH, STATUS_PATH, STATUS_REPLIED, SUBNET_PATH,
+        TIME_PATH,
     },
     error::ParserError,
     zlog, FromBytes, Signature,
@@ -253,10 +254,9 @@ impl<'a> Certificate<'a> {
 
     pub fn timestamp(&self) -> Result<Option<u64>, ParserError> {
         let tree = self.tree();
-        let path = "time".into();
 
         // Perform the lookup
-        let Some(time) = HashTree::lookup_path(&path, tree)?.value() else {
+        let Some(time) = HashTree::lookup_path(&[TIME_PATH.into()], tree)?.value() else {
             return Ok(None);
         };
 
@@ -268,13 +268,18 @@ impl<'a> Certificate<'a> {
         Ok(Some(timestamp))
     }
 
+    // The ranges live under the delegated subnet, at
+    // ["subnet", <subnet id>, "canister_ranges"]. Looking the last label up on
+    // its own would accept a value committed to anywhere in the tree.
     pub fn canister_ranges(&self) -> Option<CanisterRanges<'a>> {
-        let tree = match self.delegation() {
-            None => self.tree(),
-            Some(delegation) => delegation.cert().tree(),
-        };
+        let delegation = self.delegation()?;
+        let tree = delegation.cert().tree();
+        let path = [
+            SUBNET_PATH.into(),
+            delegation.subnet().into(),
+            CANISTER_RANGES_PATH.into(),
+        ];
 
-        let path = CANISTER_RANGES_PATH.into();
         let found = HashTree::lookup_path(&path, tree).ok()?;
         let data = found.value()?;
         let mut ranges = MaybeUninit::uninit();
@@ -283,10 +288,35 @@ impl<'a> Certificate<'a> {
         Some(ranges)
     }
 
-    // Safe to unwrap because this reply was parsed already
-    pub fn msg_response(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
-        let tree = self.tree();
-        let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
+    // The reply is only the reply to *this* request when it is read from
+    // ["request_status", <request id>, "reply"]. Looking up a bare "reply"
+    // took whatever the tree happened to contain under that name, wherever it
+    // sat, so the certificate no longer had to be about the request being
+    // signed - only to contain something called a reply somewhere.
+    pub fn msg_response(
+        &self,
+        request_id: &'a [u8],
+    ) -> Result<ConsentMessageResponse<'a>, ParserError> {
+        // The status has to say the call actually replied; "rejected" and
+        // "done" carry no reply and must not be rendered as one.
+        let status_path = [
+            REQUEST_STATUS_PATH.into(),
+            request_id.into(),
+            STATUS_PATH.into(),
+        ];
+        let status = HashTree::lookup_path(&status_path, self.tree())?
+            .value()
+            .ok_or(ParserError::InvalidCertificate)?;
+        if status != STATUS_REPLIED {
+            return Err(ParserError::InvalidCertificate);
+        }
+
+        let path = [
+            REQUEST_STATUS_PATH.into(),
+            request_id.into(),
+            REPLY_PATH.into(),
+        ];
+        let found = HashTree::lookup_path(&path, self.tree())?;
         let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
 
         let mut msg = MaybeUninit::uninit();
@@ -334,6 +364,13 @@ mod test_certificate {
     const CANISTER_ID: &str = "0000000000600B730101";
     const INGRESS_EXPIRY: u64 = 1753272540000000000;
     const CERT_GENERIC_DISPLAY: &str = "d9d9f7a2647472656583018301820458207970ca0b7b0c0e63228c4cf47ce6f4a94268cfc004a99ae8aba5e97f204126a183018204582080b175729756e05010ceab7db6bed386cc6db61d274fe7d38a5f0bcea7ef317783024e726571756573745f7374617475738301830258204b77e3e74aa91e7bf50f8cf1acc0cb1dbafa4ad45c050e2abcc5d910317862a383018302457265706c79820359032d4449444c0c6b02bc8a0101c5fed201096c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b02d9e5b0980405fcdfd79a0f716c01c4d6b4ea0b066d076c01ffbb87a807086d716b04d1c4987c0aa3f2efe6020b9a8597e6030be3c581900f0b6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e01a4052320417574686f72697a6520616e6f74686572206164647265737320746f2077697468647261772066726f6d20796f7572206163636f756e740a0a2a2a54686520666f6c6c6f77696e67206164647265737320697320616c6c6f77656420746f2077697468647261772066726f6d20796f7572206163636f756e743a2a2a0a72646d78362d6a616161612d61616161612d61616164712d6361690a0a2a2a596f7572207375626163636f756e743a2a2a0a303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030300a0a2a2a526571756573746564207769746864726177616c20616c6c6f77616e63653a2a2a0a3130204943500ae29aa02054686520616c6c6f77616e63652077696c6c2062652073657420746f2031302049435020696e646570656e64656e746c79206f6620616e792070726576696f757320616c6c6f77616e63652e20556e74696c2074686973207472616e73616374696f6e20686173206265656e20657865637574656420746865207370656e6465722063616e207374696c6c206578657263697365207468652070726576696f757320616c6c6f77616e63652028696620616e792920746f20697427732066756c6c20616d6f756e742e0a0a2a2a45787069726174696f6e20646174653a2a2a0a4e6f2065787069726174696f6e2e0a0a2a2a417070726f76616c206665653a2a2a0a302e30303031204943500a0a2a2a5472616e73616374696f6e206665657320746f206265207061696420627920796f7572207375626163636f756e743a2a2a0a303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030308302467374617475738203477265706c696564820458203c45af0e5805729f1d07fbce20047198017873e787c5a27744ca20c71ad357b8830182045820d4fdd3b69be601a88a9412234c7940446d55dbc09bd3f28eb96d8548a2fe885283024474696d65820349889893d986e3d58218697369676e61747572655830b60f55093dc0835939589c2a3dcb5313248b13b5d965f3019fb9f5f3d34503443100b5103386a9d2df229fa82fe0440c";
+    // The request id each of the certificates above is about, taken from the
+    // 32-byte label under "request_status".
+    const REAL_CERT_REQUEST_ID: &str =
+        "0db17a4999e6d1bb9dadb9042489dfe1eee589e3f036aa1c7bfe12964c1ec75a";
+    const CERT_GENERIC_DISPLAY_REQUEST_ID: &str =
+        "4b77e3e74aa91e7bf50f8cf1acc0cb1dbafa4ad45c050e2abcc5d910317862a3";
+
     const ROOT_KEY: &str =
         "814c0e6ec71fab583b08bd81373c255c3c371b2e84863c98a4f1e08b74235d14fb5d9c0cd546d9685f913a0c0b2cc5341583bf4b4392e467db96d65b9bb4cb717112f8472e0d5a4d14505ffd7484b01291091c5f87b98883463f98091a0baaae";
 
@@ -341,9 +378,16 @@ mod test_certificate {
     fn parse_cert() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(REAL_CERT_REQUEST_ID).unwrap();
 
         // Check we parse the message(reply field)
-        assert!(cert.msg_response().is_ok());
+        assert!(cert.msg_response(&request_id).is_ok());
+
+        // A reply is only this request's reply when it is read from this
+        // request's path.
+        let mut other_id = request_id.clone();
+        other_id[0] ^= 0xFF;
+        assert!(cert.msg_response(&other_id).is_err());
     }
 
     // tag(55799) + map(2) holding "tree" and REAL_CERT's "delegation", so the
@@ -608,9 +652,10 @@ mod test_certificate {
     fn error_generic_display() {
         let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(CERT_GENERIC_DISPLAY_REQUEST_ID).unwrap();
 
         // Check we parse the message(reply field)
-        let msg = cert.msg_response();
+        let msg = cert.msg_response(&request_id);
         assert!(msg.is_err());
     }
 
@@ -625,7 +670,8 @@ mod test_certificate {
         assert!(result.is_ok());
 
         let cert = unsafe { cert.assume_init() };
-        let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+        let request_id = hex::decode(REAL_CERT_REQUEST_ID).unwrap();
+        let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(&request_id) else {
             panic!("Invalid certificate");
         };
 
