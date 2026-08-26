@@ -47,16 +47,26 @@ impl<'a> From<&'a [u8]> for Label<'a> {
 
 impl<'b, C> Decode<'b, C> for Label<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
-        match d.datatype()? {
+        // MAX_LEN is what the hashing buffer in HashTree::reconstruct is sized
+        // for. Nothing in a well-formed certificate exceeds it - the longest
+        // labels are 32-byte request ids - so reject the rest here instead of
+        // letting an oversized one reach a fixed-size copy.
+        let label = match d.datatype()? {
             minicbor::data::Type::Bytes => {
                 let bytes = d.bytes()?;
                 match core::str::from_utf8(bytes) {
-                    Ok(s) => Ok(Label::String(s)),
-                    Err(_) => Ok(Label::Blob(bytes)),
+                    Ok(s) => Label::String(s),
+                    Err(_) => Label::Blob(bytes),
                 }
             }
-            minicbor::data::Type::String => Ok(Label::String(d.str()?)),
-            _ => Err(Error::message("Expected bytes or string for Label")),
+            minicbor::data::Type::String => Label::String(d.str()?),
+            _ => return Err(Error::message("Expected bytes or string for Label")),
+        };
+
+        if label.as_bytes().len() > Self::MAX_LEN {
+            return Err(Error::message("Label exceeds maximum length"));
         }
+
+        Ok(label)
     }
 }

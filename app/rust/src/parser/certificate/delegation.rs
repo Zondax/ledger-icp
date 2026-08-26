@@ -92,6 +92,23 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
                     if !rem.is_empty() {
                         return Err(ParserError::InvalidDelegation);
                     }
+
+                    // RawValue only skips over a CBOR item, so on its own it
+                    // says nothing about whether the bytes are a certificate.
+                    // cert() below hands the result of this parse straight to
+                    // unwrap(), so do the parse here where it can still fail
+                    // as an error.
+                    let inner = Certificate::try_from(*unsafe { raw_value.assume_init_ref() })
+                        .map_err(|_| ParserError::InvalidDelegation)?;
+
+                    // A delegation may not carry its own delegation. Rejecting
+                    // that here rather than at verification time also bounds
+                    // this recursion at one level: without it, parsing a chain
+                    // of nested delegations would recurse as deep as the host
+                    // cares to nest them.
+                    if inner.delegation().is_some() {
+                        return Err(ParserError::InvalidDelegation);
+                    }
                 }
                 _ => return Err(ParserError::UnexpectedField),
             }
@@ -110,7 +127,8 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
 impl<'a> Delegation<'a> {
     #[inline(never)]
     pub fn cert(&self) -> Certificate<'a> {
-        // Safe to unwrap as this was checked at parsing
+        // Safe to unwrap: from_bytes_into parsed these same bytes as a
+        // Certificate before this value could exist.
         Certificate::try_from(self.certificate).unwrap()
     }
 

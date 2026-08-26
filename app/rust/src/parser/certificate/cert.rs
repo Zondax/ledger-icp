@@ -85,6 +85,10 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
                     // Just to check that tree is fully parsed
                     let _tree = HashTree::try_from(&raw_value)?;
+                    // Bound the depth once, here, so every later traversal of
+                    // this tree - reconstruct, lookup - is walking something
+                    // already known to be shallow enough.
+                    _tree.check_integrity(1)?;
 
                     #[cfg(test)]
                     std::println!("Certificate tree:\n {}", _tree);
@@ -360,6 +364,56 @@ mod test_certificate {
     #[test]
     fn rejects_certificate_with_duplicate_key() {
         let data = hex::decode(CERT_DUPLICATE_TREE).unwrap();
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    // tag(55799) + map(3): an Empty tree, a 48-byte signature, and a
+    // delegation whose "certificate" byte string holds `inner`.
+    fn certificate_with_delegated_cert(inner: &[u8]) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0xa3];
+        out.extend_from_slice(&[0x64]);
+        out.extend_from_slice(b"tree");
+        out.extend_from_slice(&[0x81, 0x00]);
+        out.extend_from_slice(&[0x69]);
+        out.extend_from_slice(b"signature");
+        out.extend_from_slice(&[0x58, 0x30]);
+        out.extend_from_slice(&[0u8; 48]);
+        out.extend_from_slice(&[0x6a]);
+        out.extend_from_slice(b"delegation");
+        out.extend_from_slice(&[0xa2, 0x69]);
+        out.extend_from_slice(b"subnet_id");
+        out.extend_from_slice(&[0x58, 0x1d]);
+        out.extend_from_slice(&[0u8; 29]);
+        out.extend_from_slice(&[0x6b]);
+        out.extend_from_slice(b"certificate");
+        assert!(inner.len() < 256);
+        out.extend_from_slice(&[0x58, inner.len() as u8]);
+        out.extend_from_slice(inner);
+        out
+    }
+
+    // The delegation used to keep its inner certificate as a RawValue, which
+    // only says the bytes are some CBOR item. Delegation::cert() then handed
+    // the real parse to unwrap(), so anything that was not a certificate
+    // aborted the app rather than failing the request.
+    #[test]
+    fn rejects_delegation_whose_certificate_is_not_one() {
+        // A CBOR null: a perfectly good item, not a certificate.
+        let data = certificate_with_delegated_cert(&[0xf6]);
+        assert!(Certificate::from_bytes(&data).is_err());
+
+        // A map of the right size whose keys are not certificate fields.
+        let data = certificate_with_delegated_cert(&[0xa2, 0x61, b'a', 0x00, 0x61, b'b', 0x00]);
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    // A delegation may not carry a delegation of its own. That was only
+    // checked during verification, which left the parse recursing as deep as
+    // the nesting went.
+    #[test]
+    fn rejects_nested_delegation() {
+        let inner = certificate_with_delegated_cert(&[0xf6]);
+        let data = certificate_with_delegated_cert(&inner);
         assert!(Certificate::from_bytes(&data).is_err());
     }
 
