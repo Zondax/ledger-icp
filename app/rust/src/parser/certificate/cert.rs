@@ -51,6 +51,21 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
     ) -> Result<&'a [u8], crate::error::ParserError> {
+        Self::parse_into(input, out, true)
+    }
+}
+
+impl<'a> Certificate<'a> {
+    /// `allow_delegation` is false while parsing the certificate carried
+    /// inside a delegation. A delegation may not carry one of its own, and
+    /// refusing the key here rather than after parsing it is what keeps this
+    /// recursion one frame deep: checking afterwards would still descend the
+    /// whole chain first, which a host can nest as deeply as the blob allows.
+    fn parse_into(
+        input: &'a [u8],
+        out: &mut MaybeUninit<Self>,
+        allow_delegation: bool,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
         zlog("Certificate::from_bytes_into\x00");
 
         let mut d = Decoder::new(input);
@@ -86,9 +101,11 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
                     // Just to check that tree is fully parsed
                     let _tree = HashTree::try_from(&raw_value)?;
-                    // Bound the depth once, here, so every later traversal of
-                    // this tree - reconstruct, lookup - is walking something
-                    // already known to be shallow enough.
+                    // Bound the depth here so every later traversal of this
+                    // tree - reconstruct, lookup - starts from something known
+                    // to be shallow enough. Those keep their own bounds too,
+                    // since both are public and reachable on a tree that did
+                    // not come through this parser.
                     _tree.check_integrity(1)?;
 
                     #[cfg(test)]
@@ -109,7 +126,7 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                     d.set_position(d.position() + (data.len() - rem.len()));
                 }
                 "delegation" => {
-                    if has_delegation {
+                    if has_delegation || !allow_delegation {
                         return Err(ParserError::InvalidCertificate);
                     }
                     // create a new delegation here because it is define as an option
@@ -353,6 +370,20 @@ impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
     }
 }
 
+impl<'a> Certificate<'a> {
+    /// Parse the certificate a delegation carries. Rejects a further
+    /// delegation instead of recursing into one.
+    pub(crate) fn try_from_delegated(value: RawValue<'a>) -> Result<Self, ParserError> {
+        let mut cert = MaybeUninit::uninit();
+
+        let rem = Self::parse_into(value.bytes(), &mut cert, false)?;
+        if !rem.is_empty() {
+            return Err(ParserError::InvalidCertificate);
+        }
+        Ok(unsafe { cert.assume_init() })
+    }
+}
+
 #[cfg(test)]
 mod test_certificate {
     use super::*;
@@ -454,6 +485,55 @@ mod test_certificate {
     // A delegation may not carry a delegation of its own. That was only
     // checked during verification, which left the parse recursing as deep as
     // the nesting went.
+    // Build a delegation-wrapped certificate for an inner blob of any size.
+    fn nest_once(inner: &[u8]) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0xa3];
+        out.extend_from_slice(&[0x64]);
+        out.extend_from_slice(b"tree");
+        out.extend_from_slice(&[0x81, 0x00]);
+        out.extend_from_slice(&[0x69]);
+        out.extend_from_slice(b"signature");
+        out.extend_from_slice(&[0x58, 0x30]);
+        out.extend_from_slice(&[0u8; 48]);
+        out.extend_from_slice(&[0x6a]);
+        out.extend_from_slice(b"delegation");
+        out.extend_from_slice(&[0xa2, 0x69]);
+        out.extend_from_slice(b"subnet_id");
+        out.extend_from_slice(&[0x58, 0x1d]);
+        out.extend_from_slice(&[0u8; 29]);
+        out.extend_from_slice(&[0x6b]);
+        out.extend_from_slice(b"certificate");
+        // two-byte byte-string length so deep nesting stays encodable
+        out.extend_from_slice(&[0x59, (inner.len() >> 8) as u8, (inner.len() & 0xff) as u8]);
+        out.extend_from_slice(inner);
+        out
+    }
+
+    #[test]
+    fn deeply_nested_delegations_do_not_exhaust_the_stack() {
+        // Innermost: a plain certificate with no delegation.
+        let mut blob = std::vec![0xd9, 0xd9, 0xf7, 0xa2, 0x64];
+        blob.extend_from_slice(b"tree");
+        blob.extend_from_slice(&[0x81, 0x00]);
+        blob.extend_from_slice(&[0x69]);
+        blob.extend_from_slice(b"signature");
+        blob.extend_from_slice(&[0x58, 0x30]);
+        blob.extend_from_slice(&[0u8; 48]);
+
+        for _ in 0..300 {
+            blob = nest_once(&blob);
+        }
+        std::println!("nested blob is {} bytes", blob.len());
+
+        // Run on a small stack so unbounded recursion shows up as an overflow
+        // rather than passing on a roomy host stack.
+        let handle = std::thread::Builder::new()
+            .stack_size(128 * 1024)
+            .spawn(move || Certificate::from_bytes(&blob).is_err())
+            .unwrap();
+        assert!(handle.join().expect("parser must not blow the stack"));
+    }
+
     #[test]
     fn rejects_nested_delegation() {
         let inner = certificate_with_delegated_cert(&[0xf6]);
