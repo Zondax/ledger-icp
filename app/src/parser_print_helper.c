@@ -196,7 +196,7 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
 
 parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen, const uint8_t *fromSubaccount,
                                               uint16_t fromSubaccountLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                                              uint8_t *pageCount, bool showCompleteSubaccount) {
+                                              uint8_t *pageCount) {
     if (sender == NULL || senderLen > DFINITY_PRINCIPAL_LEN ||
         (fromSubaccount != NULL && fromSubaccountLen != DFINITY_SUBACCOUNT_LEN)) {
         return parser_unexpected_error;
@@ -298,10 +298,16 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     *text_ptr = '.';
     text_ptr++;
 
-    uint16_t bytesToShow = subaccTrimLen;
-    if ((subaccTrimLen > DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL) && !showCompleteSubaccount) {
-        bytesToShow = DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL;
-    }
+    // The whole subaccount is rendered. Showing only a prefix made two accounts
+    // that differ solely past the cut render as identical text -- and the
+    // checksum shown alongside is a CRC32, which is affine and so can be forced
+    // to agree as well. Nothing marked the value as abbreviated, and the page
+    // counter reported the truncated page as the last one.
+    //
+    // The buffer and the length guard below were always sized for the full
+    // value: 64 hex characters plus 8 block separators, which is the same
+    // budget ICRC-2 approve has always rendered within.
+    const uint16_t bytesToShow = subaccTrimLen;
 
     array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen, subaccTrim, bytesToShow);
 
