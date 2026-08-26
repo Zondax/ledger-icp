@@ -788,11 +788,12 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 
 #if defined(LEDGER_SPECIFIC)
-    // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
-    bool skip_validation = (v->txtype == call && (v->tx_fields.call.method_type == candid_icrc_transfer ||
-                                                  v->tx_fields.call.method_type == candid_icrc2_approve));
-
-    if (!skip_validation) {
+    // Every envelope this app signs names the device's own principal as
+    // sender: there is no delegation support here, so a request naming anyone
+    // else could not be signed into anything the network would accept. ICRC-1
+    // transfer and ICRC-2 approve used to be exempt from this, which cost the
+    // device the one invariant that says it only ever signs as itself.
+    {
         zemu_log("Performing sender validation\n");
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
@@ -808,8 +809,6 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
             zemu_log("Sender mismatch\n");
             return parser_unexpected_value;
         }
-    } else {
-        zemu_log("Skipping sender validation\n");
     }
 #endif
 
