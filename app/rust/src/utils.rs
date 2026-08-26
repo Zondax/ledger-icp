@@ -626,6 +626,51 @@ pub fn hash_blob(blob: &[u8]) -> [u8; SHA256_DIGEST_LENGTH] {
     hash(blob)
 }
 
+/// True when `i` does not fall inside a multi-byte UTF-8 sequence.
+#[inline(always)]
+fn is_char_boundary(item: &[u8], i: usize) -> bool {
+    i == 0 || i >= item.len() || (item[i] & 0xC0) != 0x80
+}
+
+/// End offset of the page that starts at `start`, at most `m_len` bytes long
+/// and never ending inside a character.
+#[inline(never)]
+fn page_end(item: &[u8], start: usize, m_len: usize) -> usize {
+    let limit = if start + m_len < item.len() {
+        start + m_len
+    } else {
+        item.len()
+    };
+
+    if limit == item.len() {
+        return limit;
+    }
+
+    let mut end = limit;
+    while end > start && !is_char_boundary(item, end) {
+        end -= 1;
+    }
+
+    // A single character wider than the page: emit it rather than stall.
+    if end == start {
+        limit
+    } else {
+        end
+    }
+}
+
+/// How many pages `item` occupies at `m_len` bytes per page.
+#[inline(never)]
+fn page_count(item: &[u8], m_len: usize) -> usize {
+    let mut start = 0;
+    let mut pages = 0;
+    while start < item.len() {
+        start = page_end(item, start, m_len);
+        pages += 1;
+    }
+    pages
+}
+
 #[inline(never)]
 pub fn handle_ui_message(item: &[u8], out: &mut [u8], page: u8) -> Result<u8, ViewError> {
     crate::zlog("handle_ui_message\x00");
@@ -633,22 +678,42 @@ pub fn handle_ui_message(item: &[u8], out: &mut [u8], page: u8) -> Result<u8, Vi
     if m_len < 1 {
         return Err(ViewError::Unknown);
     }
-    if m_len <= item.len() {
-        let chunk = item
-            .chunks(m_len) //divide in non-overlapping chunks
-            .nth(page as usize) //get the nth chunk
-            .ok_or(ViewError::Unknown)?;
 
-        out[..chunk.len()].copy_from_slice(chunk);
-        out[chunk.len()] = 0; //null terminate
-
-        let n_pages = item.len() / m_len;
-        Ok(1 + n_pages as u8)
-    } else {
+    if item.len() <= m_len {
         out[..item.len()].copy_from_slice(item);
         out[item.len()] = 0; //null terminate
-        Ok(1)
+        return Ok(1);
     }
+
+    // Pages are cut on character boundaries. Splitting on raw bytes leaves a
+    // multi-byte character in halves, and neither half renders: getCharWidth
+    // resolves an unknown codepoint to zero width, so the fragment is dropped
+    // from the screen silently rather than showing as a replacement glyph.
+    //
+    // The count is derived by walking the same boundaries the chunks use, so
+    // the two always agree. Previously it was item.len() / m_len + 1, which
+    // reported one page too many whenever the text divided exactly: the extra
+    // page did not exist, and asking for it returned an error mid-review.
+    let total = page_count(item, m_len);
+
+    let mut start = 0;
+    for _ in 0..page {
+        if start >= item.len() {
+            return Err(ViewError::Unknown);
+        }
+        start = page_end(item, start, m_len);
+    }
+    if start >= item.len() {
+        return Err(ViewError::Unknown);
+    }
+
+    let end = page_end(item, start, m_len);
+    let chunk = &item[start..end];
+
+    out[..chunk.len()].copy_from_slice(chunk);
+    out[chunk.len()] = 0; //null terminate
+
+    Ok(total as u8)
 }
 
 #[cfg(test)]
@@ -656,6 +721,78 @@ mod test_utils {
     use std::vec;
 
     use super::*;
+
+    /// Read every page and glue them back together.
+    fn render_all_pages(item: &[u8], out_len: usize) -> (std::string::String, u8) {
+        let mut out = vec![0u8; out_len];
+        let total = handle_ui_message(item, &mut out, 0).expect("page 0");
+        let mut joined = std::string::String::new();
+        for page in 0..total {
+            let mut buf = vec![0u8; out_len];
+            let reported = handle_ui_message(item, &mut buf, page)
+                .unwrap_or_else(|_| panic!("page {page} of {total} must exist"));
+            assert_eq!(reported, total, "page count must not change between pages");
+            let end = buf.iter().position(|b| *b == 0).unwrap_or(buf.len());
+            joined.push_str(core::str::from_utf8(&buf[..end]).expect("each page is valid UTF-8"));
+        }
+        (joined, total)
+    }
+
+    #[test]
+    fn ui_message_exact_fit_reports_one_page() {
+        // out_len is m_len + 1 for the terminator, so this text fills a page
+        // exactly. The count used to be item.len() / m_len + 1 = 2, and asking
+        // for that second page failed mid-review.
+        let text = "abcdefgh";
+        let (joined, total) = render_all_pages(text.as_bytes(), text.len() + 1);
+        assert_eq!(total, 1);
+        assert_eq!(joined, text);
+
+        // One byte more and it genuinely needs a second page, which must exist.
+        let longer = "abcdefghi";
+        let (joined, total) = render_all_pages(longer.as_bytes(), text.len() + 1);
+        assert_eq!(total, 2);
+        assert_eq!(joined, longer);
+
+        // Past the end of a multi-page item is an error rather than a silent
+        // empty page.
+        let mut out = vec![0u8; text.len() + 1];
+        assert!(handle_ui_message(longer.as_bytes(), &mut out, 2).is_err());
+    }
+
+    #[test]
+    fn ui_message_page_counts_are_exact() {
+        let m_len = 8usize;
+        for len in 1..=40usize {
+            let text: std::string::String = core::iter::repeat('a').take(len).collect();
+            let (joined, total) = render_all_pages(text.as_bytes(), m_len + 1);
+            assert_eq!(joined, text, "len {len} must round-trip");
+            let expected = len.div_ceil(m_len) as u8;
+            assert_eq!(total, expected, "len {len} expected {expected} pages");
+        }
+    }
+
+    #[test]
+    fn ui_message_never_splits_a_character() {
+        // 'é' is two bytes, so a page boundary lands mid-character unless the
+        // split respects character boundaries. A split half renders as nothing
+        // at all on device, silently removing it from the message.
+        let text = "aéaéaéaéaéaéaéaé";
+        for m_len in 3..=12usize {
+            let (joined, _) = render_all_pages(text.as_bytes(), m_len + 1);
+            assert_eq!(joined, text, "m_len {m_len} must round-trip losslessly");
+        }
+    }
+
+    #[test]
+    fn ui_message_handles_wide_characters() {
+        // Four-byte characters, and a page narrower than one of them.
+        let text = "😀😀😀";
+        for m_len in 4..=9usize {
+            let (joined, _) = render_all_pages(text.as_bytes(), m_len + 1);
+            assert_eq!(joined, text, "m_len {m_len} must round-trip losslessly");
+        }
+    }
 
     #[test]
     fn test_compress_decompress_leb128() {
