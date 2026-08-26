@@ -171,27 +171,25 @@ pub unsafe extern "C" fn rs_verify_certificate(
 }
 
 fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
-    // The consent message was generated for whoever asked for it, so the call
-    // it is bound to has to come from that same principal.
-    if call_sender == consent_sender {
-        return true;
-    }
-
-    // Consent messages are routinely fetched anonymously, which is why an
-    // anonymous consent sender does not have to match. It used to authorise
-    // *any* call sender, though; requiring the call to come from this device
-    // keeps that flow working while removing the part that let the consent be
-    // bound to an arbitrary third party.
-    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
-    if !is_default_sender && !consent_sender.is_empty() {
-        return false;
-    }
-
+    // The device only ever signs as itself, so the call has to name this
+    // device's principal whatever the consent says. Checking this first
+    // matters: agreement between the two envelopes is not evidence of
+    // anything, since a host controls both, and returning early on it let a
+    // request naming an arbitrary third party through as long as the consent
+    // named the same one.
     let Ok(device_principal) = device_principal() else {
         return false;
     };
     let Ok(call_sender_principal) = Principal::new(call_sender) else {
         return false;
     };
-    call_sender_principal == device_principal
+    if call_sender_principal != device_principal {
+        return false;
+    }
+
+    // The consent message was generated for whoever asked for it. That is
+    // either this device, or the anonymous principal - consent messages are
+    // routinely fetched anonymously, and that flow has to keep working.
+    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
+    is_default_sender || consent_sender == call_sender
 }
