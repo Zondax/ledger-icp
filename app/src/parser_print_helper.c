@@ -298,9 +298,10 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     *text_ptr = '.';
     text_ptr++;
 
-    // Render every byte of the subaccount. Truncating it used to drop the tail
-    // silently, with no ellipsis and no extra page, so two accounts differing
-    // only past the cut rendered as the same string on the approval screen.
+    // Render every byte that survived the leading-zero trim above. Truncating
+    // used to drop the tail silently, with no ellipsis and no extra page, so
+    // two accounts differing only past the cut rendered as the same string on
+    // the approval screen.
     const uint16_t bytesToShow = subaccTrimLen;
 
     array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen, subaccTrim, bytesToShow);

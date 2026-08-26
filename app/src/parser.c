@@ -185,7 +185,11 @@ static parser_error_t print_utc_time(uint64_t time_ns, char *outVal, uint16_t ou
         return parser_unexpected_value;
     }
 
-    char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
+    // decodeTime bounds every field, so the result is always 23 characters,
+    // but the compiler only knows the fields are ints and sizes the worst case
+    // at 30. Give it the room it thinks it needs rather than carrying a
+    // truncation warning on every build.
+    char buffer[36] = {0};
     snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
              td.tm_min, td.tm_sec);
 
@@ -277,9 +281,11 @@ static parser_error_t parser_getItemIngressExpiry(char *outKey, uint16_t outKeyL
     return print_utc_time(expiry_ns, outVal, outValLen, pageIdx, pageCount);
 }
 
-// Expert mode allows account and address indices outside the usual range, and
-// nothing on screen said which one was signing. Only the device knows the
-// requested path; off-device builds have no derivation to report.
+// Any path other than 0'/0/0 is named on screen, in both modes - accounts
+// 1'-255' and indices 1-255 are reachable without expert mode, and expert mode
+// lifts the range cap on top of that. Nothing used to say which account was
+// signing. Only the device knows the requested path; off-device builds have no
+// derivation to report.
 static bool tx_has_custom_path(void) {
 #if defined(LEDGER_SPECIFIC)
     return hdPath[2] != HDPATH_2_DEFAULT || hdPath[3] != HDPATH_3_DEFAULT || hdPath[4] != HDPATH_4_DEFAULT;
