@@ -17,7 +17,11 @@ use core::{mem::MaybeUninit, ptr::addr_of_mut};
 ********************************************************************************/
 use minicbor::{decode::Error, Decoder};
 
-use crate::{error::ParserError, zlog, FromBytes};
+use crate::{
+    constants::{PUBLIC_KEY_PATH, SUBNET_PATH},
+    error::ParserError,
+    zlog, FromBytes,
+};
 
 use super::{
     hash_tree::{HashTree, LookupResult},
@@ -168,32 +172,20 @@ impl<'a> Delegation<'a> {
         Ok(Some(PublicKey::try_from(value)?))
     }
 
-    // 1. subnet_id: This is available in the Delegation structure.
-    // 2. public_key: We need to lookup ["subnet", subnet_id, "public_key"] in the inner certificate.
+    // The subnet key sits at ["subnet", <subnet id>, "public_key"] in the
+    // inner certificate. Walking the labels one level at a time is what makes
+    // it that path rather than a "public_key" found anywhere in the tree.
     #[inline(never)]
     fn subnet_public_key(&self) -> Result<LookupResult<'a>, ParserError> {
         crate::zlog("Delegation::subnet_public_key\x00");
-        // Step 1: Look up "subnet" in the root of the tree
         let cert = self.cert();
+        let path = [
+            SUBNET_PATH.into(),
+            self.subnet_id.id().into(),
+            PUBLIC_KEY_PATH.into(),
+        ];
 
-        let subnet_result = HashTree::lookup_path(&"subnet".into(), cert.tree())?;
-
-        match subnet_result {
-            LookupResult::Found(subnet_value) => {
-                // Step 2: Look up the specific subnet_id in the subnet subtree
-                let subnet_id_result =
-                    HashTree::lookup_path(&self.subnet_id.id().into(), subnet_value)?;
-
-                match subnet_id_result {
-                    LookupResult::Found(subnet_id_tree) => {
-                        // Step 3: Look up "public_key" in the subnet_id subtree
-                        HashTree::lookup_path(&"public_key".into(), subnet_id_tree)
-                    }
-                    _ => Ok(LookupResult::Absent),
-                }
-            }
-            _ => Ok(LookupResult::Absent),
-        }
+        HashTree::lookup_path(&path, cert.tree())
     }
 }
 
