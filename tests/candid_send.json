@@ -11,7 +11,8 @@
       "2 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
       "3 | Amount (ICP) : 10.00",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Valid until : 2023-05-19 06:21:51 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Send ICP",
@@ -24,7 +25,8 @@
       "4 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
       "5 | Amount (ICP) : 10.00",
       "6 | Max fee (ICP) : 0.0001",
-      "7 | Memo : 0"
+      "7 | Memo : 0",
+      "8 | Valid until : 2023-05-19 06:21:51 UTC"
     ]
   },
   {
@@ -42,7 +44,8 @@
       "2 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
       "3 | Amount (ICP) : 3'330.00",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Valid until : 2023-05-24 09:25:55 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Send ICP",
@@ -59,7 +62,8 @@
       "4 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
       "5 | Amount (ICP) : 3'330.00",
       "6 | Max fee (ICP) : 0.0001",
-      "7 | Memo : 0"
+      "7 | Memo : 0",
+      "8 | Valid until : 2023-05-24 09:25:55 UTC"
     ]
   },
   {
@@ -74,7 +78,8 @@
       "2 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
       "3 | Amount (ICP) : 14.32222",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Valid until : 2023-05-24 09:25:55 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Send ICP",
@@ -87,7 +92,8 @@
       "4 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
       "5 | Amount (ICP) : 14.32222",
       "6 | Max fee (ICP) : 0.0001",
-      "7 | Memo : 0"
+      "7 | Memo : 0",
+      "8 | Valid until : 2023-05-24 09:25:55 UTC"
     ]
   },
   {
@@ -102,7 +108,8 @@
       "2 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
       "3 | Amount (ICP) : 20.00",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 128371233"
+      "5 | Memo : 128371233",
+      "6 | Valid until : 2023-05-24 09:25:55 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Send ICP",
@@ -115,7 +122,8 @@
       "4 | To account [2/2] : 57444a61 337e9962 42b1abfb 52cf92c8",
       "5 | Amount (ICP) : 20.00",
       "6 | Max fee (ICP) : 0.0001",
-      "7 | Memo : 128371233"
+      "7 | Memo : 128371233",
+      "8 | Valid until : 2023-05-24 09:25:55 UTC"
     ]
   },
   {
@@ -133,7 +141,8 @@
       "2 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
       "3 | Amount (ICP) : 1'000.00",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 1231236788755"
+      "5 | Memo : 1231236788755",
+      "6 | Valid until : 2023-05-24 09:25:55 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Send ICP",
@@ -150,7 +159,8 @@
       "4 | To account [2/2] : 26854d81 41fd935c 5bd53433 c2fb28d4",
       "5 | Amount (ICP) : 1'000.00",
       "6 | Max fee (ICP) : 0.0001",
-      "7 | Memo : 1231236788755"
+      "7 | Memo : 1231236788755",
+      "8 | Valid until : 2023-05-24 09:25:55 UTC"
     ]
   }
 ]

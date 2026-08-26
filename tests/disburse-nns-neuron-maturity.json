@@ -22,7 +22,8 @@
     "output": [
       "0 | Transaction type : Disburse Maturity",
       "1 | Neuron ID : 15374508381553346560",
-      "2 | Pct to Disburse : 50%"
+      "2 | Pct to Disburse : 50%",
+      "3 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -49,7 +50,8 @@
     "output": [
       "0 | Transaction type : Disburse Maturity",
       "1 | Neuron ID : 15374508381553346560",
-      "2 | Pct to Disburse : 100%"
+      "2 | Pct to Disburse : 100%",
+      "3 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -76,7 +78,8 @@
     "output": [
       "0 | Transaction type : Disburse Maturity",
       "1 | Neuron ID : 8836564053576663040",
-      "2 | Pct to Disburse : 75%"
+      "2 | Pct to Disburse : 75%",
+      "3 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -103,7 +106,8 @@
     "output": [
       "0 | Transaction type : Disburse Maturity",
       "1 | Neuron ID : 8836564053576663040",
-      "2 | Pct to Disburse : 25%"
+      "2 | Pct to Disburse : 25%",
+      "3 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -130,7 +134,8 @@
     "output": [
       "0 | Transaction type : Disburse Maturity",
       "1 | Neuron ID : 8836564053576663040",
-      "2 | Pct to Disburse : 25%"
+      "2 | Pct to Disburse : 25%",
+      "3 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -196,7 +201,8 @@
       "1 | Neuron ID : 8836564053576663040",
       "2 | Pct to Disburse : 25%",
       "3 | To Account ID [1/2] : d4685b31 b5145050 8aff0331 584df769",
-      "3 | To Account ID [2/2] : 2a84467b 680326f5 c5f7d30a e711682f"
+      "3 | To Account ID [2/2] : 2a84467b 680326f5 c5f7d30a e711682f",
+      "4 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -272,7 +278,8 @@
       "3 | To Account [2/5] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "3 | To Account [3/5] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | To Account [4/5] : 7829f06e 5235a0d5 80e96d37 27729ea2",
-      "3 | To Account [5/5] : 4"
+      "3 | To Account [5/5] : 4",
+      "4 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -348,7 +355,8 @@
       "3 | To Account [2/5] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "3 | To Account [3/5] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | To Account [4/5] : 7829f06e 5235a0d5 80e96d37 27729ea2",
-      "3 | To Account [5/5] : 4"
+      "3 | To Account [5/5] : 4",
+      "4 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -424,7 +432,8 @@
       "3 | To Account [2/5] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | To Account [3/5] : .a36e143 c86e7e47 1e7c7195 06487cf7",
       "3 | To Account [4/5] : a6cf40da 76361aea fee5133e 1d9acea3",
-      "3 | To Account [5/5] : d"
+      "3 | To Account [5/5] : d",
+      "4 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   },
@@ -566,7 +575,8 @@
       "4 | To Account [2/5] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "4 | To Account [3/5] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "4 | To Account [4/5] : 7829f06e 5235a0d5 80e96d37 27729ea2",
-      "4 | To Account [5/5] : 4"
+      "4 | To Account [5/5] : 4",
+      "5 | Valid until : 2025-10-28 14:23:00 UTC"
     ],
     "valid": true
   }

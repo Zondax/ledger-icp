@@ -11,7 +11,8 @@
       "3 | Principal Id [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | Principal Id [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "4 | Add Permission : Vote",
-      "5 | Add Permission : Submit Proposal"
+      "5 | Add Permission : Submit Proposal",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Add Permissions",
@@ -21,7 +22,8 @@
       "3 | Principal Id [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | Principal Id [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "4 | Add Permission : Vote",
-      "5 | Add Permission : Submit Proposal"
+      "5 | Add Permission : Submit Proposal",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "valid": true,
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
@@ -86,7 +88,8 @@
       "3 | Principal Id [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Vote",
-      "5 | Add Permission : Submit Proposal"
+      "5 | Add Permission : Submit Proposal",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Add Permissions",
@@ -96,7 +99,8 @@
       "3 | Principal Id [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Vote",
-      "5 | Add Permission : Submit Proposal"
+      "5 | Add Permission : Submit Proposal",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
     "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",
@@ -161,7 +165,8 @@
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Vote",
       "5 | Add Permission : Submit Proposal",
-      "6 | Add Permission : Configure Dissolve State"
+      "6 | Add Permission : Configure Dissolve State",
+      "7 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Add Permissions",
@@ -172,7 +177,8 @@
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Vote",
       "5 | Add Permission : Submit Proposal",
-      "6 | Add Permission : Configure Dissolve State"
+      "6 | Add Permission : Configure Dissolve State",
+      "7 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "neuronIdString": "a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d",
     "canisterId": "s24we-diaaa-aaaaa-aaaka-cai",
@@ -238,7 +244,8 @@
       "3 | Principal Id [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | Principal Id [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "4 | Add Permission : Vote",
-      "5 | Add Permission : Disburse Neuron"
+      "5 | Add Permission : Disburse Neuron",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Add Permissions",
@@ -248,7 +255,8 @@
       "3 | Principal Id [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | Principal Id [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "4 | Add Permission : Vote",
-      "5 | Add Permission : Disburse Neuron"
+      "5 | Add Permission : Disburse Neuron",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
     "canisterId": "s24we-diaaa-aaaaa-aaaka-cai",
@@ -312,7 +320,8 @@
       "3 | Principal Id [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Disburse Neuron",
-      "5 | Add Permission : Configure Dissolve State"
+      "5 | Add Permission : Configure Dissolve State",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Add Permissions",
@@ -322,7 +331,8 @@
       "3 | Principal Id [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Disburse Neuron",
-      "5 | Add Permission : Configure Dissolve State"
+      "5 | Add Permission : Configure Dissolve State",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "neuronIdString": "d7e851652cd032ba5ed76b17f626aa47829f06e5235a0d580e96d3727729ea24",
     "canisterId": "s24we-diaaa-aaaaa-aaaka-cai",
@@ -386,7 +396,8 @@
       "3 | Principal Id [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Manage Voting Permission",
-      "5 | Add Permission : Disburse Neuron"
+      "5 | Add Permission : Disburse Neuron",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "output_expert": [
       "0 | Transaction type : Add Permissions",
@@ -396,7 +407,8 @@
       "3 | Principal Id [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Principal Id [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "4 | Add Permission : Manage Voting Permission",
-      "5 | Add Permission : Disburse Neuron"
+      "5 | Add Permission : Disburse Neuron",
+      "6 | Valid until : 2023-01-23 10:14:43 UTC"
     ],
     "neuronIdString": "a36e143c86e7e471e7c719506487cf7a6cf40da76361aeafee5133e1d9acea3d",
     "canisterId": "ppmzm-3aaaa-aaaaa-aacpq-cai",

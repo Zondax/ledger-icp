@@ -175,10 +175,57 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     return parser_ok;
 }
 
+// ingress_expiry is nanoseconds since the Unix epoch; decodeTime takes seconds.
+#define NANOSECONDS_PER_SECOND 1000000000ULL
+
+// Both envelope types carry an ingress_expiry, and it is hashed into the
+// request id for both.
+static bool tx_has_ingress_expiry(void) {
+    return parser_tx_obj.txtype == call || parser_tx_obj.txtype == state_transaction_read;
+}
+
+// ingress_expiry is signed but was never shown. It fixes how long a signed
+// request stays submittable, so a host that sets it hours out can hold the
+// approved transaction back and choose when it lands. The device has no clock
+// and cannot judge the value on its own; rendering it as an absolute time is
+// what lets the user notice a window that is not the customary few minutes.
+static parser_error_t parser_getItemIngressExpiry(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                                  uint8_t pageIdx, uint8_t *pageCount) {
+    uint64_t expiry_ns = 0;
+    switch (parser_tx_obj.txtype) {
+        case call:
+            expiry_ns = parser_tx_obj.tx_fields.call.ingress_expiry;
+            break;
+        case state_transaction_read:
+            expiry_ns = parser_tx_obj.tx_fields.stateRead.ingress_expiry;
+            break;
+        default:
+            return parser_unexpected_type;
+    }
+
+    timedata_t td = {0};
+    if (decodeTime(&td, expiry_ns / NANOSECONDS_PER_SECOND) != zxerr_ok) {
+        return parser_unexpected_value;
+    }
+
+    char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
+    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
+             td.tm_min, td.tm_sec);
+
+    snprintf(outKey, outKeyLen, "Valid until");
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
+}
+
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     zemu_log_stack("parser_getNumItems");
-    *num_items = _getNumItems(ctx, &parser_tx_obj);
-    PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
+    const uint8_t items = _getNumItems(ctx, &parser_tx_obj);
+    PARSER_ASSERT_OR_ERROR(items > 0, parser_unexpected_number_items)
+
+    const uint16_t total = (uint16_t)items + (tx_has_ingress_expiry() ? 1 : 0);
+    PARSER_ASSERT_OR_ERROR(total <= UINT8_MAX, parser_unexpected_number_items)
+
+    *num_items = (uint8_t)total;
     return parser_ok;
 }
 
@@ -230,6 +277,20 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
 parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
+
+    // The expiry row is appended after whatever the transaction type renders,
+    // so it is handled here rather than in each of the per-method item
+    // functions.
+    if (tx_has_ingress_expiry()) {
+        uint8_t numItems = 0;
+        CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
+        if (displayIdx + 1 == numItems) {
+            MEMZERO(outKey, outKeyLen);
+            MEMZERO(outVal, outValLen);
+            return parser_getItemIngressExpiry(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+    }
+
     switch (parser_tx_obj.txtype) {
         case call: {
             switch (parser_tx_obj.tx_fields.call.method_type) {
