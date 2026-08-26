@@ -178,10 +178,84 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
 // ingress_expiry is nanoseconds since the Unix epoch; decodeTime takes seconds.
 #define NANOSECONDS_PER_SECOND 1000000000ULL
 
+static parser_error_t print_utc_time(uint64_t time_ns, char *outVal, uint16_t outValLen, uint8_t pageIdx,
+                                     uint8_t *pageCount) {
+    timedata_t td = {0};
+    if (decodeTime(&td, time_ns / NANOSECONDS_PER_SECOND) != zxerr_ok) {
+        return parser_unexpected_value;
+    }
+
+    char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
+    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
+             td.tm_min, td.tm_sec);
+
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
+}
+
 // Both envelope types carry an ingress_expiry, and it is hashed into the
 // request id for both.
 static bool tx_has_ingress_expiry(void) {
     return parser_tx_obj.txtype == call || parser_tx_obj.txtype == state_transaction_read;
+}
+
+// Transfers carry a creation time that the receiving ledger deduplicates on.
+// Leaving it out is legal and removes the dedup window entirely, so the same
+// signed request can then be submitted more than once; it is signed either
+// way, which is reason enough not to leave it off the screen.
+static bool tx_created_at(bool *isSet, uint64_t *value_ns) {
+    if (parser_tx_obj.txtype != call) {
+        return false;
+    }
+
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
+    switch (fields->method_type) {
+        case pb_sendrequest:
+            *isSet = fields->data.SendRequest.has_created_at_time;
+            *value_ns = fields->data.SendRequest.created_at_time.timestamp_nanos;
+            return true;
+        case candid_transfer:
+            *isSet = fields->data.candid_transfer.has_timestamp;
+            *value_ns = fields->data.candid_transfer.timestamp;
+            return true;
+        case candid_icrc_transfer:
+            *isSet = fields->data.icrcTransfer.has_created_at_time;
+            *value_ns = fields->data.icrcTransfer.created_at_time;
+            return true;
+        case candid_icrc2_approve:
+            *isSet = fields->data.icrc2_approve.has_created_at_time;
+            *value_ns = fields->data.icrc2_approve.created_at_time;
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool tx_has_created_at(void) {
+    bool isSet = false;
+    uint64_t value_ns = 0;
+    return tx_created_at(&isSet, &value_ns);
+}
+
+// Rows appended after whatever the method-specific renderer produces, in this
+// order: created-at, then the ingress expiry.
+static uint8_t tx_tail_items(void) { return (uint8_t)((tx_has_created_at() ? 1 : 0) + (tx_has_ingress_expiry() ? 1 : 0)); }
+
+static parser_error_t parser_getItemCreatedAt(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                              uint8_t pageIdx, uint8_t *pageCount) {
+    bool isSet = false;
+    uint64_t value_ns = 0;
+    if (!tx_created_at(&isSet, &value_ns)) {
+        return parser_unexpected_type;
+    }
+
+    snprintf(outKey, outKeyLen, "Created at");
+    if (!isSet) {
+        snprintf(outVal, outValLen, "Not set");
+        return parser_ok;
+    }
+
+    return print_utc_time(value_ns, outVal, outValLen, pageIdx, pageCount);
 }
 
 // ingress_expiry is signed but was never shown. It fixes how long a signed
@@ -203,18 +277,8 @@ static parser_error_t parser_getItemIngressExpiry(char *outKey, uint16_t outKeyL
             return parser_unexpected_type;
     }
 
-    timedata_t td = {0};
-    if (decodeTime(&td, expiry_ns / NANOSECONDS_PER_SECOND) != zxerr_ok) {
-        return parser_unexpected_value;
-    }
-
-    char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
-    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
-             td.tm_min, td.tm_sec);
-
     snprintf(outKey, outKeyLen, "Valid until");
-    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
-    return parser_ok;
+    return print_utc_time(expiry_ns, outVal, outValLen, pageIdx, pageCount);
 }
 
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
@@ -222,7 +286,7 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
     const uint8_t items = _getNumItems(ctx, &parser_tx_obj);
     PARSER_ASSERT_OR_ERROR(items > 0, parser_unexpected_number_items)
 
-    const uint16_t total = (uint16_t)items + (tx_has_ingress_expiry() ? 1 : 0);
+    const uint16_t total = (uint16_t)items + tx_tail_items();
     PARSER_ASSERT_OR_ERROR(total <= UINT8_MAX, parser_unexpected_number_items)
 
     *num_items = (uint8_t)total;
@@ -252,41 +316,44 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
         return parser_ok;
     }
 
-    if (app_mode_expert()) {
-        const state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
+    const state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
+    if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
             return print_principal(fields->sender.data, (uint16_t)fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
+        displayIdx--;
+    }
 
-        displayIdx -= 2;
-
-        if (displayIdx >= fields->paths.arrayLen) {
-            return parser_no_data;
-        }
-
+    if (displayIdx == 1) {
+        // paths is ["request_status", <request id>], enforced at parse time.
         snprintf(outKey, outKeyLen, "Request ID ");
         return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len, outVal, outValLen,
                                               pageIdx, pageCount);
     }
 
-    return parser_ok;
+    return parser_no_data;
 }
 
 parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
 
-    // The expiry row is appended after whatever the transaction type renders,
-    // so it is handled here rather than in each of the per-method item
-    // functions.
-    if (tx_has_ingress_expiry()) {
+    // The tail rows come from the envelope, or from fields every transfer
+    // carries, so they are rendered here rather than being threaded through
+    // each of the per-method item functions.
+    const uint8_t tail = tx_tail_items();
+    if (tail > 0) {
         uint8_t numItems = 0;
         CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
-        if (displayIdx + 1 == numItems) {
+        if (displayIdx + tail >= numItems) {
+            const uint8_t tailIdx = (uint8_t)(displayIdx - (numItems - tail));
             MEMZERO(outKey, outKeyLen);
             MEMZERO(outVal, outValLen);
+            if (tx_has_created_at() && tailIdx == 0) {
+                return parser_getItemCreatedAt(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+            }
             return parser_getItemIngressExpiry(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
         }
     }
