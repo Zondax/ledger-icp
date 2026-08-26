@@ -150,9 +150,10 @@ impl<'a> HashTree<'a> {
         match HashTree::try_from(&tree)? {
             HashTree::Fork(left, right) => match Self::lookup_label(label, left, depth + 1)? {
                 LookupResult::Found(value) => Ok(LookupResult::Found(value)),
-                // A pruned branch may have held the label, so "not here" on the
-                // left of a pruned subtree cannot be reported as Absent.
                 LookupResult::Absent => Self::lookup_label(label, right, depth + 1),
+                // A pruned branch may have held the label, so once the left
+                // side is Unknown, "not on the right either" still cannot be
+                // reported as Absent.
                 LookupResult::Unknown => match Self::lookup_label(label, right, depth + 1)? {
                     LookupResult::Found(value) => Ok(LookupResult::Found(value)),
                     _ => Ok(LookupResult::Unknown),
@@ -198,9 +199,10 @@ impl<'a> HashTree<'a> {
     }
 
     /// The recursion here is driven by attacker-supplied CBOR, so it carries
-    /// the same depth bound the rest of the traversals use. Without it a tree
-    /// of nested forks - two bytes per level - runs the stack out before any
-    /// signature has been checked.
+    /// its own depth bound rather than relying on the caller. Trees reached
+    /// through Certificate::from_bytes were already bounded at parse, but this
+    /// is public and reachable on a tree built directly, where a chain of
+    /// nested forks - four bytes a level - would otherwise run the stack out.
     #[inline(never)]
     fn reconstruct_at(&self, depth: usize) -> Result<[u8; 32], ParserError> {
         check_canary();
@@ -242,12 +244,11 @@ impl<'a> HashTree<'a> {
                 hash_with_domain_sep("ic-hashtree-labeled", &concat[..label_len + 32])
             }
             HashTree::Leaf(_) => {
-                // Safe as this is a Leaf tree
-                let value = self.value().unwrap();
+                let value = self.value().ok_or(ParserError::InvalidTree)?;
                 hash_with_domain_sep("ic-hashtree-leaf", value)
             }
             HashTree::Pruned(_) => {
-                let hash = self.value().unwrap();
+                let hash = self.value().ok_or(ParserError::InvalidTree)?;
                 if hash.len() != 32 {
                     return Err(ParserError::UnexpectedValue);
                 }
@@ -368,8 +369,22 @@ impl<'b, C> Decode<'b, C> for HashTree<'b> {
                 let subtree = RawValue::decode(d, ctx)?;
                 Ok(HashTree::Labeled(label, subtree))
             }
-            3 => Ok(HashTree::Leaf(RawValue::decode(d, ctx)?)),
-            4 => Ok(HashTree::Pruned(RawValue::decode(d, ctx)?)),
+            // Leaf and Pruned payloads are hashed as bytes, and value() has no
+            // way to report anything else - it returns None, which reconstruct
+            // used to unwrap. Rejecting here keeps the invariant tree-wide, so
+            // check_integrity covers it too.
+            3 => {
+                if d.datatype()? != Type::Bytes {
+                    return Err(Error::message("Leaf value must be a byte string"));
+                }
+                Ok(HashTree::Leaf(RawValue::decode(d, ctx)?))
+            }
+            4 => {
+                if d.datatype()? != Type::Bytes {
+                    return Err(Error::message("Pruned value must be a byte string"));
+                }
+                Ok(HashTree::Pruned(RawValue::decode(d, ctx)?))
+            }
             _ => Err(Error::message("Invalid HashTree tag")),
         }
     }
@@ -417,7 +432,7 @@ mod hash_tree_tests {
 
     use super::*;
 
-    // A hash tree of `depth` nested forks, each one Empty on the right. Two
+    // A hash tree of `depth` nested forks, each one Empty on the right. Four
     // bytes buy a level, which is what makes an unbounded traversal of this
     // structure cheap to trigger from a host.
     fn nested_forks(depth: usize) -> std::vec::Vec<u8> {
@@ -463,6 +478,26 @@ mod hash_tree_tests {
         let raw = RawValue::from_bytes(&deep).unwrap();
         let tree = HashTree::try_from(&raw).unwrap();
         assert_eq!(tree.reconstruct(), Err(ParserError::RecursionLimitReached));
+    }
+
+    // A Leaf or Pruned node whose payload is not a byte string. The tree used
+    // to parse, and reconstruct then unwrapped the None that value() returns
+    // for it - a panic reachable from an unauthenticated blob, since hashing
+    // happens before the signature is checked.
+    #[test]
+    fn non_byte_string_payloads_are_rejected() {
+        for tag in [0x03u8, 0x04u8] {
+            // array(2), tag, unsigned(42)
+            let tree = std::vec![0x82, tag, 0x18, 0x2a];
+
+            let raw = RawValue::from_bytes(&tree).unwrap();
+            assert!(HashTree::try_from(&raw).is_err(), "tag {} decoded", tag);
+            assert!(
+                Certificate::from_bytes(&certificate_with_tree(&tree)).is_err(),
+                "tag {} parsed as a certificate",
+                tag
+            );
+        }
     }
 
     #[test]
