@@ -711,8 +711,8 @@
       "3 | To account [1/3] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | To account [2/3] : kb26q-rvqms-onmuh mwiq3-uqe-v3ucwji",
       "3 | To account [3/3] : .a36e143 c86e7e47 1e7c7195 06487cf7",
-      "4 | Amount (Tokens) : 330000000",
-      "5 | Max fee (Tokens) : 30000",
+      "4 | Amount (unknown) : 330000000",
+      "5 | Max fee (unknown) : 30000",
       "6 | Memo : 11223312"
     ],
     "isICP": false,
@@ -785,7 +785,7 @@
       "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | To account [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | To account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
-      "4 | Amount (Tokens) : 314000000",
+      "4 | Amount (unknown) : 314000000",
       "5 | Memo : 11223312"
     ],
     "isICP": false,
@@ -825,8 +825,8 @@
       "3 | To account [1/3] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | To account [2/3] : 3ykc4-y3cnk-7kwvw 5bq6z-mae-bhrgfsi",
       "3 | To account [3/3] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
-      "4 | Amount (Tokens) : 1331400000",
-      "5 | Max fee (Tokens) : 20000",
+      "4 | Amount (unknown) : 1331400000",
+      "5 | Max fee (unknown) : 20000",
       "6 | Memo : 11223312"
     ],
     "isICP": false,

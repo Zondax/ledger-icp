@@ -52,6 +52,8 @@ parser_error_t format_principal_with_delimiters(const char *input, const uint16_
 
 parser_error_t format_principal(const uint8_t *data, uint16_t len, char *outVal, uint16_t outValLen);
 
+void print_amount_key(char *outKey, uint16_t outKeyLen, const char *label, const token_info_t *token);
+
 #ifdef __cplusplus
 }
 #endif

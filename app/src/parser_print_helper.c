@@ -356,6 +356,19 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     return parser_ok;
 }
 
+void print_amount_key(char *outKey, uint16_t outKeyLen, const char *label, const token_info_t *token) {
+    if (token != NULL) {
+        snprintf(outKey, outKeyLen, "%s (%s)", label, token->token_symbol);
+        return;
+    }
+
+    // The canister is not in the token registry, so decimals fall back to zero
+    // and the amount below is rendered in raw base units. Saying "unknown"
+    // rather than "Tokens" keeps the label from implying the number has been
+    // scaled to a unit the device could actually resolve.
+    snprintf(outKey, outKeyLen, "%s (unknown)", label);
+}
+
 parser_error_t print_u64(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     char buffer[PRINT_NUMBER_BUFFER_LEN] = {0};
     fpuint64_to_str(buffer, sizeof(buffer), value, 0);
