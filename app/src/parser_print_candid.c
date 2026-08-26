@@ -159,7 +159,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender, const candid_trans
     }
 
     return page_principal_with_subaccount(sender.data, (uint16_t)sender.len, subaccount, sizeof(subaccount), outVal,
-                                          outValLen, pageIdx, pageCount, false);
+                                          outValLen, pageIdx, pageCount);
 }
 
 static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
@@ -744,7 +744,7 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
             const uint8_t *subaccount = fields->command.disburseMaturity.to_account.subaccount.p;
             const uint16_t subaccountLen = (uint16_t)fields->command.disburseMaturity.to_account.subaccount.len;
             return page_principal_with_subaccount(owner, ownerLen, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                                  pageCount, true);
+                                                  pageCount);
         }
     }
 
@@ -1072,7 +1072,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
         const uint16_t fromSubaccountLen = (uint16_t)call->data.icrcTransfer.from_subaccount.len;
 
         return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen, outVal, outValLen,
-                                              pageIdx, pageCount, false);
+                                              pageIdx, pageCount);
     }
 
     if (is_stake_tx) {
@@ -1087,7 +1087,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
         const uint16_t subaccountLen = (uint16_t)call->data.icrcTransfer.account.subaccount.len;
 
         return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                              pageCount, false);
+                                              pageCount);
     }
 
     if (displayIdx == 4) {
@@ -1176,7 +1176,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         const uint16_t fromSubaccountLen = (uint16_t)call->data.icrc2_approve.from_subaccount.len;
 
         return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen, outVal, outValLen,
-                                              pageIdx, pageCount, true);
+                                              pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -1187,7 +1187,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         const uint16_t subaccountLen = (uint16_t)call->data.icrc2_approve.spender.subaccount.len;
 
         return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                              pageCount, true);
+                                              pageCount);
     }
 
     if (displayIdx == 4) {
@@ -1323,7 +1323,7 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey
         if (fields->account.has_subaccount) {
             return page_principal_with_subaccount(principal, principalLen, fields->account.subaccount.p,
                                                   (uint16_t)fields->account.subaccount.len, outVal, outValLen, pageIdx,
-                                                  pageCount, false);
+                                                  pageCount);
         } else {
             return print_principal(principal, principalLen, outVal, outValLen, pageIdx, pageCount);
         }
