@@ -46,7 +46,12 @@ pub unsafe extern "C" fn rs_getItem(
     page_idx: u8,
     page_count: *mut u8,
 ) -> u32 {
-    if page_count.is_null() || out_key.is_null() || out_value.is_null() || key_len == 0 || out_len == 0 {
+    if page_count.is_null()
+        || out_key.is_null()
+        || out_value.is_null()
+        || key_len == 0
+        || out_len == 0
+    {
         return ParserError::NoData as u32;
     }
 
@@ -91,7 +96,8 @@ pub unsafe extern "C" fn rs_get_intent(out_intent: *mut i8, intent_len: u16) -> 
     // Access the intent using the public method
     if let Some(intent) = ui.message.get_intent() {
         let intent_bytes = intent.as_bytes();
-        let copy_len = core::cmp::min(intent_bytes.len(), intent_len as usize - 1);
+        let copy_len =
+            crate::utils::truncate_to_char_boundary(intent_bytes, intent_len as usize - 1);
 
         out_slice[..copy_len].copy_from_slice(&intent_bytes[..copy_len]);
         out_slice[copy_len] = 0; // Null terminate

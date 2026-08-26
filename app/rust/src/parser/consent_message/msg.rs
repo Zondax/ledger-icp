@@ -439,7 +439,7 @@ impl DisplayableItem for ConsentMessage<'_> {
 
                 // Set the title to the key
                 let key_bytes = key.as_bytes();
-                let key_len = key_bytes.len().min(title.len() - 1);
+                let key_len = crate::utils::truncate_to_char_boundary(key_bytes, title.len() - 1);
                 title[..key_len].copy_from_slice(&key_bytes[..key_len]);
                 title[key_len] = 0;
 

@@ -632,6 +632,25 @@ fn is_char_boundary(item: &[u8], i: usize) -> bool {
     i == 0 || i >= item.len() || (item[i] & 0xC0) != 0x80
 }
 
+/// Largest length not exceeding `max` that does not fall inside a UTF-8
+/// character.
+///
+/// Cutting text with a plain `min` splits a multi-byte character, and a split
+/// character renders as nothing at all: getCharWidth resolves a codepoint the
+/// font cannot map to zero width, so the fragment is dropped from the screen
+/// rather than showing as a replacement glyph.
+pub fn truncate_to_char_boundary(item: &[u8], max: usize) -> usize {
+    if item.len() <= max {
+        return item.len();
+    }
+
+    let mut end = max;
+    while end > 0 && !is_char_boundary(item, end) {
+        end -= 1;
+    }
+    end
+}
+
 /// End offset of the page that starts at `start`, at most `m_len` bytes long
 /// and never ending inside a character.
 #[inline(never)]
@@ -736,6 +755,42 @@ mod test_utils {
             joined.push_str(core::str::from_utf8(&buf[..end]).expect("each page is valid UTF-8"));
         }
         (joined, total)
+    }
+
+    #[test]
+    fn truncate_never_splits_a_character() {
+        // The field title and the NBGL intent are cut to a fixed buffer. Doing
+        // that with a plain min() leaves a half character at the end, which
+        // renders as nothing -- so the title silently loses its last glyph.
+        let text = "aéaéaéaé"; // 'é' is two bytes
+        let bytes = text.as_bytes();
+
+        for max in 0..=bytes.len() + 2 {
+            let n = truncate_to_char_boundary(bytes, max);
+            assert!(n <= max.min(bytes.len()), "max {max} must not be exceeded");
+            core::str::from_utf8(&bytes[..n])
+                .unwrap_or_else(|_| panic!("max {max} produced invalid UTF-8"));
+        }
+
+        // A cut that lands inside 'é' backs off to before it.
+        assert_eq!(truncate_to_char_boundary("aé".as_bytes(), 2), 1);
+        // A cut on a boundary is kept as is.
+        assert_eq!(truncate_to_char_boundary("aé".as_bytes(), 3), 3);
+        // Shorter than the limit is returned whole.
+        assert_eq!(truncate_to_char_boundary("ab".as_bytes(), 10), 2);
+    }
+
+    #[test]
+    fn truncate_handles_wide_characters() {
+        let text = "😀ab"; // four-byte character first
+        let bytes = text.as_bytes();
+
+        // Any cut inside the emoji backs off to zero rather than emitting part.
+        for max in 0..4 {
+            assert_eq!(truncate_to_char_boundary(bytes, max), 0, "max {max}");
+        }
+        assert_eq!(truncate_to_char_boundary(bytes, 4), 4);
+        assert_eq!(truncate_to_char_boundary(bytes, 5), 5);
     }
 
     #[test]
