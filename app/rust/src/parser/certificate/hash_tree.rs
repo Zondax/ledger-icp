@@ -230,24 +230,18 @@ impl<'a> HashTree<'a> {
                 let left_hash = left.reconstruct_at(depth + 1)?;
                 let right_hash = right.reconstruct_at(depth + 1)?;
 
-                let mut concat = [0; 64];
-                concat[..32].copy_from_slice(&left_hash);
-                concat[32..].copy_from_slice(&right_hash);
-
-                hash_with_domain_sep("ic-hashtree-fork", &concat)
+                hash_with_domain_sep_parts("ic-hashtree-fork", &left_hash, &right_hash)
             }
             HashTree::Labeled(label, subtree) => {
                 let subtree = HashTree::try_from(subtree)?;
                 let subtree_hash = subtree.reconstruct_at(depth + 1)?;
 
-                // domain.len() + label_max_len + hash_len
-                let mut concat = [0; Label::MAX_LEN + 32];
-                let label_len = label.as_bytes().len();
-
-                concat[..label_len].copy_from_slice(label.as_bytes());
-                concat[label_len..label_len + 32].copy_from_slice(&subtree_hash);
-
-                hash_with_domain_sep("ic-hashtree-labeled", &concat[..label_len + 32])
+                // Streamed rather than staged through a fixed buffer, so a
+                // label of any length is hashed correctly. The previous version
+                // copied into [0; Label::MAX_LEN + 32], which panicked on a
+                // longer label -- and capping the label instead would have
+                // rejected certificates the network can legitimately produce.
+                hash_with_domain_sep_parts("ic-hashtree-labeled", label.as_bytes(), &subtree_hash)
             }
             HashTree::Leaf(_) => {
                 // Safe as this is a Leaf tree
@@ -416,6 +410,21 @@ pub fn hash_with_domain_sep(domain: &str, data: &[u8]) -> [u8; 32] {
     hasher.update([domain.len() as u8]);
     hasher.update(domain.as_bytes());
     hasher.update(data);
+    hasher.finalize().into()
+}
+
+/// As [`hash_with_domain_sep`], but over two pieces fed in order.
+///
+/// The digest is identical to concatenating them first. Streaming avoids the
+/// fixed staging buffer the labeled case used to copy into, which is what
+/// bounded how long a label could be.
+#[inline(never)]
+pub fn hash_with_domain_sep_parts(domain: &str, first: &[u8], second: &[u8]) -> [u8; 32] {
+    let mut hasher = sha2::Sha256::new();
+    hasher.update([domain.len() as u8]);
+    hasher.update(domain.as_bytes());
+    hasher.update(first);
+    hasher.update(second);
     hasher.finalize().into()
 }
 
@@ -645,22 +654,41 @@ mod hash_tree_tests {
     }
 
     #[test]
-    fn label_longer_than_max_is_rejected() {
-        // reconstruct copies a label into a fixed [0; MAX_LEN + 32] buffer, so a
-        // 33-byte label used to panic there. A 39-byte tree was enough to hang
-        // the device; rejecting at decode keeps it an error.
-        let oversized = [0x61u8; Label::MAX_LEN + 1];
-        let tree = cbor_labeled(&oversized, cbor_empty());
-        let raw = RawValue::from_bytes(&tree).unwrap();
+    fn labels_of_any_length_are_hashed_not_rejected() {
+        // A 33-byte label used to be copied into a fixed [0; MAX_LEN + 32]
+        // buffer and panic -- a 39-byte tree was enough to hang the device. It
+        // is now streamed into the hasher, so it neither panics nor is refused.
+        // Refusing would have been worse than the bug: reconstruct walks every
+        // branch, including ones this app never reads, so one long label
+        // anywhere would reject an otherwise valid certificate.
+        for len in [1usize, 31, 32, 33, 64, 200] {
+            let label = std::vec![0x61u8; len];
+            let tree = cbor_labeled(&label, cbor_empty());
+            let raw = RawValue::from_bytes(&tree).unwrap();
+            let parsed = HashTree::try_from(&raw)
+                .unwrap_or_else(|_| panic!("label of {len} bytes must parse"));
+            assert!(
+                parsed.reconstruct().is_ok(),
+                "label of {len} bytes must hash"
+            );
+        }
+    }
 
-        assert!(HashTree::try_from(&raw).is_err());
+    #[test]
+    fn streamed_hash_matches_concatenation() {
+        // The digest must stay byte-identical to hashing the concatenation, or
+        // no certificate would verify any more.
+        let label = b"request_status";
+        let subtree_hash = [0xABu8; 32];
 
-        // A label exactly at the limit still works.
-        let at_limit = [0x61u8; Label::MAX_LEN];
-        let tree = cbor_labeled(&at_limit, cbor_empty());
-        let raw = RawValue::from_bytes(&tree).unwrap();
-        let parsed = HashTree::try_from(&raw).unwrap();
-        assert!(parsed.reconstruct().is_ok());
+        let mut concat = std::vec::Vec::new();
+        concat.extend_from_slice(label);
+        concat.extend_from_slice(&subtree_hash);
+
+        assert_eq!(
+            hash_with_domain_sep_parts("ic-hashtree-labeled", label, &subtree_hash),
+            hash_with_domain_sep("ic-hashtree-labeled", &concat)
+        );
     }
 
     #[test]

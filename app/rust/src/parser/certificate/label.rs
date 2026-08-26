@@ -23,7 +23,9 @@ pub enum Label<'a> {
 }
 
 impl<'a> Label<'a> {
-    // max label length
+    /// The longest label the IC is expected to use -- a request id. Kept as
+    /// documentation only: nothing enforces it, because labels are hashed by
+    /// streaming and a cap here would reject valid certificates outright.
     pub const MAX_LEN: usize = 32;
     pub fn as_bytes(&self) -> &'a [u8] {
         match self {
@@ -61,30 +63,21 @@ impl<'a> From<&'a [u8]> for Label<'a> {
 
 impl<'b, C> Decode<'b, C> for Label<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
-        // MAX_LEN is enforced here rather than at use. HashTree::reconstruct
-        // copies a label into a fixed [0; Label::MAX_LEN + 32] buffer, so a
-        // longer label used to panic there -- and with panic=abort and a
-        // `loop {}` handler that hangs the device until it is reconnected.
-        // No legitimate state-tree label exceeds 32 bytes: the longest are a
-        // 32-byte request id and a 29-byte principal.
+        // No length cap. Labels are borrowed from the input and hashed by
+        // streaming them into the digest, so nothing copies one into a fixed
+        // buffer any more. Capping here would reject whole certificates:
+        // reconstruct walks every branch, including ones this app never reads,
+        // and the label space belongs to the network -- a request id already
+        // sits exactly at 32 bytes, leaving no margin at all.
         match d.datatype()? {
             minicbor::data::Type::Bytes => {
                 let bytes = d.bytes()?;
-                if bytes.len() > Self::MAX_LEN {
-                    return Err(Error::message("Label exceeds maximum length"));
-                }
                 match core::str::from_utf8(bytes) {
                     Ok(s) => Ok(Label::String(s)),
                     Err(_) => Ok(Label::Blob(bytes)),
                 }
             }
-            minicbor::data::Type::String => {
-                let s = d.str()?;
-                if s.len() > Self::MAX_LEN {
-                    return Err(Error::message("Label exceeds maximum length"));
-                }
-                Ok(Label::String(s))
-            }
+            minicbor::data::Type::String => Ok(Label::String(d.str()?)),
             _ => Err(Error::message("Expected bytes or string for Label")),
         }
     }
