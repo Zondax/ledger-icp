@@ -47,15 +47,30 @@ impl<'a> From<&'a [u8]> for Label<'a> {
 
 impl<'b, C> Decode<'b, C> for Label<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
+        // MAX_LEN is enforced here rather than at use. HashTree::reconstruct
+        // copies a label into a fixed [0; Label::MAX_LEN + 32] buffer, so a
+        // longer label panicked there -- and with panic=abort and a `loop {}`
+        // handler that hangs the device until it is reconnected. No legitimate
+        // state-tree label exceeds 32 bytes: the longest are a 32-byte request
+        // id and a 29-byte principal.
         match d.datatype()? {
             minicbor::data::Type::Bytes => {
                 let bytes = d.bytes()?;
+                if bytes.len() > Self::MAX_LEN {
+                    return Err(Error::message("Label exceeds maximum length"));
+                }
                 match core::str::from_utf8(bytes) {
                     Ok(s) => Ok(Label::String(s)),
                     Err(_) => Ok(Label::Blob(bytes)),
                 }
             }
-            minicbor::data::Type::String => Ok(Label::String(d.str()?)),
+            minicbor::data::Type::String => {
+                let s = d.str()?;
+                if s.len() > Self::MAX_LEN {
+                    return Err(Error::message("Label exceeds maximum length"));
+                }
+                Ok(Label::String(s))
+            }
             _ => Err(Error::message("Expected bytes or string for Label")),
         }
     }

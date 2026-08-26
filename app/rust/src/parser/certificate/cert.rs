@@ -218,7 +218,7 @@ impl<'a> Certificate<'a> {
                 }
 
                 // Ensure the delegation's certificate does not have another delegation
-                if delegation.cert().delegation().is_some() {
+                if delegation.cert()?.delegation().is_some() {
                     return Ok(false);
                 }
 
@@ -267,7 +267,7 @@ impl<'a> Certificate<'a> {
     pub fn canister_ranges(&self) -> Option<CanisterRanges<'a>> {
         let tree = match self.delegation() {
             None => self.tree(),
-            Some(delegation) => delegation.cert().tree(),
+            Some(delegation) => delegation.cert().ok()?.tree(),
         };
 
         let path = CANISTER_RANGES_PATH.into();
@@ -372,6 +372,29 @@ mod test_certificate {
     fn rejects_delegation_certificate_with_trailing_bytes() {
         let data = hex::decode(CERT_DELEGATION_TRAILING_BYTE).unwrap();
         assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    // A delegation whose "certificate" byte string holds a bare CBOR uint
+    // rather than a certificate. Parsing accepts it -- the field is captured as
+    // a RawValue and only checked for trailing bytes -- so the failure surfaces
+    // later, when something asks for the inner certificate.
+    const CERT_DELEGATION_BAD_INNER: &str = "D9D9F7A364747265658100697369676E617475726558300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006A64656C65676174696F6EA2697375626E65745F6964581D00000000000000000000000000000000000000000000000000000000006B63657274696669636174654100";
+
+    #[test]
+    fn delegation_with_invalid_inner_certificate_errors_instead_of_panicking() {
+        let data = hex::decode(CERT_DELEGATION_BAD_INNER).unwrap();
+        let cert = Certificate::from_bytes(&data).expect("outer certificate parses");
+
+        let delegation = cert.delegation().expect("delegation present");
+
+        // cert() used to unwrap here, on the claim that parsing had already
+        // validated this. It had not, so a hostile delegation hung the device.
+        assert!(delegation.cert().is_err());
+
+        // The paths that reach it must surface the error too, not panic.
+        assert!(delegation.tree().is_err());
+        assert!(delegation.public_key().is_err());
+        assert!(cert.canister_ranges().is_none());
     }
 
     #[test]

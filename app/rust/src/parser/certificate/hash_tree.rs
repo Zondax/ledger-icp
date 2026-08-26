@@ -176,7 +176,23 @@ impl<'a> HashTree<'a> {
     /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
     #[inline(never)]
     pub fn reconstruct(&self) -> Result<[u8; 32], ParserError> {
+        self.reconstruct_at(0)
+    }
+
+    /// Depth-bounded worker behind [`reconstruct`].
+    ///
+    /// This runs on an unverified tree -- the root hash it produces is the BLS
+    /// message, so it is computed before the signature is checked. Without a
+    /// bound, a tree of nested forks (about two bytes per level, against a
+    /// 16 KB certificate buffer) drives recursion until the 8 KB device stack
+    /// is exhausted. `check_integrity` declares MAX_TREE_DEPTH but is never
+    /// called from anywhere except itself, so it never enforced anything here.
+    #[inline(never)]
+    fn reconstruct_at(&self, depth: usize) -> Result<[u8; 32], ParserError> {
         check_canary();
+        if depth >= MAX_TREE_DEPTH {
+            return Err(ParserError::RecursionLimitReached);
+        }
         crate::zlog("HashTree::reconstruct\x00");
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
@@ -184,8 +200,8 @@ impl<'a> HashTree<'a> {
                 let left = HashTree::try_from(left)?;
                 let right = HashTree::try_from(right)?;
 
-                let left_hash = left.reconstruct()?;
-                let right_hash = right.reconstruct()?;
+                let left_hash = left.reconstruct_at(depth + 1)?;
+                let right_hash = right.reconstruct_at(depth + 1)?;
 
                 let mut concat = [0; 64];
                 concat[..32].copy_from_slice(&left_hash);
@@ -195,7 +211,7 @@ impl<'a> HashTree<'a> {
             }
             HashTree::Labeled(label, subtree) => {
                 let subtree = HashTree::try_from(subtree)?;
-                let subtree_hash = subtree.reconstruct()?;
+                let subtree_hash = subtree.reconstruct_at(depth + 1)?;
 
                 // domain.len() + label_max_len + hash_len
                 let mut concat = [0; Label::MAX_LEN + 32];
@@ -471,6 +487,87 @@ mod hash_tree_tests {
         let d_value = HashTree::lookup_path(&"d".into(), tree).unwrap();
         let value = d_value.value().unwrap();
         assert_eq!(&b"morning", &value);
+    }
+
+    // Minimal CBOR builders for hand-made trees:
+    //   Empty [0] / Fork [1,l,r] / Labeled [2,label,sub]
+    fn cbor_bytes(b: &[u8]) -> std::vec::Vec<u8> {
+        let mut out = std::vec::Vec::new();
+        if b.len() <= 23 {
+            out.push(0x40 | b.len() as u8);
+        } else {
+            out.push(0x58);
+            out.push(b.len() as u8);
+        }
+        out.extend_from_slice(b);
+        out
+    }
+
+    fn cbor_empty() -> std::vec::Vec<u8> {
+        std::vec![0x81, 0x00]
+    }
+
+    fn cbor_labeled(label: &[u8], sub: std::vec::Vec<u8>) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0x83, 0x02];
+        out.extend(cbor_bytes(label));
+        out.extend(sub);
+        out
+    }
+
+    fn cbor_fork(left: std::vec::Vec<u8>, right: std::vec::Vec<u8>) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0x83, 0x01];
+        out.extend(left);
+        out.extend(right);
+        out
+    }
+
+    #[test]
+    fn label_longer_than_max_is_rejected() {
+        // reconstruct copies a label into a fixed [0; MAX_LEN + 32] buffer, so a
+        // 33-byte label panicked there. A 39-byte tree was enough to hang the
+        // device; rejecting at decode keeps it an error.
+        let oversized = [0x61u8; Label::MAX_LEN + 1];
+        let tree = cbor_labeled(&oversized, cbor_empty());
+        let raw = RawValue::from_bytes(&tree).unwrap();
+
+        assert!(HashTree::try_from(&raw).is_err());
+
+        // A label exactly at the limit still works.
+        let at_limit = [0x61u8; Label::MAX_LEN];
+        let tree = cbor_labeled(&at_limit, cbor_empty());
+        let raw = RawValue::from_bytes(&tree).unwrap();
+        let parsed = HashTree::try_from(&raw).unwrap();
+        assert!(parsed.reconstruct().is_ok());
+    }
+
+    #[test]
+    fn deeply_nested_tree_is_refused_by_reconstruct() {
+        // Nested forks cost about two bytes per level against a 16 KB buffer,
+        // so without a bound this walks off the 8 KB device stack. reconstruct
+        // is reached before the BLS signature is checked.
+        let mut tree = cbor_empty();
+        for _ in 0..(MAX_TREE_DEPTH + 5) {
+            tree = cbor_fork(cbor_empty(), tree);
+        }
+        let raw = RawValue::from_bytes(&tree).unwrap();
+        let parsed = HashTree::try_from(&raw).unwrap();
+
+        assert!(matches!(
+            parsed.reconstruct(),
+            Err(ParserError::RecursionLimitReached)
+        ));
+    }
+
+    #[test]
+    fn shallow_tree_still_reconstructs() {
+        // Guard against the depth bound being set so low it rejects real trees.
+        let mut tree = cbor_empty();
+        for _ in 0..(MAX_TREE_DEPTH - 2) {
+            tree = cbor_fork(cbor_empty(), tree);
+        }
+        let raw = RawValue::from_bytes(&tree).unwrap();
+        let parsed = HashTree::try_from(&raw).unwrap();
+        assert!(parsed.reconstruct().is_ok());
     }
 
     #[test]

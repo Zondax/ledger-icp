@@ -109,21 +109,18 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
 
 impl<'a> Delegation<'a> {
     #[inline(never)]
-    pub fn cert(&self) -> Certificate<'a> {
-        // Safe to unwrap as this was checked at parsing
-        Certificate::try_from(self.certificate).unwrap()
+    pub fn cert(&self) -> Result<Certificate<'a>, ParserError> {
+        // Parsing only captures the inner certificate as a RawValue and checks
+        // that the byte string holds nothing after it -- it never decodes it.
+        // So this really can fail on a hostile delegation, and it used to
+        // unwrap: a panic here hangs the device until it is reconnected.
+        Certificate::try_from(self.certificate)
     }
 
-    pub fn tree(&self) -> HashTree<'a> {
+    pub fn tree(&self) -> Result<HashTree<'a>, ParserError> {
         crate::zlog("Delegation::tree\x00");
-        let cert = self.cert();
-        // Safe to unwrap as this was checked
-        // when Delegation was parsed
-        let Ok(tree) = cert.tree().try_into() else {
-            unreachable!();
-        };
-
-        tree
+        let cert = self.cert()?;
+        cert.tree().try_into()
     }
 
     pub fn subnet(&self) -> &'a [u8] {
@@ -133,7 +130,7 @@ impl<'a> Delegation<'a> {
     #[inline(never)]
     pub fn verify(&self, root_key: &[u8]) -> Result<bool, ParserError> {
         crate::zlog("Delegation::verify\x00");
-        let cert = self.cert();
+        let cert = self.cert()?;
 
         cert.verify(root_key)
     }
@@ -156,7 +153,7 @@ impl<'a> Delegation<'a> {
     fn subnet_public_key(&self) -> Result<LookupResult<'a>, ParserError> {
         crate::zlog("Delegation::subnet_public_key\x00");
         // Step 1: Look up "subnet" in the root of the tree
-        let cert = self.cert();
+        let cert = self.cert()?;
 
         let subnet_result = HashTree::lookup_path(&"subnet".into(), cert.tree())?;
 
