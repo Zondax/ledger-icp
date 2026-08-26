@@ -77,7 +77,7 @@ __Z_INLINE parser_error_t readSNSCommandNeuronPermissions(parser_context_t *ctx,
     CHECK_PARSER_ERR(readCandidByte(ctx, &val->has_permissionList))
     if (val->has_permissionList) {
         int32_t tmp_permission = 0;
-        CHECK_PARSER_ERR(readCandidByte(ctx, &val->permissionList.list_size))
+        CHECK_PARSER_ERR(readCandidVecLength(ctx, &val->permissionList.list_size))
 
         val->permissionList.permissions_list_ptr = ctx->buffer + ctx->offset;
         for (uint8_t i = 0; i < val->permissionList.list_size; i++) {

@@ -747,8 +747,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
                 // path above already refuses ambiguous arguments; without the
                 // same rule here the printers pick `id` while the argument also
                 // carries a second, unreviewed target.
-                PARSER_ASSERT_OR_ERROR(fields->has_id ^ fields->has_neuron_id_or_subaccount,
-                                       parser_unexpected_error);
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ fields->has_neuron_id_or_subaccount, parser_unexpected_error);
             }
 
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
@@ -846,7 +845,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     return parser_ok;
 }
 
-uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+uint16_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     manageNeuron_e mn_type;
     if (getManageNeuronType(v, &mn_type) != parser_ok) {
         return 0;
@@ -885,8 +884,9 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return 4;
         }
         case DisburseMaturity: {
-            return 3 + (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
-                       (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
+            return 3 +
+                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
+                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +
@@ -907,7 +907,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return follow_count > 0 ? 3 + follow_count : 4;
         }
         case FollowCandid: {
-            uint8_t followees_count = v->tx_fields.call.data.candid_manageNeuron.command.follow.followees_size;
+            const uint16_t followees_count = v->tx_fields.call.data.candid_manageNeuron.command.follow.followees_size;
             return followees_count > 0 ? 3 + followees_count : 4;
         }
 
@@ -937,7 +937,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
     return 0;
 }
 
-uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+uint16_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype) {
         case call: {
             switch (v->tx_fields.call.method_type) {

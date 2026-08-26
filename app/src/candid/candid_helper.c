@@ -134,6 +134,28 @@ parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v) {
     return parser_no_data;
 }
 
+// Candid encodes a vec's element count as LEB128, so any count from 128 up
+// occupies more than one byte. Reading it with readCandidByte consumed only the
+// first of them, leaving this parser one byte out of step with the encoder for
+// exactly the counts that also overflow the display-item arithmetic -- the
+// device would then walk the elements from the wrong offset while the replica
+// read the payload correctly.
+//
+// Counts that do not fit the uint8_t fields these lengths are stored in are
+// rejected rather than truncated: a transaction whose elements cannot all be
+// counted cannot be shown honestly either.
+parser_error_t readCandidVecLength(parser_context_t *ctx, uint8_t *v) {
+    uint64_t len = 0;
+    CHECK_PARSER_ERR(readCandidLEB128(ctx, &len))
+
+    if (len > UINT8_MAX) {
+        return parser_value_out_of_range;
+    }
+
+    *v = (uint8_t)len;
+    return parser_ok;
+}
+
 parser_error_t readCandidBytes(parser_context_t *ctx, uint8_t *buff, uint8_t buffLen) {
     if (ctx->bufferLen - ctx->offset < buffLen) {
         return parser_unexpected_buffer_end;

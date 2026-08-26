@@ -53,6 +53,7 @@ parser_error_t readCandidInt32(parser_context_t *ctx, int32_t *v);
 
 parser_error_t readCandidRecordLength(candid_transaction_t *txn);
 parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v);
+parser_error_t readCandidVecLength(parser_context_t *ctx, uint8_t *v);
 parser_error_t readCandidBytes(parser_context_t *ctx, uint8_t *buff, uint8_t buffLen);
 
 parser_error_t readCandidOptional(candid_transaction_t *txn);

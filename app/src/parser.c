@@ -177,8 +177,18 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
 
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     zemu_log_stack("parser_getNumItems");
-    *num_items = _getNumItems(ctx, &parser_tx_obj);
-    PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
+
+    // Counted in a type that cannot wrap. The count is a base plus a repeat
+    // count taken from the payload, so in a uint8_t a large enough vec rolled
+    // the total over: 3 + 255 became 2, and the device rendered two items for a
+    // transaction carrying 255 elements -- the rest signed without being shown.
+    const uint16_t items = _getNumItems(ctx, &parser_tx_obj);
+
+    PARSER_ASSERT_OR_ERROR(items > 0, parser_unexpected_number_items)
+    // More items than the review can address is refused rather than truncated.
+    PARSER_ASSERT_OR_ERROR(items <= UINT8_MAX, parser_unexpected_number_items)
+
+    *num_items = (uint8_t)items;
     return parser_ok;
 }
 

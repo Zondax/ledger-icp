@@ -335,7 +335,7 @@ __Z_INLINE parser_error_t readCommandFollow(parser_context_t *ctx, candid_transa
     if (val->command.follow.topic < 0 || val->command.follow.topic > FOLLOW_TOPIC_SNS_AND_NEURONS_FUND) {
         return parser_unexpected_value;
     }
-    CHECK_PARSER_ERR(readCandidByte(ctx, &val->command.follow.followees_size))
+    CHECK_PARSER_ERR(readCandidVecLength(ctx, &val->command.follow.followees_size))
     val->command.follow.followees_ptr = ctx->buffer + ctx->offset;
     uint64_t tmp_followee = 0;
     for (uint8_t i = 0; i < val->command.follow.followees_size; i++) {
