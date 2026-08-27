@@ -304,6 +304,15 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         return parser_context_mismatch;
     }
 
+    // The only read_state this app signs is a request status lookup, which is
+    // exactly ["request_status", <request id>]. Only paths[0] used to be
+    // checked, so any further element rode along into the signed request
+    // without being looked at - and with a single element, the request id row
+    // below would read a path that was never filled in.
+    if (stateRead->paths.arrayLen != 2) {
+        return parser_context_mismatch;
+    }
+
     while (!cbor_value_at_end(&it)) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
@@ -747,8 +756,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
                 // path above already refuses ambiguous arguments; without the
                 // same rule here the printers pick `id` while the argument also
                 // carries a second, unreviewed target.
-                PARSER_ASSERT_OR_ERROR(fields->has_id ^ fields->has_neuron_id_or_subaccount,
-                                       parser_unexpected_error);
+                PARSER_ASSERT_OR_ERROR(fields->has_id ^ fields->has_neuron_id_or_subaccount, parser_unexpected_error);
             }
 
             const uint8_t *canisterId = v->tx_fields.call.canister_id.data;
@@ -780,11 +788,12 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 
 #if defined(LEDGER_SPECIFIC)
-    // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
-    bool skip_validation = (v->txtype == call && (v->tx_fields.call.method_type == candid_icrc_transfer ||
-                                                  v->tx_fields.call.method_type == candid_icrc2_approve));
-
-    if (!skip_validation) {
+    // Every envelope this app signs names the device's own principal as
+    // sender: there is no delegation support here, so a request naming anyone
+    // else could not be signed into anything the network would accept. ICRC-1
+    // transfer and ICRC-2 approve used to be exempt from this, which cost the
+    // device the one invariant that says it only ever signs as itself.
+    {
         zemu_log("Performing sender validation\n");
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
@@ -800,8 +809,6 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
             zemu_log("Sender mismatch\n");
             return parser_unexpected_value;
         }
-    } else {
-        zemu_log("Skipping sender validation\n");
     }
 #endif
 
@@ -885,8 +892,9 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
             return 4;
         }
         case DisburseMaturity: {
-            return 3 + (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
-                       (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
+            return 3 +
+                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account_identifier ? 1 : 0) +
+                   (v->tx_fields.call.data.candid_manageNeuron.command.disburseMaturity.has_to_account ? 1 : 0);
         }
         case SpawnCandid: {
             // 2 fields + opt(percentage_to_spawn) + controller (opt or self) +
@@ -957,9 +965,14 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
                     return itemCount;
                 }
 
-                case pb_claimneurons:
                 case pb_listneurons: {
                     return 1;
+                }
+
+                    // The argument is an opaque blob this app does not decode,
+                    // so it is shown as bytes rather than being signed unseen.
+                case pb_claimneurons: {
+                    return 2;
                 }
 
                 case candid_updatenodeprovider: {
@@ -1009,10 +1022,9 @@ uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v)
         }
         case state_transaction_read: {
             // based on https://github.com/Zondax/ledger-dfinity/issues/48
-            if (!app_mode_expert()) {
-                return 1;  // only check status
-            }
-            return 3;
+            // The request id is signed, so it is shown outside expert mode as
+            // well; expert adds the sender on top.
+            return app_mode_expert() ? 3 : 2;
         }
         default:
             break;

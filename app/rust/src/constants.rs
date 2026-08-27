@@ -16,7 +16,15 @@
 pub const BLS_PUBLIC_KEY_SIZE: usize = 96;
 pub const BLS_SIGNATURE_SIZE: usize = 48;
 pub const REPLY_PATH: &str = "reply";
+pub const STATUS_PATH: &str = "status";
+pub const REQUEST_STATUS_PATH: &str = "request_status";
+pub const SUBNET_PATH: &str = "subnet";
+pub const TIME_PATH: &str = "time";
+pub const PUBLIC_KEY_PATH: &str = "public_key";
 pub const CANISTER_RANGES_PATH: &str = "canister_ranges";
+// The only certified status this app will act on: anything else means the
+// call did not produce the reply that is being shown.
+pub const STATUS_REPLIED: &[u8] = b"replied";
 
 pub const CBOR_TAG: u64 = 55799;
 pub const BIG_NUM_TAG: u64 = 2;

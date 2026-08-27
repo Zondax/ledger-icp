@@ -175,10 +175,200 @@ parser_error_t parser_validate(const parser_context_t *ctx) {
     return parser_ok;
 }
 
+// ingress_expiry is nanoseconds since the Unix epoch; decodeTime takes seconds.
+#define NANOSECONDS_PER_SECOND 1000000000ULL
+
+static parser_error_t print_utc_time(uint64_t time_ns, char *outVal, uint16_t outValLen, uint8_t pageIdx,
+                                     uint8_t *pageCount) {
+    timedata_t td = {0};
+    if (decodeTime(&td, time_ns / NANOSECONDS_PER_SECOND) != zxerr_ok) {
+        return parser_unexpected_value;
+    }
+
+    // decodeTime bounds every field, so the result is always 23 characters,
+    // but the compiler only knows the fields are ints and sizes the worst case
+    // at 30. Give it the room it thinks it needs rather than carrying a
+    // truncation warning on every build.
+    char buffer[36] = {0};
+    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d UTC", td.tm_year, td.tm_mon, td.tm_day, td.tm_hour,
+             td.tm_min, td.tm_sec);
+
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
+}
+
+// Both envelope types carry an ingress_expiry, and it is hashed into the
+// request id for both.
+static bool tx_has_ingress_expiry(void) {
+    return parser_tx_obj.txtype == call || parser_tx_obj.txtype == state_transaction_read;
+}
+
+// Transfers carry a creation time that the receiving ledger deduplicates on.
+// Leaving it out is legal and removes the dedup window entirely, so the same
+// signed request can then be submitted more than once; it is signed either
+// way, which is reason enough not to leave it off the screen.
+static bool tx_created_at(bool *isSet, uint64_t *value_ns) {
+    if (parser_tx_obj.txtype != call) {
+        return false;
+    }
+
+    const call_t *fields = &parser_tx_obj.tx_fields.call;
+    switch (fields->method_type) {
+        case pb_sendrequest:
+            *isSet = fields->data.SendRequest.has_created_at_time;
+            *value_ns = fields->data.SendRequest.created_at_time.timestamp_nanos;
+            return true;
+        case candid_transfer:
+            *isSet = fields->data.candid_transfer.has_timestamp;
+            *value_ns = fields->data.candid_transfer.timestamp;
+            return true;
+        case candid_icrc_transfer:
+            *isSet = fields->data.icrcTransfer.has_created_at_time;
+            *value_ns = fields->data.icrcTransfer.created_at_time;
+            return true;
+        case candid_icrc2_approve:
+            *isSet = fields->data.icrc2_approve.has_created_at_time;
+            *value_ns = fields->data.icrc2_approve.created_at_time;
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool tx_has_created_at(void) {
+    bool isSet = false;
+    uint64_t value_ns = 0;
+    return tx_created_at(&isSet, &value_ns);
+}
+
+static parser_error_t parser_getItemCreatedAt(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                              uint8_t pageIdx, uint8_t *pageCount) {
+    bool isSet = false;
+    uint64_t value_ns = 0;
+    if (!tx_created_at(&isSet, &value_ns)) {
+        return parser_unexpected_type;
+    }
+
+    snprintf(outKey, outKeyLen, "Created at");
+    if (!isSet) {
+        snprintf(outVal, outValLen, "Not set");
+        return parser_ok;
+    }
+
+    return print_utc_time(value_ns, outVal, outValLen, pageIdx, pageCount);
+}
+
+// ingress_expiry is signed but was never shown. It fixes how long a signed
+// request stays submittable, so a host that sets it hours out can hold the
+// approved transaction back and choose when it lands. The device has no clock
+// and cannot judge the value on its own; rendering it as an absolute time is
+// what lets the user notice a window that is not the customary few minutes.
+static parser_error_t parser_getItemIngressExpiry(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                                  uint8_t pageIdx, uint8_t *pageCount) {
+    uint64_t expiry_ns = 0;
+    switch (parser_tx_obj.txtype) {
+        case call:
+            expiry_ns = parser_tx_obj.tx_fields.call.ingress_expiry;
+            break;
+        case state_transaction_read:
+            expiry_ns = parser_tx_obj.tx_fields.stateRead.ingress_expiry;
+            break;
+        default:
+            return parser_unexpected_type;
+    }
+
+    snprintf(outKey, outKeyLen, "Valid until");
+    return print_utc_time(expiry_ns, outVal, outValLen, pageIdx, pageCount);
+}
+
+// Any path other than 0'/0/0 is named on screen, in both modes - accounts
+// 1'-255' and indices 1-255 are reachable without expert mode, and expert mode
+// lifts the range cap on top of that. Nothing used to say which account was
+// signing. Only the device knows the requested path; off-device builds have no
+// derivation to report.
+static bool tx_has_custom_path(void) {
+#if defined(LEDGER_SPECIFIC)
+    return hdPath[2] != HDPATH_2_DEFAULT || hdPath[3] != HDPATH_3_DEFAULT || hdPath[4] != HDPATH_4_DEFAULT;
+#else
+    return false;
+#endif
+}
+
+static parser_error_t parser_getItemSigningPath(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                                uint8_t pageIdx, uint8_t *pageCount) {
+    char buffer[PRINT_BUFFER_SMALL_LEN] = {0};
+    bip32_to_str(buffer, sizeof(buffer), hdPath, HDPATH_LEN_DEFAULT);
+
+    snprintf(outKey, outKeyLen, "Signing account");
+    pageString(outVal, outValLen, buffer, pageIdx, pageCount);
+    return parser_ok;
+}
+
+// Rows appended after whatever the method-specific renderer produces, in the
+// order listed here; each is present only when it applies.
+typedef enum {
+    tail_created_at = 0,
+    tail_signing_path,
+    tail_ingress_expiry,
+    tail_item_count,
+} tail_item_e;
+
+static bool tx_has_tail_item(tail_item_e item) {
+    switch (item) {
+        case tail_created_at:
+            return tx_has_created_at();
+        case tail_signing_path:
+            return tx_has_custom_path();
+        case tail_ingress_expiry:
+            return tx_has_ingress_expiry();
+        default:
+            return false;
+    }
+}
+
+static uint8_t tx_tail_items(void) {
+    uint8_t count = 0;
+    for (tail_item_e item = 0; item < tail_item_count; item++) {
+        if (tx_has_tail_item(item)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+static parser_error_t parser_getItemTail(uint8_t tailIdx, char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                         uint8_t pageIdx, uint8_t *pageCount) {
+    uint8_t seen = 0;
+    for (tail_item_e item = 0; item < tail_item_count; item++) {
+        if (!tx_has_tail_item(item)) {
+            continue;
+        }
+        if (seen == tailIdx) {
+            switch (item) {
+                case tail_created_at:
+                    return parser_getItemCreatedAt(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+                case tail_signing_path:
+                    return parser_getItemSigningPath(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+                case tail_ingress_expiry:
+                    return parser_getItemIngressExpiry(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+                default:
+                    return parser_no_data;
+            }
+        }
+        seen++;
+    }
+    return parser_no_data;
+}
+
 parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_items) {
     zemu_log_stack("parser_getNumItems");
-    *num_items = _getNumItems(ctx, &parser_tx_obj);
-    PARSER_ASSERT_OR_ERROR(*num_items > 0, parser_unexpected_number_items)
+    const uint8_t items = _getNumItems(ctx, &parser_tx_obj);
+    PARSER_ASSERT_OR_ERROR(items > 0, parser_unexpected_number_items)
+
+    const uint16_t total = (uint16_t)items + tx_tail_items();
+    PARSER_ASSERT_OR_ERROR(total <= UINT8_MAX, parser_unexpected_number_items)
+
+    *num_items = (uint8_t)total;
     return parser_ok;
 }
 
@@ -205,31 +395,45 @@ static parser_error_t parser_getItemTransactionStateRead(const parser_context_t 
         return parser_ok;
     }
 
-    if (app_mode_expert()) {
-        const state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
+    const state_read_t *fields = &parser_tx_obj.tx_fields.stateRead;
 
+    if (app_mode_expert()) {
         if (displayIdx == 1) {
             snprintf(outKey, outKeyLen, "Sender ");
             return print_principal(fields->sender.data, (uint16_t)fields->sender.len, outVal, outValLen, pageIdx, pageCount);
         }
+        displayIdx--;
+    }
 
-        displayIdx -= 2;
-
-        if (displayIdx >= fields->paths.arrayLen) {
-            return parser_no_data;
-        }
-
+    if (displayIdx == 1) {
+        // paths is ["request_status", <request id>], enforced at parse time.
         snprintf(outKey, outKeyLen, "Request ID ");
         return page_hexstring_with_delimiters(fields->paths.paths[1].data, fields->paths.paths[1].len, outVal, outValLen,
                                               pageIdx, pageCount);
     }
 
-    return parser_ok;
+    return parser_no_data;
 }
 
 parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {
     *pageCount = 1;
+
+    // The tail rows come from the envelope, or from fields every transfer
+    // carries, so they are rendered here rather than being threaded through
+    // each of the per-method item functions.
+    const uint8_t tail = tx_tail_items();
+    if (tail > 0) {
+        uint8_t numItems = 0;
+        CHECK_PARSER_ERR(parser_getNumItems(ctx, &numItems))
+        if (displayIdx + tail >= numItems) {
+            const uint8_t tailIdx = (uint8_t)(displayIdx - (numItems - tail));
+            MEMZERO(outKey, outKeyLen);
+            MEMZERO(outVal, outValLen);
+            return parser_getItemTail(tailIdx, outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
+        }
+    }
+
     switch (parser_tx_obj.txtype) {
         case call: {
             switch (parser_tx_obj.tx_fields.call.method_type) {

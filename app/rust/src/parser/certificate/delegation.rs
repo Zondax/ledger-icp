@@ -17,7 +17,11 @@ use core::{mem::MaybeUninit, ptr::addr_of_mut};
 ********************************************************************************/
 use minicbor::{decode::Error, Decoder};
 
-use crate::{error::ParserError, zlog, FromBytes};
+use crate::{
+    constants::{PUBLIC_KEY_PATH, SUBNET_PATH},
+    error::ParserError,
+    zlog, FromBytes,
+};
 
 use super::{
     hash_tree::{HashTree, LookupResult},
@@ -92,6 +96,17 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
                     if !rem.is_empty() {
                         return Err(ParserError::InvalidDelegation);
                     }
+
+                    // RawValue only skips over a CBOR item, so on its own it
+                    // says nothing about whether the bytes are a certificate.
+                    // cert() below hands the result of this parse straight to
+                    // unwrap(), so do the parse here where it can still fail
+                    // as an error. try_from_delegated refuses a nested
+                    // delegation at the key rather than after parsing it, so
+                    // this descends exactly one frame however deeply the host
+                    // nested the blob.
+                    Certificate::try_from_delegated(*unsafe { raw_value.assume_init_ref() })
+                        .map_err(|_| ParserError::InvalidDelegation)?;
                 }
                 _ => return Err(ParserError::UnexpectedField),
             }
@@ -110,8 +125,9 @@ impl<'a> FromBytes<'a> for Delegation<'a> {
 impl<'a> Delegation<'a> {
     #[inline(never)]
     pub fn cert(&self) -> Certificate<'a> {
-        // Safe to unwrap as this was checked at parsing
-        Certificate::try_from(self.certificate).unwrap()
+        // Safe to unwrap: from_bytes_into parsed these same bytes, the same
+        // way, before this value could exist.
+        Certificate::try_from_delegated(self.certificate).unwrap()
     }
 
     pub fn tree(&self) -> HashTree<'a> {
@@ -150,32 +166,20 @@ impl<'a> Delegation<'a> {
         Ok(Some(PublicKey::try_from(value)?))
     }
 
-    // 1. subnet_id: This is available in the Delegation structure.
-    // 2. public_key: We need to lookup ["subnet", subnet_id, "public_key"] in the inner certificate.
+    // The subnet key sits at ["subnet", <subnet id>, "public_key"] in the
+    // inner certificate. Walking the labels one level at a time is what makes
+    // it that path rather than a "public_key" found anywhere in the tree.
     #[inline(never)]
     fn subnet_public_key(&self) -> Result<LookupResult<'a>, ParserError> {
         crate::zlog("Delegation::subnet_public_key\x00");
-        // Step 1: Look up "subnet" in the root of the tree
         let cert = self.cert();
+        let path = [
+            SUBNET_PATH.into(),
+            self.subnet_id.id().into(),
+            PUBLIC_KEY_PATH.into(),
+        ];
 
-        let subnet_result = HashTree::lookup_path(&"subnet".into(), cert.tree())?;
-
-        match subnet_result {
-            LookupResult::Found(subnet_value) => {
-                // Step 2: Look up the specific subnet_id in the subnet subtree
-                let subnet_id_result =
-                    HashTree::lookup_path(&self.subnet_id.id().into(), subnet_value)?;
-
-                match subnet_id_result {
-                    LookupResult::Found(subnet_id_tree) => {
-                        // Step 3: Look up "public_key" in the subnet_id subtree
-                        HashTree::lookup_path(&"public_key".into(), subnet_id_tree)
-                    }
-                    _ => Ok(LookupResult::Absent),
-                }
-            }
-            _ => Ok(LookupResult::Absent),
-        }
+        HashTree::lookup_path(&path, cert.tree())
     }
 }
 

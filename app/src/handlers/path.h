@@ -49,10 +49,27 @@ __Z_INLINE void extractHDPath(uint32_t rx, uint32_t offset) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 
-    const bool is_valid = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) && (hdPath[3] == 0x00000000u) &&
-                          ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
+    // Hardening at the account and address-index levels is not negotiable in
+    // either mode: the account must be hardened and the address index must
+    // not be. Expert mode used to lift this along with the index range, so a
+    // host could ask for an unhardened account or a hardened address index
+    // and get a key derived from outside the scheme this app uses at all.
+    // The change level is deliberately not constrained here.
+    const bool hardening_ok = ((hdPath[2] & 0x80000000u) == 0x80000000u) && ((hdPath[4] & 0x80000000u) == 0x00000000u);
 
-    if (!is_valid && !app_mode_expert()) {
+    if (!hardening_ok) {
+        THROW(APDU_CODE_DATA_INVALID);
+    }
+
+    // What expert mode is for: account and address numbers beyond 255, and a
+    // non-zero change level. Those stay allowed. Note this predicate calls
+    // 0'-255' "default", which is wider than the review screen does: any path
+    // other than 0'/0/0 gets named on screen, in both modes, so the account
+    // being signed under is no longer silent (tx_has_custom_path, parser.c).
+    const bool is_default_path = ((hdPath[2] & HDPATH_RESTRICTED_MASK) == 0x80000000u) && (hdPath[3] == 0x00000000u) &&
+                                 ((hdPath[4] & HDPATH_RESTRICTED_MASK) == 0x00000000u);
+
+    if (!is_default_path && !app_mode_expert()) {
         THROW(APDU_CODE_DATA_INVALID);
     }
 }

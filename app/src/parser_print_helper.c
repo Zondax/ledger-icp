@@ -196,7 +196,7 @@ parser_error_t page_hexstring_with_delimiters(const uint8_t *input, const uint64
 
 parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t senderLen, const uint8_t *fromSubaccount,
                                               uint16_t fromSubaccountLen, char *outVal, uint16_t outValLen, uint8_t pageIdx,
-                                              uint8_t *pageCount, bool showCompleteSubaccount) {
+                                              uint8_t *pageCount) {
     if (sender == NULL || senderLen > DFINITY_PRINCIPAL_LEN ||
         (fromSubaccount != NULL && fromSubaccountLen != DFINITY_SUBACCOUNT_LEN)) {
         return parser_unexpected_error;
@@ -298,10 +298,11 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     *text_ptr = '.';
     text_ptr++;
 
-    uint16_t bytesToShow = subaccTrimLen;
-    if ((subaccTrimLen > DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL) && !showCompleteSubaccount) {
-        bytesToShow = DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL;
-    }
+    // Render every byte that survived the leading-zero trim above. Truncating
+    // used to drop the tail silently, with no ellipsis and no extra page, so
+    // two accounts differing only past the cut rendered as the same string on
+    // the approval screen.
+    const uint16_t bytesToShow = subaccTrimLen;
 
     array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen, subaccTrim, bytesToShow);
 
@@ -354,6 +355,19 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
     snprintf(outVal, outValLen, "%.*s", charsToPrint, textToPrint);
 
     return parser_ok;
+}
+
+void print_amount_key(char *outKey, uint16_t outKeyLen, const char *label, const token_info_t *token) {
+    if (token != NULL) {
+        snprintf(outKey, outKeyLen, "%s (%s)", label, token->token_symbol);
+        return;
+    }
+
+    // The canister is not in the token registry, so decimals fall back to zero
+    // and the amount below is rendered in raw base units. Saying "unknown"
+    // rather than "Tokens" keeps the label from implying the number has been
+    // scaled to a unit the device could actually resolve.
+    snprintf(outKey, outKeyLen, "%s (unknown)", label);
 }
 
 parser_error_t print_u64(uint64_t value, char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount) {

@@ -27,6 +27,21 @@
 
 #define DEFAULT_MAXIMUM_FEES 10000
 
+// The SNS branch of manage_neuron accepts any canister, because SNS
+// governance canisters are created dynamically and there is no list the
+// device could check one against. NNS is pinned to a single id, so this is
+// the only manage_neuron path that reaches the user with an unchecked
+// canister; label it as such rather than presenting it the way a pinned one
+// is presented.
+__Z_INLINE parser_error_t print_sns_canister_id(char *outKey, uint16_t outKeyLen, char *outVal, uint16_t outValLen,
+                                                uint8_t pageIdx, uint8_t *pageCount) {
+    const uint8_t *canisterId = parser_tx_obj.tx_fields.call.canister_id.data;
+    const uint8_t canisterIdSize = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
+
+    snprintf(outKey, outKeyLen, "Unverified SNS");
+    return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+}
+
 __Z_INLINE parser_error_t print_permission(int32_t permission, char *outVal, uint16_t outValLen, uint8_t pageIdx,
                                            uint8_t *pageCount) {
     switch (permission) {
@@ -159,7 +174,7 @@ __Z_INLINE parser_error_t print_accountBytes(sender_t sender, const candid_trans
     }
 
     return page_principal_with_subaccount(sender.data, (uint16_t)sender.len, subaccount, sizeof(subaccount), outVal,
-                                          outValLen, pageIdx, pageCount, false);
+                                          outValLen, pageIdx, pageCount);
 }
 
 static parser_error_t parser_getItemSetDissolveTimestamp(uint8_t displayIdx, char *outKey, uint16_t outKeyLen, char *outVal,
@@ -307,11 +322,7 @@ static parser_error_t parser_getItemDisburseCandid(uint8_t displayIdx, char *out
     }
 
     if (displayIdx == 3) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Amount (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Amount", token);
         if (fields->command.disburse.has_amount) {
             return print_Amount(fields->command.disburse.amount, outVal, outValLen, pageIdx, pageCount, decimals);
         } else {
@@ -645,11 +656,7 @@ static parser_error_t parser_getItemSplit(uint8_t displayIdx, char *outKey, uint
     }
 
     if (displayIdx == 2) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Amount (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Amount", token);
         return print_Amount(fields->command.split.amount_e8s, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
@@ -752,7 +759,7 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
             const uint8_t *subaccount = fields->command.disburseMaturity.to_account.subaccount.p;
             const uint16_t subaccountLen = (uint16_t)fields->command.disburseMaturity.to_account.subaccount.len;
             return page_principal_with_subaccount(owner, ownerLen, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                                  pageCount, true);
+                                                  pageCount);
         }
     }
 
@@ -862,11 +869,7 @@ static parser_error_t parser_getItemConfigureDissolvingSNS(uint8_t displayIdx, c
     }
 
     if (displayIdx == 1) {
-        const uint8_t *canisterId = (const uint8_t *)parser_tx_obj.tx_fields.call.canister_id.data;
-        const uint8_t canisterIdSize = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
-
-        snprintf(outKey, outKeyLen, "Canister Id");
-        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_sns_canister_id(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -899,11 +902,7 @@ static parser_error_t parser_getItemNeuronPermissions(uint8_t displayIdx, char *
     }
 
     if (displayIdx == 1) {
-        const uint8_t *canisterId = (const uint8_t *)parser_tx_obj.tx_fields.call.canister_id.data;
-        const uint8_t canisterIdSize = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
-
-        snprintf(outKey, outKeyLen, "Canister Id");
-        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_sns_canister_id(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -1008,20 +1007,12 @@ static parser_error_t parser_getItemCandidTransfer(uint8_t displayIdx, char *out
     }
 
     if (displayIdx == 3) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Amount (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Amount", token);
         return print_Amount(fields->data.candid_transfer.amount, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
     if (displayIdx == 4) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Max fee (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Max fee (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Max fee", token);
         return print_Amount(fields->data.candid_transfer.fee, outVal, outValLen, pageIdx, pageCount, decimals);
     }
 
@@ -1088,7 +1079,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
         const uint16_t fromSubaccountLen = (uint16_t)call->data.icrcTransfer.from_subaccount.len;
 
         return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen, outVal, outValLen,
-                                              pageIdx, pageCount, false);
+                                              pageIdx, pageCount);
     }
 
     if (is_stake_tx) {
@@ -1103,15 +1094,11 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
         const uint16_t subaccountLen = (uint16_t)call->data.icrcTransfer.account.subaccount.len;
 
         return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                              pageCount, false);
+                                              pageCount);
     }
 
     if (displayIdx == 4) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Amount (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Amount", token);
 
         return print_Amount(call->data.icrcTransfer.amount, outVal, outValLen, pageIdx, pageCount, decimals);
     }
@@ -1122,14 +1109,7 @@ static parser_error_t parser_getItemICRCTransfer(uint8_t displayIdx, char *outKe
     }
 
     if (displayIdx == 5) {
-        char title[50] = {0};
-        if (token != NULL) {
-            snprintf(title, sizeof(title), "Max fee (%s)", token->token_symbol);
-        } else {
-            snprintf(title, sizeof(title), "Max fee (Tokens)");
-        }
-
-        snprintf(outKey, outKeyLen, "%s", title);
+        print_amount_key(outKey, outKeyLen, "Max fee", token);
         uint64_t fees = call->data.icrcTransfer.has_fee ? call->data.icrcTransfer.fee : DEFAULT_MAXIMUM_FEES;
         return print_Amount(fees, outVal, outValLen, pageIdx, pageCount, decimals);
     }
@@ -1203,7 +1183,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         const uint16_t fromSubaccountLen = (uint16_t)call->data.icrc2_approve.from_subaccount.len;
 
         return page_principal_with_subaccount(sender, senderLen, fromSubaccount, fromSubaccountLen, outVal, outValLen,
-                                              pageIdx, pageCount, true);
+                                              pageIdx, pageCount);
     }
 
     if (displayIdx == 3) {
@@ -1214,15 +1194,11 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
         const uint16_t subaccountLen = (uint16_t)call->data.icrc2_approve.spender.subaccount.len;
 
         return page_principal_with_subaccount(owner->ptr, owner->len, subaccount, subaccountLen, outVal, outValLen, pageIdx,
-                                              pageCount, true);
+                                              pageCount);
     }
 
     if (displayIdx == 4) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Amount (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Amount", token);
 
         if (call->data.icrc2_approve.amount == 0) {
             snprintf(outVal, outValLen, "0");
@@ -1235,14 +1211,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
     if (!(call->data.icrc2_approve.has_expected_allowance)) displayIdx++;
 
     if (displayIdx == 5) {
-        char title[50] = {0};
-        if (token != NULL) {
-            snprintf(title, sizeof(title), "Allowance (%s)", token->token_symbol);
-        } else {
-            snprintf(title, sizeof(title), "Allowance (Tokens)");
-        }
-
-        snprintf(outKey, outKeyLen, "%s", title);
+        print_amount_key(outKey, outKeyLen, "Allowance", token);
         uint64_t allowance = call->data.icrc2_approve.expected_allowance;
         if (allowance == 0) {
             snprintf(outVal, outValLen, "0");
@@ -1284,14 +1253,7 @@ static parser_error_t parser_getItemICRC2Approve(uint8_t displayIdx, char *outKe
     if (!(call->data.icrc2_approve.has_fee || icp_canisterId)) displayIdx++;
 
     if (displayIdx == 7) {
-        char title[50] = {0};
-        if (token != NULL) {
-            snprintf(title, sizeof(title), "Max fee (%s)", token->token_symbol);
-        } else {
-            snprintf(title, sizeof(title), "Max fee (Tokens)");
-        }
-
-        snprintf(outKey, outKeyLen, "%s", title);
+        print_amount_key(outKey, outKeyLen, "Max fee", token);
         uint64_t fees = call->data.icrc2_approve.has_fee ? call->data.icrc2_approve.fee : DEFAULT_MAXIMUM_FEES;
         if (fees == 0) {
             snprintf(outVal, outValLen, "0");
@@ -1323,8 +1285,8 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey
     *pageCount = 1;
     const sns_Disburse_t *fields = &parser_tx_obj.tx_fields.call.data.sns_manageNeuron.command.sns_disburse;
 
-    uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
-    uint8_t canister_id_len = sizeof(parser_tx_obj.tx_fields.call.canister_id);
+    const uint8_t *canister_id = parser_tx_obj.tx_fields.call.canister_id.data;
+    const uint8_t canister_id_len = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
     const token_info_t *token = get_token(canister_id, canister_id_len);
 
     uint8_t decimals = 0;
@@ -1340,11 +1302,7 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey
     }
 
     if (displayIdx == 1) {
-        const uint8_t *canisterId = (uint8_t *)&parser_tx_obj.tx_fields.call.canister_id.data;
-        const uint8_t canisterIdSize = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
-
-        snprintf(outKey, outKeyLen, "Canister Id");
-        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_sns_canister_id(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -1358,29 +1316,23 @@ static parser_error_t parser_getItemDisburseSNS(uint8_t displayIdx, char *outKey
         snprintf(outKey, outKeyLen, "Disburse to ");
         if (!fields->has_account) {
             return print_principal(parser_tx_obj.tx_fields.call.sender.data,
-                                   (uint16_t)parser_tx_obj.tx_fields.call.sender.len, outVal, outValLen, pageIdx,
-                                   pageCount);
+                                   (uint16_t)parser_tx_obj.tx_fields.call.sender.len, outVal, outValLen, pageIdx, pageCount);
         }
         // assume has_account
         const uint8_t *principal =
             fields->account.has_owner ? fields->account.owner.ptr : parser_tx_obj.tx_fields.call.sender.data;
-        const uint16_t principalLen = fields->account.has_owner
-                                          ? (uint16_t)fields->account.owner.len
-                                          : (uint16_t)parser_tx_obj.tx_fields.call.sender.len;
+        const uint16_t principalLen = fields->account.has_owner ? (uint16_t)fields->account.owner.len
+                                                                : (uint16_t)parser_tx_obj.tx_fields.call.sender.len;
         if (fields->account.has_subaccount) {
             return page_principal_with_subaccount(principal, principalLen, fields->account.subaccount.p,
                                                   (uint16_t)fields->account.subaccount.len, outVal, outValLen, pageIdx,
-                                                  pageCount, false);
+                                                  pageCount);
         } else {
             return print_principal(principal, principalLen, outVal, outValLen, pageIdx, pageCount);
         }
     }
     if (displayIdx == 4) {
-        if (token != NULL) {
-            snprintf(outKey, outKeyLen, "Amount (%s)", token->token_symbol);
-        } else {
-            snprintf(outKey, outKeyLen, "Amount (Tokens)");
-        }
+        print_amount_key(outKey, outKeyLen, "Amount", token);
         if (fields->has_amount) {
             return print_Amount(fields->amount, outVal, outValLen, pageIdx, pageCount, decimals);
         } else {
@@ -1403,11 +1355,7 @@ static parser_error_t parser_getItemSNSStakeMaturity(uint8_t displayIdx, char *o
     }
 
     if (displayIdx == 1) {
-        const uint8_t *canisterId = (uint8_t *)&parser_tx_obj.tx_fields.call.canister_id.data;
-        const uint8_t canisterIdSize = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
-
-        snprintf(outKey, outKeyLen, "Canister Id");
-        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_sns_canister_id(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {
@@ -1436,11 +1384,7 @@ static parser_error_t parser_getItemSNSSetDissolveDelay(uint8_t displayIdx, char
     }
 
     if (displayIdx == 1) {
-        const uint8_t *canisterId = (uint8_t *)&parser_tx_obj.tx_fields.call.canister_id.data;
-        const uint8_t canisterIdSize = (uint8_t)parser_tx_obj.tx_fields.call.canister_id.len;
-
-        snprintf(outKey, outKeyLen, "Canister Id");
-        return print_principal(canisterId, canisterIdSize, outVal, outValLen, pageIdx, pageCount);
+        return print_sns_canister_id(outKey, outKeyLen, outVal, outValLen, pageIdx, pageCount);
     }
 
     if (displayIdx == 2) {

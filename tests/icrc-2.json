@@ -9,8 +9,10 @@
       "2 | From account [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
       "3 | Allowed Spender [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Allowed Spender [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Amount (Tokens) : 100000000",
-      "5 | Memo : 0"
+      "4 | Amount (unknown) : 100000000",
+      "5 | Memo : 0",
+      "6 | Created at : Not set",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 1",
@@ -52,9 +54,11 @@
       "2 | From account [5/5] : 4",
       "3 | Allowed Spender [1/2] : 2dfd6-abjpf-eihu7 pwv6m-qnlbt-oszmg",
       "3 | Allowed Spender [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
-      "4 | Amount (Tokens) : 100000000",
-      "5 | Max fee (Tokens) : 10000",
-      "6 | Memo : 0"
+      "4 | Amount (unknown) : 100000000",
+      "5 | Max fee (unknown) : 10000",
+      "6 | Memo : 0",
+      "7 | Created at : 2021-08-17 11:33:20 UTC",
+      "8 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 2",
@@ -138,9 +142,11 @@
       "3 | Allowed Spender [3/5] : .a36e143 c86e7e47 1e7c7195 06487cf7",
       "3 | Allowed Spender [4/5] : a6cf40da 76361aea fee5133e 1d9acea3",
       "3 | Allowed Spender [5/5] : d",
-      "4 | Amount (Tokens) : 330000000",
-      "5 | Max fee (Tokens) : 10000",
-      "6 | Memo : 0"
+      "4 | Amount (unknown) : 330000000",
+      "5 | Max fee (unknown) : 10000",
+      "6 | Memo : 0",
+      "7 | Created at : 2021-08-17 11:33:20 UTC",
+      "8 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 3",
@@ -256,9 +262,11 @@
       "3 | Allowed Spender [3/5] : .a36e143 c86e7e47 1e7c7195 06487cf7",
       "3 | Allowed Spender [4/5] : a6cf40da 76361aea fee5133e 1d9acea3",
       "3 | Allowed Spender [5/5] : d",
-      "4 | Amount (Tokens) : 330000000",
-      "5 | Max fee (Tokens) : 30000",
-      "6 | Memo : 11223312"
+      "4 | Amount (unknown) : 330000000",
+      "5 | Max fee (unknown) : 30000",
+      "6 | Memo : 11223312",
+      "7 | Created at : 2023-02-01 11:01:06 UTC",
+      "8 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 4",
@@ -347,8 +355,10 @@
       "2 | From account [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | Allowed Spender [1/2] : krpzt-buecq-u3umg 7kb7r-j5jpx-twqwa",
       "3 | Allowed Spender [2/2] : 3ykc4-y3cnk-7kwvw 5bq6z-mae",
-      "4 | Amount (Tokens) : 314000000",
-      "5 | Memo : 11223312"
+      "4 | Amount (unknown) : 314000000",
+      "5 | Memo : 11223312",
+      "6 | Created at : 2023-02-01 11:01:06 UTC",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 5",
@@ -406,9 +416,11 @@
       "3 | Allowed Spender [3/5] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Allowed Spender [4/5] : 7829f06e 5235a0d5 80e96d37 27729ea2",
       "3 | Allowed Spender [5/5] : 4",
-      "4 | Amount (Tokens) : 1331400000",
-      "5 | Max fee (Tokens) : 20000",
-      "6 | Memo : 11223312"
+      "4 | Amount (unknown) : 1331400000",
+      "5 | Max fee (unknown) : 20000",
+      "6 | Memo : 11223312",
+      "7 | Created at : 2023-02-01 11:01:06 UTC",
+      "8 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 6",
@@ -538,10 +550,12 @@
       "3 | Allowed Spender [3/5] : .d7e8516 52cd032b a5ed76b1 7f626aa4",
       "3 | Allowed Spender [4/5] : 7829f06e 5235a0d5 80e96d37 27729ea2",
       "3 | Allowed Spender [5/5] : 4",
-      "4 | Amount (Tokens) : 1331400000",
-      "5 | Allowance (Tokens) : 100000000",
-      "6 | Max fee (Tokens) : 20000",
-      "7 | Memo : 11223312"
+      "4 | Amount (unknown) : 1331400000",
+      "5 | Allowance (unknown) : 100000000",
+      "6 | Max fee (unknown) : 20000",
+      "7 | Memo : 11223312",
+      "8 | Created at : 2023-02-01 11:01:06 UTC",
+      "9 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": false,
     "name": "ICRC2 Transfer 7",
@@ -668,7 +682,9 @@
       "2 | Allowed Spender [2/2] : kb26q-rvqms-onmuh mwiq3-uqe",
       "3 | Amount (ICP) : 1.00",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Created at : Not set",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 8",
@@ -711,7 +727,9 @@
       "2 | Allowed Spender [5/5] : 4",
       "3 | Amount (ICP) : 0.314",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Created at : Not set",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 9",
@@ -792,7 +810,9 @@
       "2 | Allowed Spender [5/5] : 4",
       "3 | Amount (ICP) : 0.314",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Created at : 2023-02-01 11:01:06 UTC",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 10",
@@ -907,7 +927,9 @@
       "2 | Allowed Spender [5/5] : 4",
       "3 | Amount (ICP) : 0.314",
       "4 | Max fee (ICP) : 0.0001",
-      "5 | Memo : 11223312"
+      "5 | Memo : 11223312",
+      "6 | Created at : 2023-02-01 11:01:06 UTC",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 11",
@@ -998,7 +1020,9 @@
       "2 | Allowed Spender [5/5] : 4",
       "3 | Amount (ICP) : 0.314",
       "4 | Max fee (ICP) : 0.001",
-      "5 | Memo : 0"
+      "5 | Memo : 0",
+      "6 | Created at : 2021-08-17 11:33:20 UTC",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 12",
@@ -1083,7 +1107,9 @@
       "2 | Allowed Spender [5/5] : 4",
       "3 | Amount (ICP) : 1.314",
       "4 | Max fee (ICP) : 0.0003",
-      "5 | Memo : 11223312"
+      "5 | Memo : 11223312",
+      "6 | Created at : 2021-08-17 11:33:20 UTC",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 13",
@@ -1214,7 +1240,9 @@
       "2 | Allowed Spender [5/5] : 4",
       "3 | Amount (ICP) : 1.314",
       "4 | Max fee (ICP) : 0.0003",
-      "5 | Memo : 11223312"
+      "5 | Memo : 11223312",
+      "6 | Created at : 2023-02-01 11:01:06 UTC",
+      "7 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 14",
@@ -1346,7 +1374,9 @@
       "3 | Amount (ICP) : 2.00",
       "4 | Allowance (ICP) : 1.00",
       "5 | Max fee (ICP) : 0.0003",
-      "6 | Memo : 11223312"
+      "6 | Memo : 11223312",
+      "7 | Created at : 2023-02-01 11:01:06 UTC",
+      "8 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 15",
@@ -1480,7 +1510,9 @@
       "3 | Amount (ICP) : 2.00",
       "4 | Allowance (ICP) : 0",
       "5 | Max fee (ICP) : 0.0003",
-      "6 | Memo : 11223312"
+      "6 | Memo : 11223312",
+      "7 | Created at : 2023-02-01 11:01:06 UTC",
+      "8 | Valid until : 2025-09-18 14:20:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 16",
@@ -1615,7 +1647,9 @@
       "4 | Allowance (ICP) : 0",
       "5 | Expires At : 2023-02-01 11:02:06 UTC",
       "6 | Max fee (ICP) : 0.0003",
-      "7 | Memo : 11223312"
+      "7 | Memo : 11223312",
+      "8 | Created at : 2023-02-01 11:01:06 UTC",
+      "9 | Valid until : 1970-01-01 00:00:00 UTC"
     ],
     "isICP": true,
     "name": "ICRC2 Transfer 17",

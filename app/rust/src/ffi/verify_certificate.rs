@@ -17,7 +17,7 @@
 use crate::{
     check_canary,
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
+    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER, REQUEST_STATUS_PATH},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
 };
@@ -122,12 +122,15 @@ pub unsafe extern "C" fn rs_verify_certificate(
         _ => {}
     }
 
-    // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data refers to
-    // the provided certificate
-    let Ok(LookupResult::Found(_)) =
-        HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
-    else {
+    // The certificate has to be about this request: the status entry must sit
+    // at ["request_status", <request id>], the path the IC actually certifies
+    // it under, rather than the request id appearing as a label somewhere in
+    // the tree.
+    let request_id = &consent_request.request_id[..];
+    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(
+        &[REQUEST_STATUS_PATH.into(), request_id.into()],
+        cert.tree(),
+    ) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -155,7 +158,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     // Check for the response type embedded in the certificate
     // an error response means we can not go further
-    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(request_id) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -168,21 +171,25 @@ pub unsafe extern "C" fn rs_verify_certificate(
 }
 
 fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
-    // Check sender identity
-    // This check should be:
-    // call.sender == consent.sender || consent.sender == 0x04 or
-    // call.sender == device.principal
-    // to pass validation
-    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
-    if !(call_sender == consent_sender || is_default_sender) {
-        let Ok(device_principal) = device_principal() else {
-            return false;
-        };
-        let Ok(call_sender_principal) = Principal::new(call_sender) else {
-            return false;
-        };
-        // then check that the call_sender_principal matches the device_principal
-        return call_sender_principal == device_principal;
+    // The device only ever signs as itself, so the call has to name this
+    // device's principal whatever the consent says. Checking this first
+    // matters: agreement between the two envelopes is not evidence of
+    // anything, since a host controls both, and returning early on it let a
+    // request naming an arbitrary third party through as long as the consent
+    // named the same one.
+    let Ok(device_principal) = device_principal() else {
+        return false;
+    };
+    let Ok(call_sender_principal) = Principal::new(call_sender) else {
+        return false;
+    };
+    if call_sender_principal != device_principal {
+        return false;
     }
-    true
+
+    // The consent message was generated for whoever asked for it. That is
+    // either this device, or the anonymous principal - consent messages are
+    // routinely fetched anonymously, and that flow has to keep working.
+    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
+    is_default_sender || consent_sender == call_sender
 }

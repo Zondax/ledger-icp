@@ -128,64 +128,96 @@ impl<'a> HashTree<'a> {
         Ok(())
     }
 
+    /// Find `label` among the edges at this level of the tree, following the
+    /// rules in:
+    /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#lookup
+    ///
+    /// Forks are flattened, because a fork joins edges that sit at the same
+    /// level. A labelled edge that is not the one being looked for is *not*
+    /// descended into: its subtree lives one level down, and treating a match
+    /// there as a match here is what let a value be picked up from anywhere in
+    /// the tree regardless of the path it actually sits under.
     #[inline(never)]
-    pub fn lookup_path(
+    fn lookup_label(
         label: &Label<'a>,
         tree: RawValue<'a>,
+        depth: usize,
     ) -> Result<LookupResult<'a>, ParserError> {
-        #[inline(never)]
-        fn inner_lookup<'a>(
-            label: &Label<'a>,
-            tree: RawValue<'a>,
-            depth: usize,
-        ) -> Result<LookupResult<'a>, ParserError> {
-            if depth >= MAX_TREE_DEPTH {
-                return Err(ParserError::RecursionLimitReached);
-            }
-            let current_tree = HashTree::try_from(&tree)?;
+        if depth >= MAX_TREE_DEPTH {
+            return Err(ParserError::RecursionLimitReached);
+        }
 
-            match current_tree {
-                HashTree::Fork(left, right) => match inner_lookup(label, left, depth + 1)? {
+        match HashTree::try_from(&tree)? {
+            HashTree::Fork(left, right) => match Self::lookup_label(label, left, depth + 1)? {
+                LookupResult::Found(value) => Ok(LookupResult::Found(value)),
+                LookupResult::Absent => Self::lookup_label(label, right, depth + 1),
+                // A pruned branch may have held the label, so once the left
+                // side is Unknown, "not on the right either" still cannot be
+                // reported as Absent.
+                LookupResult::Unknown => match Self::lookup_label(label, right, depth + 1)? {
                     LookupResult::Found(value) => Ok(LookupResult::Found(value)),
-                    LookupResult::Absent | LookupResult::Unknown => {
-                        // check right leaft of this tree
-                        inner_lookup(label, right, depth + 1)
-                    }
+                    _ => Ok(LookupResult::Unknown),
                 },
-                HashTree::Labeled(node_label, subtree) => {
-                    if &node_label == label {
-                        Ok(LookupResult::Found(subtree))
-                    } else {
-                        // Continue searching in the subtree, maybe it contains another label
-                        // node that could be the one we are looking for
-                        inner_lookup(label, subtree, depth + 1)
-                    }
+            },
+            HashTree::Labeled(node_label, subtree) => {
+                if &node_label == label {
+                    Ok(LookupResult::Found(subtree))
+                } else {
+                    Ok(LookupResult::Absent)
                 }
-                // Below we should return Found just if Label is empty &[]
-                // but currently we are taking a label not an slice of them
-                HashTree::Leaf(_) => Ok(LookupResult::Absent),
-                HashTree::Pruned(_) => Ok(LookupResult::Unknown),
-                HashTree::Empty => Ok(LookupResult::Absent),
+            }
+            HashTree::Leaf(_) => Ok(LookupResult::Absent),
+            HashTree::Pruned(_) => Ok(LookupResult::Unknown),
+            HashTree::Empty => Ok(LookupResult::Absent),
+        }
+    }
+
+    /// Walk `path` from the root of `tree`, one label per level.
+    #[inline(never)]
+    pub fn lookup_path(
+        path: &[Label<'a>],
+        tree: RawValue<'a>,
+    ) -> Result<LookupResult<'a>, ParserError> {
+        let mut current = tree;
+
+        for label in path {
+            match Self::lookup_label(label, current, 1)? {
+                LookupResult::Found(subtree) => current = subtree,
+                LookupResult::Absent => return Ok(LookupResult::Absent),
+                LookupResult::Unknown => return Ok(LookupResult::Unknown),
             }
         }
 
-        inner_lookup(label, tree, 1)
+        Ok(LookupResult::Found(current))
     }
 
     /// Reconstruct the root hash of this tree, following the rules in:
     /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
     #[inline(never)]
     pub fn reconstruct(&self) -> Result<[u8; 32], ParserError> {
+        self.reconstruct_at(1)
+    }
+
+    /// The recursion here is driven by attacker-supplied CBOR, so it carries
+    /// its own depth bound rather than relying on the caller. Trees reached
+    /// through Certificate::from_bytes were already bounded at parse, but this
+    /// is public and reachable on a tree built directly, where a chain of
+    /// nested forks - four bytes a level - would otherwise run the stack out.
+    #[inline(never)]
+    fn reconstruct_at(&self, depth: usize) -> Result<[u8; 32], ParserError> {
         check_canary();
         crate::zlog("HashTree::reconstruct\x00");
+        if depth >= MAX_TREE_DEPTH {
+            return Err(ParserError::RecursionLimitReached);
+        }
         let hash = match self {
             HashTree::Empty => hash_with_domain_sep("ic-hashtree-empty", &[]),
             HashTree::Fork(left, right) => {
                 let left = HashTree::try_from(left)?;
                 let right = HashTree::try_from(right)?;
 
-                let left_hash = left.reconstruct()?;
-                let right_hash = right.reconstruct()?;
+                let left_hash = left.reconstruct_at(depth + 1)?;
+                let right_hash = right.reconstruct_at(depth + 1)?;
 
                 let mut concat = [0; 64];
                 concat[..32].copy_from_slice(&left_hash);
@@ -195,11 +227,16 @@ impl<'a> HashTree<'a> {
             }
             HashTree::Labeled(label, subtree) => {
                 let subtree = HashTree::try_from(subtree)?;
-                let subtree_hash = subtree.reconstruct()?;
+                let subtree_hash = subtree.reconstruct_at(depth + 1)?;
 
                 // domain.len() + label_max_len + hash_len
                 let mut concat = [0; Label::MAX_LEN + 32];
                 let label_len = label.as_bytes().len();
+                // Label decoding bounds this, but the slicing below turns any
+                // gap between the two into a panic rather than an error.
+                if label_len > Label::MAX_LEN {
+                    return Err(ParserError::ValueOutOfRange);
+                }
 
                 concat[..label_len].copy_from_slice(label.as_bytes());
                 concat[label_len..label_len + 32].copy_from_slice(&subtree_hash);
@@ -207,12 +244,11 @@ impl<'a> HashTree<'a> {
                 hash_with_domain_sep("ic-hashtree-labeled", &concat[..label_len + 32])
             }
             HashTree::Leaf(_) => {
-                // Safe as this is a Leaf tree
-                let value = self.value().unwrap();
+                let value = self.value().ok_or(ParserError::InvalidTree)?;
                 hash_with_domain_sep("ic-hashtree-leaf", value)
             }
             HashTree::Pruned(_) => {
-                let hash = self.value().unwrap();
+                let hash = self.value().ok_or(ParserError::InvalidTree)?;
                 if hash.len() != 32 {
                     return Err(ParserError::UnexpectedValue);
                 }
@@ -333,8 +369,22 @@ impl<'b, C> Decode<'b, C> for HashTree<'b> {
                 let subtree = RawValue::decode(d, ctx)?;
                 Ok(HashTree::Labeled(label, subtree))
             }
-            3 => Ok(HashTree::Leaf(RawValue::decode(d, ctx)?)),
-            4 => Ok(HashTree::Pruned(RawValue::decode(d, ctx)?)),
+            // Leaf and Pruned payloads are hashed as bytes, and value() has no
+            // way to report anything else - it returns None, which reconstruct
+            // used to unwrap. Rejecting here keeps the invariant tree-wide, so
+            // check_integrity covers it too.
+            3 => {
+                if d.datatype()? != Type::Bytes {
+                    return Err(Error::message("Leaf value must be a byte string"));
+                }
+                Ok(HashTree::Leaf(RawValue::decode(d, ctx)?))
+            }
+            4 => {
+                if d.datatype()? != Type::Bytes {
+                    return Err(Error::message("Pruned value must be a byte string"));
+                }
+                Ok(HashTree::Pruned(RawValue::decode(d, ctx)?))
+            }
             _ => Err(Error::message("Invalid HashTree tag")),
         }
     }
@@ -382,6 +432,99 @@ mod hash_tree_tests {
 
     use super::*;
 
+    // A hash tree of `depth` nested forks, each one Empty on the right. Four
+    // bytes buy a level, which is what makes an unbounded traversal of this
+    // structure cheap to trigger from a host.
+    fn nested_forks(depth: usize) -> std::vec::Vec<u8> {
+        const EMPTY: [u8; 2] = [0x81, 0x00];
+        let mut tree = EMPTY.to_vec();
+        for _ in 0..depth {
+            let mut next = std::vec![0x83, 0x01];
+            next.extend_from_slice(&tree);
+            next.extend_from_slice(&EMPTY);
+            tree = next;
+        }
+        tree
+    }
+
+    // tag(55799) + map(2) of "tree" -> the given tree and "signature" -> 48
+    // zero bytes, which is enough to reach parsing without a real signature.
+    fn certificate_with_tree(tree: &[u8]) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0xa2];
+        out.extend_from_slice(&[0x64, b't', b'r', b'e', b'e']);
+        out.extend_from_slice(tree);
+        out.extend_from_slice(&[0x69]);
+        out.extend_from_slice(b"signature");
+        out.extend_from_slice(&[0x58, 0x30]);
+        out.extend_from_slice(&[0u8; 48]);
+        out
+    }
+
+    #[test]
+    fn deep_tree_is_rejected_at_parse() {
+        let data = certificate_with_tree(&nested_forks(MAX_TREE_DEPTH + 8));
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    #[test]
+    fn shallow_tree_still_parses() {
+        let data = certificate_with_tree(&nested_forks(4));
+        assert!(Certificate::from_bytes(&data).is_ok());
+    }
+
+    #[test]
+    fn reconstruct_stops_at_the_depth_limit() {
+        let deep = nested_forks(MAX_TREE_DEPTH + 8);
+        let raw = RawValue::from_bytes(&deep).unwrap();
+        let tree = HashTree::try_from(&raw).unwrap();
+        assert_eq!(tree.reconstruct(), Err(ParserError::RecursionLimitReached));
+    }
+
+    // A Leaf or Pruned node whose payload is not a byte string. The tree used
+    // to parse, and reconstruct then unwrapped the None that value() returns
+    // for it - a panic reachable from an unauthenticated blob, since hashing
+    // happens before the signature is checked.
+    #[test]
+    fn non_byte_string_payloads_are_rejected() {
+        for tag in [0x03u8, 0x04u8] {
+            // array(2), tag, unsigned(42)
+            let tree = std::vec![0x82, tag, 0x18, 0x2a];
+
+            let raw = RawValue::from_bytes(&tree).unwrap();
+            assert!(HashTree::try_from(&raw).is_err(), "tag {} decoded", tag);
+            assert!(
+                Certificate::from_bytes(&certificate_with_tree(&tree)).is_err(),
+                "tag {} parsed as a certificate",
+                tag
+            );
+        }
+    }
+
+    #[test]
+    fn oversized_label_is_rejected() {
+        // labeled node: array(3), tag 2, byte string of MAX_LEN + 1, Empty.
+        // The hashing buffer in reconstruct is sized for MAX_LEN, so a longer
+        // label used to index past the end of it.
+        let mut tree = std::vec![0x83, 0x02, 0x58, (Label::MAX_LEN + 1) as u8];
+        tree.extend_from_slice(&std::vec![0xAAu8; Label::MAX_LEN + 1]);
+        tree.extend_from_slice(&[0x81, 0x00]);
+
+        let raw = RawValue::from_bytes(&tree).unwrap();
+        assert!(HashTree::try_from(&raw).is_err());
+        assert!(Certificate::from_bytes(&certificate_with_tree(&tree)).is_err());
+    }
+
+    #[test]
+    fn maximum_length_label_is_accepted() {
+        let mut tree = std::vec![0x83, 0x02, 0x58, Label::MAX_LEN as u8];
+        tree.extend_from_slice(&std::vec![0xAAu8; Label::MAX_LEN]);
+        tree.extend_from_slice(&[0x81, 0x00]);
+
+        let raw = RawValue::from_bytes(&tree).unwrap();
+        let tree = HashTree::try_from(&raw).unwrap();
+        assert!(tree.reconstruct().is_ok());
+    }
+
     const DATA: &str = "D9D9F7A3647472656583018301820458200BBCC71092DA3CE262B8154D398B9A6114BEE87F1C0B72E16912757AA023626A8301820458200628A8E00432E8657AD99C4D1BF167DD54ACE9199609BFC5D57D89F48D97565F83024E726571756573745F737461747573830258204EA057C46292FEDB573D35319DD1CCAB3FB5D6A2B106B785D1F7757CFA5A254283018302457265706C79820358B44449444C0B6B02BC8A0101C5FED201086C02EFCEE7800402E29FDCC806036C01D880C6D007716B02D9E5B0980404FCDFD79A0F716C01C4D6B4EA0B056D066C01FFBB87A807076D716B04D1C4987C09A3F2EFE6020A9A8597E6030AE3C581900F0A6C02FC91F4F80571C498B1B50D7D6C01FC91F4F8057101000002656E0001021E50726F647563652074686520666F6C6C6F77696E67206772656574696E6714746578743A202248656C6C6F2C20746F626921228302467374617475738203477265706C696564830182045820891AF3E8982F1AC3D295C29B9FDFEDC52301C03FBD4979676C01059184060B0583024474696D65820349CBF7DD8CA1A2A7E217697369676E6174757265583088078C6FE75F32594BF4E322B14D47E5C849CF24A370E3BAB0CAB5DAFFB7AB6A2C49DE18B7F2D631893217D0C716CD656A64656C65676174696F6EA2697375626E65745F6964581D2C55B347ECF2686C83781D6C59D1B43E7B4CBA8DEB6C1B376107F2CD026B6365727469666963617465590294D9D9F7A264747265658301820458200B0D62DC7B9D7DE735BB9A6393B59C9F32FF7C4D2AACDFC9E6FFC70E341FB6F783018301820458204468514CA4AF8224C055C386E3F7B0BFE018C2D9CFD5837E427B43E1AB0934F98302467375626E65748301830183018301820458208739FBBEDD3DEDAA8FEF41870367C0905BDE376B63DD37E2B176FB08B582052F830182045820F8C3EAE0377EE00859223BF1C6202F5885C4DCDC8FD13B1D48C3C838688919BC83018302581D2C55B347ECF2686C83781D6C59D1B43E7B4CBA8DEB6C1B376107F2CD02830183024F63616E69737465725F72616E67657382035832D9D9F782824A000000000060000001014A00000000006000AE0101824A00000000006000B001014A00000000006FFFFF010183024A7075626C69635F6B657982035885308182301D060D2B0601040182DC7C0503010201060C2B0601040182DC7C0503020103610090075120778EB21A530A02BCC763E7F4A192933506966AF7B54C10A4D2B24DE6A86B200E3440BAE6267BF4C488D9A11D0472C38C1B6221198F98E4E6882BA38A5A4E3AA5AFCE899B7F825ED95ADFA12629688073556F2747527213E8D73E40CE8204582036F3CD257D90FB38E42597F193A5E031DBD585B6292793BB04DB4794803CE06E82045820028FC5E5F70868254E7215E7FC630DBD29EEFC3619AF17CE231909E1FAF97E9582045820696179FCEB777EAED283265DD690241999EB3EDE594091748B24456160EDC1278204582081398069F9684DA260CFB002EAC42211D0DBF22C62D49AEE61617D62650E793183024474696D65820349A5948992AAA195E217697369676E6174757265583094E5F544A7681B0C2C3C5DBF97950C96FD837F2D19342F1050D94D3068371B0A95A5EE20C36C4395C2DBB4204F2B4742";
 
     // example tree:
@@ -409,16 +552,54 @@ mod hash_tree_tests {
         );
     }
 
+    // The request id this certificate's DATA is about.
+    const REQUEST_ID: &str = "4ea057c46292fedb573d35319dd1ccab3fb5d6a2b106b785d1f7757cfa5a2542";
+
     #[test]
     fn test_lookup_reply() {
         // Parse the certificate
         let data = hex::decode(DATA).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(REQUEST_ID).unwrap();
 
-        let path = "reply".into();
+        let path = [
+            crate::constants::REQUEST_STATUS_PATH.into(),
+            request_id.as_slice().into(),
+            crate::constants::REPLY_PATH.into(),
+        ];
 
         let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
         assert!(found.value().is_some());
+    }
+
+    #[test]
+    fn bare_label_does_not_reach_a_nested_value() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+
+        // "reply" sits under ["request_status", <request id>]. Looking it up at
+        // the root has to come back Absent: a value is only committed to at the
+        // path it actually hangs from.
+        let found =
+            HashTree::lookup_path(&[crate::constants::REPLY_PATH.into()], cert.tree()).unwrap();
+        assert!(found.value().is_none());
+    }
+
+    #[test]
+    fn reply_under_the_wrong_request_id_is_absent() {
+        let data = hex::decode(DATA).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+        let mut request_id = hex::decode(REQUEST_ID).unwrap();
+        request_id[0] ^= 0xFF;
+
+        let path = [
+            crate::constants::REQUEST_STATUS_PATH.into(),
+            request_id.as_slice().into(),
+            crate::constants::REPLY_PATH.into(),
+        ];
+
+        let found = HashTree::lookup_path(&path, cert.tree()).unwrap();
+        assert!(found.value().is_none());
     }
 
     #[test]
@@ -434,8 +615,7 @@ mod hash_tree_tests {
         let tree = RawValue::from_bytes(&tree).unwrap();
 
         // Checking "a" branch
-        let label_a = "a".into();
-        let a_value = HashTree::lookup_path(&label_a, tree).unwrap();
+        let a_value = HashTree::lookup_path(&["a".into()], tree).unwrap();
         let LookupResult::Found(value) = a_value else {
             panic!("Node not found");
         };
@@ -447,30 +627,43 @@ mod hash_tree_tests {
         let a_empty = HashTree::try_from(a_empty.fork_right().unwrap()).unwrap();
         assert!(a_empty.is_empty());
 
-        //   lookup x
-        let x_value = HashTree::lookup_path(&"x".into(), tree).unwrap();
-        let value = x_value.value().unwrap();
-        assert_eq!(&b"hello", &value);
+        //   lookup ["a", "x"]
+        let x_value = HashTree::lookup_path(&["a".into(), "x".into()], tree).unwrap();
+        assert_eq!(&b"hello", &x_value.value().unwrap());
 
-        //   lookup y
-        let y_value = HashTree::lookup_path(&"y".into(), tree).unwrap();
-        let value = y_value.value().unwrap();
-        assert_eq!(&b"world", &value);
+        //   lookup ["a", "y"]
+        let y_value = HashTree::lookup_path(&["a".into(), "y".into()], tree).unwrap();
+        assert_eq!(&b"world", &y_value.value().unwrap());
 
-        //   lookup b
-        let b_value = HashTree::lookup_path(&"b".into(), tree).unwrap();
-        let value = b_value.value().unwrap();
-        assert_eq!(&b"good", &value);
+        //   lookup ["b"]
+        let b_value = HashTree::lookup_path(&["b".into()], tree).unwrap();
+        assert_eq!(&b"good", &b_value.value().unwrap());
 
-        //   lookup c
-        let c_value = HashTree::lookup_path(&"c".into(), tree).unwrap();
-        let value = c_value.value();
-        assert!(value.is_none());
+        //   lookup ["c"] - present as an edge, but its subtree is Empty
+        let c_value = HashTree::lookup_path(&["c".into()], tree).unwrap();
+        assert!(c_value.value().is_none());
 
-        //   lookup d
-        let d_value = HashTree::lookup_path(&"d".into(), tree).unwrap();
-        let value = d_value.value().unwrap();
-        assert_eq!(&b"morning", &value);
+        //   lookup ["d"]
+        let d_value = HashTree::lookup_path(&["d".into()], tree).unwrap();
+        assert_eq!(&b"morning", &d_value.value().unwrap());
+
+        // "x" and "y" hang off "a", so they are not reachable from the root:
+        // a lookup that descended into non-matching subtrees used to find them
+        // here, which made a value's path meaningless.
+        assert!(HashTree::lookup_path(&["x".into()], tree)
+            .unwrap()
+            .value()
+            .is_none());
+        assert!(HashTree::lookup_path(&["y".into()], tree)
+            .unwrap()
+            .value()
+            .is_none());
+
+        // And a path that does not exist at all stays absent.
+        assert!(HashTree::lookup_path(&["b".into(), "x".into()], tree)
+            .unwrap()
+            .value()
+            .is_none());
     }
 
     #[test]
