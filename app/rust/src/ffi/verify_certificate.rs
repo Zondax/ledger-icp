@@ -193,3 +193,29 @@ fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
     let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
     is_default_sender || consent_sender == call_sender
 }
+
+#[cfg(test)]
+mod tests {
+    use super::validate_sender;
+
+    const DEVICE_SENDER: &[u8] = &[
+        25, 170, 61, 66, 192, 72, 221, 125, 20, 240, 207, 160, 223, 105, 161, 193, 56, 23, 128,
+        246, 233, 161, 55, 171, 170, 106, 130, 227, 2,
+    ];
+    const OTHER_SENDER: &[u8] = &[
+        5, 44, 95, 111, 39, 15, 196, 163, 168, 130, 168, 7, 87, 50, 203, 169, 10, 212, 189, 37,
+        211, 11, 210, 207, 123, 11, 254, 124, 2,
+    ];
+    const ANONYMOUS_SENDER: &[u8] = &[4];
+
+    #[test]
+    fn only_the_device_principal_can_authorize_signing() {
+        assert!(validate_sender(DEVICE_SENDER, DEVICE_SENDER));
+        assert!(validate_sender(DEVICE_SENDER, ANONYMOUS_SENDER));
+
+        // Agreement between two host-controlled envelopes is not authority.
+        assert!(!validate_sender(OTHER_SENDER, OTHER_SENDER));
+        assert!(!validate_sender(OTHER_SENDER, ANONYMOUS_SENDER));
+        assert!(!validate_sender(DEVICE_SENDER, OTHER_SENDER));
+    }
+}
