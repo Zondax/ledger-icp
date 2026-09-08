@@ -19,7 +19,7 @@
     "format:check": "FORCE_COLOR=1 prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "test": "jest --testPathIgnorePatterns='dev.*|testvectors.*|btc.*'",
+    "test": "jest --testPathIgnorePatterns='/tests/(dev|testvectors|btc).*'",
     "test_dev": "jest",
     "try": "node try.mjs",
     "upgrade": "bunx npm-check-updates -i"
