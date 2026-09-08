@@ -36,9 +36,7 @@ static void bls_pinPath(void) {
     bls_hdPath_set = true;
 }
 
-static bool bls_pathMatchesPin(void) {
-    return bls_hdPath_set && MEMCMP(bls_hdPath, hdPath, sizeof(bls_hdPath)) == 0;
-}
+static bool bls_pathMatchesPin(void) { return bls_hdPath_set && MEMCMP(bls_hdPath, hdPath, sizeof(bls_hdPath)) == 0; }
 
 static void bls_clearPath(void) {
     MEMZERO(bls_hdPath, sizeof(bls_hdPath));
