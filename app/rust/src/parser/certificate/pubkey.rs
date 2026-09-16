@@ -59,52 +59,87 @@ impl<'a> TryFrom<RawValue<'a>> for PublicKey<'a> {
 
 impl<'a> TryFrom<&'a [u8]> for PublicKey<'a> {
     type Error = Error;
+    // Walks SubjectPublicKeyInfo far enough to reach subjectPublicKey. The
+    // input is a leaf value taken from a certificate tree, so its length and
+    // every length byte inside it are attacker-chosen: each read is bounds
+    // checked and each advance is checked for overflow, rather than indexing
+    // and hoping the buffer is long enough.
     fn try_from(der_data: &'a [u8]) -> Result<Self, Self::Error> {
-        // Parse SubjectPublicKeyInfo
+        fn byte_at(data: &[u8], index: usize) -> Result<u8, Error> {
+            data.get(index)
+                .copied()
+                .ok_or_else(|| Error::message("Truncated SubjectPublicKeyInfo"))
+        }
+
+        // Reads a DER length, returning it along with the index just past it.
+        fn read_len(data: &[u8], mut index: usize) -> Result<(usize, usize), Error> {
+            let first = byte_at(data, index)?;
+            index += 1;
+
+            if first < 0x80 {
+                return Ok((first as usize, index));
+            }
+            if first == 0x80 || first == 0xFF {
+                return Err(Error::message("Invalid DER length"));
+            }
+
+            let count = (first & 0x7F) as usize;
+            // Anything wider than usize cannot describe a slice of this input.
+            if count > core::mem::size_of::<usize>() {
+                return Err(Error::message("DER length too large"));
+            }
+
+            let mut len = 0usize;
+            for _ in 0..count {
+                len = (len << 8) | byte_at(data, index)? as usize;
+                index += 1;
+            }
+            Ok((len, index))
+        }
+
         let mut index = 0;
 
         // SEQUENCE tag
-        if der_data[index] != 0x30 {
+        if byte_at(der_data, index)? != 0x30 {
             return Err(Error::message("Invalid SubjectPublicKeyInfo"));
         }
         index += 1;
-
-        // Skip length
-        let mut len = der_data[index] as usize;
-        index += 1;
-        if len > 0x80 {
-            let len_bytes = len - 0x80;
-            len = 0;
-            for _ in 0..len_bytes {
-                len = (len << 8) | (der_data[index] as usize);
-                index += 1;
-            }
-        }
+        let (_, next) = read_len(der_data, index)?;
+        index = next;
 
         // AlgorithmIdentifier
-        if der_data[index] != 0x30 {
+        if byte_at(der_data, index)? != 0x30 {
             return Err(Error::message("Invalid AlgorithmIdentifier"));
         }
         index += 1;
-
-        // Skip AlgorithmIdentifier contents
-        let alg_len = der_data[index] as usize;
-        index += 1 + alg_len;
+        let (alg_len, next) = read_len(der_data, index)?;
+        index = next
+            .checked_add(alg_len)
+            .ok_or_else(|| Error::message("Invalid AlgorithmIdentifier"))?;
 
         // BIT STRING tag for subjectPublicKey
-        if der_data[index] != 0x03 {
+        if byte_at(der_data, index)? != 0x03 {
             return Err(Error::message("Invalid subjectPublicKey"));
         }
         index += 1;
+        let (bit_string_len, next) = read_len(der_data, index)?;
+        index = next;
 
-        // BIT STRING length
+        // Skip the initial octet of the BIT STRING, which counts the unused
+        // trailing bits and must be zero for a whole number of octets.
+        if byte_at(der_data, index)? != 0x00 {
+            return Err(Error::message("Invalid subjectPublicKey padding"));
+        }
         index += 1;
 
-        // Skip initial octet of BIT STRING (should be 00)
-        index += 1;
+        // The declared length covers the unused-bits octet as well.
+        if bit_string_len != BLS_PUBLIC_KEY_SIZE + 1 {
+            return Err(Error::message("Insufficient key data"));
+        }
 
-        // The rest is the actual public key
-        let key_data = &der_data[index..];
+        let key_data = der_data
+            .get(index..)
+            .ok_or_else(|| Error::message("Truncated subjectPublicKey"))?;
         if key_data.len() != BLS_PUBLIC_KEY_SIZE {
             return Err(Error::message("Insufficient key data"));
         }
@@ -131,5 +166,42 @@ mod test_pubkey {
         let key = PublicKey::try_from(IC_ROOT_PK_DER.as_ref()).unwrap();
         assert_eq!(key.as_bytes().len(), BLS_PUBLIC_KEY_SIZE);
         assert_eq!(hex::encode(key.as_bytes()), CANISTER_ROOT_KEY);
+    }
+
+    // The DER here is a leaf value pulled out of a certificate tree, so its
+    // length and its internal length bytes are whatever the host sent. Every
+    // one of these used to index straight past the end of the slice.
+    #[test]
+    fn malformed_der_is_an_error_not_a_panic() {
+        assert!(PublicKey::try_from(&[][..]).is_err());
+        assert!(PublicKey::try_from(&[0x30][..]).is_err());
+        assert!(PublicKey::try_from(&[0x30, 0x81][..]).is_err());
+
+        // Truncated at every prefix of a key that otherwise parses.
+        for cut in 0..IC_ROOT_PK_DER.len() {
+            assert!(
+                PublicKey::try_from(&IC_ROOT_PK_DER[..cut]).is_err(),
+                "prefix of length {} was accepted",
+                cut
+            );
+        }
+
+        // AlgorithmIdentifier claiming more content than the buffer holds, so
+        // the skip past it runs off the end.
+        let mut oversized_alg = IC_ROOT_PK_DER.to_vec();
+        oversized_alg[4] = 0x7F;
+        assert!(PublicKey::try_from(oversized_alg.as_slice()).is_err());
+
+        // A multi-byte length whose byte count alone exceeds the input.
+        assert!(PublicKey::try_from(&[0x30, 0x88, 0xFF, 0xFF][..]).is_err());
+
+        // Reserved DER length forms.
+        assert!(PublicKey::try_from(&[0x30, 0x80, 0x30, 0x00][..]).is_err());
+        assert!(PublicKey::try_from(&[0x30, 0xFF, 0x30, 0x00][..]).is_err());
+
+        // Right shape, wrong key size: one byte short of BLS_PUBLIC_KEY_SIZE.
+        let mut short_key = IC_ROOT_PK_DER.to_vec();
+        short_key.pop();
+        assert!(PublicKey::try_from(short_key.as_slice()).is_err());
     }
 }
