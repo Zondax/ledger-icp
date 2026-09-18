@@ -46,7 +46,12 @@ pub unsafe extern "C" fn rs_getItem(
     page_idx: u8,
     page_count: *mut u8,
 ) -> u32 {
-    if page_count.is_null() || out_key.is_null() || out_value.is_null() || key_len == 0 || out_len == 0 {
+    if page_count.is_null()
+        || out_key.is_null()
+        || out_value.is_null()
+        || key_len == 0
+        || out_len == 0
+    {
         return ParserError::NoData as u32;
     }
 

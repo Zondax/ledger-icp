@@ -17,7 +17,7 @@
 use crate::{
     check_canary,
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
+    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER, REQUEST_STATUS_PATH},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
 };
@@ -103,9 +103,16 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     let mut cert = MaybeUninit::uninit();
-    let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+    let Ok(rem) = Certificate::from_bytes_into(data, &mut cert) else {
         return ParserError::InvalidCertificate as u32;
     };
+
+    // The call and consent parsers already require their buffers to be fully
+    // consumed; hold the certificate to the same rule so trailing bytes cannot
+    // ride along inside a blob that otherwise verifies.
+    if !rem.is_empty() {
+        return ParserError::InvalidCertificate as u32;
+    }
 
     let cert = unsafe { cert.assume_init() };
 
@@ -115,12 +122,15 @@ pub unsafe extern "C" fn rs_verify_certificate(
         _ => {}
     }
 
-    // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data refers to
-    // the provided certificate
-    let Ok(LookupResult::Found(_)) =
-        HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
-    else {
+    // The certificate has to be about this request: the status entry must sit
+    // at ["request_status", <request id>], the path the IC actually certifies
+    // it under, rather than the request id appearing as a label somewhere in
+    // the tree.
+    let request_id = &consent_request.request_id[..];
+    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(
+        &[REQUEST_STATUS_PATH.into(), request_id.into()],
+        cert.tree(),
+    ) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -148,7 +158,7 @@ pub unsafe extern "C" fn rs_verify_certificate(
 
     // Check for the response type embedded in the certificate
     // an error response means we can not go further
-    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(request_id) else {
         return ParserError::InvalidCertificate as u32;
     };
 
