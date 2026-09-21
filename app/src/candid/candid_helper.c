@@ -134,6 +134,20 @@ parser_error_t readCandidByte(parser_context_t *ctx, uint8_t *v) {
     return parser_no_data;
 }
 
+// A vec's length is LEB128. Reading it as one byte took any length of 128 or
+// more from its first byte alone and then parsed the rest of the length as
+// elements. The lists this app shows are counted in uint8_t, so a longer one is
+// refused here rather than wrapped.
+parser_error_t readCandidVecLength(parser_context_t *ctx, uint8_t *len) {
+    uint64_t tmp = 0;
+    CHECK_PARSER_ERR(readCandidLEB128(ctx, &tmp))
+    if (tmp > UINT8_MAX) {
+        return parser_value_out_of_range;
+    }
+    *len = (uint8_t)tmp;
+    return parser_ok;
+}
+
 parser_error_t readCandidBytes(parser_context_t *ctx, uint8_t *buff, uint8_t buffLen) {
     if (ctx->bufferLen - ctx->offset < buffLen) {
         return parser_unexpected_buffer_end;
