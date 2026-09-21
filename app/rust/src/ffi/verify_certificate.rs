@@ -146,14 +146,11 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
-    // Check canister_id in request/consent is within allowed canister in the
-    // certificate canister ranges
-    if let Some(ranges) = cert.canister_ranges() {
-        if !ranges.is_canister_in_range(
-            &call_request.canister_id[..call_request.canister_id_len as usize],
-        ) {
-            return ParserError::InvalidCertificate as u32;
-        }
+    // The certificate has to be allowed to speak for the canister being called:
+    // a subnet only answers for the canister ranges the root delegated to it.
+    let canister_id = &call_request.canister_id[..call_request.canister_id_len as usize];
+    if !matches!(cert.is_authorized_for(canister_id), Ok(true)) {
+        return ParserError::InvalidCertificate as u32;
     }
 
     // Check for the response type embedded in the certificate
