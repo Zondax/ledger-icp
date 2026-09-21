@@ -844,7 +844,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     return parser_ok;
 }
 
-uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+uint16_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     manageNeuron_e mn_type;
     if (getManageNeuronType(v, &mn_type) != parser_ok) {
         return 0;
@@ -935,7 +935,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
     return 0;
 }
 
-uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+uint16_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype) {
         case call: {
             switch (v->tx_fields.call.method_type) {
