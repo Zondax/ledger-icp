@@ -15,11 +15,21 @@
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Eq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum Label<'a> {
     Blob(&'a [u8]),
     String(&'a str),
+}
+
+// Labels are byte strings. Decoding hands back any label that happens to be
+// valid UTF-8 as a String, so comparing variants made it differ from the same
+// bytes looked up as a Blob: a request id or subnet id made only of ASCII bytes
+// could never be found in the tree.
+impl PartialEq for Label<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
 }
 
 impl<'a> Label<'a> {
@@ -68,5 +78,24 @@ impl<'b, C> Decode<'b, C> for Label<'b> {
         }
 
         Ok(label)
+    }
+}
+
+#[cfg(test)]
+mod test_label {
+    use super::Label;
+
+    #[test]
+    fn labels_compare_as_bytes() {
+        let blob: &[u8] = b"request_status";
+        assert_eq!(Label::from("request_status"), Label::from(blob));
+
+        // An all-zero subnet id is valid UTF-8, so it decodes as a String.
+        let zeros = [0u8; 29];
+        let decoded = Label::String(core::str::from_utf8(&zeros).unwrap());
+        assert_eq!(decoded, Label::from(&zeros[..]));
+
+        assert_ne!(Label::from("status"), Label::from(&b"statuz"[..]));
+        assert_ne!(Label::from("status"), Label::from(&b"status\0"[..]));
     }
 }
