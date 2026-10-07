@@ -128,7 +128,7 @@ parser_error_t readCandidListNeurons(parser_tx_t *tx, const uint8_t *input, uint
                 }
                 break;
             case TYPE_NEURONS_IDS:  // read number os ids
-                CHECK_PARSER_ERR(readCandidByte(&ctx, &val->neuron_ids_size))
+                CHECK_PARSER_ERR(readCandidVecLength(&ctx, &val->neuron_ids_size))
 
                 val->neuron_ids_ptr = ctx.buffer + ctx.offset;
                 for (uint8_t j = 0; j < val->neuron_ids_size; j++) {

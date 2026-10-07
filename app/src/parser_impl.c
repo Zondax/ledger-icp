@@ -293,7 +293,14 @@ parser_error_t parsePaths(CborValue *content_map, state_read_t *stateRead) {
         CHECK_CBOR_MAP_ERR(cbor_value_advance(&it));
     }
 
-    if (strcmp((char *)stateRead->paths.paths[0].data, "request_status") != 0) {
+    // paths[0] is a CBOR byte string and may contain embedded NULs, so compare
+    // the whole label rather than stopping at the first one: strcmp would accept
+    // "request_status\0<anything>" as a match.
+    static const char REQUEST_STATUS_PATH[] = "request_status";
+    const size_t request_status_len = sizeof(REQUEST_STATUS_PATH) - 1;
+
+    if (stateRead->paths.paths[0].len != request_status_len ||
+        memcmp(stateRead->paths.paths[0].data, REQUEST_STATUS_PATH, request_status_len) != 0) {
         return parser_context_mismatch;
     }
 
@@ -772,11 +779,12 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     }
 
 #if defined(LEDGER_SPECIFIC)
-    // Skip validation for ICRC1 transfer and ICRC2 approve and call transactions
-    bool skip_validation = (v->txtype == call && (v->tx_fields.call.method_type == candid_icrc_transfer ||
-                                                  v->tx_fields.call.method_type == candid_icrc2_approve));
-
-    if (!skip_validation) {
+    // Every envelope this app signs names the device's own principal as
+    // sender: there is no delegation support here, so a request naming anyone
+    // else could not be signed into anything the network would accept. ICRC-1
+    // transfer and ICRC-2 approve used to be exempt from this, which cost the
+    // device the one invariant that says it only ever signs as itself.
+    {
         zemu_log("Performing sender validation\n");
         uint8_t publicKey[SECP256K1_PK_LEN];
         uint8_t principalBytes[DFINITY_PRINCIPAL_LEN];
@@ -792,8 +800,6 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
             zemu_log("Sender mismatch\n");
             return parser_unexpected_value;
         }
-    } else {
-        zemu_log("Skipping sender validation\n");
     }
 #endif
 
@@ -838,7 +844,7 @@ parser_error_t _validateTx(__Z_UNUSED const parser_context_t *c, const parser_tx
     return parser_ok;
 }
 
-uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+uint16_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     manageNeuron_e mn_type;
     if (getManageNeuronType(v, &mn_type) != parser_ok) {
         return 0;
@@ -929,7 +935,7 @@ uint8_t getNumItemsManageNeurons(__Z_UNUSED const parser_context_t *c, const par
     return 0;
 }
 
-uint8_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
+uint16_t _getNumItems(__Z_UNUSED const parser_context_t *c, const parser_tx_t *v) {
     switch (v->txtype) {
         case call: {
             switch (v->tx_fields.call.method_type) {

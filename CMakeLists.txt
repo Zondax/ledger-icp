@@ -179,6 +179,39 @@ add_compile_definitions(TESTVECTORS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/")
 add_test(NAME unittests COMMAND unittests)
 set_tests_properties(unittests PROPERTIES WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
+# `extractHDPath` is an inline Ledger handler and cannot be linked into the
+# normal host library. Compile that production header in a small host harness
+# with only its Ledger UI dependencies stubbed out.
+set(PATH_POLICY_STUB_DIR "${CMAKE_CURRENT_BINARY_DIR}/path_policy_stubs")
+file(MAKE_DIRECTORY "${PATH_POLICY_STUB_DIR}")
+foreach(header IN ITEMS
+        os.h
+        os_io_seproxyhal.h
+        ux.h
+        actions.h
+        addr.h
+        app_main.h
+        bls.h
+        crypto.h
+        parser_impl.h
+        tx.h
+        view.h
+        view_internal.h)
+    file(WRITE "${PATH_POLICY_STUB_DIR}/${header}" "#pragma once\n")
+endforeach()
+
+add_executable(path_policy_tests tests_path_policy/path_policy.cpp)
+target_include_directories(path_policy_tests PRIVATE
+        ${PATH_POLICY_STUB_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src/handlers
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/ledger-zxlib/include
+        )
+target_compile_options(path_policy_tests PRIVATE
+        -include ${CMAKE_CURRENT_SOURCE_DIR}/tests_path_policy/path_policy_stubs.h)
+target_link_libraries(path_policy_tests PRIVATE GTest::gtest_main)
+add_test(NAME path_policy_tests COMMAND path_policy_tests)
+
 ##############################################################
 ##############################################################
 #  Fuzz Targets

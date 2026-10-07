@@ -30,7 +30,9 @@ use crate::{
 };
 
 use super::{
-    canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree,
+    canister_ranges::CanisterRanges,
+    delegation::Delegation,
+    hash_tree::{HashTree, LookupResult},
     raw_value::RawValue,
 };
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
@@ -285,24 +287,44 @@ impl<'a> Certificate<'a> {
         Ok(Some(timestamp))
     }
 
-    // The ranges live under the delegated subnet, at
-    // ["subnet", <subnet id>, "canister_ranges"]. Looking the last label up on
-    // its own would accept a value committed to anywhere in the tree.
-    pub fn canister_ranges(&self) -> Option<CanisterRanges<'a>> {
-        let delegation = self.delegation()?;
+    // Whether this certificate may speak for `canister_id`.
+    //
+    // One signed with the root key speaks for every canister. One signed by a
+    // subnet only speaks for the canisters the root delegated to that subnet,
+    // so the delegation has to certify a range holding the canister. Ranges
+    // that are missing, pruned or malformed prove nothing, and are a refusal:
+    // this used to be an Option that skipped the check whenever the ranges
+    // could not be read, which let a subnet answer for any canister at all.
+    pub fn is_authorized_for(&self, canister_id: &[u8]) -> Result<bool, ParserError> {
+        let Some(delegation) = self.delegation() else {
+            return Ok(true);
+        };
         let tree = delegation.cert().tree();
-        let path = [
+        let subnet = delegation.subnet();
+
+        // The replica certifies the ranges in one of two places, and ic-agent
+        // checks them in this order: sharded under
+        // ["canister_ranges", <subnet id>, <shard>] (api/v3 read_state, api/v4
+        // call), or as one list at ["subnet", <subnet id>, "canister_ranges"]
+        // (api/v2 read_state, api/v3 call). Every range in either place was
+        // delegated to this subnet by the root, so a canister inside any of
+        // them is authorized.
+        let shards_path = [CANISTER_RANGES_PATH.into(), subnet.into()];
+        if let LookupResult::Found(shards) = HashTree::lookup_path(&shards_path, tree)? {
+            return HashTree::any_child_value(shards, &mut |ranges| {
+                ranges_hold_canister(ranges, canister_id)
+            });
+        }
+
+        let flat_path = [
             SUBNET_PATH.into(),
-            delegation.subnet().into(),
+            subnet.into(),
             CANISTER_RANGES_PATH.into(),
         ];
-
-        let found = HashTree::lookup_path(&path, tree).ok()?;
-        let data = found.value()?;
-        let mut ranges = MaybeUninit::uninit();
-        CanisterRanges::from_bytes_into(data, &mut ranges).ok()?;
-        let ranges = unsafe { ranges.assume_init() };
-        Some(ranges)
+        match HashTree::lookup_path(&flat_path, tree)?.value() {
+            Some(ranges) => ranges_hold_canister(ranges, canister_id),
+            None => Ok(false),
+        }
     }
 
     // The reply is only the reply to *this* request when it is read from
@@ -354,6 +376,15 @@ impl<'a> Certificate<'a> {
 
         time_difference <= MAX_CERT_INGRESS_OFFSET
     }
+}
+
+// A list of canister ranges certified for a subnet, as the replica encodes it
+// in either delegation format.
+fn ranges_hold_canister(data: &[u8], canister_id: &[u8]) -> Result<bool, ParserError> {
+    let mut ranges = MaybeUninit::uninit();
+    CanisterRanges::from_bytes_into(data, &mut ranges)?;
+    let ranges = unsafe { ranges.assume_init() };
+    Ok(ranges.is_canister_in_range(canister_id))
 }
 
 impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
@@ -709,23 +740,203 @@ mod test_certificate {
     fn check_canister_ranges() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        assert!(cert.delegation().is_some());
 
-        let Some(ranges) = cert.canister_ranges() else {
-            // No ranges in this data
-            return;
-        };
-
-        let mut num_ranges = 0;
-        for (i, r) in ranges.iter().enumerate() {
-            std::println!("Range{}: {:?}", i, r);
-            num_ranges += 1;
-        }
-
-        assert_eq!(num_ranges, ranges.len());
+        // The delegation's flat ranges hold CANISTER_ID...
         let canister_id = hex::decode(CANISTER_ID).unwrap();
+        assert_eq!(cert.is_authorized_for(&canister_id), Ok(true));
 
-        // the provided canister might be used in case of delegation
-        assert!(ranges.is_canister_in_range(&canister_id));
+        // ...and nothing in the gap between its two ranges or past either end.
+        for outside in [
+            "00000000006000AF0101",
+            "00000000000000000101",
+            "00000000007000000101",
+        ] {
+            let canister_id = hex::decode(outside).unwrap();
+            assert_eq!(
+                cert.is_authorized_for(&canister_id),
+                Ok(false),
+                "{}",
+                outside
+            );
+        }
+    }
+
+    #[test]
+    fn root_signed_certificate_speaks_for_every_canister() {
+        let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+        assert!(cert.delegation().is_none());
+
+        let canister_id = hex::decode(CANISTER_ID).unwrap();
+        assert_eq!(cert.is_authorized_for(&canister_id), Ok(true));
+    }
+
+    // Hash-tree CBOR, encoded the way the replica does.
+    fn cbor_bytes(data: &[u8]) -> Vec<u8> {
+        let mut out = match data.len() {
+            len @ 0..=23 => std::vec![0x40 | len as u8],
+            len @ 24..=255 => std::vec![0x58, len as u8],
+            len => std::vec![0x59, (len >> 8) as u8, len as u8],
+        };
+        out.extend_from_slice(data);
+        out
+    }
+
+    fn fork(left: &[u8], right: &[u8]) -> Vec<u8> {
+        [&[0x83, 0x01][..], left, right].concat()
+    }
+
+    fn labeled(label: &[u8], subtree: &[u8]) -> Vec<u8> {
+        [&[0x83, 0x02][..], &cbor_bytes(label), subtree].concat()
+    }
+
+    fn leaf(value: &[u8]) -> Vec<u8> {
+        [&[0x82, 0x03][..], &cbor_bytes(value)].concat()
+    }
+
+    fn pruned() -> Vec<u8> {
+        [&[0x82, 0x04][..], &cbor_bytes(&[0xAB; 32])].concat()
+    }
+
+    // tag(55799) + [[start, end], ...], as encode_subnet_canister_ranges writes
+    // it for both the flat list and each shard.
+    fn ranges(list: &[(&str, &str)]) -> Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0x80 | list.len() as u8];
+        for (start, end) in list {
+            out.push(0x82);
+            out.extend(cbor_bytes(&hex::decode(start).unwrap()));
+            out.extend(cbor_bytes(&hex::decode(end).unwrap()));
+        }
+        out
+    }
+
+    // nest_once() delegates to a subnet id of 29 zero bytes.
+    const DELEGATED_SUBNET: [u8; 29] = [0; 29];
+
+    // ["canister_ranges", <subnet id>, <shard>...]: api/v3 read_state and
+    // api/v4 call.
+    fn sharded(shards: &[u8]) -> Vec<u8> {
+        labeled(
+            CANISTER_RANGES_PATH.as_bytes(),
+            &labeled(&DELEGATED_SUBNET, shards),
+        )
+    }
+
+    // ["subnet", <subnet id>, "canister_ranges"]: api/v2 read_state and api/v3
+    // call.
+    fn flat(list: &[u8]) -> Vec<u8> {
+        labeled(
+            SUBNET_PATH.as_bytes(),
+            &labeled(
+                &DELEGATED_SUBNET,
+                &labeled(CANISTER_RANGES_PATH.as_bytes(), list),
+            ),
+        )
+    }
+
+    // A certificate whose delegation certificate carries `tree`.
+    fn authorized(tree: &[u8], canister: &str) -> Result<bool, ParserError> {
+        let mut inner = std::vec![0xd9, 0xd9, 0xf7, 0xa2, 0x64];
+        inner.extend_from_slice(b"tree");
+        inner.extend_from_slice(tree);
+        inner.push(0x69);
+        inner.extend_from_slice(b"signature");
+        inner.extend_from_slice(&[0x58, 0x30]);
+        inner.extend_from_slice(&[0u8; 48]);
+
+        let data = nest_once(&inner);
+        let cert = Certificate::from_bytes(&data).unwrap();
+        cert.is_authorized_for(&hex::decode(canister).unwrap())
+    }
+
+    const SHARD_0: &str = "00000000000000000101";
+    const SHARD_1: &str = "00000000002000000101";
+    const IN_SHARD_0: &str = "00000000000000100101";
+    const IN_SHARD_1: &str = "00000000002000100101";
+    const IN_NO_SHARD: &str = "00000000001000000101";
+
+    fn shard_0() -> Vec<u8> {
+        labeled(
+            &hex::decode(SHARD_0).unwrap(),
+            &leaf(&ranges(&[(SHARD_0, "00000000000FFFFF0101")])),
+        )
+    }
+
+    fn shard_1() -> Vec<u8> {
+        labeled(
+            &hex::decode(SHARD_1).unwrap(),
+            &leaf(&ranges(&[(SHARD_1, "00000000002FFFFF0101")])),
+        )
+    }
+
+    #[test]
+    fn sharded_ranges_authorize_the_canisters_they_hold() {
+        let tree = sharded(&fork(&shard_0(), &shard_1()));
+        assert_eq!(authorized(&tree, IN_SHARD_0), Ok(true));
+        assert_eq!(authorized(&tree, IN_SHARD_1), Ok(true));
+        assert_eq!(authorized(&tree, IN_NO_SHARD), Ok(false));
+    }
+
+    #[test]
+    fn flat_ranges_are_used_when_there_are_no_shards() {
+        let list = leaf(&ranges(&[(SHARD_0, "00000000000FFFFF0101")]));
+        assert_eq!(authorized(&flat(&list), IN_SHARD_0), Ok(true));
+        assert_eq!(authorized(&flat(&list), IN_SHARD_1), Ok(false));
+
+        // The shards being pruned away does not hide a flat list that is there.
+        let tree = fork(&pruned(), &flat(&list));
+        assert_eq!(authorized(&tree, IN_SHARD_0), Ok(true));
+    }
+
+    // Pruning keeps the root hash, so the signature still verifies; what a
+    // pruned range said is simply no longer known, and cannot authorize
+    // anything. The old check skipped itself whenever it could not read the
+    // ranges, which is what let a delegated subnet answer for any canister.
+    #[test]
+    fn pruned_ranges_authorize_nothing() {
+        let shards = fork(
+            &labeled(&hex::decode(SHARD_0).unwrap(), &pruned()),
+            &shard_1(),
+        );
+        assert_eq!(authorized(&sharded(&shards), IN_SHARD_0), Ok(false));
+        assert_eq!(authorized(&sharded(&shards), IN_SHARD_1), Ok(true));
+
+        assert_eq!(authorized(&sharded(&pruned()), IN_SHARD_0), Ok(false));
+        assert_eq!(authorized(&flat(&pruned()), IN_SHARD_0), Ok(false));
+        assert_eq!(
+            authorized(&fork(&pruned(), &flat(&pruned())), IN_SHARD_0),
+            Ok(false)
+        );
+        assert_eq!(authorized(&pruned(), IN_SHARD_0), Ok(false));
+    }
+
+    // The replica leaves the ranges out on api/v3 subnet read_state, where no
+    // canister is involved. A consent certificate delegated that way cannot
+    // show that the subnet hosts the canister.
+    #[test]
+    fn delegation_without_ranges_authorizes_nothing() {
+        let public_key_only = labeled(
+            SUBNET_PATH.as_bytes(),
+            &labeled(
+                &DELEGATED_SUBNET,
+                &labeled(b"public_key", &leaf(&[1, 2, 3])),
+            ),
+        );
+        assert_eq!(authorized(&public_key_only, IN_SHARD_0), Ok(false));
+        assert_eq!(authorized(&[0x81, 0x00], IN_SHARD_0), Ok(false));
+    }
+
+    #[test]
+    fn malformed_ranges_are_an_error() {
+        assert!(authorized(&flat(&leaf(b"not a range list")), IN_SHARD_0).is_err());
+
+        let bad_shard = labeled(&hex::decode(SHARD_0).unwrap(), &leaf(&[0x01]));
+        assert!(authorized(&sharded(&bad_shard), IN_SHARD_0).is_err());
+
+        // A shard holds a list, not a further subtree.
+        let nested = labeled(&hex::decode(SHARD_0).unwrap(), &labeled(b"x", &leaf(b"y")));
+        assert!(authorized(&sharded(&nested), IN_SHARD_0).is_err());
     }
 
     #[test]

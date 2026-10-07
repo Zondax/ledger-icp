@@ -191,6 +191,44 @@ impl<'a> HashTree<'a> {
         Ok(LookupResult::Found(current))
     }
 
+    /// Offer the leaf under each label directly below `tree` to `accept`,
+    /// stopping at the first one it takes. A pruned child is skipped: what it
+    /// held is not known, so it cannot count in favour of anything.
+    #[inline(never)]
+    pub fn any_child_value(
+        tree: RawValue<'a>,
+        accept: &mut dyn FnMut(&'a [u8]) -> Result<bool, ParserError>,
+    ) -> Result<bool, ParserError> {
+        Self::any_child_value_at(tree, accept, 1)
+    }
+
+    #[inline(never)]
+    fn any_child_value_at(
+        tree: RawValue<'a>,
+        accept: &mut dyn FnMut(&'a [u8]) -> Result<bool, ParserError>,
+        depth: usize,
+    ) -> Result<bool, ParserError> {
+        if depth >= MAX_TREE_DEPTH {
+            return Err(ParserError::RecursionLimitReached);
+        }
+
+        match HashTree::try_from(&tree)? {
+            HashTree::Fork(left, right) => {
+                if Self::any_child_value_at(left, accept, depth + 1)? {
+                    return Ok(true);
+                }
+                Self::any_child_value_at(right, accept, depth + 1)
+            }
+            HashTree::Labeled(_, subtree) => match LookupResult::Found(subtree).value() {
+                Some(value) => accept(value),
+                None if HashTree::try_from(&subtree)?.is_pruned() => Ok(false),
+                None => Err(ParserError::InvalidTree),
+            },
+            HashTree::Pruned(_) | HashTree::Empty => Ok(false),
+            HashTree::Leaf(_) => Err(ParserError::InvalidTree),
+        }
+    }
+
     /// Reconstruct the root hash of this tree, following the rules in:
     /// https://internetcomputer.org/docs/current/references/ic-interface-spec/#certificate
     #[inline(never)]
@@ -405,7 +443,14 @@ impl<'a> LookupResult<'a> {
             return None;
         };
 
+        // Only a leaf holds a value. HashTree::value() also returns a pruned
+        // node's bytes, which reconstruct() needs, but those are the hash of
+        // whatever was removed: handing them back here read a pruned time,
+        // status or canister range as if it had been certified.
         let tree: HashTree = value.try_into().ok()?;
+        if !tree.is_leaf() {
+            return None;
+        }
         tree.value()
     }
 
