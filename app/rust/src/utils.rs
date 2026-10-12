@@ -626,29 +626,70 @@ pub fn hash_blob(blob: &[u8]) -> [u8; SHA256_DIGEST_LENGTH] {
     hash(blob)
 }
 
+// The Nano review steps back into an item by asking for page 255 and only
+// clamps that request when it exceeds the page count, so an item with 255 pages
+// would be asked for a page it does not have. Anything that needs more pages
+// than this cannot be shown in full and is refused rather than cut short.
+const MAX_UI_PAGES: usize = u8::MAX as usize - 1;
+
+// End of the page that starts at `start`: at most `max_len` bytes on, moved
+// back to the start of a UTF-8 character so that no character is split across
+// two pages. A character wider than a whole page is cut, since keeping it
+// whole would never move past it.
+fn ui_page_end(item: &[u8], start: usize, max_len: usize) -> usize {
+    let end = core::cmp::min(start + max_len, item.len());
+
+    let mut cut = end;
+    while cut > start && cut < item.len() && (item[cut] & 0xC0) == 0x80 {
+        cut -= 1;
+    }
+
+    if cut == start {
+        end
+    } else {
+        cut
+    }
+}
+
 #[inline(never)]
 pub fn handle_ui_message(item: &[u8], out: &mut [u8], page: u8) -> Result<u8, ViewError> {
     crate::zlog("handle_ui_message\x00");
-    let m_len = out.len() - 1; //null byte terminator
+    // one byte is kept for the null terminator
+    let m_len = out.len().checked_sub(1).ok_or(ViewError::Unknown)?;
     if m_len < 1 {
         return Err(ViewError::Unknown);
     }
-    if m_len <= item.len() {
-        let chunk = item
-            .chunks(m_len) //divide in non-overlapping chunks
-            .nth(page as usize) //get the nth chunk
-            .ok_or(ViewError::Unknown)?;
 
-        out[..chunk.len()].copy_from_slice(chunk);
-        out[chunk.len()] = 0; //null terminate
+    // The page count and the pages come from the same walk over the item. They
+    // used to be computed separately, and an item exactly one page long was
+    // counted as two pages while only one existed: asking for the second one
+    // failed, and the Nano review took that failure as the end of the list and
+    // went straight to the approval screen, skipping everything after it.
+    let mut n_pages = 0usize;
+    let mut selected = None;
+    let mut start = 0usize;
+    loop {
+        let end = ui_page_end(item, start, m_len);
+        if n_pages == page as usize {
+            selected = Some((start, end));
+        }
+        n_pages += 1;
+        if n_pages > MAX_UI_PAGES {
+            return Err(ViewError::Unknown);
+        }
 
-        let n_pages = item.len() / m_len;
-        Ok(1 + n_pages as u8)
-    } else {
-        out[..item.len()].copy_from_slice(item);
-        out[item.len()] = 0; //null terminate
-        Ok(1)
+        start = end;
+        if start >= item.len() {
+            break;
+        }
     }
+
+    let (start, end) = selected.ok_or(ViewError::NoData)?;
+    let chunk = &item[start..end];
+    out[..chunk.len()].copy_from_slice(chunk);
+    out[chunk.len()] = 0; //null terminate
+
+    Ok(n_pages as u8)
 }
 
 #[cfg(test)]
@@ -697,5 +738,119 @@ mod test_utils {
             let encoded = compress_leb128(*value, &mut buf);
             assert_eq!(encoded, &expected[..], "Failed for value: {}", value);
         }
+    }
+
+    // Render every page of `item` into a buffer of `out_len` bytes and return
+    // the pages, checking that every page reports the same count.
+    fn ui_pages(item: &[u8], out_len: usize) -> std::vec::Vec<std::vec::Vec<u8>> {
+        let mut out = vec![0xAAu8; out_len];
+        let n_pages = handle_ui_message(item, &mut out, 0).expect("page 0 renders");
+
+        let mut pages = std::vec::Vec::new();
+        for page in 0..n_pages {
+            let mut out = vec![0xAAu8; out_len];
+            let count =
+                handle_ui_message(item, &mut out, page).expect("every counted page renders");
+            assert_eq!(count, n_pages, "page {} reports a different count", page);
+
+            let text_len = out.iter().position(|&b| b == 0).expect("null terminated");
+            assert!(text_len < out_len);
+            pages.push(out[..text_len].to_vec());
+        }
+
+        // Nothing is left beyond the counted pages.
+        let mut out = vec![0u8; out_len];
+        assert_eq!(
+            handle_ui_message(item, &mut out, n_pages),
+            Err(ViewError::NoData)
+        );
+        pages
+    }
+
+    #[test]
+    fn ui_message_that_fills_a_page_exactly_is_one_page() {
+        // 8 bytes of room plus the terminator, and an 8-byte item: this was
+        // counted as two pages, and the second one did not exist.
+        let pages = ui_pages(b"12345678", 9);
+        assert_eq!(pages, vec![b"12345678".to_vec()]);
+
+        let pages = ui_pages(b"123456789", 9);
+        assert_eq!(pages, vec![b"12345678".to_vec(), b"9".to_vec()]);
+
+        let pages = ui_pages(b"1234567812345678", 9);
+        assert_eq!(pages.len(), 2);
+
+        let pages = ui_pages(b"", 9);
+        assert_eq!(pages, vec![b"".to_vec()]);
+    }
+
+    #[test]
+    fn ui_message_pages_never_split_a_character() {
+        let texts = [
+            "plain ascii that runs over several pages",
+            "caf\u{e9} cr\u{e8}me br\u{fb}l\u{e9}e",
+            "\u{20ac}\u{20ac}\u{20ac}\u{20ac}\u{20ac}\u{20ac}\u{20ac}",
+            "a\u{1F600}b\u{1F600}\u{1F600}c\u{e9}\u{20ac}",
+        ];
+
+        for text in texts {
+            for out_len in 5..=12 {
+                let pages = ui_pages(text.as_bytes(), out_len);
+
+                let mut joined = std::vec::Vec::new();
+                for page in &pages {
+                    assert!(page.len() < out_len);
+                    assert!(
+                        core::str::from_utf8(page).is_ok(),
+                        "{:?} split a character with {} bytes per page",
+                        text,
+                        out_len - 1
+                    );
+                    joined.extend_from_slice(page);
+                }
+                assert_eq!(joined, text.as_bytes(), "text lost between pages");
+            }
+        }
+    }
+
+    #[test]
+    fn ui_message_character_wider_than_a_page_still_advances() {
+        // Two bytes of room cannot hold a four-byte character; it has to be
+        // cut rather than stall on it.
+        let text = "\u{1F600}\u{1F600}";
+        let pages = ui_pages(text.as_bytes(), 3);
+        let joined: std::vec::Vec<u8> = pages.concat();
+        assert_eq!(joined, text.as_bytes());
+    }
+
+    #[test]
+    fn ui_message_too_long_to_show_in_full_is_refused() {
+        // One byte per page: 254 pages is the most the review can reach.
+        let item = [b'x'; MAX_UI_PAGES];
+        assert_eq!(ui_pages(&item, 2).len(), MAX_UI_PAGES);
+
+        // One more page used to wrap the u8 page count and hide the tail.
+        let item = [b'x'; MAX_UI_PAGES + 1];
+        let mut out = [0u8; 2];
+        assert_eq!(
+            handle_ui_message(&item, &mut out, 0),
+            Err(ViewError::Unknown)
+        );
+
+        let item = [b'x'; 600];
+        assert_eq!(
+            handle_ui_message(&item, &mut out, 0),
+            Err(ViewError::Unknown)
+        );
+    }
+
+    #[test]
+    fn ui_message_needs_room_for_text() {
+        let mut out = [0u8; 1];
+        assert_eq!(
+            handle_ui_message(b"x", &mut out, 0),
+            Err(ViewError::Unknown)
+        );
+        assert_eq!(handle_ui_message(b"x", &mut [], 0), Err(ViewError::Unknown));
     }
 }

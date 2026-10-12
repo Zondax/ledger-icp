@@ -10,7 +10,6 @@ const MAX_PRINCIPAL_SIZE: usize = 29;
 #[derive(Clone, Copy)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub struct CanisterRanges<'a> {
-    len: usize,
     data: &'a [u8],
 }
 
@@ -22,10 +21,6 @@ struct CanisterRangeIterator<'a> {
 }
 
 impl<'a> CanisterRanges<'a> {
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
     pub fn iter(&self) -> impl Iterator<Item = (&'a [u8], &'a [u8])> {
         CanisterRangeIterator {
             current: 0,
@@ -90,7 +85,6 @@ impl<'a> FromBytes<'a> for CanisterRanges<'a> {
 
         let out = out.as_mut_ptr();
         unsafe {
-            addr_of_mut!((*out).len).write(num_ranges);
             addr_of_mut!((*out).data).write(&input[start..end]);
         }
 
