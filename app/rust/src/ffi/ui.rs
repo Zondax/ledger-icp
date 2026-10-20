@@ -46,7 +46,12 @@ pub unsafe extern "C" fn rs_getItem(
     page_idx: u8,
     page_count: *mut u8,
 ) -> u32 {
-    if page_count.is_null() || out_key.is_null() || out_value.is_null() || key_len == 0 || out_len == 0 {
+    if page_count.is_null()
+        || out_key.is_null()
+        || out_value.is_null()
+        || key_len == 0
+        || out_len == 0
+    {
         return ParserError::NoData as u32;
     }
 
@@ -67,7 +72,12 @@ pub unsafe extern "C" fn rs_getItem(
             *page_count = page;
             ParserError::Ok as _
         }
-        Err(_) => ParserError::NoData as _,
+        // tx_certGetItem has already checked display_idx against the item
+        // count, so a failure here is an item that cannot be shown, not the
+        // end of the list. Reporting it as NoData let the Nano review treat it
+        // as the end of the list and move straight to the approval screen,
+        // skipping this item and every one after it.
+        Err(_) => ParserError::UnexpectedError as _,
     }
 }
 

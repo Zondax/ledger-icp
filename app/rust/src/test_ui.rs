@@ -249,29 +249,6 @@ impl Display for ReducedPage<'_> {
     }
 }
 
-pub fn handle_ui_message(item: &[u8], out: &mut [u8], page: u8) -> Result<u8, ParserError> {
-    let m_len = out.len() - 1; //null byte terminator
-    if m_len < 1 {
-        return Err(ParserError::UnexpectedBufferEnd);
-    }
-    if m_len <= item.len() {
-        let chunk = item
-            .chunks(m_len) //divide in non-overlapping chunks
-            .nth(page as usize) //get the nth chunk
-            .ok_or(ParserError::UnexpectedValue)?;
-
-        out[..chunk.len()].copy_from_slice(chunk);
-        out[chunk.len()] = 0; //null terminate
-
-        let n_pages = item.len() / m_len;
-        Ok(1 + n_pages as u8)
-    } else {
-        out[..item.len()].copy_from_slice(item);
-        out[item.len()] = 0; //null terminate
-        Ok(1)
-    }
-}
-
 pub fn strlen(s: &[u8]) -> usize {
     let mut count = 0;
     while let Some(&c) = s.get(count) {

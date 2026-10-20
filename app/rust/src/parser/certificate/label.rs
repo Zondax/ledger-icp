@@ -15,11 +15,21 @@
 ********************************************************************************/
 use minicbor::{decode::Error, Decode, Decoder};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Eq)]
 #[cfg_attr(any(feature = "derive-debug", test), derive(Debug))]
 pub enum Label<'a> {
     Blob(&'a [u8]),
     String(&'a str),
+}
+
+// Labels are byte strings. Decoding hands back any label that happens to be
+// valid UTF-8 as a String, so comparing variants made it differ from the same
+// bytes looked up as a Blob: a request id or subnet id made only of ASCII bytes
+// could never be found in the tree.
+impl PartialEq for Label<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_bytes() == other.as_bytes()
+    }
 }
 
 impl<'a> Label<'a> {
@@ -47,16 +57,45 @@ impl<'a> From<&'a [u8]> for Label<'a> {
 
 impl<'b, C> Decode<'b, C> for Label<'b> {
     fn decode(d: &mut Decoder<'b>, _ctx: &mut C) -> Result<Self, Error> {
-        match d.datatype()? {
+        // MAX_LEN is what the hashing buffer in HashTree::reconstruct is sized
+        // for. Nothing in a well-formed certificate exceeds it - the longest
+        // labels are 32-byte request ids - so reject the rest here instead of
+        // letting an oversized one reach a fixed-size copy.
+        let label = match d.datatype()? {
             minicbor::data::Type::Bytes => {
                 let bytes = d.bytes()?;
                 match core::str::from_utf8(bytes) {
-                    Ok(s) => Ok(Label::String(s)),
-                    Err(_) => Ok(Label::Blob(bytes)),
+                    Ok(s) => Label::String(s),
+                    Err(_) => Label::Blob(bytes),
                 }
             }
-            minicbor::data::Type::String => Ok(Label::String(d.str()?)),
-            _ => Err(Error::message("Expected bytes or string for Label")),
+            minicbor::data::Type::String => Label::String(d.str()?),
+            _ => return Err(Error::message("Expected bytes or string for Label")),
+        };
+
+        if label.as_bytes().len() > Self::MAX_LEN {
+            return Err(Error::message("Label exceeds maximum length"));
         }
+
+        Ok(label)
+    }
+}
+
+#[cfg(test)]
+mod test_label {
+    use super::Label;
+
+    #[test]
+    fn labels_compare_as_bytes() {
+        let blob: &[u8] = b"request_status";
+        assert_eq!(Label::from("request_status"), Label::from(blob));
+
+        // An all-zero subnet id is valid UTF-8, so it decodes as a String.
+        let zeros = [0u8; 29];
+        let decoded = Label::String(core::str::from_utf8(&zeros).unwrap());
+        assert_eq!(decoded, Label::from(&zeros[..]));
+
+        assert_ne!(Label::from("status"), Label::from(&b"statuz"[..]));
+        assert_ne!(Label::from("status"), Label::from(&b"status\0"[..]));
     }
 }

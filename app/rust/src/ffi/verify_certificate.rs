@@ -17,7 +17,7 @@
 use crate::{
     check_canary,
     consent_message::msg_response::ConsentMessageResponse,
-    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER},
+    constants::{BLS_PUBLIC_KEY_SIZE, DEFAULT_SENDER, REQUEST_STATUS_PATH},
     error::ParserError,
     Certificate, FromBytes, HashTree, LookupResult, Principal,
 };
@@ -103,9 +103,16 @@ pub unsafe extern "C" fn rs_verify_certificate(
     }
 
     let mut cert = MaybeUninit::uninit();
-    let Ok(_) = Certificate::from_bytes_into(data, &mut cert) else {
+    let Ok(rem) = Certificate::from_bytes_into(data, &mut cert) else {
         return ParserError::InvalidCertificate as u32;
     };
+
+    // The call and consent parsers already require their buffers to be fully
+    // consumed; hold the certificate to the same rule so trailing bytes cannot
+    // ride along inside a blob that otherwise verifies.
+    if !rem.is_empty() {
+        return ParserError::InvalidCertificate as u32;
+    }
 
     let cert = unsafe { cert.assume_init() };
 
@@ -115,12 +122,15 @@ pub unsafe extern "C" fn rs_verify_certificate(
         _ => {}
     }
 
-    // Certificate tree must contain a node labeled with the request_id computed
-    // from the consent_msg_request, this ensures that the passed data refers to
-    // the provided certificate
-    let Ok(LookupResult::Found(_)) =
-        HashTree::lookup_path(&consent_request.request_id[..].into(), cert.tree())
-    else {
+    // The certificate has to be about this request: the status entry must sit
+    // at ["request_status", <request id>], the path the IC actually certifies
+    // it under, rather than the request id appearing as a label somewhere in
+    // the tree.
+    let request_id = &consent_request.request_id[..];
+    let Ok(LookupResult::Found(_)) = HashTree::lookup_path(
+        &[REQUEST_STATUS_PATH.into(), request_id.into()],
+        cert.tree(),
+    ) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -136,19 +146,16 @@ pub unsafe extern "C" fn rs_verify_certificate(
         return ParserError::InvalidCertificate as u32;
     }
 
-    // Check canister_id in request/consent is within allowed canister in the
-    // certificate canister ranges
-    if let Some(ranges) = cert.canister_ranges() {
-        if !ranges.is_canister_in_range(
-            &call_request.canister_id[..call_request.canister_id_len as usize],
-        ) {
-            return ParserError::InvalidCertificate as u32;
-        }
+    // The certificate has to be allowed to speak for the canister being called:
+    // a subnet only answers for the canister ranges the root delegated to it.
+    let canister_id = &call_request.canister_id[..call_request.canister_id_len as usize];
+    if !matches!(cert.is_authorized_for(canister_id), Ok(true)) {
+        return ParserError::InvalidCertificate as u32;
     }
 
     // Check for the response type embedded in the certificate
     // an error response means we can not go further
-    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+    let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(request_id) else {
         return ParserError::InvalidCertificate as u32;
     };
 
@@ -161,21 +168,51 @@ pub unsafe extern "C" fn rs_verify_certificate(
 }
 
 fn validate_sender(call_sender: &[u8], consent_sender: &[u8]) -> bool {
-    // Check sender identity
-    // This check should be:
-    // call.sender == consent.sender || consent.sender == 0x04 or
-    // call.sender == device.principal
-    // to pass validation
-    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
-    if !(call_sender == consent_sender || is_default_sender) {
-        let Ok(device_principal) = device_principal() else {
-            return false;
-        };
-        let Ok(call_sender_principal) = Principal::new(call_sender) else {
-            return false;
-        };
-        // then check that the call_sender_principal matches the device_principal
-        return call_sender_principal == device_principal;
+    // The device only ever signs as itself, so the call has to name this
+    // device's principal whatever the consent says. Checking this first
+    // matters: agreement between the two envelopes is not evidence of
+    // anything, since a host controls both, and returning early on it let a
+    // request naming an arbitrary third party through as long as the consent
+    // named the same one.
+    let Ok(device_principal) = device_principal() else {
+        return false;
+    };
+    let Ok(call_sender_principal) = Principal::new(call_sender) else {
+        return false;
+    };
+    if call_sender_principal != device_principal {
+        return false;
     }
-    true
+
+    // The consent message was generated for whoever asked for it. That is
+    // either this device, or the anonymous principal - consent messages are
+    // routinely fetched anonymously, and that flow has to keep working.
+    let is_default_sender = consent_sender.len() == 1 && consent_sender[0] == DEFAULT_SENDER;
+    is_default_sender || consent_sender == call_sender
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_sender;
+
+    const DEVICE_SENDER: &[u8] = &[
+        25, 170, 61, 66, 192, 72, 221, 125, 20, 240, 207, 160, 223, 105, 161, 193, 56, 23, 128,
+        246, 233, 161, 55, 171, 170, 106, 130, 227, 2,
+    ];
+    const OTHER_SENDER: &[u8] = &[
+        5, 44, 95, 111, 39, 15, 196, 163, 168, 130, 168, 7, 87, 50, 203, 169, 10, 212, 189, 37,
+        211, 11, 210, 207, 123, 11, 254, 124, 2,
+    ];
+    const ANONYMOUS_SENDER: &[u8] = &[4];
+
+    #[test]
+    fn only_the_device_principal_can_authorize_signing() {
+        assert!(validate_sender(DEVICE_SENDER, DEVICE_SENDER));
+        assert!(validate_sender(DEVICE_SENDER, ANONYMOUS_SENDER));
+
+        // Agreement between two host-controlled envelopes is not authority.
+        assert!(!validate_sender(OTHER_SENDER, OTHER_SENDER));
+        assert!(!validate_sender(OTHER_SENDER, ANONYMOUS_SENDER));
+        assert!(!validate_sender(DEVICE_SENDER, OTHER_SENDER));
+    }
 }

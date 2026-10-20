@@ -22,14 +22,17 @@ use crate::{
     consent_message::msg_response::ConsentMessageResponse,
     constants::{
         CANISTER_RANGES_PATH, CBOR_CERTIFICATE_TAG, MAX_CERT_INGRESS_OFFSET, REPLY_PATH,
-        SHA256_DIGEST_LENGTH,
+        REQUEST_STATUS_PATH, SHA256_DIGEST_LENGTH, STATUS_PATH, STATUS_REPLIED, SUBNET_PATH,
+        TIME_PATH,
     },
     error::ParserError,
     zlog, FromBytes, Signature,
 };
 
 use super::{
-    canister_ranges::CanisterRanges, delegation::Delegation, hash_tree::HashTree,
+    canister_ranges::CanisterRanges,
+    delegation::Delegation,
+    hash_tree::{HashTree, LookupResult},
     raw_value::RawValue,
 };
 // separator_len(1-bytes) + separator(13-bytes) + hash(32-bytes)
@@ -49,6 +52,21 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
     fn from_bytes_into(
         input: &'a [u8],
         out: &mut MaybeUninit<Self>,
+    ) -> Result<&'a [u8], crate::error::ParserError> {
+        Self::parse_into(input, out, true)
+    }
+}
+
+impl<'a> Certificate<'a> {
+    /// `allow_delegation` is false while parsing the certificate carried
+    /// inside a delegation. A delegation may not carry one of its own, and
+    /// refusing the key here rather than after parsing it is what keeps this
+    /// recursion one frame deep: checking afterwards would still descend the
+    /// whole chain first, which a host can nest as deeply as the blob allows.
+    fn parse_into(
+        input: &'a [u8],
+        out: &mut MaybeUninit<Self>,
+        allow_delegation: bool,
     ) -> Result<&'a [u8], crate::error::ParserError> {
         zlog("Certificate::from_bytes_into\x00");
 
@@ -70,21 +88,37 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
         }
 
         let out = out.as_mut_ptr();
+        let mut has_tree = false;
+        let mut has_signature = false;
         let mut has_delegation = false;
 
         for _ in 0..len {
             let key = d.str()?;
             match key {
                 "tree" => {
+                    if has_tree {
+                        return Err(ParserError::InvalidCertificate);
+                    }
+                    has_tree = true;
                     let raw_value: RawValue = RawValue::decode(&mut d, &mut ())?;
                     // Just to check that tree is fully parsed
                     let _tree = HashTree::try_from(&raw_value)?;
+                    // Bound the depth here so every later traversal of this
+                    // tree - reconstruct, lookup - starts from something known
+                    // to be shallow enough. Those keep their own bounds too,
+                    // since both are public and reachable on a tree that did
+                    // not come through this parser.
+                    _tree.check_integrity(1)?;
 
                     #[cfg(test)]
                     std::println!("Certificate tree:\n {}", _tree);
                     unsafe { addr_of_mut!((*out).tree).write(raw_value) };
                 }
                 "signature" => {
+                    if has_signature {
+                        return Err(ParserError::InvalidCertificate);
+                    }
+                    has_signature = true;
                     let signature: &mut MaybeUninit<Signature<'a>> =
                         unsafe { &mut *addr_of_mut!((*out).signature).cast() };
                     let data = &input[d.position()..];
@@ -94,6 +128,9 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                     d.set_position(d.position() + (data.len() - rem.len()));
                 }
                 "delegation" => {
+                    if has_delegation || !allow_delegation {
+                        return Err(ParserError::InvalidCertificate);
+                    }
                     // create a new delegation here because it is define as an option
                     let mut delegation = MaybeUninit::uninit();
                     let data = &input[d.position()..];
@@ -108,6 +145,13 @@ impl<'a> FromBytes<'a> for Certificate<'a> {
                 }
                 _ => return Err(ParserError::InvalidCertificate),
             }
+        }
+
+        // Both are mandatory. Without this the caller's assume_init() would read
+        // an uninitialized field for a map like {"tree", "delegation"}, or one
+        // whose two entries are the same key.
+        if !has_tree || !has_signature {
+            return Err(ParserError::InvalidCertificate);
         }
 
         if !has_delegation {
@@ -229,10 +273,9 @@ impl<'a> Certificate<'a> {
 
     pub fn timestamp(&self) -> Result<Option<u64>, ParserError> {
         let tree = self.tree();
-        let path = "time".into();
 
         // Perform the lookup
-        let Some(time) = HashTree::lookup_path(&path, tree)?.value() else {
+        let Some(time) = HashTree::lookup_path(&[TIME_PATH.into()], tree)?.value() else {
             return Ok(None);
         };
 
@@ -244,25 +287,75 @@ impl<'a> Certificate<'a> {
         Ok(Some(timestamp))
     }
 
-    pub fn canister_ranges(&self) -> Option<CanisterRanges<'a>> {
-        let tree = match self.delegation() {
-            None => self.tree(),
-            Some(delegation) => delegation.cert().tree(),
+    // Whether this certificate may speak for `canister_id`.
+    //
+    // One signed with the root key speaks for every canister. One signed by a
+    // subnet only speaks for the canisters the root delegated to that subnet,
+    // so the delegation has to certify a range holding the canister. Ranges
+    // that are missing, pruned or malformed prove nothing, and are a refusal:
+    // this used to be an Option that skipped the check whenever the ranges
+    // could not be read, which let a subnet answer for any canister at all.
+    pub fn is_authorized_for(&self, canister_id: &[u8]) -> Result<bool, ParserError> {
+        let Some(delegation) = self.delegation() else {
+            return Ok(true);
         };
+        let tree = delegation.cert().tree();
+        let subnet = delegation.subnet();
 
-        let path = CANISTER_RANGES_PATH.into();
-        let found = HashTree::lookup_path(&path, tree).ok()?;
-        let data = found.value()?;
-        let mut ranges = MaybeUninit::uninit();
-        CanisterRanges::from_bytes_into(data, &mut ranges).ok()?;
-        let ranges = unsafe { ranges.assume_init() };
-        Some(ranges)
+        // The replica certifies the ranges in one of two places, and ic-agent
+        // checks them in this order: sharded under
+        // ["canister_ranges", <subnet id>, <shard>] (api/v3 read_state, api/v4
+        // call), or as one list at ["subnet", <subnet id>, "canister_ranges"]
+        // (api/v2 read_state, api/v3 call). Every range in either place was
+        // delegated to this subnet by the root, so a canister inside any of
+        // them is authorized.
+        let shards_path = [CANISTER_RANGES_PATH.into(), subnet.into()];
+        if let LookupResult::Found(shards) = HashTree::lookup_path(&shards_path, tree)? {
+            return HashTree::any_child_value(shards, &mut |ranges| {
+                ranges_hold_canister(ranges, canister_id)
+            });
+        }
+
+        let flat_path = [
+            SUBNET_PATH.into(),
+            subnet.into(),
+            CANISTER_RANGES_PATH.into(),
+        ];
+        match HashTree::lookup_path(&flat_path, tree)?.value() {
+            Some(ranges) => ranges_hold_canister(ranges, canister_id),
+            None => Ok(false),
+        }
     }
 
-    // Safe to unwrap because this reply was parsed already
-    pub fn msg_response(&self) -> Result<ConsentMessageResponse<'a>, ParserError> {
-        let tree = self.tree();
-        let found = HashTree::lookup_path(&REPLY_PATH.into(), tree)?;
+    // The reply is only the reply to *this* request when it is read from
+    // ["request_status", <request id>, "reply"]. Looking up a bare "reply"
+    // took whatever the tree happened to contain under that name, wherever it
+    // sat, so the certificate no longer had to be about the request being
+    // signed - only to contain something called a reply somewhere.
+    pub fn msg_response(
+        &self,
+        request_id: &'a [u8],
+    ) -> Result<ConsentMessageResponse<'a>, ParserError> {
+        // The status has to say the call actually replied; "rejected" and
+        // "done" carry no reply and must not be rendered as one.
+        let status_path = [
+            REQUEST_STATUS_PATH.into(),
+            request_id.into(),
+            STATUS_PATH.into(),
+        ];
+        let status = HashTree::lookup_path(&status_path, self.tree())?
+            .value()
+            .ok_or(ParserError::InvalidCertificate)?;
+        if status != STATUS_REPLIED {
+            return Err(ParserError::InvalidCertificate);
+        }
+
+        let path = [
+            REQUEST_STATUS_PATH.into(),
+            request_id.into(),
+            REPLY_PATH.into(),
+        ];
+        let found = HashTree::lookup_path(&path, self.tree())?;
         let bytes = found.value().ok_or(ParserError::InvalidConsentMsg)?;
 
         let mut msg = MaybeUninit::uninit();
@@ -285,13 +378,39 @@ impl<'a> Certificate<'a> {
     }
 }
 
+// A list of canister ranges certified for a subnet, as the replica encodes it
+// in either delegation format.
+fn ranges_hold_canister(data: &[u8], canister_id: &[u8]) -> Result<bool, ParserError> {
+    let mut ranges = MaybeUninit::uninit();
+    CanisterRanges::from_bytes_into(data, &mut ranges)?;
+    let ranges = unsafe { ranges.assume_init() };
+    Ok(ranges.is_canister_in_range(canister_id))
+}
+
 impl<'a> TryFrom<RawValue<'a>> for Certificate<'a> {
     type Error = ParserError;
 
     fn try_from(value: RawValue<'a>) -> Result<Self, Self::Error> {
         let mut cert = MaybeUninit::uninit();
 
-        Self::from_bytes_into(value.bytes(), &mut cert)?;
+        let rem = Self::from_bytes_into(value.bytes(), &mut cert)?;
+        if !rem.is_empty() {
+            return Err(ParserError::InvalidCertificate);
+        }
+        Ok(unsafe { cert.assume_init() })
+    }
+}
+
+impl<'a> Certificate<'a> {
+    /// Parse the certificate a delegation carries. Rejects a further
+    /// delegation instead of recursing into one.
+    pub(crate) fn try_from_delegated(value: RawValue<'a>) -> Result<Self, ParserError> {
+        let mut cert = MaybeUninit::uninit();
+
+        let rem = Self::parse_into(value.bytes(), &mut cert, false)?;
+        if !rem.is_empty() {
+            return Err(ParserError::InvalidCertificate);
+        }
         Ok(unsafe { cert.assume_init() })
     }
 }
@@ -307,6 +426,13 @@ mod test_certificate {
     const CANISTER_ID: &str = "0000000000600B730101";
     const INGRESS_EXPIRY: u64 = 1753272540000000000;
     const CERT_GENERIC_DISPLAY: &str = "d9d9f7a2647472656583018301820458207970ca0b7b0c0e63228c4cf47ce6f4a94268cfc004a99ae8aba5e97f204126a183018204582080b175729756e05010ceab7db6bed386cc6db61d274fe7d38a5f0bcea7ef317783024e726571756573745f7374617475738301830258204b77e3e74aa91e7bf50f8cf1acc0cb1dbafa4ad45c050e2abcc5d910317862a383018302457265706c79820359032d4449444c0c6b02bc8a0101c5fed201096c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b02d9e5b0980405fcdfd79a0f716c01c4d6b4ea0b066d076c01ffbb87a807086d716b04d1c4987c0aa3f2efe6020b9a8597e6030be3c581900f0b6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e01a4052320417574686f72697a6520616e6f74686572206164647265737320746f2077697468647261772066726f6d20796f7572206163636f756e740a0a2a2a54686520666f6c6c6f77696e67206164647265737320697320616c6c6f77656420746f2077697468647261772066726f6d20796f7572206163636f756e743a2a2a0a72646d78362d6a616161612d61616161612d61616164712d6361690a0a2a2a596f7572207375626163636f756e743a2a2a0a303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030300a0a2a2a526571756573746564207769746864726177616c20616c6c6f77616e63653a2a2a0a3130204943500ae29aa02054686520616c6c6f77616e63652077696c6c2062652073657420746f2031302049435020696e646570656e64656e746c79206f6620616e792070726576696f757320616c6c6f77616e63652e20556e74696c2074686973207472616e73616374696f6e20686173206265656e20657865637574656420746865207370656e6465722063616e207374696c6c206578657263697365207468652070726576696f757320616c6c6f77616e63652028696620616e792920746f20697427732066756c6c20616d6f756e742e0a0a2a2a45787069726174696f6e20646174653a2a2a0a4e6f2065787069726174696f6e2e0a0a2a2a417070726f76616c206665653a2a2a0a302e30303031204943500a0a2a2a5472616e73616374696f6e206665657320746f206265207061696420627920796f7572207375626163636f756e743a2a2a0a303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030308302467374617475738203477265706c696564820458203c45af0e5805729f1d07fbce20047198017873e787c5a27744ca20c71ad357b8830182045820d4fdd3b69be601a88a9412234c7940446d55dbc09bd3f28eb96d8548a2fe885283024474696d65820349889893d986e3d58218697369676e61747572655830b60f55093dc0835939589c2a3dcb5313248b13b5d965f3019fb9f5f3d34503443100b5103386a9d2df229fa82fe0440c";
+    // The request id each of the certificates above is about, taken from the
+    // 32-byte label under "request_status".
+    const REAL_CERT_REQUEST_ID: &str =
+        "0db17a4999e6d1bb9dadb9042489dfe1eee589e3f036aa1c7bfe12964c1ec75a";
+    const CERT_GENERIC_DISPLAY_REQUEST_ID: &str =
+        "4b77e3e74aa91e7bf50f8cf1acc0cb1dbafa4ad45c050e2abcc5d910317862a3";
+
     const ROOT_KEY: &str =
         "814c0e6ec71fab583b08bd81373c255c3c371b2e84863c98a4f1e08b74235d14fb5d9c0cd546d9685f913a0c0b2cc5341583bf4b4392e467db96d65b9bb4cb717112f8472e0d5a4d14505ffd7484b01291091c5f87b98883463f98091a0baaae";
 
@@ -314,9 +440,155 @@ mod test_certificate {
     fn parse_cert() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(REAL_CERT_REQUEST_ID).unwrap();
 
         // Check we parse the message(reply field)
-        assert!(cert.msg_response().is_ok());
+        assert!(cert.msg_response(&request_id).is_ok());
+
+        // A reply is only this request's reply when it is read from this
+        // request's path.
+        let mut other_id = request_id.clone();
+        other_id[0] ^= 0xFF;
+        assert!(cert.msg_response(&other_id).is_err());
+    }
+
+    // tag(55799) + map(2) holding "tree" and REAL_CERT's "delegation", so the
+    // entry count is legal but "signature" never appears. Without the
+    // required-key check the caller's assume_init() reads an uninitialized
+    // Signature.
+    const CERT_TREE_AND_DELEGATION_ONLY: &str = "d9d9f7a2647472656581006a64656c65676174696f6ea2697375626e65745f6964581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd026b6365727469666963617465590294d9d9f7a264747265658301820458209b9acf5ebb96de4fd39f4928d5fe9ab3873620c4d5a71947c4580ac3a9c169ec8301830182045820d8470247bcd58a7a80aa89c80b203ca1b4b03de290996402f9df8f39f98043748302467375626e65748301830183018204582071387af6dac4d6350824bf1c24c8dd0af43a910b2dad8ce86390c816e63816158301830183018302581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd02830183024f63616e69737465725f72616e67657382035832d9d9f782824a000000000060000001014a00000000006000ae0101824a00000000006000b001014a00000000006fffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c0503020103610090075120778eb21a530a02bcc763e7f4a192933506966af7b54c10a4d2b24de6a86b200e3440bae6267bf4c488d9a11d0472c38c1b6221198f98e4e6882ba38a5a4e3aa5afce899b7f825ed95adfa12629688073556f2747527213e8d73e40ce8204582036f3cd257d90fb38e42597f193a5e031dbd585b6292793bb04db4794803ce06e820458205b9edd6408228a3956c4b4164ed3d9ec38afabe63310f84da7b97005e1fae375820458202729572815f63e48d2248738a83546bf521d479351ff52f172de77602ff682d382045820afaa8832101bcee23eb871f6a3b372b927eb3ad5bacbbbf67aa4df296bf8c49382045820962337bb2648bcf41e6d4f3cd80d6f6b3876dd18e62a8fb0cc5dc45f6e9d283e83024474696d65820349c8b9a8faedf8b7aa18697369676e617475726558308b0fc21a67a745f0716ba21ae4ec570cadbdb873c07b3584600d7815bae0e9c45c974ef4af028af5b165017b78ec9fc4";
+
+    // tag(55799) + map(2) repeating "tree", each an empty hash tree.
+    const CERT_DUPLICATE_TREE: &str = "d9d9f7a26474726565810064747265658100";
+
+    #[test]
+    fn rejects_certificate_missing_signature() {
+        let data = hex::decode(CERT_TREE_AND_DELEGATION_ONLY).unwrap();
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    #[test]
+    fn rejects_certificate_with_duplicate_key() {
+        let data = hex::decode(CERT_DUPLICATE_TREE).unwrap();
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    // tag(55799) + map(3): an Empty tree, a 48-byte signature, and a
+    // delegation whose "certificate" byte string holds `inner`.
+    fn certificate_with_delegated_cert(inner: &[u8]) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0xa3];
+        out.extend_from_slice(&[0x64]);
+        out.extend_from_slice(b"tree");
+        out.extend_from_slice(&[0x81, 0x00]);
+        out.extend_from_slice(&[0x69]);
+        out.extend_from_slice(b"signature");
+        out.extend_from_slice(&[0x58, 0x30]);
+        out.extend_from_slice(&[0u8; 48]);
+        out.extend_from_slice(&[0x6a]);
+        out.extend_from_slice(b"delegation");
+        out.extend_from_slice(&[0xa2, 0x69]);
+        out.extend_from_slice(b"subnet_id");
+        out.extend_from_slice(&[0x58, 0x1d]);
+        out.extend_from_slice(&[0u8; 29]);
+        out.extend_from_slice(&[0x6b]);
+        out.extend_from_slice(b"certificate");
+        assert!(inner.len() < 256);
+        out.extend_from_slice(&[0x58, inner.len() as u8]);
+        out.extend_from_slice(inner);
+        out
+    }
+
+    // The delegation used to keep its inner certificate as a RawValue, which
+    // only says the bytes are some CBOR item. Delegation::cert() then handed
+    // the real parse to unwrap(), so anything that was not a certificate
+    // aborted the app rather than failing the request.
+    #[test]
+    fn rejects_delegation_whose_certificate_is_not_one() {
+        // A CBOR null: a perfectly good item, not a certificate.
+        let data = certificate_with_delegated_cert(&[0xf6]);
+        assert!(Certificate::from_bytes(&data).is_err());
+
+        // A map of the right size whose keys are not certificate fields.
+        let data = certificate_with_delegated_cert(&[0xa2, 0x61, b'a', 0x00, 0x61, b'b', 0x00]);
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    // A delegation may not carry a delegation of its own. That was only
+    // checked during verification, which left the parse recursing as deep as
+    // the nesting went.
+    // Build a delegation-wrapped certificate for an inner blob of any size.
+    fn nest_once(inner: &[u8]) -> std::vec::Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0xa3];
+        out.extend_from_slice(&[0x64]);
+        out.extend_from_slice(b"tree");
+        out.extend_from_slice(&[0x81, 0x00]);
+        out.extend_from_slice(&[0x69]);
+        out.extend_from_slice(b"signature");
+        out.extend_from_slice(&[0x58, 0x30]);
+        out.extend_from_slice(&[0u8; 48]);
+        out.extend_from_slice(&[0x6a]);
+        out.extend_from_slice(b"delegation");
+        out.extend_from_slice(&[0xa2, 0x69]);
+        out.extend_from_slice(b"subnet_id");
+        out.extend_from_slice(&[0x58, 0x1d]);
+        out.extend_from_slice(&[0u8; 29]);
+        out.extend_from_slice(&[0x6b]);
+        out.extend_from_slice(b"certificate");
+        // two-byte byte-string length so deep nesting stays encodable
+        out.extend_from_slice(&[0x59, (inner.len() >> 8) as u8, (inner.len() & 0xff) as u8]);
+        out.extend_from_slice(inner);
+        out
+    }
+
+    #[test]
+    fn deeply_nested_delegations_do_not_exhaust_the_stack() {
+        // Innermost: a plain certificate with no delegation.
+        let mut blob = std::vec![0xd9, 0xd9, 0xf7, 0xa2, 0x64];
+        blob.extend_from_slice(b"tree");
+        blob.extend_from_slice(&[0x81, 0x00]);
+        blob.extend_from_slice(&[0x69]);
+        blob.extend_from_slice(b"signature");
+        blob.extend_from_slice(&[0x58, 0x30]);
+        blob.extend_from_slice(&[0u8; 48]);
+
+        for _ in 0..300 {
+            blob = nest_once(&blob);
+        }
+        std::println!("nested blob is {} bytes", blob.len());
+
+        // Run on a small stack so unbounded recursion shows up as an overflow
+        // rather than passing on a roomy host stack.
+        let handle = std::thread::Builder::new()
+            .stack_size(128 * 1024)
+            .spawn(move || Certificate::from_bytes(&blob).is_err())
+            .unwrap();
+        assert!(handle.join().expect("parser must not blow the stack"));
+    }
+
+    #[test]
+    fn rejects_nested_delegation() {
+        let inner = certificate_with_delegated_cert(&[0xf6]);
+        let data = certificate_with_delegated_cert(&inner);
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    // REAL_CERT with one extra byte appended inside the delegation's
+    // "certificate" byte string (its length header bumped to match). RawValue
+    // captures only the first CBOR item, so the trailing byte was dropped.
+    const CERT_DELEGATION_TRAILING_BYTE: &str = "d9d9f7a3647472656583018301820458209b2d6a38f0e5c7ac52a8f7bf6d7751b79b0100857c870eae71666c75d4a1f7f5830182045820380a9672b9af551df307e91c777b4fa8f37960e0a107cf489c759b1ef0dfe33383024e726571756573745f7374617475738301830183018301830183018204582010d2494eb22918a6c994dc6fefb58f7d7fb1b2d17a52ee9edf28e241a6d7a783830182045820f5d09b5a356a77d4820aeb17fcbcb93a0fd55ddee4ee3f8dde4bf7cbfd397b9d83018204582046a6c3582218264ea6d3c34dc225b09b642605b1753eca2961c06eabfa7cb309830258200db17a4999e6d1bb9dadb9042489dfe1eee589e3f036aa1c7bfe12964c1ec75a83018302457265706c7982035901234449444c0f6b02bc8a0101c5fed2010c6c02efcee7800402e29fdcc806046c02aeaeb1cc0503d880c6d007716e766b029ee0b53b05fcdfd79a0f716c02f99cba840806dcec99f409716d076c02007101086b04cdf1cbbe030991c38ee7040ae998e3c30a0bebd2e8d60f0b6c01b99adecb01716c03c295a993017bd8a38ca80d78d8def6f60e716c01d8a38ca80d786b04d1c4987c0da3f2efe6020e9a8597e6030ee3c581900f0e6c02fc91f4f80571c498b1b50d7d6c01fc91f4f805710100000002656e00040455736572000d48656c6c6f2c20776f726c64210a637265617465645f617402f0bc7068000000000a6163746976655f666f7203580200000000000006616d6f756e74010800c2eb0b00000000034943500a477265657420757365728302467374617475738203477265706c696564820458208264bfd38120767311a6858cd1ee4ce2a697f4e17026e824dd5e2f06a1e90181820458200a8c7afcbde567117cf1f3dae404fc6bd2d7d094774f740b5fb1abf522015d268204582029633b2785b61f32e8764ac65a977d7e609f1e05e9e5949a0b2d419a08b67e9882045820669b89933ea8636d1ba28e1ab072e2b980df498d0d0ea24c58c46848b48e9e38820458200423cae37e0670c3426f6f04b3a010c1f6010524d31486b769951324e800118283018204582079f11424b2c5e29ca256d504261cacdf7626a1a28f7863dd2b6bf93ffa3836e783024474696d65820349c699bbc6aefdb7aa18697369676e61747572655830b49a681d69c6e1f7089165cd0473f5e78fa09917e825c07041cdc0664f8977d9b1804e2c651ef7cf304bd99299997f4b6a64656c65676174696f6ea2697375626e65745f6964581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd026b6365727469666963617465590295d9d9f7a264747265658301820458209b9acf5ebb96de4fd39f4928d5fe9ab3873620c4d5a71947c4580ac3a9c169ec8301830182045820d8470247bcd58a7a80aa89c80b203ca1b4b03de290996402f9df8f39f98043748302467375626e65748301830183018204582071387af6dac4d6350824bf1c24c8dd0af43a910b2dad8ce86390c816e63816158301830183018302581d2c55b347ecf2686c83781d6c59d1b43e7b4cba8deb6c1b376107f2cd02830183024f63616e69737465725f72616e67657382035832d9d9f782824a000000000060000001014a00000000006000ae0101824a00000000006000b001014a00000000006fffff010183024a7075626c69635f6b657982035885308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c0503020103610090075120778eb21a530a02bcc763e7f4a192933506966af7b54c10a4d2b24de6a86b200e3440bae6267bf4c488d9a11d0472c38c1b6221198f98e4e6882ba38a5a4e3aa5afce899b7f825ed95adfa12629688073556f2747527213e8d73e40ce8204582036f3cd257d90fb38e42597f193a5e031dbd585b6292793bb04db4794803ce06e820458205b9edd6408228a3956c4b4164ed3d9ec38afabe63310f84da7b97005e1fae375820458202729572815f63e48d2248738a83546bf521d479351ff52f172de77602ff682d382045820afaa8832101bcee23eb871f6a3b372b927eb3ad5bacbbbf67aa4df296bf8c49382045820962337bb2648bcf41e6d4f3cd80d6f6b3876dd18e62a8fb0cc5dc45f6e9d283e83024474696d65820349c8b9a8faedf8b7aa18697369676e617475726558308b0fc21a67a745f0716ba21ae4ec570cadbdb873c07b3584600d7815bae0e9c45c974ef4af028af5b165017b78ec9fc400";
+
+    #[test]
+    fn rejects_delegation_certificate_with_trailing_bytes() {
+        let data = hex::decode(CERT_DELEGATION_TRAILING_BYTE).unwrap();
+        assert!(Certificate::from_bytes(&data).is_err());
+    }
+
+    #[test]
+    fn accepts_two_entry_certificate_without_delegation() {
+        // Positive control: the required-key check must not reject a legitimate
+        // delegation-free certificate, which is also a 2-entry map.
+        let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
+        assert!(Certificate::from_bytes(&data).is_ok());
     }
 
     // Helper function to parse HashTree from CBOR using minicbor
@@ -468,32 +740,213 @@ mod test_certificate {
     fn check_canister_ranges() {
         let data = hex::decode(REAL_CERT).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        assert!(cert.delegation().is_some());
 
-        let Some(ranges) = cert.canister_ranges() else {
-            // No ranges in this data
-            return;
-        };
-
-        let mut num_ranges = 0;
-        for (i, r) in ranges.iter().enumerate() {
-            std::println!("Range{}: {:?}", i, r);
-            num_ranges += 1;
-        }
-
-        assert_eq!(num_ranges, ranges.len());
+        // The delegation's flat ranges hold CANISTER_ID...
         let canister_id = hex::decode(CANISTER_ID).unwrap();
+        assert_eq!(cert.is_authorized_for(&canister_id), Ok(true));
 
-        // the provided canister might be used in case of delegation
-        assert!(ranges.is_canister_in_range(&canister_id));
+        // ...and nothing in the gap between its two ranges or past either end.
+        for outside in [
+            "00000000006000AF0101",
+            "00000000000000000101",
+            "00000000007000000101",
+        ] {
+            let canister_id = hex::decode(outside).unwrap();
+            assert_eq!(
+                cert.is_authorized_for(&canister_id),
+                Ok(false),
+                "{}",
+                outside
+            );
+        }
+    }
+
+    #[test]
+    fn root_signed_certificate_speaks_for_every_canister() {
+        let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
+        let cert = Certificate::from_bytes(&data).unwrap();
+        assert!(cert.delegation().is_none());
+
+        let canister_id = hex::decode(CANISTER_ID).unwrap();
+        assert_eq!(cert.is_authorized_for(&canister_id), Ok(true));
+    }
+
+    // Hash-tree CBOR, encoded the way the replica does.
+    fn cbor_bytes(data: &[u8]) -> Vec<u8> {
+        let mut out = match data.len() {
+            len @ 0..=23 => std::vec![0x40 | len as u8],
+            len @ 24..=255 => std::vec![0x58, len as u8],
+            len => std::vec![0x59, (len >> 8) as u8, len as u8],
+        };
+        out.extend_from_slice(data);
+        out
+    }
+
+    fn fork(left: &[u8], right: &[u8]) -> Vec<u8> {
+        [&[0x83, 0x01][..], left, right].concat()
+    }
+
+    fn labeled(label: &[u8], subtree: &[u8]) -> Vec<u8> {
+        [&[0x83, 0x02][..], &cbor_bytes(label), subtree].concat()
+    }
+
+    fn leaf(value: &[u8]) -> Vec<u8> {
+        [&[0x82, 0x03][..], &cbor_bytes(value)].concat()
+    }
+
+    fn pruned() -> Vec<u8> {
+        [&[0x82, 0x04][..], &cbor_bytes(&[0xAB; 32])].concat()
+    }
+
+    // tag(55799) + [[start, end], ...], as encode_subnet_canister_ranges writes
+    // it for both the flat list and each shard.
+    fn ranges(list: &[(&str, &str)]) -> Vec<u8> {
+        let mut out = std::vec![0xd9, 0xd9, 0xf7, 0x80 | list.len() as u8];
+        for (start, end) in list {
+            out.push(0x82);
+            out.extend(cbor_bytes(&hex::decode(start).unwrap()));
+            out.extend(cbor_bytes(&hex::decode(end).unwrap()));
+        }
+        out
+    }
+
+    // nest_once() delegates to a subnet id of 29 zero bytes.
+    const DELEGATED_SUBNET: [u8; 29] = [0; 29];
+
+    // ["canister_ranges", <subnet id>, <shard>...]: api/v3 read_state and
+    // api/v4 call.
+    fn sharded(shards: &[u8]) -> Vec<u8> {
+        labeled(
+            CANISTER_RANGES_PATH.as_bytes(),
+            &labeled(&DELEGATED_SUBNET, shards),
+        )
+    }
+
+    // ["subnet", <subnet id>, "canister_ranges"]: api/v2 read_state and api/v3
+    // call.
+    fn flat(list: &[u8]) -> Vec<u8> {
+        labeled(
+            SUBNET_PATH.as_bytes(),
+            &labeled(
+                &DELEGATED_SUBNET,
+                &labeled(CANISTER_RANGES_PATH.as_bytes(), list),
+            ),
+        )
+    }
+
+    // A certificate whose delegation certificate carries `tree`.
+    fn authorized(tree: &[u8], canister: &str) -> Result<bool, ParserError> {
+        let mut inner = std::vec![0xd9, 0xd9, 0xf7, 0xa2, 0x64];
+        inner.extend_from_slice(b"tree");
+        inner.extend_from_slice(tree);
+        inner.push(0x69);
+        inner.extend_from_slice(b"signature");
+        inner.extend_from_slice(&[0x58, 0x30]);
+        inner.extend_from_slice(&[0u8; 48]);
+
+        let data = nest_once(&inner);
+        let cert = Certificate::from_bytes(&data).unwrap();
+        cert.is_authorized_for(&hex::decode(canister).unwrap())
+    }
+
+    const SHARD_0: &str = "00000000000000000101";
+    const SHARD_1: &str = "00000000002000000101";
+    const IN_SHARD_0: &str = "00000000000000100101";
+    const IN_SHARD_1: &str = "00000000002000100101";
+    const IN_NO_SHARD: &str = "00000000001000000101";
+
+    fn shard_0() -> Vec<u8> {
+        labeled(
+            &hex::decode(SHARD_0).unwrap(),
+            &leaf(&ranges(&[(SHARD_0, "00000000000FFFFF0101")])),
+        )
+    }
+
+    fn shard_1() -> Vec<u8> {
+        labeled(
+            &hex::decode(SHARD_1).unwrap(),
+            &leaf(&ranges(&[(SHARD_1, "00000000002FFFFF0101")])),
+        )
+    }
+
+    #[test]
+    fn sharded_ranges_authorize_the_canisters_they_hold() {
+        let tree = sharded(&fork(&shard_0(), &shard_1()));
+        assert_eq!(authorized(&tree, IN_SHARD_0), Ok(true));
+        assert_eq!(authorized(&tree, IN_SHARD_1), Ok(true));
+        assert_eq!(authorized(&tree, IN_NO_SHARD), Ok(false));
+    }
+
+    #[test]
+    fn flat_ranges_are_used_when_there_are_no_shards() {
+        let list = leaf(&ranges(&[(SHARD_0, "00000000000FFFFF0101")]));
+        assert_eq!(authorized(&flat(&list), IN_SHARD_0), Ok(true));
+        assert_eq!(authorized(&flat(&list), IN_SHARD_1), Ok(false));
+
+        // The shards being pruned away does not hide a flat list that is there.
+        let tree = fork(&pruned(), &flat(&list));
+        assert_eq!(authorized(&tree, IN_SHARD_0), Ok(true));
+    }
+
+    // Pruning keeps the root hash, so the signature still verifies; what a
+    // pruned range said is simply no longer known, and cannot authorize
+    // anything. The old check skipped itself whenever it could not read the
+    // ranges, which is what let a delegated subnet answer for any canister.
+    #[test]
+    fn pruned_ranges_authorize_nothing() {
+        let shards = fork(
+            &labeled(&hex::decode(SHARD_0).unwrap(), &pruned()),
+            &shard_1(),
+        );
+        assert_eq!(authorized(&sharded(&shards), IN_SHARD_0), Ok(false));
+        assert_eq!(authorized(&sharded(&shards), IN_SHARD_1), Ok(true));
+
+        assert_eq!(authorized(&sharded(&pruned()), IN_SHARD_0), Ok(false));
+        assert_eq!(authorized(&flat(&pruned()), IN_SHARD_0), Ok(false));
+        assert_eq!(
+            authorized(&fork(&pruned(), &flat(&pruned())), IN_SHARD_0),
+            Ok(false)
+        );
+        assert_eq!(authorized(&pruned(), IN_SHARD_0), Ok(false));
+    }
+
+    // The replica leaves the ranges out on api/v3 subnet read_state, where no
+    // canister is involved. A consent certificate delegated that way cannot
+    // show that the subnet hosts the canister.
+    #[test]
+    fn delegation_without_ranges_authorizes_nothing() {
+        let public_key_only = labeled(
+            SUBNET_PATH.as_bytes(),
+            &labeled(
+                &DELEGATED_SUBNET,
+                &labeled(b"public_key", &leaf(&[1, 2, 3])),
+            ),
+        );
+        assert_eq!(authorized(&public_key_only, IN_SHARD_0), Ok(false));
+        assert_eq!(authorized(&[0x81, 0x00], IN_SHARD_0), Ok(false));
+    }
+
+    #[test]
+    fn malformed_ranges_are_an_error() {
+        assert!(authorized(&flat(&leaf(b"not a range list")), IN_SHARD_0).is_err());
+
+        let bad_shard = labeled(&hex::decode(SHARD_0).unwrap(), &leaf(&[0x01]));
+        assert!(authorized(&sharded(&bad_shard), IN_SHARD_0).is_err());
+
+        // A shard holds a list, not a further subtree.
+        let nested = labeled(&hex::decode(SHARD_0).unwrap(), &labeled(b"x", &leaf(b"y")));
+        assert!(authorized(&sharded(&nested), IN_SHARD_0).is_err());
     }
 
     #[test]
     fn error_generic_display() {
         let data = hex::decode(CERT_GENERIC_DISPLAY).unwrap();
         let cert = Certificate::from_bytes(&data).unwrap();
+        let request_id = hex::decode(CERT_GENERIC_DISPLAY_REQUEST_ID).unwrap();
 
         // Check we parse the message(reply field)
-        let msg = cert.msg_response();
+        let msg = cert.msg_response(&request_id);
         assert!(msg.is_err());
     }
 
@@ -508,7 +961,8 @@ mod test_certificate {
         assert!(result.is_ok());
 
         let cert = unsafe { cert.assume_init() };
-        let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response() else {
+        let request_id = hex::decode(REAL_CERT_REQUEST_ID).unwrap();
+        let Ok(ConsentMessageResponse::Ok(ui)) = cert.msg_response(&request_id) else {
             panic!("Invalid certificate");
         };
 

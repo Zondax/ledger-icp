@@ -40,6 +40,18 @@ parser_error_t parser_getNumItems(const parser_context_t *ctx, uint8_t *num_item
 parser_error_t parser_getItem(const parser_context_t *ctx, uint8_t displayIdx, char *outKey, uint16_t outKeyLen,
                               char *outVal, uint16_t outValLen, uint8_t pageIdx, uint8_t *pageCount);
 
+#if defined(LEDGER_SPECIFIC)
+/// Digests captured by parser_parse_combined, held until the user approves.
+/// Only valid while parser_combinedDigestsReady() is true.
+bool parser_combinedDigestsReady(void);
+
+const uint8_t *parser_getCombinedRequestHash(void);
+
+const uint8_t *parser_getCombinedStateHash(void);
+
+void parser_clearCombinedDigests(void);
+#endif
+
 #if defined(BLS_SIGNATURE)
 #include "rslib.h"
 

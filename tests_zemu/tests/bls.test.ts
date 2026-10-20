@@ -21,6 +21,9 @@ import { TEST_DATA } from './bls_test_data'
 
 jest.setTimeout(180000)
 
+const PRIMARY_PATH = "m/44'/223'/0'/0/0"
+const ALTERNATE_PATH = "m/44'/223'/1'/0/0"
+
 describe('Bls', function () {
   test.each(DEVICE_MODELS_BLS)('verify_with_default_key', async function (m) {
     const sim = new Zemu(m.path)
@@ -28,7 +31,7 @@ describe('Bls', function () {
       await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
       const app = new InternetComputerApp(sim.getTransport())
 
-      const respCert = app.signBls("m/44'/223'/0'/0/0", TEST_DATA.CONSENT_REQUEST, TEST_DATA.CANISTER_CALL, TEST_DATA.CERTIFICATE)
+      const respCert = app.signBls(PRIMARY_PATH, TEST_DATA.CONSENT_REQUEST, TEST_DATA.CANISTER_CALL, TEST_DATA.CERTIFICATE)
 
       // Wait until we are not in the main menu
       await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
@@ -40,6 +43,31 @@ describe('Bls', function () {
 
       expect(signatureResponse.returnCode).toEqual(0x9000)
       expect(signatureResponse.errorMessage).toEqual('No errors')
+    } finally {
+      await sim.close()
+    }
+  })
+
+  test.each(DEVICE_MODELS_BLS)('rejects derivation path switches before review', async function (m) {
+    const sim = new Zemu(m.path)
+    try {
+      await sim.start({ ...DEFAULT_OPTIONS, model: m.name, startText: m.name === 'stax' ? '' : 'Computer' })
+      const app = new InternetComputerApp(sim.getTransport())
+
+      const consent = await app.sendData(PRIMARY_PATH, TEST_DATA.CONSENT_REQUEST, app.INS.SAVE_CONSENT)
+      expect(consent.returnCode).toEqual(0x9000)
+
+      const switchedCall = await app.sendData(ALTERNATE_PATH, TEST_DATA.CANISTER_CALL, app.INS.SAVE_CANISTER_CALL)
+      expect(switchedCall.returnCode).toEqual(0x6984)
+
+      const restartedConsent = await app.sendData(PRIMARY_PATH, TEST_DATA.CONSENT_REQUEST, app.INS.SAVE_CONSENT)
+      expect(restartedConsent.returnCode).toEqual(0x9000)
+
+      const matchingCall = await app.sendData(PRIMARY_PATH, TEST_DATA.CANISTER_CALL, app.INS.SAVE_CANISTER_CALL)
+      expect(matchingCall.returnCode).toEqual(0x9000)
+
+      const switchedCertificate = await app.sendCertificateAndSig(ALTERNATE_PATH, TEST_DATA.CERTIFICATE)
+      expect(switchedCertificate.returnCode).toEqual(0x6984)
     } finally {
       await sim.close()
     }

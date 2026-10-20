@@ -710,7 +710,17 @@ static parser_error_t parser_getItemDisburseMaturity(uint8_t displayIdx, char *o
 
     if (displayIdx == 1) {
         snprintf(outKey, outKeyLen, "Neuron ID");
-        return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+
+        if (fields->has_id) {
+            return print_u64(fields->id.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        if (fields->has_neuron_id_or_subaccount && fields->neuron_id_or_subaccount.which == 1) {
+            return print_u64(fields->neuron_id_or_subaccount.neuronId.id, outVal, outValLen, pageIdx, pageCount);
+        }
+
+        // Only accept neuron_id
+        return parser_unexpected_type;
     }
 
     if (displayIdx == 2) {
@@ -1539,7 +1549,7 @@ __Z_INLINE parser_error_t parser_getItemManageNeuron(const parser_context_t *ctx
     snprintf(outVal, outValLen, "?");
     *pageCount = 1;
 
-    const uint8_t num_items = _getNumItems(ctx, &parser_tx_obj);
+    const uint16_t num_items = _getNumItems(ctx, &parser_tx_obj);
     PARSER_ASSERT_OR_ERROR(num_items > 0, parser_unexpected_number_items)
     CHECK_APP_CANARY()
 

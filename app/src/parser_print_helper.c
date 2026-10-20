@@ -293,17 +293,24 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
         text_ptr++;
     }
 #endif
-    crcLen = 8;  // also counting separator
-
     *text_ptr = '.';
     text_ptr++;
+
+    // Everything below writes at text_ptr, so the room left has to be measured
+    // from there. The previous tally started at sizeof(text) and subtracted the
+    // principal and the checksum, which left out the '-' after the principal
+    // and the '.' just written - two bytes that text_ptr had already consumed.
+    // array_to_hexstr zeroes the length it is handed before bounds-checking it,
+    // so those two bytes were written past the end of text on every account
+    // carrying a non-empty subaccount.
+    const uint16_t textRemaining = (uint16_t)(sizeof(text) - (size_t)(text_ptr - text));
 
     uint16_t bytesToShow = subaccTrimLen;
     if ((subaccTrimLen > DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL) && !showCompleteSubaccount) {
         bytesToShow = DFINITY_SUBACCOUNT_MAX_BYTES_TO_TEXTUAL;
     }
 
-    array_to_hexstr(text_ptr, (uint16_t)sizeof(text) - principalLen - crcLen, subaccTrim, bytesToShow);
+    array_to_hexstr(text_ptr, textRemaining, subaccTrim, bytesToShow);
 
     const uint8_t FIRST_BLOCK = 7;
     const uint8_t OTHER_BLOCKS = 8;
@@ -313,7 +320,7 @@ parser_error_t page_principal_with_subaccount(const uint8_t *sender, uint16_t se
 
     if (subaccountTextLen >= FIRST_BLOCK) {
         for (uint8_t i = 0, pos = FIRST_BLOCK; i < blocks_count - 1 && pos < subaccountTextLen; i++) {
-            err = inplace_insert_char(text_ptr, sizeof(text), pos, ' ');
+            err = inplace_insert_char(text_ptr, textRemaining, pos, ' ');
             if (err != zxerr_ok) {
                 return parser_unexpected_error;
             }
